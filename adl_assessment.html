@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="utf-8"/>
+    <meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" name="viewport"/>
+    <title>ประเมิน ADL</title>
+    <script src="https://cdn.tailwindcss.com?plugins=forms"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700&family=Sarabun:wght@300;400;500;600;700&display=swap" rel="stylesheet"/>
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+    <style>
+        body { font-family: 'Sarabun', sans-serif; background-color: #f9f9ff; padding-bottom: 100px; -webkit-tap-highlight-color: transparent;}
+        .material-symbols-outlined { font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24; }
+        /* ซ่อนวงกลม Radio แบบเก่า และแต่งให้กลายเป็นปุ่มกดสวยๆ */
+        input[type="radio"] { display: none; }
+        input[type="radio"]:checked + label { background-color: #00694a; color: white; border-color: #00694a; font-weight: bold; }
+    </style>
+</head>
+<body class="text-[#111c2d]">
+
+    <header class="bg-white sticky top-0 z-50 shadow-sm flex justify-between items-center w-full px-4 h-16 border-b border-[#bdcac1]/30">
+        <div class="flex items-center gap-3">
+            <button onclick="window.history.back()" class="w-10 h-10 flex items-center justify-center rounded-full bg-gray-50 text-[#00694a] hover:bg-gray-100 transition-colors">
+                <span class="material-symbols-outlined">arrow_back</span>
+            </button>
+            <div>
+                <h1 class="text-base font-bold text-[#00694a]">แบบประเมิน ADL (Barthel Index)</h1>
+                <p class="text-xs text-gray-500" id="patient-id-display">รหัส: กำลังโหลด...</p>
+            </div>
+        </div>
+    </header>
+
+    <main class="max-w-2xl mx-auto p-4">
+        <div id="question-container" class="space-y-6"></div>
+    </main>
+
+    <div class="fixed bottom-0 left-0 w-full bg-white border-t border-gray-200 shadow-[0_-4px_15px_rgba(0,0,0,0.05)] p-4 flex justify-between items-center z-50">
+        <div>
+            <p class="text-[10px] text-gray-500 font-bold mb-1">สรุปผลการประเมิน</p>
+            <div class="flex items-baseline gap-2">
+                <span class="text-2xl font-bold text-[#00694a]" id="total-score">0</span>
+                <span class="text-sm text-gray-500">/ 20 คะแนน</span>
+            </div>
+            <span id="result-group" class="bg-[#ba1a1a] text-white px-2 py-0.5 rounded-md text-[10px] font-bold mt-1 inline-block">ติดเตียง</span>
+        </div>
+        <button onclick="saveADL()" id="btn-save" class="bg-[#00694a] text-white px-6 py-3 rounded-xl font-bold shadow-md hover:bg-[#005239] transition-colors flex items-center gap-2">
+            บันทึกผล
+            <span class="material-symbols-outlined text-sm">save</span>
+        </button>
+    </div>
+
+    <script>
+        // เปลี่ยนเป็น URL API ของคุณ
+        const API_URL = "https://script.google.com/macros/s/AKfycbyzPy7sklwURcJiqFDzlK4OEQ8616CJLuNyAjb8euQNzYJLXz_dj4UJM63w8-nI1L3r/exec";
+        
+        const urlParams = new URLSearchParams(window.location.search);
+        const patientId = urlParams.get('id');
+        document.getElementById('patient-id-display').innerText = `รหัส: ${patientId || 'ไม่ระบุ'}`;
+
+        // ข้อมูลแบบประเมิน ADL 10 ข้อ (มาตรฐานกระทรวงสาธารณสุข)
+        const adlQuestions = [
+            { id: 'q1', title: "1. การรับประทานอาหารเมื่อเตรียมสำรับไว้ให้", choices: [{ label: "ทำไม่ได้ / ต้องป้อน", score: 0 }, { label: "ช่วยตัวเองได้บ้าง", score: 5 }, { label: "ทำได้เอง", score: 10 }] },
+            { id: 'q2', title: "2. การล้างหน้า หวีผม แปรงฟัน", choices: [{ label: "ต้องการความช่วยเหลือ", score: 0 }, { label: "ทำได้เอง", score: 5 }] },
+            { id: 'q3', title: "3. ลุกนั่งจากที่นอน หรือจากเตียงไปยังเก้าอี้", choices: [{ label: "ทำไม่ได้", score: 0 }, { label: "ต้องใช้คนช่วยพยุง 2 คน", score: 5 }, { label: "ต้องใช้คนช่วยพยุง 1 คน", score: 10 }, { label: "ทำได้เอง", score: 15 }] },
+            { id: 'q4', title: "4. การใช้ห้องน้ำ", choices: [{ label: "ทำไม่ได้", score: 0 }, { label: "ช่วยตัวเองได้บ้าง", score: 5 }, { label: "ทำได้เอง", score: 10 }] },
+            { id: 'q5', title: "5. การเคลื่อนที่ภายในห้องหรือบ้าน", choices: [{ label: "เคลื่อนที่ไม่ได้", score: 0 }, { label: "ใช้รถเข็นช่วยตัวเองได้", score: 5 }, { label: "เดินได้แต่มีคนช่วยพยุง", score: 10 }, { label: "เดินได้เอง", score: 15 }] },
+            { id: 'q6', title: "6. การสวมใส่เสื้อผ้า", choices: [{ label: "ทำไม่ได้", score: 0 }, { label: "ช่วยตัวเองได้ประมาณครึ่งหนึ่ง", score: 5 }, { label: "ทำได้เอง", score: 10 }] },
+            { id: 'q7', title: "7. การขึ้นลงบันได 1 ชั้น", choices: [{ label: "ทำไม่ได้", score: 0 }, { label: "ต้องการคนช่วยเหลือ", score: 5 }, { label: "ทำได้เอง", score: 10 }] },
+            { id: 'q8', title: "8. การอาบน้ำ", choices: [{ label: "ต้องการความช่วยเหลือ", score: 0 }, { label: "ทำได้เอง", score: 5 }] },
+            { id: 'q9', title: "9. การกลั้นการขับถ่ายอุจจาระ", choices: [{ label: "กลั้นไม่ได้เลย", score: 0 }, { label: "กลั้นไม่ได้บางครั้ง", score: 5 }, { label: "กลั้นได้ปกติ", score: 10 }] },
+            { id: 'q10', title: "10. การกลั้นการขับถ่ายปัสสาวะ", choices: [{ label: "กลั้นไม่ได้เลย", score: 0 }, { label: "กลั้นไม่ได้บางครั้ง", score: 5 }, { label: "กลั้นได้ปกติ", score: 10 }] }
+        ];
+
+        // ฟังก์ชันวาดหน้าจอคำถามอัตโนมัติ
+        function renderQuestions() {
+            const container = document.getElementById('question-container');
+            adlQuestions.forEach((q, index) => {
+                let optionsHtml = '';
+                q.choices.forEach((choice, cIndex) => {
+                    const inputId = `${q.id}_${cIndex}`;
+                    optionsHtml += `
+                        <div class="flex-1">
+                            <input type="radio" id="${inputId}" name="${q.id}" value="${choice.score}" onchange="calculateTotal()">
+                            <label for="${inputId}" class="block text-center p-3 text-sm bg-white border-2 border-gray-100 rounded-xl cursor-pointer hover:border-[#00694a] transition-all h-full flex items-center justify-center">
+                                ${choice.label}<br/><span class="text-xs opacity-70">(${choice.score} คะแนน)</span>
+                            </label>
+                        </div>
+                    `;
+                });
+
+                container.innerHTML += `
+                    <div class="bg-white p-5 rounded-[20px] shadow-sm border border-gray-100">
+                        <h3 class="font-bold text-[#111c2d] mb-3 leading-relaxed">${q.title}</h3>
+                        <div class="flex flex-col sm:flex-row gap-2">
+                            ${optionsHtml}
+                        </div>
+                    </div>
+                `;
+            });
+        }
+
+        // ฟังก์ชันคำนวณคะแนนรวมและจัดกลุ่ม
+        function calculateTotal() {
+            let total = 0;
+            adlQuestions.forEach(q => {
+                const selected = document.querySelector(`input[name="${q.id}"]:checked`);
+                if (selected) total += parseInt(selected.value);
+            });
+            
+            document.getElementById('total-score').innerText = total;
+            
+            const groupBadge = document.getElementById('result-group');
+            if (total >= 12) {
+                groupBadge.innerText = 'ติดสังคม';
+                groupBadge.className = 'bg-[#00694a] text-white px-3 py-1 rounded-full text-xs font-bold mt-1 inline-block shadow-sm';
+            } else if (total >= 5) {
+                groupBadge.innerText = 'ติดบ้าน';
+                groupBadge.className = 'bg-[#F59E0B] text-white px-3 py-1 rounded-full text-xs font-bold mt-1 inline-block shadow-sm';
+            } else {
+                groupBadge.innerText = 'ติดเตียง';
+                groupBadge.className = 'bg-[#ba1a1a] text-white px-3 py-1 rounded-full text-xs font-bold mt-1 inline-block shadow-sm';
+            }
+        }
+
+        // ส่งข้อมูลบันทึกเข้า Google Sheets
+        async function saveADL() {
+            if (!patientId) return alert("ไม่พบข้อมูลผู้ป่วย");
+
+            // เช็คว่าตอบครบ 10 ข้อไหม
+            let answered = 0;
+            adlQuestions.forEach(q => { if(document.querySelector(`input[name="${q.id}"]:checked`)) answered++; });
+            if (answered < 10) return alert(`กรุณาตอบคำถามให้ครบถ้วน (ตอบแล้ว ${answered}/10 ข้อ)`);
+
+            const score = document.getElementById('total-score').innerText;
+            const group = document.getElementById('result-group').innerText;
+            const btn = document.getElementById('btn-save');
+            
+            btn.innerHTML = 'กำลังบันทึก...';
+            btn.disabled = true;
+
+            try {
+                const response = await fetch(API_URL, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+                    body: JSON.stringify({ action: 'saveADLScore', id: patientId, score: score, group: group })
+                });
+                
+                const data = await response.json();
+                if (data.success) {
+                    alert('บันทึกผลการประเมินสำเร็จ!');
+                    // กลับไปหน้าโปรไฟล์ผู้ป่วย
+                    window.location.href = `patient_profile.html?id=${patientId}`;
+                } else {
+                    alert('เกิดข้อผิดพลาด: ' + data.error);
+                    btn.innerHTML = 'บันทึกผล'; btn.disabled = false;
+                }
+            } catch (err) {
+                alert('การเชื่อมต่อล้มเหลว');
+                btn.innerHTML = 'บันทึกผล'; btn.disabled = false;
+            }
+        }
+
+        // รันฟังก์ชันวาดคำถามเมื่อเปิดหน้าเว็บ
+        renderQuestions();
+    </script>
+</body>
+</html>
