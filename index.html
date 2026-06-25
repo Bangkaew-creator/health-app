@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="utf-8"/>
+    <meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" name="viewport"/>
+    <title>ลงทะเบียน อสม.</title>
+    <script src="https://cdn.tailwindcss.com?plugins=forms"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700&family=Sarabun:wght@300;400;500;600;700&display=swap" rel="stylesheet"/>
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+    <!-- LINE LIFF SDK -->
+    <script charset="utf-8" src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+
+    <script>
+      tailwind.config = {
+        theme: {
+          extend: {
+            colors: {
+              background: "#f9f9ff", surface: "#f9f9ff", primary: "#00694a", "primary-container": "#00855e", secondary: "#526069", outline: "#6e7a72", error: "#ba1a1a"
+            },
+            fontFamily: { sans: ["Be Vietnam Pro", "Sarabun", "sans-serif"] }
+          }
+        }
+      }
+    </script>
+    <style>
+        body { font-family: 'Sarabun', 'Be Vietnam Pro', sans-serif; background-color: #f9f9ff; -webkit-tap-highlight-color: transparent;}
+        .material-symbols-outlined { font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24; }
+        .loader { border: 3px solid #d8e3fb; border-bottom-color: #00694a; border-radius: 50%; width: 40px; height: 40px; animation: spin 1s linear infinite; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+    </style>
+</head>
+<body class="flex items-center justify-center min-h-[100dvh] p-4 text-[#111c2d]">
+
+    <!-- หน้าจอโหลด -->
+    <div id="loading-screen" class="flex flex-col items-center justify-center w-full max-w-md space-y-4">
+        <div class="loader"></div>
+        <p class="text-secondary text-sm font-medium animate-pulse" id="loading-text">กำลังเชื่อมต่อฐานข้อมูล...</p>
+    </div>
+
+    <!-- หน้าจอลงทะเบียน -->
+    <div id="register-screen" class="hidden w-full max-w-md bg-white p-6 rounded-2xl shadow-sm border border-[#d8e3fb]">
+        <div class="text-center mb-6">
+            <div class="w-16 h-16 bg-[#e7eeff] text-primary rounded-full flex items-center justify-center mx-auto mb-3">
+                <span class="material-symbols-outlined text-3xl" style="font-variation-settings: 'FILL' 1;">person_add</span>
+            </div>
+            <h2 class="text-xl font-bold text-primary">ลงทะเบียน อสม.</h2>
+            <p class="text-sm text-secondary mt-1">เทศบาลเมืองบางแก้ว</p>
+        </div>
+
+        <form id="register-form" class="space-y-4">
+            <input type="hidden" id="line-uid" name="uid">
+            
+            <div class="space-y-1.5">
+                <label class="text-sm font-bold text-secondary">ชื่อ-นามสกุล (อสม.)</label>
+                <div class="relative">
+                    <span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-outline">person</span>
+                    <input type="text" id="user-name" required class="w-full pl-10 pr-4 py-3 rounded-xl border border-outline/30 focus:ring-2 focus:ring-primary focus:border-primary transition-all" placeholder="กรอกชื่อและนามสกุล">
+                </div>
+            </div>
+
+            <div class="space-y-1.5">
+                <label class="text-sm font-bold text-secondary">พื้นที่รับผิดชอบ</label>
+                <div class="relative">
+                    <span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-outline">location_on</span>
+                    <select id="user-village" required class="w-full pl-10 pr-4 py-3 rounded-xl border border-outline/30 focus:ring-2 focus:ring-primary focus:border-primary transition-all bg-white">
+                        <option value="" disabled selected>เลือกหมู่ที่รับผิดชอบ...</option>
+                        <option value="1">หมู่ที่ 1</option>
+                        <option value="2">หมู่ที่ 2</option>
+                        <option value="3">หมู่ที่ 3</option>
+                        <!-- (ใส่เพิ่มตามจริงได้เลยครับ) -->
+                    </select>
+                </div>
+            </div>
+
+            <button type="submit" id="btn-submit" class="w-full mt-6 py-3.5 bg-primary text-white rounded-xl font-bold shadow-md hover:bg-primary-container active:scale-95 transition-all flex justify-center items-center gap-2">
+                ยืนยันการลงทะเบียน
+            </button>
+        </form>
+    </div>
+
+    <script>
+        // ======= ตั้งค่าตัวแปรหลัก =======
+       // ในส่วน <script> ของ index.html
+const LIFF_ID = "2010500776-6r1shNwL"; 
+const API_URL = "https://script.google.com/macros/s/AKfycbyzPy7sklwURcJiqFDzlK4OEQ8616CJLuNyAjb8euQNzYJLXz_dj4UJM63w8-nI1L3r/exec";
+        // =================================
+
+        document.addEventListener("DOMContentLoaded", () => {
+            liff.init({ liffId: LIFF_ID })
+                .then(() => {
+                    if (liff.isLoggedIn()) {
+                        liff.getProfile().then(profile => {
+                            document.getElementById('line-uid').value = profile.userId;
+                            checkUserRegistrationAPI(profile.userId);
+                        }).catch(err => handleError("ดึงข้อมูลโปรไฟล์ไม่ได้: " + err));
+                    } else {
+                        liff.login();
+                    }
+                })
+                .catch(err => handleError("LIFF Init Failed: " + err));
+        });
+
+        // ยิง API เช็คผู้ใช้งาน (ไม่ใช้ google.script.run แล้ว)
+        async function checkUserRegistrationAPI(uid) {
+            try {
+                // ใช้ text/plain เพื่อป้องกันปัญหา CORS Preflight
+                const response = await fetch(API_URL, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+                    body: JSON.stringify({ action: 'checkUserRegistration', uid: uid })
+                });
+                const data = await response.json();
+                handleLoginResponse(data);
+            } catch (error) {
+                handleError(error);
+            }
+        }
+
+        function handleLoginResponse(response) {
+            const loading = document.getElementById('loading-screen');
+            const register = document.getElementById('register-screen');
+
+            if (response.status === 'unregistered') {
+                loading.classList.add('hidden');
+                register.classList.remove('hidden');
+            } else if (response.status === 'registered') {
+                document.getElementById('loading-text').innerText = `ยินดีต้อนรับ ${response.name} กำลังพาเข้าสู่ระบบ...`;
+                document.getElementById('loading-text').classList.replace('text-secondary', 'text-primary');
+                
+                // --- [เพิ่ม 3 บรรทัดนี้เข้าไป เพื่อให้สลับไปหน้า Dashboard] ---
+                setTimeout(() => {
+                    window.location.href = 'dashboard.html';
+                }, 1000);
+                // ----------------------------------------------------
+
+            } else if (response.status === 'inactive') {
+                loading.innerHTML = `<span class="material-symbols-outlined text-error text-4xl mb-2">block</span><p class="text-error font-bold">บัญชีของคุณถูกระงับ</p>`;
+            }
+        }
+
+        function handleError(error) {
+            document.getElementById('loading-text').innerText = "เกิดข้อผิดพลาด: " + error;
+            document.getElementById('loading-text').classList.replace('text-secondary', 'text-error');
+        }
+
+        // ยิง API สมัครสมาชิก
+        document.getElementById('register-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const btn = document.getElementById('btn-submit');
+            btn.disabled = true;
+            btn.innerHTML = `<div class="loader" style="width: 20px; height: 20px; border-width: 2px; border-bottom-color: white;"></div> กำลังบันทึก...`;
+
+            const payload = {
+                action: 'registerNewUser',
+                uid: document.getElementById('line-uid').value,
+                name: document.getElementById('user-name').value,
+                village: document.getElementById('user-village').value
+            };
+
+            try {
+                const response = await fetch(API_URL, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+                    body: JSON.stringify(payload)
+                });
+                const data = await response.json();
+                
+                if(data.success) {
+                    btn.innerHTML = `<span class="material-symbols-outlined">check_circle</span> ลงทะเบียนสำเร็จ`;
+                    btn.classList.replace('bg-primary', 'bg-[#22c55e]');
+                    setTimeout(() => location.reload(), 1500);
+                } else {
+                    handleError(data.message);
+                }
+            } catch (error) {
+                handleError(error);
+            }
+        });
+    </script>
+</body>
+</html>
