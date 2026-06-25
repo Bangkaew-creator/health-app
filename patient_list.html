@@ -1,23 +1,171 @@
 <!DOCTYPE html>
 <html lang="th">
 <head>
-    <meta charset="utf-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;600&display=swap" rel="stylesheet"/>
+    <meta charset="utf-8"/>
+    <meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" name="viewport"/>
+    <title>รายชื่อผู้ป่วยทั้งหมด</title>
+    <script src="https://cdn.tailwindcss.com?plugins=forms"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700&family=Sarabun:wght@300;400;500;600;700&display=swap" rel="stylesheet"/>
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+    <style>
+        body { font-family: 'Sarabun', sans-serif; background-color: #f9f9ff; min-height: 100dvh; -webkit-tap-highlight-color: transparent;}
+        .material-symbols-outlined { font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24; }
+        .loader-small { border: 2px solid #d8e3fb; border-bottom-color: #00694a; border-radius: 50%; width: 24px; height: 24px; animation: spin 1s linear infinite; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+    </style>
 </head>
-<body class="bg-gray-50 p-4">
-    <a href="dashboard.html" class="text-[#00694a] font-bold">← ย้อนกลับ</a>
-    <div id="patient-container" class="mt-4 space-y-3"></div>
+<body class="text-[#111c2d] pb-24 font-sans">
+
+    <!-- ส่วนหัว (Header) -->
+    <header class="bg-[#00694a] sticky top-0 z-40 shadow-md flex justify-between items-center w-full px-4 h-16 text-white">
+        <div class="flex items-center gap-3">
+            <button onclick="window.location.href='dashboard.html'" class="w-10 h-10 flex items-center justify-center rounded-full hover:bg-white/20 transition-colors">
+                <span class="material-symbols-outlined">arrow_back</span>
+            </button>
+            <h1 class="text-lg font-bold">รายชื่อผู้ป่วยทั้งหมด</h1>
+        </div>
+        <div class="bg-white/20 text-white text-xs font-bold px-3 py-1 rounded-full shadow-inner">
+            <span id="total-count">0</span> คน
+        </div>
+    </header>
+
+    <main class="px-4 pt-6 space-y-4">
+        
+        <!-- ช่องค้นหา -->
+        <div class="bg-white border border-[#bdcac1]/50 p-3.5 rounded-xl flex items-center gap-2 text-gray-500 shadow-sm sticky top-20 z-30">
+            <span class="material-symbols-outlined text-[#00694a]">search</span>
+            <input type="text" id="searchInput" placeholder="พิมพ์ค้นหาชื่อ หรือ บ้านเลขที่..." class="bg-transparent border-none outline-none w-full text-sm placeholder-gray-400 text-[#111c2d]">
+            <button id="clearSearch" class="hidden text-gray-300 hover:text-gray-500">
+                <span class="material-symbols-outlined text-sm">close</span>
+            </button>
+        </div>
+
+        <!-- รายการผู้ป่วย -->
+        <div id="patient-list-container" class="space-y-3">
+            <!-- โชว์ตอนกำลังโหลด -->
+            <div class="text-center py-10 text-[#526069] bg-white rounded-2xl border border-[#bdcac1]/30 shadow-sm">
+                <div class="loader-small mx-auto mb-3"></div>
+                กำลังโหลดข้อมูลผู้ป่วย...
+            </div>
+        </div>
+
+    </main>
+
+    <!-- เมนูด้านล่าง (Bottom Navigation) -->
+    <nav class="fixed bottom-0 left-0 w-full bg-white border-t border-gray-100 rounded-t-[24px] shadow-[0_-4px_20px_rgba(0,0,0,0.03)] flex justify-around py-2 px-2 z-50">
+        <a href="dashboard.html" class="flex flex-col items-center text-gray-400 px-5 py-1.5 hover:text-[#00694a] transition-colors">
+            <span class="material-symbols-outlined">home</span>
+            <span class="text-[10px] font-bold mt-0.5">หน้าแรก</span>
+        </a>
+        <a href="patient_list.html" class="flex flex-col items-center bg-[#e7eeff] text-[#00694a] px-5 py-1.5 rounded-2xl transition-all">
+            <span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">group</span>
+            <span class="text-[10px] font-bold mt-0.5">ผู้ป่วย</span>
+        </a>
+        <a href="#" class="flex flex-col items-center text-gray-400 px-5 py-1.5 hover:text-[#00694a] transition-colors">
+            <span class="material-symbols-outlined">assignment</span>
+            <span class="text-[10px] font-bold mt-0.5">การประเมิน</span>
+        </a>
+        <a href="#" class="flex flex-col items-center text-gray-400 px-5 py-1.5 hover:text-[#00694a] transition-colors">
+            <span class="material-symbols-outlined">settings</span>
+            <span class="text-[10px] font-bold mt-0.5">ตั้งค่า</span>
+        </a>
+    </nav>
+
+    <!-- สคริปต์การทำงาน -->
     <script>
         const API_URL = "https://script.google.com/macros/s/AKfycbyzPy7sklwURcJiqFDzlK4OEQ8616CJLuNyAjb8euQNzYJLXz_dj4UJM63w8-nI1L3r/exec";
-        fetch(API_URL, { method: 'POST', body: JSON.stringify({ action: 'getAllPatients' }) })
-            .then(res => res.json())
-            .then(data => {
-                const container = document.getElementById('patient-container');
-                data.forEach(p => {
-                    container.innerHTML += `<div class="bg-white p-4 rounded-xl shadow">${p.name} (หมู่ ${p.village_no})</div>`;
+        
+        let allPatients = []; // ตัวแปรเก็บรายชื่อทั้งหมดไว้กรองข้อมูล
+
+        async function fetchAllPatients() {
+            try {
+                const response = await fetch(API_URL, {
+                    method: 'POST',
+                    body: JSON.stringify({ action: 'getAllPatients' })
                 });
+                allPatients = await response.json();
+                
+                // จัดเรียงตัวอักษร ก-ฮ
+                allPatients.sort((a, b) => a.name.localeCompare(b.name, 'th'));
+                
+                document.getElementById('total-count').innerText = allPatients.length;
+                renderList(allPatients);
+
+            } catch (err) {
+                console.error("Error Fetching Data:", err);
+                document.getElementById('patient-list-container').innerHTML = `<div class="text-center text-[#ba1a1a] py-6 bg-[#ffdad6] rounded-xl font-bold">เกิดข้อผิดพลาดในการโหลดข้อมูล</div>`;
+            }
+        }
+
+        function renderList(patients) {
+            const container = document.getElementById('patient-list-container');
+            container.innerHTML = ""; 
+
+            if (patients.length === 0) {
+                container.innerHTML = '<div class="text-center py-10 text-gray-400 bg-white rounded-[20px] shadow-sm border border-gray-100 font-medium">ไม่พบรายชื่อผู้ป่วยที่คุณค้นหา</div>';
+                return;
+            }
+
+            patients.forEach(p => {
+                let groupColor = 'bg-[#6e7a72]'; 
+                if (p.group === 'ติดเตียง') groupColor = 'bg-[#ba1a1a]';
+                if (p.group === 'ติดบ้าน') groupColor = 'bg-[#F59E0B]';
+                if (p.group === 'ติดสังคม') groupColor = 'bg-[#00694a]';
+                
+                container.innerHTML += `
+                    <div onclick="window.location.href='patient_profile.html?id=${p.id}'" class="bg-white p-3 rounded-[20px] shadow-sm border border-gray-100 flex items-center gap-3 cursor-pointer hover:bg-[#e7eeff]/50 active:scale-95 transition-all">
+                        <div class="w-[60px] h-[60px] bg-[#e7eeff] text-[#00694a] rounded-xl flex items-center justify-center font-bold text-xl shrink-0 border border-[#d8e3fb]">
+                            ${p.name ? p.name.substring(0,1) : '?'}
+                        </div>
+                        <div class="flex-1 min-w-0 py-1">
+                            <h4 class="font-bold text-[15px] text-[#111c2d] truncate leading-tight">${p.name}</h4>
+                            <p class="text-xs text-gray-500 mt-1 truncate">
+                                บ้านเลขที่ ${p.house_no} • หมู่ ${p.village_no}
+                            </p>
+                        </div>
+                        <div class="flex flex-col items-end justify-between h-full py-1 shrink-0 gap-2">
+                            <span class="${groupColor} text-white px-2 py-0.5 rounded-full text-[10px] font-bold">${p.group}</span>
+                            <span class="text-[10px] text-gray-400 font-medium">ADL: ${p.adl}</span>
+                        </div>
+                    </div>
+                `;
             });
+        }
+
+        // ระบบค้นหา Real-time
+        const searchInput = document.getElementById('searchInput');
+        const clearSearchBtn = document.getElementById('clearSearch');
+
+        searchInput.addEventListener('input', (e) => {
+            const keyword = e.target.value.toLowerCase().trim();
+            
+            // แสดง/ซ่อน ปุ่มกากบาทลบคำค้นหา
+            if (keyword.length > 0) {
+                clearSearchBtn.classList.remove('hidden');
+            } else {
+                clearSearchBtn.classList.add('hidden');
+            }
+
+            // กรองข้อมูลจากชื่อ หรือ บ้านเลขที่
+            const filteredPatients = allPatients.filter(p => 
+                (p.name && p.name.toLowerCase().includes(keyword)) || 
+                (p.house_no && String(p.house_no).includes(keyword))
+            );
+            
+            renderList(filteredPatients);
+        });
+
+        // ปุ่มเคลียร์คำค้นหา
+        clearSearchBtn.addEventListener('click', () => {
+            searchInput.value = '';
+            clearSearchBtn.classList.add('hidden');
+            renderList(allPatients);
+            searchInput.focus();
+        });
+
+        // เริ่มดึงข้อมูล
+        fetchAllPatients();
     </script>
+
 </body>
 </html>
