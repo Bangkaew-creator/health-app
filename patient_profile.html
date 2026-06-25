@@ -8,7 +8,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700&family=Sarabun:wght@300;400;500;600;700&display=swap" rel="stylesheet"/>
     <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
     <style>
-        body { font-family: 'Sarabun', 'Be Vietnam Pro', sans-serif; background-color: #f9f9ff; min-height: 100dvh; -webkit-tap-highlight-color: transparent;}
+        body { font-family: 'Sarabun', sans-serif; background-color: #f9f9ff; min-height: 100dvh; -webkit-tap-highlight-color: transparent;}
         .material-symbols-outlined { font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24; }
         .loader-small { border: 3px solid #d8e3fb; border-bottom-color: #00694a; border-radius: 50%; width: 30px; height: 30px; animation: spin 1s linear infinite; }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
@@ -23,7 +23,7 @@
             </button>
             <h1 class="text-lg font-bold">แฟ้มประวัติผู้ป่วย</h1>
         </div>
-        <button onclick="window.location.href='patient_edit.html?id=' + patientId" class="w-10 h-10 flex items-center justify-center rounded-full hover:bg-white/20 transition-colors">
+        <button id="btn-edit" class="w-10 h-10 flex items-center justify-center rounded-full hover:bg-white/20 transition-colors hidden">
             <span class="material-symbols-outlined">edit_square</span>
         </button>
     </header>
@@ -52,18 +52,21 @@
                 <div class="grid grid-cols-2 gap-3 mt-5 pt-4 border-t border-[#bdcac1]/30">
                     <div>
                         <p class="text-[10px] text-[#526069] font-bold">กลุ่มผู้ป่วย</p>
-                        <span id="profile-group" class="bg-[#6e7a72] text-white px-3 py-1 rounded-full text-xs font-bold inline-block mt-1">ยังไม่ประเมิน</span>
+                        <span id="profile-group" class="bg-[#6e7a72] text-white px-3 py-1 rounded-full text-xs font-bold inline-block mt-1 shadow-sm">ยังไม่ประเมิน</span>
                     </div>
                     <div>
                         <p class="text-[10px] text-[#526069] font-bold">คะแนน ADL ล่าสุด</p>
-                        <p id="profile-adl" class="text-xl font-bold text-[#111c2d]">-</p>
+                        <p class="text-xl font-bold text-[#111c2d] flex items-baseline gap-1">
+                            <span id="profile-adl">-</span>
+                            <span class="text-[10px] font-normal text-gray-400" id="profile-last-assess"></span>
+                        </p>
                     </div>
                 </div>
             </div>
 
             <div class="bg-white rounded-[20px] p-5 shadow-sm border border-[#bdcac1]/30">
                 <h3 class="text-sm font-bold flex items-center gap-2 mb-4 text-[#00694a]">
-                    <span class="material-symbols-outlined">badge</span> ข้อมูลส่วนบุคคล
+                    <span class="material-symbols-outlined text-[18px]">badge</span> ข้อมูลส่วนบุคคล
                 </h3>
                 <div class="space-y-3">
                     <div class="flex justify-between items-center border-b border-gray-50 pb-2">
@@ -71,7 +74,7 @@
                         <span class="text-sm font-semibold" id="profile-idcard">-</span>
                     </div>
                     <div class="flex justify-between items-center border-b border-gray-50 pb-2">
-                        <span class="text-xs text-[#526069]">วัน/เดือน/ปีเกิด</span>
+                        <span class="text-xs text-[#526069]">วันเกิด</span>
                         <span class="text-sm font-semibold" id="profile-dob">-</span>
                     </div>
                     <div class="flex flex-col gap-1 pt-1">
@@ -81,7 +84,43 @@
                 </div>
             </div>
 
-            <div class="pt-4">
+            <div class="bg-white rounded-[20px] p-5 shadow-sm border border-[#bdcac1]/30">
+                <h3 class="text-sm font-bold flex items-center gap-2 mb-4 text-[#ba1a1a]">
+                    <span class="material-symbols-outlined text-[18px]">monitor_heart</span> ข้อมูลสุขภาพและการรักษา
+                </h3>
+                <div class="space-y-3">
+                    <div class="flex flex-col gap-1 border-b border-gray-50 pb-3">
+                        <span class="text-xs text-[#526069] font-bold">โรคประจำตัว</span>
+                        <span class="text-sm font-semibold text-[#111c2d]" id="profile-disease">-</span>
+                    </div>
+                    <div class="flex flex-col gap-1 pt-1">
+                        <span class="text-xs text-[#526069] font-bold mb-1">รายการยาที่ใช้ประจำ</span>
+                        <div class="text-sm font-semibold text-[#111c2d] bg-gray-50 p-3 rounded-xl border border-gray-100" id="profile-medication">
+                            -
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-white rounded-[20px] p-5 shadow-sm border border-[#bdcac1]/30">
+                <h3 class="text-sm font-bold flex items-center gap-2 mb-4 text-[#F59E0B]">
+                    <span class="material-symbols-outlined text-[18px]">group</span> ญาติ / ผู้ดูแลใกล้ชิด
+                </h3>
+                <div class="space-y-3">
+                    <div class="flex justify-between items-center border-b border-gray-50 pb-2">
+                        <span class="text-xs text-[#526069]">ชื่อ-นามสกุล</span>
+                        <span class="text-sm font-semibold" id="profile-caregiver-name">-</span>
+                    </div>
+                    <div class="flex justify-between items-center pt-1">
+                        <span class="text-xs text-[#526069]">เบอร์โทรศัพท์</span>
+                        <a href="#" id="profile-caregiver-phone-link" class="text-sm font-bold text-[#0284c7] flex items-center gap-1">
+                            <span id="profile-caregiver-phone">-</span>
+                        </a>
+                    </div>
+                </div>
+            </div>
+
+            <div class="pt-2">
                 <button onclick="startADL()" class="w-full bg-[#F59E0B] text-white py-4 rounded-xl font-bold shadow-lg hover:bg-[#D97706] active:scale-95 transition-all flex items-center justify-center gap-2 text-base">
                     <span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">assignment</span>
                     เริ่มทำแบบประเมิน ADL
@@ -92,10 +131,8 @@
     </main>
 
     <script>
-        // ===== ใส่ URL ของคุณตรงนี้ =====
         const API_URL = "https://script.google.com/macros/s/AKfycbyzPy7sklwURcJiqFDzlK4OEQ8616CJLuNyAjb8euQNzYJLXz_dj4UJM63w8-nI1L3r/exec";
         
-        // ดึงพารามิเตอร์ ID จาก URL (เช่น ?id=HN-2026...)
         const urlParams = new URLSearchParams(window.location.search);
         const patientId = urlParams.get('id');
 
@@ -108,51 +145,89 @@
 
             try {
                 const response = await fetch(API_URL, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-                    body: JSON.stringify({ action: 'getPatientById', id: patientId })
+                    method: 'POST', body: JSON.stringify({ action: 'getPatientById', id: patientId })
                 });
-                
                 const data = await response.json();
-                
                 if (data.error) {
-                    alert(data.error);
-                    window.history.back();
-                    return;
+                    alert(data.error); window.history.back(); return;
                 }
 
-                // นำข้อมูลมาแสดงผลใน HTML
-                document.getElementById('profile-initial').innerText = data.name.substring(0, 1);
-                document.getElementById('profile-name').innerText = data.prefix + data.name;
-                document.getElementById('profile-age').innerText = `อายุ ${data.age} ปี`;
+                // 1. ข้อมูลส่วนตัวพื้นฐาน
+                document.getElementById('profile-initial').innerText = data.name ? data.name.substring(0, 1) : '?';
+                document.getElementById('profile-name').innerText = (data.prefix || '') + (data.name || '');
+                document.getElementById('profile-age').innerText = `อายุ ${data.age || '-'} ปี`;
                 document.getElementById('profile-idcard').innerText = data.id_card || '-';
                 document.getElementById('profile-dob').innerText = data.dob || '-';
-                document.getElementById('profile-address').innerText = `บ้านเลขที่ ${data.house_no} หมู่ ${data.village_no}`;
+                document.getElementById('profile-address').innerText = `บ้านเลขที่ ${data.house_no || '-'} หมู่ ${data.village_no || '-'}`;
                 
-                document.getElementById('profile-adl').innerText = data.adl;
-
-                // จัดการสีกรุ๊ป
+                // 2. ข้อมูลกลุ่มและ ADL
+                document.getElementById('profile-adl').innerText = data.adl || '-';
+                if (data.last_assess) {
+                    document.getElementById('profile-last-assess').innerText = `(${data.last_assess})`;
+                }
                 const groupBadge = document.getElementById('profile-group');
                 groupBadge.innerText = data.group;
-                if (data.group === 'ติดเตียง') groupBadge.className = "bg-[#ba1a1a] text-white px-3 py-1 rounded-full text-xs font-bold inline-block mt-1";
-                else if (data.group === 'ติดบ้าน') groupBadge.className = "bg-[#F59E0B] text-white px-3 py-1 rounded-full text-xs font-bold inline-block mt-1";
-                else if (data.group === 'ติดสังคม') groupBadge.className = "bg-[#00694a] text-white px-3 py-1 rounded-full text-xs font-bold inline-block mt-1";
+                if (data.group === 'ติดเตียง') groupBadge.className = "bg-[#ba1a1a] text-white px-3 py-1 rounded-full text-xs font-bold inline-block mt-1 shadow-sm";
+                else if (data.group === 'ติดบ้าน') groupBadge.className = "bg-[#F59E0B] text-white px-3 py-1 rounded-full text-xs font-bold inline-block mt-1 shadow-sm";
+                else if (data.group === 'ติดสังคม') groupBadge.className = "bg-[#00694a] text-white px-3 py-1 rounded-full text-xs font-bold inline-block mt-1 shadow-sm";
 
-                // สลับหน้าจอจาก Loading เป็น Content
+                // 3. ข้อมูลสุขภาพ (โรค & ยา)
+                document.getElementById('profile-disease').innerText = data.disease || '-';
+                
+                const medContainer = document.getElementById('profile-medication');
+                if (data.medication && data.medication.startsWith('[')) {
+                    try {
+                        const meds = JSON.parse(data.medication);
+                        if (meds.length === 0) {
+                            medContainer.innerHTML = '-';
+                        } else {
+                            let medHtml = '<ul class="list-disc pl-4 space-y-1.5">';
+                            meds.forEach(m => {
+                                medHtml += `<li><span class="text-[#0284c7]">${m.name}</span> ${m.dose} <span class="text-xs font-normal text-gray-500">(${m.usage})</span></li>`;
+                            });
+                            medHtml += '</ul>';
+                            medContainer.innerHTML = medHtml;
+                        }
+                    } catch(e) {
+                        medContainer.innerText = data.medication; // Fallback
+                    }
+                } else {
+                    medContainer.innerText = data.medication || '-';
+                }
+
+                // 4. ข้อมูลญาติผู้ดูแล
+                document.getElementById('profile-caregiver-name').innerText = data.caregiver_name || '-';
+                const phoneElement = document.getElementById('profile-caregiver-phone');
+                const phoneLink = document.getElementById('profile-caregiver-phone-link');
+                
+                if (data.caregiver_phone) {
+                    phoneElement.innerText = data.caregiver_phone;
+                    phoneElement.innerHTML += ' <span class="material-symbols-outlined text-[14px]">call</span>';
+                    phoneLink.href = `tel:${data.caregiver_phone}`; // ทำให้กดโทรออกได้เลย
+                } else {
+                    phoneElement.innerText = '-';
+                    phoneLink.href = "#";
+                    phoneLink.className = "text-sm font-bold text-[#111c2d]";
+                }
+
+                // ตั้งค่าปุ่มแก้ไขให้ลิงก์ไปหน้า Edit พร้อมส่ง ID ไปด้วย
+                const btnEdit = document.getElementById('btn-edit');
+                btnEdit.onclick = () => window.location.href = `patient_edit.html?id=${patientId}`;
+                btnEdit.classList.remove('hidden');
+
+                // สลับหน้าจอ
                 document.getElementById('loading-state').classList.add('hidden');
                 document.getElementById('profile-content').classList.remove('hidden');
 
             } catch (error) {
-                alert("เชื่อมต่อฐานข้อมูลล้มเหลว: " + error);
+                alert("เชื่อมต่อฐานข้อมูลล้มเหลว");
             }
         }
 
         function startADL() {
-            // ส่ง ID ผู้ป่วยแนบไปกับลิงก์เพื่อไปหน้าประเมิน
             window.location.href = `adl_assessment.html?id=${patientId}`;
         }
 
-        // เริ่มโหลดข้อมูลเมื่อเปิดหน้าต่าง
         loadPatientProfile();
     </script>
 </body>
