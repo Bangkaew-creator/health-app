@@ -10,7 +10,6 @@
     <style>
         body { font-family: 'Sarabun', sans-serif; background-color: #f9f9ff; padding-bottom: 100px; -webkit-tap-highlight-color: transparent;}
         .material-symbols-outlined { font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24; }
-        /* ซ่อนวงกลม Radio แบบเก่า และแต่งให้กลายเป็นปุ่มกดสวยๆ */
         input[type="radio"] { display: none; }
         input[type="radio"]:checked + label { background-color: #00694a; color: white; border-color: #00694a; font-weight: bold; }
     </style>
@@ -23,14 +22,14 @@
                 <span class="material-symbols-outlined">arrow_back</span>
             </button>
             <div>
-                <h1 class="text-base font-bold text-[#00694a]">แบบประเมิน ADL (Barthel Index)</h1>
+                <h1 class="text-base font-bold text-[#00694a]">แบบประเมินคัดกรอง Barthel ADL</h1>
                 <p class="text-xs text-gray-500" id="patient-id-display">รหัส: กำลังโหลด...</p>
             </div>
         </div>
     </header>
 
     <main class="max-w-2xl mx-auto p-4">
-        <div id="question-container" class="space-y-6"></div>
+        <div id="question-container" class="space-y-4"></div>
     </main>
 
     <div class="fixed bottom-0 left-0 w-full bg-white border-t border-gray-200 shadow-[0_-4px_15px_rgba(0,0,0,0.05)] p-4 flex justify-between items-center z-50">
@@ -49,28 +48,66 @@
     </div>
 
     <script>
-        // เปลี่ยนเป็น URL API ของคุณ
         const API_URL = "https://script.google.com/macros/s/AKfycbyzPy7sklwURcJiqFDzlK4OEQ8616CJLuNyAjb8euQNzYJLXz_dj4UJM63w8-nI1L3r/exec";
         
         const urlParams = new URLSearchParams(window.location.search);
         const patientId = urlParams.get('id');
         document.getElementById('patient-id-display').innerText = `รหัส: ${patientId || 'ไม่ระบุ'}`;
 
-        // ข้อมูลแบบประเมิน ADL 10 ข้อ (มาตรฐานกระทรวงสาธารณสุข)
+        // อัปเดตข้อมูลแบบประเมินให้ตรงกับแบบฟอร์ม 20 คะแนน
         const adlQuestions = [
-            { id: 'q1', title: "1. การรับประทานอาหารเมื่อเตรียมสำรับไว้ให้", choices: [{ label: "ทำไม่ได้ / ต้องป้อน", score: 0 }, { label: "ช่วยตัวเองได้บ้าง", score: 5 }, { label: "ทำได้เอง", score: 10 }] },
-            { id: 'q2', title: "2. การล้างหน้า หวีผม แปรงฟัน", choices: [{ label: "ต้องการความช่วยเหลือ", score: 0 }, { label: "ทำได้เอง", score: 5 }] },
-            { id: 'q3', title: "3. ลุกนั่งจากที่นอน หรือจากเตียงไปยังเก้าอี้", choices: [{ label: "ทำไม่ได้", score: 0 }, { label: "ต้องใช้คนช่วยพยุง 2 คน", score: 5 }, { label: "ต้องใช้คนช่วยพยุง 1 คน", score: 10 }, { label: "ทำได้เอง", score: 15 }] },
-            { id: 'q4', title: "4. การใช้ห้องน้ำ", choices: [{ label: "ทำไม่ได้", score: 0 }, { label: "ช่วยตัวเองได้บ้าง", score: 5 }, { label: "ทำได้เอง", score: 10 }] },
-            { id: 'q5', title: "5. การเคลื่อนที่ภายในห้องหรือบ้าน", choices: [{ label: "เคลื่อนที่ไม่ได้", score: 0 }, { label: "ใช้รถเข็นช่วยตัวเองได้", score: 5 }, { label: "เดินได้แต่มีคนช่วยพยุง", score: 10 }, { label: "เดินได้เอง", score: 15 }] },
-            { id: 'q6', title: "6. การสวมใส่เสื้อผ้า", choices: [{ label: "ทำไม่ได้", score: 0 }, { label: "ช่วยตัวเองได้ประมาณครึ่งหนึ่ง", score: 5 }, { label: "ทำได้เอง", score: 10 }] },
-            { id: 'q7', title: "7. การขึ้นลงบันได 1 ชั้น", choices: [{ label: "ทำไม่ได้", score: 0 }, { label: "ต้องการคนช่วยเหลือ", score: 5 }, { label: "ทำได้เอง", score: 10 }] },
-            { id: 'q8', title: "8. การอาบน้ำ", choices: [{ label: "ต้องการความช่วยเหลือ", score: 0 }, { label: "ทำได้เอง", score: 5 }] },
-            { id: 'q9', title: "9. การกลั้นการขับถ่ายอุจจาระ", choices: [{ label: "กลั้นไม่ได้เลย", score: 0 }, { label: "กลั้นไม่ได้บางครั้ง", score: 5 }, { label: "กลั้นได้ปกติ", score: 10 }] },
-            { id: 'q10', title: "10. การกลั้นการขับถ่ายปัสสาวะ", choices: [{ label: "กลั้นไม่ได้เลย", score: 0 }, { label: "กลั้นไม่ได้บางครั้ง", score: 5 }, { label: "กลั้นได้ปกติ", score: 10 }] }
+            { id: 'q1', title: "1. การรับประทานอาหารเมื่อเตรียมสำรับไว้ให้ (Feeding)", choices: [
+                { label: "0: ไม่สามารถตักเข้าปากได้ ต้องมีคนป้อน", score: 0 },
+                { label: "1: ตักอาหารเองได้แต่ต้องมีคนช่วย", score: 1 },
+                { label: "2: ตักอาหารและช่วยตัวเองได้เป็นปกติ", score: 2 }
+            ] },
+            { id: 'q2', title: "2. การล้างหน้า หวีผม แปรงฟัน โกนหนวด (Grooming)", choices: [
+                { label: "0: ต้องการความช่วยเหลือ", score: 0 },
+                { label: "1: ทำเองได้ (หรือทำได้หากเตรียมอุปกรณ์ไว้ให้)", score: 1 }
+            ] },
+            { id: 'q3', title: "3. ลุกนั่งจากที่นอน หรือจากเตียงไปยังเก้าอี้ (Transfer)", choices: [
+                { label: "0: ไม่สามารถนั่งได้ หรือต้องใช้คน 2 คนช่วยยก", score: 0 },
+                { label: "1: ต้องการความช่วยเหลืออย่างมากจึงจะนั่งได้", score: 1 },
+                { label: "2: ต้องการความช่วยเหลือบ้าง (ช่วยพยุงเล็กน้อย)", score: 2 },
+                { label: "3: ทำได้เอง", score: 3 }
+            ] },
+            { id: 'q4', title: "4. การใช้ห้องน้ำ (Toilet use)", choices: [
+                { label: "0: ช่วยตัวเองไม่ได้", score: 0 },
+                { label: "1: ทำเองได้บ้าง แต่ต้องการความช่วยเหลือในบางสิ่ง", score: 1 },
+                { label: "2: ช่วยตัวเองได้ดี (ขึ้นลงโถ ทำความสะอาดเองได้)", score: 2 }
+            ] },
+            { id: 'q5', title: "5. การเคลื่อนที่ภายในห้องหรือบ้าน (Mobility)", choices: [
+                { label: "0: เคลื่อนที่ไปไหนไม่ได้", score: 0 },
+                { label: "1: ต้องใช้รถเข็นและเข็นเองได้", score: 1 },
+                { label: "2: เดินหรือเคลื่อนที่โดยมีคนช่วยพยุง", score: 2 },
+                { label: "3: เดินหรือเคลื่อนที่ได้เอง", score: 3 }
+            ] },
+            { id: 'q6', title: "6. การสวมใส่เสื้อผ้า (Dressing)", choices: [
+                { label: "0: ต้องมีคนสวมใส่ให้ ช่วยตัวเองไม่ได้", score: 0 },
+                { label: "1: ช่วยตัวเองได้ร้อยละ 50 ที่เหลือมีคนช่วย", score: 1 },
+                { label: "2: ช่วยตัวเองได้ดี", score: 2 }
+            ] },
+            { id: 'q7', title: "7. การขึ้นลงบันได 1 ชั้น (Stairs)", choices: [
+                { label: "0: ไม่สามารถทำได้", score: 0 },
+                { label: "1: ต้องการคนช่วย", score: 1 },
+                { label: "2: ขึ้นลงได้เอง", score: 2 }
+            ] },
+            { id: 'q8', title: "8. การอาบน้ำ (Bathing)", choices: [
+                { label: "0: ต้องมีคนช่วยหรือทำให้", score: 0 },
+                { label: "1: อาบน้ำเองได้", score: 1 }
+            ] },
+            { id: 'q9', title: "9. การกลั้นการถ่ายอุจจาระใน 1 สัปดาห์ (Bowels)", choices: [
+                { label: "0: กลั้นไม่ได้เลย หรือต้องสวนอุจจาระเสมอ", score: 0 },
+                { label: "1: กลั้นไม่ได้บางครั้ง (น้อยกว่า 1 ครั้ง/สัปดาห์)", score: 1 },
+                { label: "2: กลั้นได้เป็นปกติ", score: 2 }
+            ] },
+            { id: 'q10', title: "10. การกลั้นปัสสาวะใน 1 สัปดาห์ (Bladder)", choices: [
+                { label: "0: กลั้นไม่ได้ หรือใส่สายสวนปัสสาวะ", score: 0 },
+                { label: "1: กลั้นไม่ได้บางครั้ง (น้อยกว่าวันละ 1 ครั้ง)", score: 1 },
+                { label: "2: กลั้นได้เป็นปกติ", score: 2 }
+            ] }
         ];
 
-        // ฟังก์ชันวาดหน้าจอคำถามอัตโนมัติ
         function renderQuestions() {
             const container = document.getElementById('question-container');
             adlQuestions.forEach((q, index) => {
@@ -78,10 +115,11 @@
                 q.choices.forEach((choice, cIndex) => {
                     const inputId = `${q.id}_${cIndex}`;
                     optionsHtml += `
-                        <div class="flex-1">
+                        <div class="flex-1 min-w-[30%]">
                             <input type="radio" id="${inputId}" name="${q.id}" value="${choice.score}" onchange="calculateTotal()">
-                            <label for="${inputId}" class="block text-center p-3 text-sm bg-white border-2 border-gray-100 rounded-xl cursor-pointer hover:border-[#00694a] transition-all h-full flex items-center justify-center">
-                                ${choice.label}<br/><span class="text-xs opacity-70">(${choice.score} คะแนน)</span>
+                            <label for="${inputId}" class="block text-center p-3 text-sm bg-white border-2 border-gray-100 rounded-xl cursor-pointer hover:border-[#00694a] transition-all h-full flex flex-col justify-center items-center gap-1">
+                                <span>${choice.label.split(':')[1]}</span>
+                                <span class="bg-gray-100 text-gray-600 px-2 py-0.5 rounded text-xs font-bold w-fit">${choice.label.split(':')[0]}</span>
                             </label>
                         </div>
                     `;
@@ -89,8 +127,8 @@
 
                 container.innerHTML += `
                     <div class="bg-white p-5 rounded-[20px] shadow-sm border border-gray-100">
-                        <h3 class="font-bold text-[#111c2d] mb-3 leading-relaxed">${q.title}</h3>
-                        <div class="flex flex-col sm:flex-row gap-2">
+                        <h3 class="font-bold text-[#111c2d] mb-3 leading-relaxed text-sm">${q.title}</h3>
+                        <div class="flex flex-wrap gap-2">
                             ${optionsHtml}
                         </div>
                     </div>
@@ -98,7 +136,6 @@
             });
         }
 
-        // ฟังก์ชันคำนวณคะแนนรวมและจัดกลุ่ม
         function calculateTotal() {
             let total = 0;
             adlQuestions.forEach(q => {
@@ -121,11 +158,9 @@
             }
         }
 
-        // ส่งข้อมูลบันทึกเข้า Google Sheets
         async function saveADL() {
             if (!patientId) return alert("ไม่พบข้อมูลผู้ป่วย");
 
-            // เช็คว่าตอบครบ 10 ข้อไหม
             let answered = 0;
             adlQuestions.forEach(q => { if(document.querySelector(`input[name="${q.id}"]:checked`)) answered++; });
             if (answered < 10) return alert(`กรุณาตอบคำถามให้ครบถ้วน (ตอบแล้ว ${answered}/10 ข้อ)`);
@@ -147,7 +182,6 @@
                 const data = await response.json();
                 if (data.success) {
                     alert('บันทึกผลการประเมินสำเร็จ!');
-                    // กลับไปหน้าโปรไฟล์ผู้ป่วย
                     window.location.href = `patient_profile.html?id=${patientId}`;
                 } else {
                     alert('เกิดข้อผิดพลาด: ' + data.error);
@@ -159,7 +193,6 @@
             }
         }
 
-        // รันฟังก์ชันวาดคำถามเมื่อเปิดหน้าเว็บ
         renderQuestions();
     </script>
 </body>
