@@ -157,14 +157,15 @@
 
                 // แก้ไขส่วน .forEach ใน dashboard.html
 recentPatients.forEach(p => {
-                    // กำหนดสีและคำ ตามกลุ่มผู้ป่วย (ตอนนี้จะแสดงเป็นสีเทา "ยังไม่ประเมิน" ไปก่อน)
+                    // กำหนดสีและคำ ตามกลุ่มผู้ป่วย
                     let groupColor = 'bg-[#6e7a72]'; // สีเทาเริ่มต้น
                     if (p.group === 'ติดเตียง') groupColor = 'bg-[#ba1a1a]';
                     if (p.group === 'ติดบ้าน') groupColor = 'bg-[#F59E0B]';
                     if (p.group === 'ติดสังคม') groupColor = 'bg-[#00694a]';
                     
+                    // เพิ่ม onclick เพื่อส่ง ID ไปหน้า patient_profile.html พร้อมเอฟเฟกต์การกด (cursor-pointer, active:scale-95)
                     container.innerHTML += `
-                        <div class="bg-white p-3 rounded-[20px] shadow-sm border border-gray-100 flex items-center gap-3">
+                        <div onclick="window.location.href='patient_profile.html?id=${p.id}'" class="bg-white p-3 rounded-[20px] shadow-sm border border-gray-100 flex items-center gap-3 cursor-pointer hover:bg-[#e7eeff]/50 active:scale-95 transition-all">
                             <div class="w-[60px] h-[60px] bg-[#e7eeff] text-[#00694a] rounded-xl flex items-center justify-center font-bold text-xl shrink-0 border border-[#d8e3fb]">
                                 ${p.name ? p.name.substring(0,1) : '?'}
                             </div>
