@@ -138,10 +138,25 @@
                 });
                 const patients = await response.json();
 
-                // 2. อัปเดตตัวเลขในการ์ด (ตอนนี้แสดงยอดรวมทั้งหมดที่ "ติดสังคม" ก่อน เพราะยังไม่ได้ทำระบบคำนวณคะแนน ADL)
-                document.getElementById('count-social').innerText = patients.length;
-                document.getElementById('count-home').innerText = "0";
-                document.getElementById('count-bed').innerText = "0";
+                // 2. คำนวณและอัปเดตตัวเลขในการ์ดตามกลุ่มจริง
+                let countSocial = 0;
+                let countHome = 0;
+                let countBed = 0;
+
+                patients.forEach(p => {
+                    if (p.group === 'ติดเตียง') {
+                        countBed++;
+                    } else if (p.group === 'ติดบ้าน') {
+                        countHome++;
+                    } else {
+                        // กลุ่ม 'ติดสังคม' และคนที่ 'ยังไม่ประเมิน' จะถูกนับรวมไว้ในช่องสีเขียว
+                        countSocial++;
+                    }
+                });
+
+                document.getElementById('count-social').innerText = countSocial;
+                document.getElementById('count-home').innerText = countHome;
+                document.getElementById('count-bed').innerText = countBed;
 
                 // 3. นำข้อมูลมาสร้างการ์ดรายชื่อ
                 const container = document.getElementById('patient-list-container');
