@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="utf-8"/>
+    <meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" name="viewport"/>
+    <title>คัดกรองภาวะซึมเศร้า</title>
+    <script src="https://cdn.tailwindcss.com?plugins=forms"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;600&display=swap" rel="stylesheet"/>
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+    <style>body { font-family: 'Sarabun', sans-serif; background-color: #f9f9ff; }</style>
+</head>
+<body class="p-4 pb-24">
+    <header class="mb-6">
+        <h1 class="text-xl font-bold text-[#00694a]">แบบคัดกรอง 2Q & 9Q</h1>
+        <p class="text-sm text-gray-500" id="patient-id">รหัส: -</p>
+    </header>
+
+    <div id="quiz-container" class="space-y-4">
+        </div>
+
+    <div class="fixed bottom-0 left-0 w-full bg-white p-4 border-t shadow-lg">
+        <button onclick="submitDepression()" class="w-full bg-[#00694a] text-white py-3 rounded-xl font-bold">บันทึกผล</button>
+    </div>
+
+    <script>
+        // โครงสร้างคำถาม 2Q และ 9Q มาตรฐาน
+        const questions2Q = [
+            { id: '2q1', q: "1. ใน 2 สัปดาห์ที่ผ่านมา รวมวันนี้ ท่านรู้สึกหดหู่ เศร้า หรือท้อแท้สิ้นหวังหรือไม่?" },
+            { id: '2q2', q: "2. ใน 2 สัปดาห์ที่ผ่านมา รวมวันนี้ ท่านรู้สึกเบื่อ ทำอะไรก็ไม่เพลิดเพลินหรือไม่?" }
+        ];
+        
+        // ... (ระบบจะโหลดคำถาม 9Q ต่อหาก 2Q พบความเสี่ยง) ...
+        // ผมแนะนำให้เริ่มจากวางโครงสร้างนี้ก่อน เดี๋ยวเรามาต่อ Logic หลังบ้านกันครับ
+    </script>
+</body>
+</html>
