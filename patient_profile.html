@@ -148,8 +148,8 @@
         }
 
         function startADL() {
-            alert("เตรียมตัวเข้าสู่หน้าประเมิน ADL สำหรับรหัส: " + patientId);
-            // ในเฟสถัดไป เราจะเปลี่ยนให้ลิงก์ไปหน้า adl_assessment.html?id=... ครับ
+            // ส่ง ID ผู้ป่วยแนบไปกับลิงก์เพื่อไปหน้าประเมิน
+            window.location.href = `adl_assessment.html?id=${patientId}`;
         }
 
         // เริ่มโหลดข้อมูลเมื่อเปิดหน้าต่าง
