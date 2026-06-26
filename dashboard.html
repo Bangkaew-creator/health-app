@@ -26,26 +26,44 @@
                 <p class="text-[10px] text-white/80">เทศบาลเมืองบางแก้ว</p>
             </div>
         </div>
-        <button onclick="window.location.href='map_overview.html'" class="w-10 h-10 flex items-center justify-center rounded-full hover:bg-white/20 transition-colors relative">
+        <button onclick="window.location.href='map_overview.html'" class="w-10 h-10 flex items-center justify-center rounded-full hover:bg-white/20 transition-colors">
             <span class="material-symbols-outlined">distance</span>
         </button>
     </header>
 
     <main class="max-w-2xl mx-auto p-4 space-y-4">
         
+        <div class="grid grid-cols-4 gap-2">
+            <div class="bg-white rounded-2xl p-3 border border-gray-100 shadow-sm text-center">
+                <p class="text-[10px] font-bold text-gray-400">ทั้งหมด</p>
+                <p class="text-xl font-bold text-gray-800 mt-0.5" id="stat-all">-</p>
+            </div>
+            <div class="bg-white rounded-2xl p-3 border border-gray-100 shadow-sm text-center">
+                <p class="text-[10px] font-bold text-[#00694a]">ติดสังคม</p>
+                <p class="text-xl font-bold text-[#00694a] mt-0.5" id="stat-social">-</p>
+            </div>
+            <div class="bg-white rounded-2xl p-3 border border-gray-100 shadow-sm text-center">
+                <p class="text-[10px] font-bold text-[#F59E0B]">ติดบ้าน</p>
+                <p class="text-xl font-bold text-[#F59E0B] mt-0.5" id="stat-home">-</p>
+            </div>
+            <div class="bg-white rounded-2xl p-3 border border-gray-100 shadow-sm text-center">
+                <p class="text-[10px] font-bold text-[#ba1a1a]">ติดเตียง</p>
+                <p class="text-xl font-bold text-[#ba1a1a] mt-0.5" id="stat-bed">-</p>
+            </div>
+        </div>
         <div class="relative">
             <span class="material-symbols-outlined absolute left-4 top-3.5 text-gray-400 text-xl">search</span>
             <input type="text" id="search-input" oninput="filterPatients()" class="w-full pl-12 pr-4 py-3 bg-white border border-gray-200 rounded-2xl text-sm focus:outline-none focus:border-[#00694a] focus:ring-1 focus:ring-[#00694a] shadow-sm" placeholder="ค้นหาชื่อผู้ป่วย หรือบ้านเลขที่...">
         </div>
 
         <div class="flex gap-2 overflow-x-auto pb-1 -mx-4 px-4 scrollbar-hidden">
-            <button onclick="changeFilter('all', this)" class="filter-pill active" id="btn-filter-all">ทั้งหมด (<span id="count-all">0</span>)</button>
+            <button onclick="changeFilter('all', this)" class="filter-pill active">ทั้งหมด (<span id="count-all">0</span>)</button>
             <button onclick="changeFilter('visited', this)" class="filter-pill">เยี่ยมแล้ววันนี้ (<span id="count-visited">0</span>)</button>
             <button onclick="changeFilter('pending', this)" class="filter-pill">ค้างประเมิน (<span id="count-pending">0</span>)</button>
             <button onclick="changeFilter('new', this)" class="filter-pill">รายใหม่ (<span id="count-new">0</span>)</button>
         </div>
 
-        <div id="loading-state" class="flex flex-col items-center justify-center py-20 space-y-3">
+        <div id="loading-state" class="flex flex-col items-center justify-center py-16 space-y-3">
             <div class="loader"></div>
             <p class="text-xs text-gray-400 animate-pulse">กำลังดึงข้อมูลรายชื่อผู้ป่วย...</p>
         </div>
@@ -77,18 +95,16 @@
     <script>
         const API_URL = "https://script.google.com/macros/s/AKfycbyzPy7sklwURcJiqFDzlK4OEQ8616CJLuNyAjb8euQNzYJLXz_dj4UJM63w8-nI1L3r/exec";
         
-        let allPatients = []; // เก็บข้อมูลคนไข้ทั้งหมดจากหลังบ้าน
-        let currentFilter = 'all'; // ตัวกรองที่เลือกอยู่ปัจจุบัน
+        let allPatients = []; 
+        let currentFilter = 'all'; 
 
-        // ดึงข้อมูลคนไข้จากระบบเมื่อเปิดหน้าจอ
         async function fetchPatients() {
             try {
-                const response = await fetch(API_URL, {
-                    method: 'POST', body: JSON.stringify({ action: 'getAllPatients' })
-                });
+                const response = await fetch(API_URL, { method: 'POST', body: JSON.stringify({ action: 'getAllPatients' }) });
                 allPatients = await response.json();
                 
-                calculateSummaryCounts();
+                updateTopSummaryCards(); // คำนวณยอดขึ้นการ์ดสี่เหลี่ยมด้านบนสุด
+                calculateSummaryCounts(); // คำนวณยอดขึ้นปุ่มแคปซูลตัวกรอง
                 renderPatientList();
                 
                 document.getElementById('loading-state').classList.add('hidden');
@@ -98,13 +114,20 @@
             }
         }
 
-        // คำนวณยอดตัวเลขในปุ่มตัวกรอง (Pills) แยกตามสถานะจริง
+        // ฟังก์ชันอัปเดตตัวเลขการ์ดสรุป 4 ใบด้านบนสุดจากฐานข้อมูลจริง
+        function updateTopSummaryCards() {
+            document.getElementById('stat-all').innerText = allPatients.length;
+            document.getElementById('stat-social').innerText = allPatients.filter(p => p.group === 'ติดสังคม').length;
+            document.getElementById('stat-home').innerText = allPatients.filter(p => p.group === 'ติดบ้าน').length;
+            document.getElementById('stat-bed').innerText = allPatients.filter(p => p.group === 'ติดเตียง').length;
+        }
+
+        // คำนวณยอดตัวเลขในปุ่มแคปซูลตัวกรองสถานะการทำงาน
         function calculateSummaryCounts() {
             const todayStr = getTodayString();
-            
             const visitedCount = allPatients.filter(p => p.last_assess === todayStr).length;
             const pendingCount = allPatients.filter(p => p.group === 'ยังไม่ประเมิน' || p.adl === '-').length;
-            const newCount = allPatients.filter(p => p.last_assess === '').length; // ไม่มีประวัติเยี่ยมเลย = รายใหม่
+            const newCount = allPatients.filter(p => p.last_assess === '').length;
 
             document.getElementById('count-all').innerText = allPatients.length;
             document.getElementById('count-visited').innerText = visitedCount;
@@ -112,7 +135,6 @@
             document.getElementById('count-new').innerText = newCount;
         }
 
-        // เปลี่ยนตัวกรองเมื่อกดปุ่มเมนูเม็ดแคปซูล
         function changeFilter(filterType, element) {
             document.querySelectorAll('.filter-pill').forEach(btn => btn.classList.remove('active'));
             element.classList.add('active');
@@ -120,7 +142,6 @@
             renderPatientList();
         }
 
-        // ประมวลผลและแสดงรายชื่อผู้ป่วยลงหน้าจอ (รองรับทั้งค้นหาและตัวกรองพร้อมกัน)
         function renderPatientList() {
             const container = document.getElementById('patient-list');
             const emptyState = document.getElementById('empty-state');
@@ -131,34 +152,30 @@
             let displayCount = 0;
 
             allPatients.forEach(p => {
-                // 1. ตรวจสอบเงื่อนไขตัวกรองสถานะ (Filter Pills)
+                // ตัวกรองสถานะแคปซูล
                 if (currentFilter === 'visited' && p.last_assess !== todayStr) return;
                 if (currentFilter === 'pending' && p.group !== 'ยังไม่ประเมิน' && p.adl !== '-') return;
                 if (currentFilter === 'new' && p.last_assess !== '') return;
 
-                // 2. ตรวจสอบเงื่อนไขแถบค้นหา (Search Box)
+                // ตัวกรองแถบค้นหา (ค้นได้ทั้งชื่อ บ้านเลขที่ และหมู่)
                 const nameMatch = p.name ? p.name.toLowerCase().includes(searchKeyword) : false;
                 const houseMatch = p.house_no ? p.house_no.toLowerCase().includes(searchKeyword) : false;
                 const villageMatch = p.village_no ? String(p.village_no).includes(searchKeyword) : false;
-                
                 if (searchKeyword && !nameMatch && !houseMatch && !villageMatch) return;
 
                 displayCount++;
 
-                // กำหนดสีของกลุ่มผู้ป่วย (ติดสังคม=เขียว, ติดบ้าน=ส้ม, ติดเตียง=แดง)
                 let groupColor = 'bg-gray-500';
                 if (p.group === 'ติดสังคม') groupColor = 'bg-[#00694a]';
                 else if (p.group === 'ติดบ้าน') groupColor = 'bg-[#F59E0B]';
                 else if (p.group === 'ติดเตียง') groupColor = 'bg-[#ba1a1a]';
 
-                // กำหนดรูปโปรไฟล์ (ถ้าไม่มีรูปให้ขึ้นตัวอักษรย่อตัวแรก)
                 let avatarHtml = `<div class="w-12 h-12 rounded-full bg-emerald-50 text-[#00694a] font-bold text-lg flex items-center justify-center border border-emerald-100 shadow-inner">${p.name ? p.name.substring(0,1) : '?'}</div>`;
                 if(p.profile_pic && p.profile_pic.startsWith('http')) {
                     const match = p.profile_pic.match(/d\/([a-zA-Z0-9_-]+)/) || p.profile_pic.match(/id=([a-zA-Z0-9_-]+)/);
                     if(match) avatarHtml = `<img src="https://drive.google.com/thumbnail?id=${match[1]}&sz=150" class="w-12 h-12 rounded-full object-cover border border-gray-100 shadow-sm">`;
                 }
 
-                // บรรทัดสรุปข้อมูลสุขภาพย่อหน้าการ์ด
                 let vVitals = `ความดัน: <span class="font-bold text-gray-700">${p.bp || '-'}</span> | ชีพจร: <span class="font-bold text-gray-700">${p.hr || '-'}</span>`;
 
                 const cardHtml = `
@@ -178,19 +195,16 @@
                 container.insertAdjacentHTML('beforeend', cardHtml);
             });
 
-            // ตรวจเช็คกรณีไม่มีข้อมูลการ์ดแสดงผลเลย
             if (displayCount === 0) emptyState.classList.remove('hidden');
             else emptyState.classList.add('hidden');
         }
 
-        // ฟังก์ชันค้นหา Real-time เมื่อพิมพ์ในช่องค้นหา
         function filterPatients() { renderPatientList(); }
 
-        // ฟังก์ชันช่วยหาค่าวันที่ของวันนี้ในรูปแบบ dd/MM/yyyy (เพื่อเทียบสิทธิ์กลุ่มเยี่ยมวันนี้)
         function getTodayString() {
             const today = new Date();
             const dd = String(today.getDate()).padStart(2, '0');
-            const mm = String(today.getMonth() + 1).padStart(2, '0');
+            const mm = String(today.getUTCMonth() + 1).padStart(2, '0'); // ปรับให้ตรงตามไทม์โซนระบบชีต
             const yyyy = today.getFullYear();
             return `${dd}/${mm}/${yyyy}`;
         }
