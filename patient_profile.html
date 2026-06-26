@@ -271,7 +271,8 @@
         
         // [เพิ่มใหม่] ฟังก์ชันไปหน้าซึมเศร้า
         function startDepression() { window.location.href = `depression_assessment.html?id=${patientId}`; }
-async function loadAllCharts() {
+
+        async function loadAllCharts() {
             try {
                 // โหลดข้อมูลทั้งสัญญาณชีพ และ การประเมิน
                 const [vitalsRes, assessRes] = await Promise.all([
@@ -324,31 +325,65 @@ async function loadAllCharts() {
                 // 2. จัดการกราฟประเมิน (ADL และ ซึมเศร้า)
                 // ==========================================
                 if(assessments.length > 0) {
-                    // กราฟ ADL (เอาแค่ Type = 'ADL')
+                    
+                    // กราฟ ADL (เปลี่ยนเป็นกราฟเส้นแบบคลีนๆ ไม่มีพื้นหลัง)
                     const adlRecords = assessments.filter(a => a.type === 'ADL').slice(-10);
                     if(adlRecords.length > 0) {
                         new Chart(document.getElementById('adlChart'), {
                             type: 'line',
                             data: {
                                 labels: adlRecords.map(a => a.date.split(' ')[0].substring(0,5)),
-                                datasets: [{ label: 'คะแนน ADL', data: adlRecords.map(a => a.score1), borderColor: '#F59E0B', backgroundColor: '#F59E0B', tension: 0.2, pointRadius: 5, fill: true, backgroundColor: 'rgba(245, 158, 11, 0.1)' }]
+                                datasets: [{ 
+                                    label: 'คะแนน ADL (เต็ม 20)', 
+                                    data: adlRecords.map(a => a.score1), 
+                                    borderColor: '#F59E0B', 
+                                    backgroundColor: '#F59E0B', 
+                                    tension: 0.3, 
+                                    pointRadius: 4, 
+                                    fill: false // เอาสีทึบพื้นหลังออก
+                                }]
                             },
-                            options: { responsive: true, plugins: { tooltip: { callbacks: { label: (ctx) => `ได้ ${ctx.raw} คะแนน (${adlRecords[ctx.dataIndex].result})` } } }, scales: { y: { min: 0, max: 20 } } }
+                            options: { responsive: true, plugins: { legend: { labels: { font: { size: 10, family: 'Sarabun' } } }, tooltip: { callbacks: { label: (ctx) => `ได้ ${ctx.raw} คะแนน (${adlRecords[ctx.dataIndex].result})` } } }, scales: { y: { min: 0, max: 20 } } }
                         });
                     } else { document.getElementById('adlChart').parentElement.innerHTML = '<p class="text-xs text-gray-400 text-center">ไม่มีประวัติ ADL</p>'; }
 
-                    // กราฟซึมเศร้า (เอาแค่ Type = 'DEP') โดยใช้คะแนน 9Q
+                    // กราฟซึมเศร้า (เปลี่ยนเป็นกราฟเส้น และดึงทั้ง 2Q, 9Q มาแสดงคู่กัน)
                     const depRecords = assessments.filter(a => a.type === 'DEP').slice(-10);
                     if(depRecords.length > 0) {
                         new Chart(document.getElementById('depChart'), {
-                            type: 'bar',
+                            type: 'line', // เปลี่ยนจาก 'bar' เป็น 'line'
                             data: {
                                 labels: depRecords.map(a => a.date.split(' ')[0].substring(0,5)),
-                                datasets: [{ label: 'คะแนน 9Q', data: depRecords.map(a => a.score2 || 0), backgroundColor: '#1e3a8a', borderRadius: 4 }]
+                                datasets: [
+                                    { 
+                                        label: '2Q (เต็ม 2)', 
+                                        data: depRecords.map(a => a.score1 || 0), 
+                                        borderColor: '#3b82f6', 
+                                        backgroundColor: '#3b82f6', 
+                                        tension: 0.3, 
+                                        pointRadius: 4,
+                                        borderDash: [5, 5] // ทำเส้น 2Q เป็นเส้นประ จะได้แยกง่ายๆ
+                                    },
+                                    { 
+                                        label: '9Q (เต็ม 27)', 
+                                        data: depRecords.map(a => a.score2 || 0), 
+                                        borderColor: '#1e3a8a', 
+                                        backgroundColor: '#1e3a8a', 
+                                        tension: 0.3, 
+                                        pointRadius: 4 
+                                    }
+                                ]
                             },
-                            options: { responsive: true, plugins: { tooltip: { callbacks: { label: (ctx) => `9Q: ${ctx.raw} คะแนน (${depRecords[ctx.dataIndex].result})` } } }, scales: { y: { min: 0, max: 27 } } }
+                            options: { 
+                                responsive: true, 
+                                plugins: { 
+                                    legend: { labels: { font: { size: 10, family: 'Sarabun' } } },
+                                    tooltip: { callbacks: { label: (ctx) => `${ctx.dataset.label.split(' ')[0]}: ${ctx.raw} คะแนน (${depRecords[ctx.dataIndex].result})` } } 
+                                }, 
+                                scales: { y: { suggestedMin: 0, suggestedMax: 27 } } 
+                            }
                         });
-                    } else { document.getElementById('depChart').parentElement.innerHTML = '<p class="text-xs text-gray-400 text-center">ไม่มีประวัติ 9Q</p>'; }
+                    } else { document.getElementById('depChart').parentElement.innerHTML = '<p class="text-xs text-gray-400 text-center">ไม่มีประวัติซึมเศร้า</p>'; }
                 }
 
             } catch (err) { console.log("โหลดกราฟผิดพลาด", err); }
