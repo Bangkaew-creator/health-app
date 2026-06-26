@@ -7,6 +7,9 @@
     <script src="https://cdn.tailwindcss.com?plugins=forms"></script>
     <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700&display=swap" rel="stylesheet"/>
     <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+    
+    <script charset="utf-8" src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+
     <style>
         body { font-family: 'Sarabun', sans-serif; background-color: #f8fafc; padding-bottom: 90px; -webkit-tap-highlight-color: transparent;}
         .material-symbols-outlined { font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24; }
@@ -22,10 +25,12 @@
 
     <header class="pt-6 pb-4 px-4 flex justify-between items-center sticky top-0 bg-[#f8fafc]/90 backdrop-blur-md z-50">
         <div class="flex items-center gap-3">
-            <div class="w-11 h-11 rounded-full bg-[#00694a] flex items-center justify-center text-white font-bold text-lg shadow-sm">อส</div>
+            <div id="header-profile-pic" class="w-11 h-11 rounded-full bg-[#00694a] flex items-center justify-center text-white font-bold text-lg shadow-sm border border-emerald-100 overflow-hidden">
+                <div class="loader" style="width: 20px; height: 20px; border-width: 2px; border-bottom-color: white;"></div>
+            </div>
             <div>
-                <h1 class="text-sm font-bold text-[#00694a]">อสม. เทศบาลบางแก้ว</h1>
-                <p class="text-[11px] text-gray-500 font-medium mt-0.5">ระบบดูแลผู้ป่วยในชุมชน</p>
+                <h1 id="header-vhv-name" class="text-sm font-bold text-[#00694a]">กำลังโหลดข้อมูล...</h1>
+                <p id="header-vhv-village" class="text-[11px] text-gray-500 font-medium mt-0.5">ระบบดูแลผู้ป่วยในชุมชน</p>
             </div>
         </div>
         <button onclick="window.location.href='map_overview.html'" class="w-11 h-11 flex items-center justify-center rounded-full bg-white shadow-sm border border-gray-100 text-[#00694a] hover:bg-gray-50 transition-colors">
@@ -34,7 +39,6 @@
     </header>
 
     <main class="max-w-2xl mx-auto pt-2 pb-8">
-        
         <h2 class="text-[18px] font-bold text-[#111c2d] px-4 mb-5">สรุปข้อมูลผู้ป่วย</h2>
 
         <div class="grid grid-cols-2 gap-4 px-4">
@@ -111,21 +115,17 @@
             <span class="material-symbols-outlined text-[48px]">person_search</span>
             <p class="text-[13px]">ไม่พบข้อมูลที่ตรงตามเงื่อนไข</p>
         </div>
-
     </main>
 
     <nav class="fixed bottom-0 left-0 w-full bg-white border-t border-gray-100 shadow-[0_-4px_20px_rgba(0,0,0,0.03)] grid grid-cols-4 h-[75px] z-50 px-2 pb-2">
-        <button onclick="window.location.href='dashboard.html'" class="flex flex-col items-center justify-center m-1.5 bg-[#00694a] text-white rounded-[18px]">
+        <button onclick="window.scrollTo({top: 0, behavior: 'smooth'})" class="flex flex-col items-center justify-center m-1.5 bg-[#00694a] text-white rounded-[18px]">
             <span class="material-symbols-outlined mb-0.5 text-[24px]" style="font-variation-settings: 'FILL' 1;">home</span>
             <span class="text-[10px] font-bold">หน้าหลัก</span>
         </button>
-        
-        <!-- [แก้ไขจุดนี้] กลับมาใช้คำสั่งย้ายไปหน้า patient_list.html เหมือนเดิม -->
         <button onclick="window.location.href='patient_list.html'" class="flex flex-col items-center justify-center text-gray-400 hover:text-gray-600 transition-colors">
             <span class="material-symbols-outlined mb-0.5 text-[24px]">group</span>
             <span class="text-[10px] font-medium">ผู้ป่วย</span>
         </button>
-
         <button onclick="window.location.href='assessments.html'" class="flex flex-col items-center justify-center text-gray-400 hover:text-gray-600 transition-colors">
             <span class="material-symbols-outlined mb-0.5 text-[24px]">assignment</span>
             <span class="text-[10px] font-medium">การประเมิน</span>
@@ -137,11 +137,85 @@
     </nav>
 
     <script>
+        const LIFF_ID = "2010500776-6r1shNwL"; // <--- ระบุ LIFF ID ของคุณ
         const API_URL = "https://script.google.com/macros/s/AKfycbyzPy7sklwURcJiqFDzlK4OEQ8616CJLuNyAjb8euQNzYJLXz_dj4UJM63w8-nI1L3r/exec";
         
         let allPatients = []; 
         let currentFilter = 'all'; 
 
+        // [เพิ่มใหม่] 1. เริ่มระบบ LIFF เมื่อเปิดหน้าแดชบอร์ด
+        document.addEventListener("DOMContentLoaded", () => {
+            liff.init({ liffId: LIFF_ID }).then(() => {
+                if (liff.isLoggedIn()) {
+                    liff.getProfile().then(profile => {
+                        fetchVHVProfile(profile.userId); // โหลดโปรไฟล์
+                        fetchPatients(); // โหลดรายชื่อผู้ป่วยตามปกติ
+                    }).catch(err => {
+                        console.error("Profile Error:", err);
+                        setDefaultVHVProfile();
+                        fetchPatients();
+                    });
+                } else {
+                    // ถ้ายังไม่ล็อกอิน ให้แสดงค่าเริ่มต้นและโหลดรายชื่อผู้ป่วยไปก่อน
+                    setDefaultVHVProfile();
+                    fetchPatients();
+                }
+            }).catch(err => {
+                console.error("LIFF Init Failed:", err);
+                setDefaultVHVProfile();
+                fetchPatients();
+            });
+        });
+
+        // [เพิ่มใหม่] 2. ฟังก์ชันดึงข้อมูล อสม. จาก Google Sheets
+        async function fetchVHVProfile(uid) {
+            try {
+                const response = await fetch(API_URL, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+                    body: JSON.stringify({ action: 'checkUserRegistration', uid: uid })
+                });
+                const data = await response.json();
+                
+                if (data.status === 'registered') {
+                    // เปลี่ยนชื่อ
+                    document.getElementById('header-vhv-name').innerText = data.name;
+                    // เปลี่ยนหมู่
+                    if (data.village) {
+                        document.getElementById('header-vhv-village').innerText = 'หมู่ที่ ' + data.village + ' | ระบบดูแลผู้ป่วย';
+                    }
+                    
+                    // เปลี่ยนรูปภาพ
+                    const picContainer = document.getElementById('header-profile-pic');
+                    if (data.pic_url) {
+                        const match = data.pic_url.match(/d\/([a-zA-Z0-9_-]+)/) || data.pic_url.match(/id=([a-zA-Z0-9_-]+)/);
+                        if (match) {
+                            picContainer.innerHTML = `<img src="https://drive.google.com/thumbnail?id=${match[1]}&sz=150" class="w-full h-full object-cover">`;
+                        } else {
+                            picContainer.innerHTML = data.name.substring(0, 1);
+                        }
+                    } else {
+                        picContainer.innerHTML = data.name.substring(0, 1);
+                    }
+                } else {
+                    setDefaultVHVProfile();
+                }
+            } catch (error) {
+                console.error("Load VHV Profile Error:", error);
+                setDefaultVHVProfile();
+            }
+        }
+
+        // [เพิ่มใหม่] กรณีโหลดไม่สำเร็จให้โชว์ค่าเริ่มต้น
+        function setDefaultVHVProfile() {
+            document.getElementById('header-vhv-name').innerText = 'อสม. เทศบาลบางแก้ว';
+            document.getElementById('header-vhv-village').innerText = 'ระบบดูแลผู้ป่วยในชุมชน';
+            document.getElementById('header-profile-pic').innerHTML = 'อส';
+        }
+
+        // ==========================================
+        // ส่วนจัดการดึงรายชื่อผู้ป่วย (ของเดิมที่ทำงานได้ดีอยู่แล้ว)
+        // ==========================================
         async function fetchPatients() {
             try {
                 const response = await fetch(API_URL, { method: 'POST', body: JSON.stringify({ action: 'getAllPatients' }) });
@@ -153,7 +227,7 @@
                 document.getElementById('loading-state').classList.add('hidden');
                 document.getElementById('patient-list').classList.remove('hidden');
             } catch (error) {
-                alert("ไม่สามารถเชื่อมต่อฐานข้อมูลได้");
+                console.error("ไม่สามารถเชื่อมต่อฐานข้อมูลผู้ป่วยได้");
             }
         }
 
@@ -170,7 +244,6 @@
             
             const titles = { 'all': 'รายการที่ต้องติดตาม', 'visited': 'เยี่ยมแล้ววันนี้', 'pending': 'ค้างประเมิน (รอติดตาม)', 'new': 'ผู้ป่วยรายใหม่' };
             document.getElementById('list-title').innerText = titles[filterType];
-            
             renderPatientList();
         }
 
@@ -215,7 +288,6 @@
                     if(match) avatarHtml = `<img src="https://drive.google.com/thumbnail?id=${match[1]}&sz=150" class="w-14 h-14 rounded-[14px] object-cover flex-shrink-0 shadow-sm">`;
                 }
 
-                // ขยาย padding ภายในการ์ดผู้ป่วย (p-4 แทน p-3)
                 const cardHtml = `
                     <div onclick="window.location.href='patient_profile.html?id=${p.id}'" class="bg-white rounded-[20px] p-4 shadow-sm border border-gray-100 flex items-center gap-4 cursor-pointer active:scale-[0.98] transition-transform">
                         ${avatarHtml}
@@ -246,7 +318,6 @@
             return `${dd}/${mm}/${yyyy}`;
         }
 
-        fetchPatients();
     </script>
 </body>
 </html>
