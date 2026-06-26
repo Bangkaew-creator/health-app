@@ -174,8 +174,8 @@
                 document.getElementById('profile-dob').innerText = data.dob || '-';
                 document.getElementById('profile-address').innerText = `บ้านเลขที่ ${data.house_no || '-'} หมู่ ${data.village_no || '-'}`;
                 
-                // ข้อมูล ADL
-                document.getElementById('profile-adl').innerText = data.adl || '-';
+                // ข้อมูล ADL (ดักจับเลข 0 ให้แสดงผลถูกต้อง)
+                document.getElementById('profile-adl').innerText = (data.adl !== "" && data.adl !== null) ? data.adl : '-';
                 if (data.last_assess) document.getElementById('profile-last-assess').innerText = `(${data.last_assess})`;
                 
                 const groupBadge = document.getElementById('profile-group');
