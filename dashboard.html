@@ -7,9 +7,7 @@
     <script src="https://cdn.tailwindcss.com?plugins=forms"></script>
     <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700&display=swap" rel="stylesheet"/>
     <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
-    
     <script charset="utf-8" src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
-
     <style>
         body { font-family: 'Sarabun', sans-serif; background-color: #f8fafc; padding-bottom: 90px; -webkit-tap-highlight-color: transparent;}
         .material-symbols-outlined { font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24; }
@@ -79,10 +77,14 @@
                 <span class="material-symbols-outlined text-[32px]">person_add</span>
                 <span class="text-[14px] font-bold">ลงทะเบียนผู้ป่วย</span>
             </button>
-            <button onclick="window.location.href='adl_assessments.html'" class="bg-[#e2e8f0] text-[#334155] rounded-[20px] p-5 flex flex-col items-center justify-center gap-2.5 shadow-sm hover:bg-gray-300 active:scale-95 transition-all">
-                <span class="material-symbols-outlined text-[32px] text-gray-500">assignment_turned_in</span>
-                <span class="text-[14px] font-bold">ประเมิน ADL</span>
-            </button>
+            
+            <div class="bg-[#f0fdf4] border-2 border-[#bbf7d0] rounded-[20px] p-5 flex flex-col items-center justify-center gap-1 shadow-sm">
+                <span class="text-[13px] font-bold text-[#15803d]">ยอดผู้ป่วย (หมู่ <span id="my-village-number">-</span>)</span>
+                <div class="flex items-baseline gap-1 mt-1">
+                    <span class="text-[36px] font-bold text-[#166534] leading-none" id="my-village-total">0</span>
+                    <span class="text-[12px] font-medium text-[#15803d]">ราย</span>
+                </div>
+            </div>
         </div>
 
         <div class="px-4 mt-8">
@@ -137,91 +139,81 @@
     </nav>
 
     <script>
-        const LIFF_ID = "2010500776-6r1shNwL"; // <--- ระบุ LIFF ID ของคุณ
+        const LIFF_ID = "2010500776-6r1shNwL"; 
         const API_URL = "https://script.google.com/macros/s/AKfycbyzPy7sklwURcJiqFDzlK4OEQ8616CJLuNyAjb8euQNzYJLXz_dj4UJM63w8-nI1L3r/exec";
         
         let allPatients = []; 
         let currentFilter = 'all'; 
+        let vhvCurrentVillage = null; // เก็บหมู่ของอสม.
 
-        // [เพิ่มใหม่] 1. เริ่มระบบ LIFF เมื่อเปิดหน้าแดชบอร์ด
         document.addEventListener("DOMContentLoaded", () => {
             liff.init({ liffId: LIFF_ID }).then(() => {
                 if (liff.isLoggedIn()) {
                     liff.getProfile().then(profile => {
-                        fetchVHVProfile(profile.userId); // โหลดโปรไฟล์
-                        fetchPatients(); // โหลดรายชื่อผู้ป่วยตามปกติ
+                        fetchVHVProfile(profile.userId); 
+                        fetchPatients(); 
                     }).catch(err => {
-                        console.error("Profile Error:", err);
                         setDefaultVHVProfile();
                         fetchPatients();
                     });
                 } else {
-                    // ถ้ายังไม่ล็อกอิน ให้แสดงค่าเริ่มต้นและโหลดรายชื่อผู้ป่วยไปก่อน
                     setDefaultVHVProfile();
                     fetchPatients();
                 }
             }).catch(err => {
-                console.error("LIFF Init Failed:", err);
                 setDefaultVHVProfile();
                 fetchPatients();
             });
         });
 
-        // [เพิ่มใหม่] 2. ฟังก์ชันดึงข้อมูล อสม. จาก Google Sheets
         async function fetchVHVProfile(uid) {
             try {
                 const response = await fetch(API_URL, {
                     method: 'POST',
-                    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
                     body: JSON.stringify({ action: 'checkUserRegistration', uid: uid })
                 });
                 const data = await response.json();
                 
                 if (data.status === 'registered') {
-                    // เปลี่ยนชื่อ
                     document.getElementById('header-vhv-name').innerText = data.name;
-                    // เปลี่ยนหมู่
                     if (data.village) {
+                        vhvCurrentVillage = data.village;
                         document.getElementById('header-vhv-village').innerText = 'หมู่ที่ ' + data.village + ' | ระบบดูแลผู้ป่วย';
+                        document.getElementById('my-village-number').innerText = data.village;
                     }
                     
-                    // เปลี่ยนรูปภาพ
                     const picContainer = document.getElementById('header-profile-pic');
                     if (data.pic_url) {
                         const match = data.pic_url.match(/d\/([a-zA-Z0-9_-]+)/) || data.pic_url.match(/id=([a-zA-Z0-9_-]+)/);
-                        if (match) {
-                            picContainer.innerHTML = `<img src="https://drive.google.com/thumbnail?id=${match[1]}&sz=150" class="w-full h-full object-cover">`;
-                        } else {
-                            picContainer.innerHTML = data.name.substring(0, 1);
-                        }
+                        if (match) picContainer.innerHTML = `<img src="https://drive.google.com/thumbnail?id=${match[1]}&sz=150" class="w-full h-full object-cover">`;
+                        else picContainer.innerHTML = data.name.substring(0, 1);
                     } else {
                         picContainer.innerHTML = data.name.substring(0, 1);
                     }
+
+                    updateVillageTotal(); // อัปเดตตัวเลขในหมู่
                 } else {
                     setDefaultVHVProfile();
                 }
             } catch (error) {
-                console.error("Load VHV Profile Error:", error);
                 setDefaultVHVProfile();
             }
         }
 
-        // [เพิ่มใหม่] กรณีโหลดไม่สำเร็จให้โชว์ค่าเริ่มต้น
         function setDefaultVHVProfile() {
             document.getElementById('header-vhv-name').innerText = 'อสม. เทศบาลบางแก้ว';
             document.getElementById('header-vhv-village').innerText = 'ระบบดูแลผู้ป่วยในชุมชน';
             document.getElementById('header-profile-pic').innerHTML = 'อส';
+            document.getElementById('my-village-number').innerText = '-';
         }
 
-        // ==========================================
-        // ส่วนจัดการดึงรายชื่อผู้ป่วย (ของเดิมที่ทำงานได้ดีอยู่แล้ว)
-        // ==========================================
         async function fetchPatients() {
             try {
                 const response = await fetch(API_URL, { method: 'POST', body: JSON.stringify({ action: 'getAllPatients' }) });
                 allPatients = await response.json();
                 
                 updateTopSummaryCards();
+                updateVillageTotal(); // เรียกซ้ำเผื่อข้อมูลคนไข้โหลดเสร็จทีหลังโปรไฟล์
                 renderPatientList();
                 
                 document.getElementById('loading-state').classList.add('hidden');
@@ -235,6 +227,14 @@
             document.getElementById('stat-social').innerText = allPatients.filter(p => p.group === 'ติดสังคม').length;
             document.getElementById('stat-home').innerText = allPatients.filter(p => p.group === 'ติดบ้าน').length;
             document.getElementById('stat-bed').innerText = allPatients.filter(p => p.group === 'ติดเตียง').length;
+        }
+
+        function updateVillageTotal() {
+            if (vhvCurrentVillage && allPatients.length > 0) {
+                // กรองเฉพาะผู้ป่วยที่มีหมู่ตรงกับ อสม.
+                const totalInVillage = allPatients.filter(p => String(p.village_no) === String(vhvCurrentVillage)).length;
+                document.getElementById('my-village-total').innerText = totalInVillage;
+            }
         }
 
         function changeFilter(filterType, element) {
