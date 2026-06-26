@@ -58,6 +58,27 @@
                     </div>
                 </div>
             </div>
+            <div class="grid grid-cols-2 gap-2">
+                    <div>
+                        <label class="text-xs text-gray-500 mb-1 block">บ้านเลขที่</label>
+                        <input type="text" id="house_no" class="input-field" required>
+                    </div>
+                    <div>
+                        <label class="text-xs text-gray-500 mb-1 block">หมู่ที่</label>
+                        <input type="number" id="village_no" class="input-field" required>
+                    </div>
+                </div>
+
+                <div class="pt-2 border-t border-gray-100">
+                    <label class="text-xs text-gray-500 mb-1 block">พิกัด GPS บ้านผู้ป่วย</label>
+                    <div class="flex gap-2">
+                        <input type="text" id="lat_long" class="input-field bg-gray-50 flex-1 text-sm text-gray-600" placeholder="คลิกปุ่มเพื่อดึงพิกัด..." readonly>
+                        <button type="button" onclick="getLocation()" class="bg-[#0284c7] text-white px-4 rounded-xl flex items-center justify-center hover:bg-[#0369a1] active:scale-95 transition-all">
+                            <span class="material-symbols-outlined text-[18px]">my_location</span>
+                        </button>
+                    </div>
+                    <p id="gps-status" class="text-[10px] text-gray-400 mt-1 text-right"></p>
+                </div>
 
             <!-- ส่วนที่ 2: โรคประจำตัว (Checkboxes) -->
             <div class="bg-white rounded-[20px] p-5 shadow-sm border border-[#bdcac1]/30 space-y-4">
@@ -162,12 +183,42 @@
             container.insertAdjacentHTML('beforeend', html);
         }
 
+        // ฟังก์ชันดึงพิกัด GPS ปัจจุบัน
+        function getLocation() {
+            const status = document.getElementById('gps-status');
+            const latLongInput = document.getElementById('lat_long');
+            
+            if (!navigator.geolocation) {
+                status.textContent = "มือถือ/เบราว์เซอร์ของคุณไม่รองรับ GPS";
+                return;
+            }
+            
+            status.textContent = "กำลังค้นหาตำแหน่ง...";
+            status.className = "text-[10px] text-[#0284c7] mt-1 text-right animate-pulse";
+            
+            navigator.geolocation.getCurrentPosition(
+                (position) => {
+                    const lat = position.coords.latitude.toFixed(6);
+                    const lng = position.coords.longitude.toFixed(6);
+                    latLongInput.value = `${lat}, ${lng}`;
+                    status.textContent = "✓ ดึงพิกัดสำเร็จ!";
+                    status.className = "text-[10px] text-[#00694a] mt-1 text-right font-bold";
+                },
+                (error) => {
+                    status.textContent = "x ไม่สามารถดึงพิกัดได้ (กรุณาเปิด GPS)";
+                    status.className = "text-[10px] text-[#ba1a1a] mt-1 text-right";
+                },
+                { enableHighAccuracy: true } // สั่งให้พยายามใช้ GPS มือถือที่แม่นยำที่สุด
+            );
+        }
+
         async function loadPatientData() {
             renderDiseaseCheckboxes(); // วาดปุ่มโรคก่อน
             if (!patientId) return alert("ไม่พบรหัสผู้ป่วย");
             
             document.getElementById('btn-save').innerHTML = 'กำลังโหลด...';
             document.getElementById('btn-save').disabled = true;
+            document.getElementById('lat_long').value = data.lat_long || '';
 
             try {
                 const response = await fetch(API_URL, {
@@ -258,6 +309,7 @@
                 disease: diseaseString,
                 medication: medString,
                 caregiver_name: document.getElementById('caregiver_name').value,
+                lat_long: document.getElementById('lat_long').value,
                 caregiver_phone: document.getElementById('caregiver_phone').value
             };
 
