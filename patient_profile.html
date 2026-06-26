@@ -309,17 +309,34 @@
                     const sugarRecords = vitals.filter(v => v.sugar).slice(-10);
                     if(sugarRecords.length > 0) {
                         const sugarLabels = sugarRecords.map(v => v.date.split(' ')[0].substring(0,5));
+                        
+                        // กำหนดสีของจุด (ก่อนอาหาร=ฟ้า, หลังอาหาร=ส้ม)
                         const sugarColors = sugarRecords.map(v => v.meal === 'หลังอาหาร' ? '#f59e0b' : '#0284c7');
+                        
                         new Chart(document.getElementById('sugarChart'), {
-                            type: 'bar',
+                            type: 'line', // เปลี่ยนเป็นกราฟเส้น
                             data: {
                                 labels: sugarLabels,
-                                datasets: [{ label: 'น้ำตาล (mg/dL)', data: sugarRecords.map(v => v.sugar), backgroundColor: sugarColors, borderRadius: 4 }]
+                                datasets: [{ 
+                                    label: 'น้ำตาล (mg/dL)', 
+                                    data: sugarRecords.map(v => v.sugar), 
+                                    borderColor: '#bae6fd', // สีของเส้นเชื่อม
+                                    pointBackgroundColor: sugarColors, // สีของจุด (แยกตามก่อน/หลังอาหาร)
+                                    pointBorderColor: sugarColors,
+                                    tension: 0.3, // ทำให้เส้นโค้งมน
+                                    pointRadius: 5 // ขนาดจุด
+                                }]
                             },
-                            options: { responsive: true, plugins: { legend: { display: false }, tooltip: { callbacks: { label: (ctx) => `${ctx.raw} mg/dL (${sugarRecords[ctx.dataIndex].meal})` } } } }
+                            options: { 
+                                responsive: true, 
+                                plugins: { 
+                                    legend: { display: false }, 
+                                    tooltip: { callbacks: { label: (ctx) => `${ctx.raw} mg/dL (${sugarRecords[ctx.dataIndex].meal})` } } 
+                                },
+                                scales: { y: { suggestedMin: 70, suggestedMax: 200 } } // สเกลสำหรับค่าน้ำตาล
+                            }
                         });
                     } else { document.getElementById('sugarChart').parentElement.innerHTML = '<p class="text-xs text-gray-400 text-center">ไม่มีข้อมูลน้ำตาล</p>'; }
-                }
 
                 // ==========================================
                 // 2. จัดการกราฟประเมิน (ADL และ ซึมเศร้า)
