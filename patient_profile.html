@@ -284,10 +284,11 @@
                 const assessments = await assessRes.json();
 
                 // ==========================================
-                // 1. จัดการกราฟสัญญาณชีพ (แยก BP และ น้ำตาลอิสระจากกัน)
+                // 1. จัดการกราฟสัญญาณชีพ (ความดัน & น้ำตาล)
                 // ==========================================
                 if(vitals.length > 0) {
-                    // กรองเฉพาะอันที่มีความดัน
+                    
+                    // กราฟความดันและชีพจร
                     const bpRecords = vitals.filter(v => v.sys && v.dia).slice(-10);
                     if(bpRecords.length > 0) {
                         const bpLabels = bpRecords.map(v => v.date.split(' ')[0].substring(0,5));
@@ -305,26 +306,24 @@
                         });
                     } else { document.getElementById('bpChart').parentElement.innerHTML = '<p class="text-xs text-gray-400 text-center">ไม่มีข้อมูลความดัน</p>'; }
 
-                    // กรองเฉพาะอันที่มีน้ำตาล
+                    // กราฟน้ำตาล (กราฟเส้น, จุดเปลี่ยนสีตามมื้ออาหาร)
                     const sugarRecords = vitals.filter(v => v.sugar).slice(-10);
                     if(sugarRecords.length > 0) {
                         const sugarLabels = sugarRecords.map(v => v.date.split(' ')[0].substring(0,5));
-                        
-                        // กำหนดสีของจุด (ก่อนอาหาร=ฟ้า, หลังอาหาร=ส้ม)
                         const sugarColors = sugarRecords.map(v => v.meal === 'หลังอาหาร' ? '#f59e0b' : '#0284c7');
                         
                         new Chart(document.getElementById('sugarChart'), {
-                            type: 'line', // เปลี่ยนเป็นกราฟเส้น
+                            type: 'line',
                             data: {
                                 labels: sugarLabels,
                                 datasets: [{ 
                                     label: 'น้ำตาล (mg/dL)', 
                                     data: sugarRecords.map(v => v.sugar), 
-                                    borderColor: '#bae6fd', // สีของเส้นเชื่อม
-                                    pointBackgroundColor: sugarColors, // สีของจุด (แยกตามก่อน/หลังอาหาร)
+                                    borderColor: '#bae6fd', 
+                                    pointBackgroundColor: sugarColors, 
                                     pointBorderColor: sugarColors,
-                                    tension: 0.3, // ทำให้เส้นโค้งมน
-                                    pointRadius: 5 // ขนาดจุด
+                                    tension: 0.3, 
+                                    pointRadius: 5 
                                 }]
                             },
                             options: { 
@@ -333,17 +332,18 @@
                                     legend: { display: false }, 
                                     tooltip: { callbacks: { label: (ctx) => `${ctx.raw} mg/dL (${sugarRecords[ctx.dataIndex].meal})` } } 
                                 },
-                                scales: { y: { suggestedMin: 70, suggestedMax: 200 } } // สเกลสำหรับค่าน้ำตาล
+                                scales: { y: { suggestedMin: 70, suggestedMax: 200 } } 
                             }
                         });
                     } else { document.getElementById('sugarChart').parentElement.innerHTML = '<p class="text-xs text-gray-400 text-center">ไม่มีข้อมูลน้ำตาล</p>'; }
+                }
 
                 // ==========================================
                 // 2. จัดการกราฟประเมิน (ADL และ ซึมเศร้า)
                 // ==========================================
                 if(assessments.length > 0) {
                     
-                    // กราฟ ADL (เปลี่ยนเป็นกราฟเส้นแบบคลีนๆ ไม่มีพื้นหลัง)
+                    // กราฟ ADL (กราฟเส้นไม่มีสีพื้นหลัง)
                     const adlRecords = assessments.filter(a => a.type === 'ADL').slice(-10);
                     if(adlRecords.length > 0) {
                         new Chart(document.getElementById('adlChart'), {
@@ -357,18 +357,18 @@
                                     backgroundColor: '#F59E0B', 
                                     tension: 0.3, 
                                     pointRadius: 4, 
-                                    fill: false // เอาสีทึบพื้นหลังออก
+                                    fill: false 
                                 }]
                             },
                             options: { responsive: true, plugins: { legend: { labels: { font: { size: 10, family: 'Sarabun' } } }, tooltip: { callbacks: { label: (ctx) => `ได้ ${ctx.raw} คะแนน (${adlRecords[ctx.dataIndex].result})` } } }, scales: { y: { min: 0, max: 20 } } }
                         });
                     } else { document.getElementById('adlChart').parentElement.innerHTML = '<p class="text-xs text-gray-400 text-center">ไม่มีประวัติ ADL</p>'; }
 
-                    // กราฟซึมเศร้า (เปลี่ยนเป็นกราฟเส้น และดึงทั้ง 2Q, 9Q มาแสดงคู่กัน)
+                    // กราฟซึมเศร้า (2Q เส้นประ, 9Q เส้นทึบ)
                     const depRecords = assessments.filter(a => a.type === 'DEP').slice(-10);
                     if(depRecords.length > 0) {
                         new Chart(document.getElementById('depChart'), {
-                            type: 'line', // เปลี่ยนจาก 'bar' เป็น 'line'
+                            type: 'line',
                             data: {
                                 labels: depRecords.map(a => a.date.split(' ')[0].substring(0,5)),
                                 datasets: [
@@ -379,7 +379,7 @@
                                         backgroundColor: '#3b82f6', 
                                         tension: 0.3, 
                                         pointRadius: 4,
-                                        borderDash: [5, 5] // ทำเส้น 2Q เป็นเส้นประ จะได้แยกง่ายๆ
+                                        borderDash: [5, 5] 
                                     },
                                     { 
                                         label: '9Q (เต็ม 27)', 
