@@ -12,7 +12,6 @@
         .material-symbols-outlined { font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24; }
         .input-field { width: 100%; border: 1px solid #e2e8f0; border-radius: 12px; padding: 12px; font-size: 14px; outline: none; transition: border-color 0.2s; }
         .input-field:focus { border-color: #00694a; box-shadow: 0 0 0 2px rgba(0,105,74,0.1); }
-        /* สไตล์ปุ่ม Checkbox โรค */
         .disease-cb:checked + label { background-color: #e7eeff; border-color: #00694a; color: #00694a; font-weight: 600; }
     </style>
 </head>
@@ -30,7 +29,6 @@
     <main class="max-w-2xl mx-auto p-4 space-y-4">
         <form id="editForm" onsubmit="saveData(event)" class="space-y-4">
             
-            <!-- ส่วนที่ 1: ข้อมูลทั่วไป -->
             <div class="bg-white rounded-[20px] p-5 shadow-sm border border-[#bdcac1]/30 space-y-4">
                 <h3 class="font-bold text-[#00694a] flex items-center gap-2 border-b pb-2"><span class="material-symbols-outlined text-lg">person</span> ข้อมูลส่วนตัว</h3>
                 
@@ -57,17 +55,6 @@
                         <input type="number" id="village_no" class="input-field" required>
                     </div>
                 </div>
-            </div>
-            <div class="grid grid-cols-2 gap-2">
-                    <div>
-                        <label class="text-xs text-gray-500 mb-1 block">บ้านเลขที่</label>
-                        <input type="text" id="house_no" class="input-field" required>
-                    </div>
-                    <div>
-                        <label class="text-xs text-gray-500 mb-1 block">หมู่ที่</label>
-                        <input type="number" id="village_no" class="input-field" required>
-                    </div>
-                </div>
 
                 <div class="pt-2 border-t border-gray-100">
                     <label class="text-xs text-gray-500 mb-1 block">พิกัด GPS บ้านผู้ป่วย</label>
@@ -79,41 +66,32 @@
                     </div>
                     <p id="gps-status" class="text-[10px] text-gray-400 mt-1 text-right"></p>
                 </div>
+            </div>
 
-            <!-- ส่วนที่ 2: โรคประจำตัว (Checkboxes) -->
             <div class="bg-white rounded-[20px] p-5 shadow-sm border border-[#bdcac1]/30 space-y-4">
                 <h3 class="font-bold text-[#ba1a1a] flex items-center gap-2 border-b pb-2"><span class="material-symbols-outlined text-lg">monitor_heart</span> โรคประจำตัว</h3>
-                
-                <div class="grid grid-cols-2 gap-2" id="disease-checkboxes">
-                    <!-- จะถูกสร้างอัตโนมัติด้วย JavaScript -->
-                </div>
+                <div class="grid grid-cols-2 gap-2" id="disease-checkboxes"></div>
                 <div>
                     <label class="text-xs text-gray-500 mb-1 block">โรคอื่นๆ (ระบุ)</label>
                     <input type="text" id="disease_other" class="input-field" placeholder="พิมพ์ชื่อโรคอื่นๆ (ถ้ามี)...">
                 </div>
             </div>
 
-            <!-- ส่วนที่ 3: รายการยาที่ใช้ (Dynamic List + OCR Prep) -->
             <div class="bg-white rounded-[20px] p-5 shadow-sm border border-[#bdcac1]/30 space-y-4">
                 <div class="flex justify-between items-center border-b pb-2">
                     <h3 class="font-bold text-[#0284c7] flex items-center gap-2"><span class="material-symbols-outlined text-lg">medication</span> รายการยา</h3>
-                    <button type="button" onclick="alert('ระบบสแกนฉลากยา (OCR) เตรียมเปิดใช้งานในเฟสถัดไปครับ')" class="bg-[#f0f9ff] text-[#0284c7] px-3 py-1 rounded-full text-xs font-bold flex items-center gap-1 border border-[#bae6fd]">
+                    <button type="button" onclick="alert('ระบบสแกนฉลากยาเตรียมเปิดใช้งานในเฟสถัดไป')" class="bg-[#f0f9ff] text-[#0284c7] px-3 py-1 rounded-full text-xs font-bold flex items-center gap-1 border border-[#bae6fd]">
                         <span class="material-symbols-outlined text-[14px]">photo_camera</span> สแกนฉลาก
                     </button>
                 </div>
-                
-                <!-- กล่องใส่รายการยา -->
                 <div id="med-list-container" class="space-y-3"></div>
-
                 <button type="button" onclick="addMedRow()" class="w-full py-3 border-2 border-dashed border-[#bae6fd] text-[#0284c7] rounded-xl font-medium hover:bg-[#f0f9ff] transition-colors flex justify-center items-center gap-1 text-sm">
                     <span class="material-symbols-outlined text-sm">add</span> เพิ่มรายการยา
                 </button>
             </div>
 
-            <!-- ส่วนที่ 4: ข้อมูลผู้ดูแล -->
             <div class="bg-white rounded-[20px] p-5 shadow-sm border border-[#bdcac1]/30 space-y-4">
                 <h3 class="font-bold text-[#F59E0B] flex items-center gap-2 border-b pb-2"><span class="material-symbols-outlined text-lg">group</span> ญาติ / ผู้ดูแล</h3>
-                
                 <div>
                     <label class="text-xs text-gray-500 mb-1 block">ชื่อ-นามสกุล ผู้ดูแล</label>
                     <input type="text" id="caregiver_name" class="input-field" placeholder="ชื่อญาติหรือผู้ดูแล...">
@@ -139,10 +117,8 @@
         const urlParams = new URLSearchParams(window.location.search);
         const patientId = urlParams.get('id');
 
-        // รายการโรคยอดฮิต
         const commonDiseases = ['เบาหวาน', 'ความดันโลหิตสูง', 'ไตวาย', 'หลอดเลือดหัวใจ', 'หลอดเลือดสมอง', 'กล้ามเนื้ออ่อนแรง'];
 
-        // สร้าง Checkbox โรค
         function renderDiseaseCheckboxes() {
             const container = document.getElementById('disease-checkboxes');
             commonDiseases.forEach((disease, index) => {
@@ -158,7 +134,6 @@
             });
         }
 
-        // ระบบเพิ่ม/ลบ แถวรายการยา
         function addMedRow(name = '', dose = '', usage = '') {
             const container = document.getElementById('med-list-container');
             const rowId = 'med_' + Date.now();
@@ -168,57 +143,42 @@
                         <span class="material-symbols-outlined text-sm">delete</span>
                     </button>
                     <div class="grid grid-cols-2 gap-2 mt-1">
-                        <div class="col-span-2">
-                            <input type="text" class="med-name input-field bg-white py-2 text-sm" placeholder="ชื่อยา (เช่น พาราเซตามอล)" value="${name}">
-                        </div>
-                        <div>
-                            <input type="text" class="med-dose input-field bg-white py-2 text-sm" placeholder="ขนาด (เช่น 500mg)" value="${dose}">
-                        </div>
-                        <div>
-                            <input type="text" class="med-usage input-field bg-white py-2 text-sm" placeholder="วิธีใช้ (เช่น 1 เม็ด หลังอาหาร)" value="${usage}">
-                        </div>
+                        <div class="col-span-2"><input type="text" class="med-name input-field bg-white py-2 text-sm" placeholder="ชื่อยา" value="${name}"></div>
+                        <div><input type="text" class="med-dose input-field bg-white py-2 text-sm" placeholder="ขนาด" value="${dose}"></div>
+                        <div><input type="text" class="med-usage input-field bg-white py-2 text-sm" placeholder="วิธีใช้" value="${usage}"></div>
                     </div>
                 </div>
             `;
             container.insertAdjacentHTML('beforeend', html);
         }
 
-        // ฟังก์ชันดึงพิกัด GPS ปัจจุบัน
         function getLocation() {
             const status = document.getElementById('gps-status');
             const latLongInput = document.getElementById('lat_long');
-            
             if (!navigator.geolocation) {
-                status.textContent = "มือถือ/เบราว์เซอร์ของคุณไม่รองรับ GPS";
+                status.textContent = "อุปกรณ์ไม่รองรับ GPS";
                 return;
             }
-            
             status.textContent = "กำลังค้นหาตำแหน่ง...";
             status.className = "text-[10px] text-[#0284c7] mt-1 text-right animate-pulse";
-            
             navigator.geolocation.getCurrentPosition(
                 (position) => {
-                    const lat = position.coords.latitude.toFixed(6);
-                    const lng = position.coords.longitude.toFixed(6);
-                    latLongInput.value = `${lat}, ${lng}`;
+                    latLongInput.value = `${position.coords.latitude.toFixed(6)}, ${position.coords.longitude.toFixed(6)}`;
                     status.textContent = "✓ ดึงพิกัดสำเร็จ!";
                     status.className = "text-[10px] text-[#00694a] mt-1 text-right font-bold";
                 },
                 (error) => {
-                    status.textContent = "x ไม่สามารถดึงพิกัดได้ (กรุณาเปิด GPS)";
+                    status.textContent = "x ไม่สามารถดึงพิกัดได้";
                     status.className = "text-[10px] text-[#ba1a1a] mt-1 text-right";
-                },
-                { enableHighAccuracy: true } // สั่งให้พยายามใช้ GPS มือถือที่แม่นยำที่สุด
+                }, { enableHighAccuracy: true }
             );
         }
 
         async function loadPatientData() {
-            renderDiseaseCheckboxes(); // วาดปุ่มโรคก่อน
+            renderDiseaseCheckboxes();
             if (!patientId) return alert("ไม่พบรหัสผู้ป่วย");
-            
             document.getElementById('btn-save').innerHTML = 'กำลังโหลด...';
             document.getElementById('btn-save').disabled = true;
-            document.getElementById('lat_long').value = data.lat_long || '';
 
             try {
                 const response = await fetch(API_URL, {
@@ -227,53 +187,33 @@
                 const data = await response.json();
                 if (data.error) { alert(data.error); return; }
 
-                // เติมข้อมูลทั่วไป
                 document.getElementById('prefix').value = data.prefix || 'นาย';
                 document.getElementById('fullname').value = data.name || '';
                 document.getElementById('house_no').value = data.house_no || '';
                 document.getElementById('village_no').value = data.village_no || '';
+                document.getElementById('lat_long').value = data.lat_long || '';
                 document.getElementById('caregiver_name').value = data.caregiver_name || '';
                 document.getElementById('caregiver_phone').value = data.caregiver_phone || '';
 
-                // จัดการแยกโรคประจำตัว
                 if (data.disease) {
                     const savedDiseases = data.disease.split(',').map(item => item.trim());
                     let otherDiseases = [];
                     savedDiseases.forEach(d => {
-                        if (commonDiseases.includes(d)) {
-                            // ถ้าเป็นโรคหลัก ให้ติ๊กถูก
-                            const idx = commonDiseases.indexOf(d);
-                            document.getElementById(`disease_${idx}`).checked = true;
-                        } else if (d !== '') {
-                            // ถ้าไม่ตรง ให้จับยัดใส่ช่อง 'โรคอื่นๆ'
-                            otherDiseases.push(d);
-                        }
+                        if (commonDiseases.includes(d)) { document.getElementById(`disease_${commonDiseases.indexOf(d)}`).checked = true; } 
+                        else if (d !== '') { otherDiseases.push(d); }
                     });
                     document.getElementById('disease_other').value = otherDiseases.join(', ');
                 }
 
-                // จัดการรายการยา (แปลงจาก JSON String)
                 if (data.medication && data.medication.startsWith('[')) {
-                    try {
-                        const medArray = JSON.parse(data.medication);
-                        medArray.forEach(med => addMedRow(med.name, med.dose, med.usage));
-                    } catch(e) {
-                        // ถ้าพัง ให้เพิ่มแถวว่างๆ
-                        addMedRow();
-                    }
-                } else if (data.medication) {
-                    // กรณีเป็นข้อความเก่า (Text ธรรมดา) ให้ใส่เป็นชื่อยาไปก่อน
-                    addMedRow(data.medication, '', '');
-                } else {
-                    addMedRow(); // ถ้าไม่มีข้อมูลเลย ให้ขึ้นแถวว่างๆ 1 แถว
-                }
+                    try { JSON.parse(data.medication).forEach(med => addMedRow(med.name, med.dose, med.usage)); } 
+                    catch(e) { addMedRow(); }
+                } else if (data.medication) { addMedRow(data.medication, '', ''); } 
+                else { addMedRow(); }
 
                 document.getElementById('btn-save').innerHTML = 'บันทึกการแก้ไข <span class="material-symbols-outlined text-sm">save</span>';
                 document.getElementById('btn-save').disabled = false;
-
-            } catch (error) {
-                alert("โหลดข้อมูลล้มเหลว");
-            }
+            } catch (error) { alert("โหลดข้อมูลล้มเหลว"); }
         }
 
         async function saveData(e) {
@@ -281,24 +221,17 @@
             const btn = document.getElementById('btn-save');
             btn.innerHTML = 'กำลังบันทึก...'; btn.disabled = true;
 
-            // รวบรวมโรคประจำตัว
             let finalDiseases = [];
             document.querySelectorAll('.disease-cb:checked').forEach(cb => finalDiseases.push(cb.value));
-            const otherDisease = document.getElementById('disease_other').value.trim();
-            if (otherDisease) finalDiseases.push(otherDisease);
-            const diseaseString = finalDiseases.join(', ');
+            if (document.getElementById('disease_other').value.trim()) finalDiseases.push(document.getElementById('disease_other').value.trim());
 
-            // รวบรวมรายการยา
             let medArray = [];
             document.querySelectorAll('[id^="med_"]').forEach(row => {
                 const name = row.querySelector('.med-name').value.trim();
                 const dose = row.querySelector('.med-dose').value.trim();
                 const usage = row.querySelector('.med-usage').value.trim();
-                if (name || dose || usage) {
-                    medArray.push({ name, dose, usage });
-                }
+                if (name || dose || usage) medArray.push({ name, dose, usage });
             });
-            const medString = JSON.stringify(medArray); // แปลงเป็น JSON เพื่อเซฟลงช่องเดียว
 
             const updateData = {
                 id: patientId,
@@ -306,10 +239,10 @@
                 fullname: document.getElementById('fullname').value,
                 house_no: document.getElementById('house_no').value,
                 village_no: document.getElementById('village_no').value,
-                disease: diseaseString,
-                medication: medString,
-                caregiver_name: document.getElementById('caregiver_name').value,
                 lat_long: document.getElementById('lat_long').value,
+                disease: finalDiseases.join(', '),
+                medication: JSON.stringify(medArray),
+                caregiver_name: document.getElementById('caregiver_name').value,
                 caregiver_phone: document.getElementById('caregiver_phone').value
             };
 
@@ -321,12 +254,9 @@
                 if (result.success) {
                     alert('บันทึกข้อมูลเรียบร้อยแล้ว!');
                     window.location.href = `patient_profile.html?id=${patientId}`;
-                } else {
-                    alert('เกิดข้อผิดพลาด: ' + result.error);
-                }
-            } catch (err) {
-                alert('การเชื่อมต่อล้มเหลว');
-            }
+                } else { alert('เกิดข้อผิดพลาด: ' + result.error); }
+            } catch (err) { alert('การเชื่อมต่อล้มเหลว'); }
+            
             btn.innerHTML = 'บันทึกการแก้ไข <span class="material-symbols-outlined text-sm">save</span>'; btn.disabled = false;
         }
 
