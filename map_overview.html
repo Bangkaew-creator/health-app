@@ -34,6 +34,11 @@
     <div class="relative w-full h-full">
         <div id="map"></div>
 
+        <div class="absolute top-4 right-4 bg-white/95 backdrop-blur-sm px-4 py-2 rounded-[16px] shadow-md border border-gray-100 z-[1000] text-xs font-bold text-gray-700 flex items-center gap-2">
+            <span class="material-symbols-outlined text-[18px] text-[#00694a]">my_location</span>
+            แสดงหมุด <span id="coord-count" class="text-[#00694a] text-sm">0/0</span>
+        </div>
+
         <div class="absolute bottom-24 right-4 bg-white/95 backdrop-blur-sm p-4 rounded-2xl shadow-lg border border-gray-100 z-[1000] space-y-2.5 text-xs max-w-[180px]">
             <p class="font-bold text-gray-700 border-b pb-1.5 flex items-center gap-1">
                 <span class="material-symbols-outlined text-sm text-[#00694a]">layers</span> กลุ่มผู้ป่วย
@@ -63,18 +68,10 @@
         let map;
         let markersGroup;
 
-        // เริ่มต้นสร้างแผนที่ (Default Center จะปรับอัตโนมัติเมื่อโหลดพิกัดคนไข้อ่านค่าได้)
         function initMap() {
-            map = L.map('map', { zoomControl: false }).setView([13.6375, 100.6750], 14); // พิกัดเริ่มต้นบางแก้ว สมุทรปราการ
-            
-            // ใช้แผนที่ OpenStreetMap แบบคลีน
-            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-                attribution: '&copy; OpenStreetMap'
-            }).addTo(map);
-
-            // ย้ายปุ่มควบคุมการซูมไปไว้มุมซ้ายล่างแทนเพื่อไม่ให้บังเมนู
+            map = L.map('map', { zoomControl: false }).setView([13.6375, 100.6750], 14); 
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution: '&copy; OpenStreetMap' }).addTo(map);
             L.control.zoom({ position: 'bottomleft' }).addTo(map);
-            
             markersGroup = L.featureGroup().addTo(map);
         }
 
@@ -84,8 +81,16 @@
                 const patients = await response.json();
                 
                 let validCoordsCount = 0;
+                let missingFieldCount = 0;
 
                 patients.forEach(p => {
+                    // เช็คว่าหลังบ้านส่งคอลัมน์ lat_long มาหรือไม่
+                    if (p.lat_long === undefined) {
+                        missingFieldCount++;
+                        return;
+                    }
+
+                    // เช็คว่าในคอลัมน์มีข้อมูลที่มีเครื่องหมายจุลภาค (,) หรือไม่
                     if (!p.lat_long || !p.lat_long.includes(',')) return;
 
                     const coords = p.lat_long.split(',');
@@ -96,23 +101,13 @@
 
                     validCoordsCount++;
 
-                    // เลือกสีหมุดวงกลมตามกลุ่มระดับภาวะพึ่งพิง
-                    let markerColor = '#94a3b8'; // สีเทา = ยังไม่ประเมิน
+                    let markerColor = '#94a3b8'; 
                     if (p.group === 'ติดสังคม') markerColor = '#00694a';
                     else if (p.group === 'ติดบ้าน') markerColor = '#f59e0b';
                     else if (p.group === 'ติดเตียง') markerColor = '#dc2626';
 
-                    // สร้างหมุดวงกลมสไตล์โมเดิร์น (CircleMarker) อ่านง่ายสบายตาบนโมบาย
-                    const marker = L.circleMarker([lat, lng], {
-                        radius: 9,
-                        fillColor: markerColor,
-                        color: '#ffffff',
-                        weight: 2,
-                        opacity: 1,
-                        fillOpacity: 0.9
-                    });
+                    const marker = L.circleMarker([lat, lng], { radius: 9, fillColor: markerColor, color: '#ffffff', weight: 2, opacity: 1, fillOpacity: 0.9 });
 
-                    // ออกแบบป๊อปอัปเมื่อคลิกที่หมุดคนไข้
                     const popupContent = `
                         <div class="custom-popup space-y-1">
                             <h4 class="font-bold text-sm text-gray-900">${p.name || 'ไม่ระบุชื่อ'}</h4>
@@ -130,18 +125,26 @@
                     markersGroup.addLayer(marker);
                 });
 
-                // ถ้ามีพิกัดสมบูรณ์ ระบบจะปรับมุมมอง (Zoom & Pan) ให้ครอบคลุมทุกหมุดโดยอัตโนมัติ ไม่ต้องกดเลื่อนหาเอง
-                if (validCoordsCount > 0) {
+                // อัปเดตป้ายแจ้งเตือนมุมขวาบน
+                document.getElementById('coord-count').innerText = `${validCoordsCount}/${patients.length}`;
+
+                // แจ้งเตือนสาเหตุที่หมุดไม่ขึ้น
+                if (validCoordsCount === 0) {
+                    if (missingFieldCount === patients.length && patients.length > 0) {
+                        alert("⚠️ แผนที่ไม่สามารถแสดงหมุดได้\n\nสาเหตุ: ระบบหลังบ้าน (Code.gs) ยังไม่ได้ส่งข้อมูลคอลัมน์ 'lat_long' มาให้แผนที่ครับ กรุณาตรวจสอบฟังก์ชัน getAllPatients ใน Code.gs");
+                    } else {
+                        alert("📍 ไม่พบข้อมูลพิกัดในระบบ\n\nคุณยังไม่ได้บันทึกพิกัด GPS ให้ผู้ป่วยเลยครับ กรุณาไปที่ 'แฟ้มประวัติ > แก้ไข' แล้วกดปุ่มเข็มทิศเพื่อบันทึกพิกัดก่อนครับ");
+                    }
+                } else {
                     map.fitBounds(markersGroup.getBounds(), { padding: [40, 40] });
                 }
 
             } catch (error) {
                 console.error(error);
-                alert("ไม่สามารถดึงข้อมูลพิกัดผู้ป่วยได้");
+                alert("ไม่สามารถเชื่อมต่อฐานข้อมูลเพื่อดึงพิกัดได้");
             }
         }
 
-        // เริ่มทำงาน
         initMap();
         loadMarkers();
     </script>
