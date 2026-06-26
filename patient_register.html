@@ -186,46 +186,51 @@
         }
     });
 
-    // 4. บันทึกข้อมูลเข้าฐานข้อมูลจริง
+    // 4. บันทึกข้อมูลเข้าฐานข้อมูลจริง (เชื่อมกับ doPost ของคุณ)
     document.getElementById('patient-form').addEventListener('submit', async function(e) {
         e.preventDefault();
         const btn = document.getElementById('btn-save');
         btn.innerHTML = `<div class="loader-small" style="border-bottom-color:#fff;"></div> กำลังบันทึกข้อมูล...`;
         btn.disabled = true;
 
+        // [อัปเดต] โครงสร้าง Payload ให้ตรงกับ case 'saveNewPatient' ใน doPost
         const payload = {
-            action: 'updatePatientData', // ใช้ฟังก์ชันรวมหลังบ้าน
-            data: {
-                id: 'NEW_' + Date.now(), // รหัสชั่วคราวสร้างแถวใหม่ในระบบอัปเดตชีต
-                prefix: document.getElementById('prefix')?.value || '',
+            action: 'saveNewPatient',
+            patient: {
+                id_card: document.getElementById('id_card') ? document.getElementById('id_card').value : '',
+                prefix: document.getElementById('prefix').value,
                 fullname: document.getElementById('fullname').value,
-                id_card: document.getElementById('id_card')?.value || '-',
-                dob: document.getElementById('dob').value || '-',
+                dob: document.getElementById('dob').value,
+                age: document.getElementById('age').value,
                 house_no: document.getElementById('house_no').value,
                 village_no: document.getElementById('village_no').value,
-                lat_long: document.getElementById('lat_long_value').value || '-',
-                disease: '-', medication: '[]',
-                caregiver_name: document.getElementById('caregiver_name').value || '-',
-                caregiver_phone: document.getElementById('caregiver_phone').value || '-',
-                diaper: JSON.stringify({ result: 'ยังไม่ประเมิน', indications: [], req_diaper: false, size: '-', req_underpad: false }),
-                equipment: ''
+                lat_long: document.getElementById('lat_long_value').value,
+                caregiver_name: document.getElementById('caregiver_name').value,
+                caregiver_phone: document.getElementById('caregiver_phone').value
             }
         };
 
         try {
-            const response = await fetch(API_URL, { method: 'POST', body: JSON.stringify(payload) });
+            const response = await fetch(API_URL, { 
+                method: 'POST', 
+                headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+                body: JSON.stringify(payload) 
+            });
             const result = await response.json();
+            
             if (result.success) {
-                alert('ลงทะเบียนผู้ป่วยใหม่เรียบร้อยแล้ว!');
-                window.location.href = 'dashboard.html';
+                alert(`ลงทะเบียนผู้ป่วยใหม่เรียบร้อยแล้ว!\nรหัสผู้ป่วย: ${result.patient_id}`);
+                window.location.href = 'dashboard.html'; // กลับหน้าหลัก
             } else {
                 alert('เกิดข้อผิดพลาดในการบันทึกข้อมูล');
+                btn.innerHTML = `<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">save</span> บันทึกข้อมูลและลงทะเบียนผู้ป่วย`;
+                btn.disabled = false;
             }
         } catch (error) {
             alert('การเชื่อมต่อฐานข้อมูลล้มเหลว');
+            btn.innerHTML = `<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">save</span> บันทึกข้อมูลและลงทะเบียนผู้ป่วย`;
+            btn.disabled = false;
         }
-        btn.innerHTML = 'ลงทะเบียนผู้ป่วย';
-        btn.disabled = false;
     });
 </script>
 </body>
