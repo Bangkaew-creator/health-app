@@ -143,16 +143,17 @@
             } catch (e) { console.log("โหลดภาพเดิมไม่สำเร็จ", e); }
         }
 
-        function displaySavedImage(type, url) {
+            function displaySavedImage(type, url) {
             if (url && url.startsWith('http')) {
                 const img = document.getElementById(`img-${type}`);
                 const placeholder = document.getElementById(`placeholder-${type}`);
                 
-                // แปลงลิงก์ดนตรี Google Drive ธรรมดาให้สามารถแสดงภาพในแท็ก img ได้โดยตรง
+                // ดึง ID รูปภาพออกมาจากลิงก์ Google Drive
                 let directUrl = url;
-                if(url.includes('id=')){
-                    const id = url.split('id=')[1];
-                    directUrl = `http://googleusercontent.com/drive-viewer/${id}=w1000`;
+                const match = url.match(/d\/([a-zA-Z0-9_-]+)/) || url.match(/id=([a-zA-Z0-9_-]+)/);
+                if (match && match[1]) {
+                    // แปลงเป็นลิงก์ Thumbnail API ของ Google
+                    directUrl = `https://drive.google.com/thumbnail?id=${match[1]}&sz=w1000`;
                 }
                 
                 img.src = directUrl;
