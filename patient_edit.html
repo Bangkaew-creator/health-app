@@ -32,7 +32,7 @@
         <form id="editForm" onsubmit="saveData(event)" class="space-y-5">
             
             <!-- ส่วนที่ 1: ข้อมูลทั่วไป -->
-            <div class="bg-white rounded-[20px] p-5 shadow-sm border border-gray-100">
+            <div id="sec-personal" class="bg-white rounded-[20px] p-5 shadow-sm border border-gray-100">
                 <h3 class="font-bold text-[#00694a] flex items-center gap-2 border-b pb-2 mb-4"><span class="material-symbols-outlined">person</span> ข้อมูลส่วนตัว</h3>
                 <div class="grid grid-cols-3 gap-2 mb-3">
                     <div class="col-span-1">
@@ -60,7 +60,7 @@
             </div>
 
             <!-- ส่วนที่ 2: แบบประเมินผ้าอ้อม (อ้างอิง สปสช.) -->
-            <div class="bg-white rounded-[20px] p-5 shadow-sm border border-blue-100">
+            <div id="sec-diaper" class="bg-white rounded-[20px] p-5 shadow-sm border border-blue-100">
                 <h3 class="font-bold text-[#2563eb] flex items-center gap-2 border-b border-blue-50 pb-2 mb-4">
                     <span class="material-symbols-outlined">wc</span> แบบประเมินสิทธิ์ผ้าอ้อม
                 </h3>
@@ -129,7 +129,7 @@
             </div>
 
             <!-- ส่วนที่ 4: โรคประจำตัว (กลับมาใช้แบบเดิม) -->
-            <div class="bg-white rounded-[20px] p-5 shadow-sm border border-[#bdcac1]/30">
+            <div id="sec-health" class="bg-white rounded-[20px] p-5 shadow-sm border border-[#bdcac1]/30">
                 <h3 class="font-bold text-[#ba1a1a] flex items-center gap-2 border-b pb-2 mb-4"><span class="material-symbols-outlined">monitor_heart</span> โรคประจำตัว</h3>
                 <div class="grid grid-cols-2 gap-2 mb-3" id="disease-checkboxes"></div>
                 <div>
@@ -222,7 +222,30 @@
             initUI();
             if (!patientId) return alert("ไม่พบรหัสผู้ป่วย");
             document.getElementById('btn-save').innerHTML = 'กำลังโหลด...'; document.getElementById('btn-save').disabled = true;
-
+            // --- เพิ่มระบบเลื่อนหน้าจออัตโนมัติ (Auto-scroll) ---
+                if (window.location.hash) {
+                    setTimeout(() => {
+                        const targetId = window.location.hash.substring(1);
+                        let targetElement;
+                        // ผูก ID ของส่วนต่างๆ
+                        if(targetId === 'sec-personal') targetElement = document.getElementById('fullname').closest('.bg-white');
+                        else if(targetId === 'sec-diaper') targetElement = document.querySelector('input[name="diaper_result"]').closest('.bg-white');
+                        else if(targetId === 'sec-health') targetElement = document.getElementById('disease').closest('.bg-white');
+                        
+                        if (targetElement) {
+                            const headerOffset = 80; // ระยะเผื่อแถบเมนูด้านบน
+                            const elementPosition = targetElement.getBoundingClientRect().top;
+                            const offsetPosition = elementPosition + window.pageYOffset - headerOffset;
+                            window.scrollTo({ top: offsetPosition, behavior: 'smooth' });
+                            
+                            // ทำเอฟเฟกต์ไฟกะพริบเพื่อบอกว่าอยู่ตรงนี้
+                            targetElement.style.transition = "box-shadow 0.5s ease-in-out";
+                            targetElement.style.boxShadow = "0 0 0 4px rgba(2, 132, 199, 0.3)";
+                            setTimeout(() => targetElement.style.boxShadow = "none", 2500);
+                        }
+                    }, 400); // หน่วงเวลาให้ข้อมูลโหลดเข้าฟอร์มเสร็จก่อน
+                }
+                // ---------------------------------------------
             try {
                 const response = await fetch(API_URL, { method: 'POST', body: JSON.stringify({ action: 'getPatientById', id: patientId }) });
                 const data = await response.json();
