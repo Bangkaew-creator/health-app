@@ -192,14 +192,14 @@
         const urlParams = new URLSearchParams(window.location.search);
         const patientId = urlParams.get('id');
 
-        // ฟังก์ชันแปลงลิงก์ Google Drive เป็นลิงก์ภาพขนาดย่อ
+        // ฟังก์ชันแปลงลิงก์ Google Drive
         const getDriveImageUrl = (url) => {
             if(!url) return null;
             const match = url.match(/d\/([a-zA-Z0-9_-]+)/) || url.match(/id=([a-zA-Z0-9_-]+)/);
             return match ? `https://drive.google.com/thumbnail?id=${match[1]}&sz=w1000` : null;
         };
 
-        // ระบบ Modal สำหรับคลิกซูมภาพ
+        // ระบบซูมภาพ
         function openModal(imgSrc) {
             const modal = document.getElementById('imageModal');
             document.getElementById('modalImage').src = imgSrc;
@@ -220,15 +220,14 @@
                 const data = await response.json();
                 if (data.error) { alert(data.error); window.history.back(); return; }
 
-                // 1. จัดการรูปโปรไฟล์
+                // รูปโปรไฟล์
                 const profileUrl = getDriveImageUrl(data.profile_pic);
                 if (profileUrl) {
-                    document.getElementById('profile-initial').innerHTML = `<img src="${profileUrl}" class="w-full h-full object-cover rounded-full">`;
+                    document.getElementById('profile-initial').innerHTML = `<img src="${profileUrl}" class="w-full h-full object-cover">`;
                 } else {
                     document.getElementById('profile-initial').innerText = data.name ? data.name.substring(0, 1) : '?';
                 }
 
-                // ข้อมูลทั่วไป
                 document.getElementById('profile-name').innerText = (data.prefix || '') + (data.name || '');
                 document.getElementById('profile-age').innerText = `อายุ ${data.age || '-'} ปี`;
                 document.getElementById('profile-idcard').innerText = data.id_card || '-';
@@ -237,9 +236,9 @@
                 
                 // พิกัด
                 document.getElementById('profile-gps').innerText = data.lat_long || 'ยังไม่มีข้อมูล';
-                if (data.lat_long && data.lat_long.includes(',')) {
+                if (data.lat_long && typeof data.lat_long === 'string' && data.lat_long.includes(',')) {
                     const mapLink = document.getElementById('profile-map-link');
-                    mapLink.href = `https://www.google.com/maps/dir/?api=1&destination=${data.lat_long.replace(' ', '')}`;
+                    mapLink.href = `https://maps.google.com/?q=${data.lat_long.replace(/\s/g, '')}`;
                     mapLink.classList.remove('hidden');
                 }
 
@@ -261,10 +260,10 @@
                 else if (depStatus.includes('ปานกลาง')) depBadge.className = "bg-[#f97316] text-white px-3 py-1 rounded-full text-xs font-bold inline-block mt-1 shadow-sm";
                 else if (depStatus.includes('รุนแรง')) depBadge.className = "bg-[#ba1a1a] text-white px-3 py-1 rounded-full text-xs font-bold inline-block mt-1 shadow-sm";
 
-                // ข้อมูลสุขภาพ
+                // โรค และ ยา
                 document.getElementById('profile-disease').innerText = data.disease || '-';
                 const medContainer = document.getElementById('profile-medication');
-                if (data.medication && data.medication.startsWith('[')) {
+                if (data.medication && typeof data.medication === 'string' && data.medication.startsWith('[')) {
                     try {
                         const meds = JSON.parse(data.medication);
                         if (meds.length === 0) medContainer.innerHTML = '-';
@@ -291,7 +290,7 @@
                     phoneLink.className = "text-sm font-bold text-[#111c2d]";
                 }
 
-                // 2. จัดการแกลลอรีรูปภาพบ้าน
+                // แกลลอรีรูปภาพ
                 const gallery = document.getElementById('profile-gallery');
                 let galleryHtml = '';
                 const houseImages = [
@@ -319,16 +318,96 @@
 
                 document.getElementById('btn-edit').onclick = () => window.location.href = `patient_edit.html?id=${patientId}`;
                 document.getElementById('btn-edit').classList.remove('hidden');
+                
                 document.getElementById('loading-state').classList.add('hidden');
                 document.getElementById('profile-content').classList.remove('hidden');
 
-            } catch (error) { alert("เชื่อมต่อฐานข้อมูลล้มเหลว"); }
+            } catch (error) { console.error(error); alert("โหลดข้อมูลล้มเหลว กรุณาลองใหม่"); }
+        }
+
+        async function loadAllCharts() {
+            try {
+                const [vitalsRes, assessRes] = await Promise.all([
+                    fetch(API_URL, { method: 'POST', body: JSON.stringify({ action: 'getVitals', id: patientId }) }),
+                    fetch(API_URL, { method: 'POST', body: JSON.stringify({ action: 'getAssessments', id: patientId }) })
+                ]);
+                
+                const vitals = await vitalsRes.json();
+                const assessments = await assessRes.json();
+
+                if(vitals.length > 0) {
+                    const bpRecords = vitals.filter(v => v.sys && v.dia).slice(-10);
+                    if(bpRecords.length > 0) {
+                        const bpLabels = bpRecords.map(v => v.date.split(' ')[0].substring(0,5));
+                        new Chart(document.getElementById('bpChart'), {
+                            type: 'line',
+                            data: {
+                                labels: bpLabels,
+                                datasets: [
+                                    { label: 'Sys', data: bpRecords.map(v => v.sys), borderColor: '#ba1a1a', backgroundColor: '#ba1a1a', tension: 0.3, pointRadius: 4 },
+                                    { label: 'Dia', data: bpRecords.map(v => v.dia), borderColor: '#f97316', backgroundColor: '#f97316', tension: 0.3, pointRadius: 4 },
+                                    { label: 'HR', data: bpRecords.map(v => v.hr), borderColor: '#00694a', backgroundColor: '#00694a', borderDash: [5,5], tension: 0.3, pointRadius: 4 }
+                                ]
+                            },
+                            options: { responsive: true, plugins: { legend: { labels: { font: { size: 10, family: 'Sarabun' } } } }, scales: { y: { suggestedMin: 60, suggestedMax: 160 } } }
+                        });
+                    } else { document.getElementById('bpChart').parentElement.innerHTML = '<p class="text-xs text-gray-400 text-center">ไม่มีข้อมูลความดัน</p>'; }
+
+                    const sugarRecords = vitals.filter(v => v.sugar).slice(-10);
+                    if(sugarRecords.length > 0) {
+                        const sugarLabels = sugarRecords.map(v => v.date.split(' ')[0].substring(0,5));
+                        const sugarColors = sugarRecords.map(v => v.meal === 'หลังอาหาร' ? '#f59e0b' : '#0284c7');
+                        new Chart(document.getElementById('sugarChart'), {
+                            type: 'line',
+                            data: {
+                                labels: sugarLabels,
+                                datasets: [{ 
+                                    label: 'น้ำตาล (mg/dL)', data: sugarRecords.map(v => v.sugar), borderColor: '#bae6fd', 
+                                    pointBackgroundColor: sugarColors, pointBorderColor: sugarColors, tension: 0.3, pointRadius: 5 
+                                }]
+                            },
+                            options: { responsive: true, plugins: { legend: { display: false }, tooltip: { callbacks: { label: (ctx) => `${ctx.raw} mg/dL (${sugarRecords[ctx.dataIndex].meal})` } } }, scales: { y: { suggestedMin: 70, suggestedMax: 200 } } }
+                        });
+                    } else { document.getElementById('sugarChart').parentElement.innerHTML = '<p class="text-xs text-gray-400 text-center">ไม่มีข้อมูลน้ำตาล</p>'; }
+                }
+
+                if(assessments.length > 0) {
+                    const adlRecords = assessments.filter(a => a.type === 'ADL').slice(-10);
+                    if(adlRecords.length > 0) {
+                        new Chart(document.getElementById('adlChart'), {
+                            type: 'line',
+                            data: {
+                                labels: adlRecords.map(a => a.date.split(' ')[0].substring(0,5)),
+                                datasets: [{ label: 'คะแนน ADL (เต็ม 20)', data: adlRecords.map(a => a.score1), borderColor: '#F59E0B', backgroundColor: '#F59E0B', tension: 0.3, pointRadius: 4, fill: false }]
+                            },
+                            options: { responsive: true, plugins: { legend: { labels: { font: { size: 10, family: 'Sarabun' } } }, tooltip: { callbacks: { label: (ctx) => `ได้ ${ctx.raw} คะแนน (${adlRecords[ctx.dataIndex].result})` } } }, scales: { y: { min: 0, max: 20 } } }
+                        });
+                    } else { document.getElementById('adlChart').parentElement.innerHTML = '<p class="text-xs text-gray-400 text-center">ไม่มีประวัติ ADL</p>'; }
+
+                    const depRecords = assessments.filter(a => a.type === 'DEP').slice(-10);
+                    if(depRecords.length > 0) {
+                        new Chart(document.getElementById('depChart'), {
+                            type: 'line',
+                            data: {
+                                labels: depRecords.map(a => a.date.split(' ')[0].substring(0,5)),
+                                datasets: [
+                                    { label: '2Q (เต็ม 2)', data: depRecords.map(a => a.score1 || 0), borderColor: '#3b82f6', backgroundColor: '#3b82f6', tension: 0.3, pointRadius: 4, borderDash: [5, 5] },
+                                    { label: '9Q (เต็ม 27)', data: depRecords.map(a => a.score2 || 0), borderColor: '#1e3a8a', backgroundColor: '#1e3a8a', tension: 0.3, pointRadius: 4 }
+                                ]
+                            },
+                            options: { responsive: true, plugins: { legend: { labels: { font: { size: 10, family: 'Sarabun' } } }, tooltip: { callbacks: { label: (ctx) => `${ctx.dataset.label.split(' ')[0]}: ${ctx.raw} คะแนน (${depRecords[ctx.dataIndex].result})` } } }, scales: { y: { suggestedMin: 0, suggestedMax: 27 } } }
+                        });
+                    } else { document.getElementById('depChart').parentElement.innerHTML = '<p class="text-xs text-gray-400 text-center">ไม่มีประวัติซึมเศร้า</p>'; }
+                }
+
+            } catch (err) { console.error("โหลดกราฟผิดพลาด", err); }
         }
 
         function startADL() { window.location.href = `adl_assessment.html?id=${patientId}`; }
         function startDepression() { window.location.href = `depression_assessment.html?id=${patientId}`; }
 
         loadPatientProfile();
-        loadAllCharts(); // ฟังก์ชันกราฟ (รวมอยู่ในโค้ดก่อนหน้านี้)
-        
-        // ... (โค้ด loadAllCharts() ของคุณเดิม จะอยู่ต่อจากตรงนี้ครับ ผมละไว้เพื่อไม่ให้โค้ดยาวเกินไป แต่คุณเก็บของเดิมไว้ได้เลย) ...
+        loadAllCharts();
+    </script>
+</body>
+</html>
