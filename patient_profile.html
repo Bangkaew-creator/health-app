@@ -192,6 +192,13 @@
             </div>
 
         </div>
+        <!-- ปุ่มเปลี่ยนสถานะผู้ป่วย -->
+        <div class="mt-6 pt-6 border-t border-red-100">
+            <button type="button" onclick="openStatusModal()" class="w-full py-4 bg-red-50 text-red-600 rounded-[16px] font-bold shadow-sm border border-red-100 flex items-center justify-center gap-2 hover:bg-red-100 active:scale-95 transition-all">
+                <span class="material-symbols-outlined text-[20px]">manage_accounts</span>
+                เปลี่ยนสถานะ / ยกเลิกการติดตาม
+            </button>
+        </div>
     </main>
 
     <div id="imageModal" class="fixed inset-0 bg-black/90 z-[100] hidden flex-col items-center justify-center opacity-0 transition-opacity duration-300">
@@ -383,6 +390,100 @@
         function startADL() { window.location.href = `adl_assessment.html?id=${patientId}`; }
         function startDepression() { window.location.href = `depression_assessment.html?id=${patientId}`; }
         loadPatientProfile(); loadAllCharts();
+        // ฟังก์ชันเปิด/ปิด Modal
+        function openStatusModal() {
+            const modal = document.getElementById('status-modal');
+            const content = document.getElementById('status-modal-content');
+            modal.classList.remove('hidden');
+            setTimeout(() => {
+                modal.classList.remove('opacity-0');
+                content.classList.remove('scale-95');
+            }, 10);
+        }
+
+        function closeStatusModal() {
+            const modal = document.getElementById('status-modal');
+            const content = document.getElementById('status-modal-content');
+            modal.classList.add('opacity-0');
+            content.classList.add('scale-95');
+            setTimeout(() => {
+                modal.classList.add('hidden');
+            }, 300);
+        }
+
+        // ฟังก์ชันส่งค่าอัปเดตไปหลังบ้าน
+        async function savePatientStatus() {
+            const selectedStatus = document.querySelector('input[name="patient_status"]:checked');
+            if (!selectedStatus) return alert('กรุณาเลือกสถานะใหม่ที่ต้องการเปลี่ยนครับ');
+            
+            const newStatus = selectedStatus.value;
+            const btn = document.getElementById('btn-save-status');
+            btn.innerHTML = `<div class="loader-small" style="width:16px; height:16px; border-width:2px; border-bottom-color:white; display:inline-block; vertical-align:middle; margin-right:5px;"></div> กำลังบันทึก...`;
+            btn.disabled = true;
+
+            // ดึง ID ผู้ป่วยจาก URL ปัจจุบัน
+            const urlParams = new URLSearchParams(window.location.search);
+            const patientId = urlParams.get('id');
+
+            try {
+                const response = await fetch(API_URL, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+                    body: JSON.stringify({
+                        action: 'updatePatientStatus',
+                        id: patientId,
+                        status: newStatus
+                    })
+                });
+                const result = await response.json();
+                
+                if (result.success) {
+                    alert('เปลี่ยนสถานะผู้ป่วยสำเร็จ\nผู้ป่วยรายนี้ถูกนำออกจากรายชื่อที่ต้องติดตามแล้ว');
+                    window.location.href = 'patient_list.html'; // เด้งกลับหน้ารายชื่อ
+                } else {
+                    alert('เกิดข้อผิดพลาด: ' + result.message);
+                    resetBtn(btn);
+                }
+            } catch (error) {
+                alert('การเชื่อมต่อล้มเหลว กรุณาลองอีกครั้ง');
+                resetBtn(btn);
+            }
+        }
+
+        function resetBtn(btn) {
+            btn.innerHTML = 'ยืนยันการเปลี่ยน';
+            btn.disabled = false;
+        }
     </script>
+    <!-- Modal เปลี่ยนสถานะผู้ป่วย -->
+    <div id="status-modal" class="fixed inset-0 bg-[#111c2d]/40 backdrop-blur-sm z-[60] hidden flex items-center justify-center p-4 opacity-0 transition-opacity duration-300">
+        <div class="bg-white rounded-[24px] w-full max-w-sm overflow-hidden shadow-2xl transform scale-95 transition-transform duration-300" id="status-modal-content">
+            <div class="p-6">
+                <h3 class="text-lg font-bold text-gray-900 mb-1 flex items-center gap-2">
+                    <span class="material-symbols-outlined text-red-500">warning</span> เปลี่ยนสถานะผู้ป่วย
+                </h3>
+                <p class="text-[13px] text-gray-500 mb-5 leading-relaxed">หากเปลี่ยนสถานะ ข้อมูลผู้ป่วยรายนี้จะถูกซ่อนจากหน้ารายชื่อ อสม. ทันที แต่ข้อมูลยังคงเก็บอยู่ในฐานข้อมูลส่วนกลาง</p>
+                
+                <div class="space-y-3">
+                    <label class="flex items-center gap-3 p-3.5 border border-gray-200 rounded-xl cursor-pointer hover:bg-gray-50 transition-colors">
+                        <input type="radio" name="patient_status" value="หายดี" class="text-[#00694a] focus:ring-[#00694a] w-4 h-4">
+                        <span class="text-[14px] font-bold text-gray-700">หายดี / สิ้นสุดการดูแล</span>
+                    </label>
+                    <label class="flex items-center gap-3 p-3.5 border border-gray-200 rounded-xl cursor-pointer hover:bg-gray-50 transition-colors">
+                        <input type="radio" name="patient_status" value="ย้ายที่อยู่" class="text-[#f59e0b] focus:ring-[#f59e0b] w-4 h-4">
+                        <span class="text-[14px] font-bold text-gray-700">ย้ายที่อยู่</span>
+                    </label>
+                    <label class="flex items-center gap-3 p-3.5 border border-gray-200 rounded-xl cursor-pointer hover:bg-red-50 transition-colors">
+                        <input type="radio" name="patient_status" value="เสียชีวิต" class="text-red-600 focus:ring-red-600 w-4 h-4">
+                        <span class="text-[14px] font-bold text-red-600">เสียชีวิต</span>
+                    </label>
+                </div>
+            </div>
+            <div class="flex border-t border-gray-100 bg-gray-50">
+                <button onclick="closeStatusModal()" class="flex-1 py-4 text-[14px] font-bold text-gray-500 hover:bg-gray-100 transition-colors">ยกเลิก</button>
+                <button onclick="savePatientStatus()" id="btn-save-status" class="flex-1 py-4 text-[14px] font-bold text-white bg-red-600 hover:bg-red-700 transition-colors">ยืนยันการเปลี่ยน</button>
+            </div>
+        </div>
+    </div>
 </body>
 </html>
