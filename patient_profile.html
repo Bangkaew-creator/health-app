@@ -118,6 +118,20 @@
                         <span class="material-symbols-outlined text-[12px]">add</span> บันทึกค่า
                     </button>
                 </div>
+                <div class="bg-white rounded-[20px] p-5 shadow-sm border border-[#bdcac1]/30 mt-4">
+                <h3 class="text-sm font-bold flex items-center gap-2 mb-4 text-[#F59E0B]">
+                    <span class="material-symbols-outlined text-[18px]">timeline</span> กราฟประเมินสุขภาพ (ADL & ซึมเศร้า)
+                </h3>
+                
+                <!-- กราฟ ADL -->
+                <div class="mb-5">
+                    <canvas id="adlChart" height="120"></canvas>
+                </div>
+                <!-- กราฟซึมเศร้า 9Q -->
+                <div>
+                    <canvas id="depChart" height="120"></canvas>
+                </div>
+            </div>
                 
                 <div class="mb-4">
                     <canvas id="bpChart" height="150"></canvas>
@@ -257,61 +271,92 @@
         
         // [เพิ่มใหม่] ฟังก์ชันไปหน้าซึมเศร้า
         function startDepression() { window.location.href = `depression_assessment.html?id=${patientId}`; }
-async function loadVitalsChart() {
+async function loadAllCharts() {
             try {
-                const response = await fetch(API_URL, {
-                    method: 'POST', body: JSON.stringify({ action: 'getVitals', id: patientId })
-                });
-                const vitals = await response.json();
+                // โหลดข้อมูลทั้งสัญญาณชีพ และ การประเมิน
+                const [vitalsRes, assessRes] = await Promise.all([
+                    fetch(API_URL, { method: 'POST', body: JSON.stringify({ action: 'getVitals', id: patientId }) }),
+                    fetch(API_URL, { method: 'POST', body: JSON.stringify({ action: 'getAssessments', id: patientId }) })
+                ]);
                 
-                if(vitals.length === 0) return; // ถ้าไม่มีข้อมูลไม่ต้องวาดกราฟ
+                const vitals = await vitalsRes.json();
+                const assessments = await assessRes.json();
 
-                // ดึงข้อมูลมาสูงสุด 10 ครั้งล่าสุด (เพื่อให้กราฟไม่อัดแน่นไป)
-                const recentVitals = vitals.slice(-10);
-                
-                const labels = recentVitals.map(v => v.date.split(' ')[0].substring(0,5)); // เอาแค่วัน/เดือน
-                const sysData = recentVitals.map(v => v.sys || null);
-                const diaData = recentVitals.map(v => v.dia || null);
-                const hrData = recentVitals.map(v => v.hr || null);
-                
-                // ข้อมูลน้ำตาล (โชว์จุดสีต่างกันตามช่วงเวลา)
-                const sugarData = recentVitals.map(v => v.sugar || null);
-                const sugarColors = recentVitals.map(v => v.meal === 'หลังอาหาร' ? '#f59e0b' : '#0284c7');
+                // ==========================================
+                // 1. จัดการกราฟสัญญาณชีพ (แยก BP และ น้ำตาลอิสระจากกัน)
+                // ==========================================
+                if(vitals.length > 0) {
+                    // กรองเฉพาะอันที่มีความดัน
+                    const bpRecords = vitals.filter(v => v.sys && v.dia).slice(-10);
+                    if(bpRecords.length > 0) {
+                        const bpLabels = bpRecords.map(v => v.date.split(' ')[0].substring(0,5));
+                        new Chart(document.getElementById('bpChart'), {
+                            type: 'line',
+                            data: {
+                                labels: bpLabels,
+                                datasets: [
+                                    { label: 'Sys', data: bpRecords.map(v => v.sys), borderColor: '#ba1a1a', backgroundColor: '#ba1a1a', tension: 0.3, pointRadius: 4 },
+                                    { label: 'Dia', data: bpRecords.map(v => v.dia), borderColor: '#f97316', backgroundColor: '#f97316', tension: 0.3, pointRadius: 4 },
+                                    { label: 'HR', data: bpRecords.map(v => v.hr), borderColor: '#00694a', backgroundColor: '#00694a', borderDash: [5,5], tension: 0.3, pointRadius: 4 }
+                                ]
+                            },
+                            options: { responsive: true, plugins: { legend: { labels: { font: { size: 10, family: 'Sarabun' } } } }, scales: { y: { suggestedMin: 60, suggestedMax: 160 } } }
+                        });
+                    } else { document.getElementById('bpChart').parentElement.innerHTML = '<p class="text-xs text-gray-400 text-center">ไม่มีข้อมูลความดัน</p>'; }
 
-                // 1. วาดกราฟความดันและชีพจร
-                new Chart(document.getElementById('bpChart'), {
-                    type: 'line',
-                    data: {
-                        labels: labels,
-                        datasets: [
-                            { label: 'ตัวบน (Sys)', data: sysData, borderColor: '#ba1a1a', backgroundColor: '#ba1a1a', tension: 0.3, pointRadius: 4 },
-                            { label: 'ตัวล่าง (Dia)', data: diaData, borderColor: '#f97316', backgroundColor: '#f97316', tension: 0.3, pointRadius: 4 },
-                            { label: 'ชีพจร (HR)', data: hrData, borderColor: '#00694a', backgroundColor: '#00694a', borderDash: [5, 5], tension: 0.3, pointRadius: 4 }
-                        ]
-                    },
-                    options: { responsive: true, plugins: { legend: { labels: { font: { size: 10, family: 'Sarabun' } } } }, scales: { y: { suggestedMin: 60, suggestedMax: 160 } } }
-                });
+                    // กรองเฉพาะอันที่มีน้ำตาล
+                    const sugarRecords = vitals.filter(v => v.sugar).slice(-10);
+                    if(sugarRecords.length > 0) {
+                        const sugarLabels = sugarRecords.map(v => v.date.split(' ')[0].substring(0,5));
+                        const sugarColors = sugarRecords.map(v => v.meal === 'หลังอาหาร' ? '#f59e0b' : '#0284c7');
+                        new Chart(document.getElementById('sugarChart'), {
+                            type: 'bar',
+                            data: {
+                                labels: sugarLabels,
+                                datasets: [{ label: 'น้ำตาล (mg/dL)', data: sugarRecords.map(v => v.sugar), backgroundColor: sugarColors, borderRadius: 4 }]
+                            },
+                            options: { responsive: true, plugins: { legend: { display: false }, tooltip: { callbacks: { label: (ctx) => `${ctx.raw} mg/dL (${sugarRecords[ctx.dataIndex].meal})` } } } }
+                        });
+                    } else { document.getElementById('sugarChart').parentElement.innerHTML = '<p class="text-xs text-gray-400 text-center">ไม่มีข้อมูลน้ำตาล</p>'; }
+                }
 
-                // 2. วาดกราฟน้ำตาล
-                new Chart(document.getElementById('sugarChart'), {
-                    type: 'bar', // ใชักราฟแท่งเพื่อดูแยกเป็นครั้งๆ
-                    data: {
-                        labels: labels,
-                        datasets: [{
-                            label: 'ระดับน้ำตาล (mg/dL)',
-                            data: sugarData,
-                            backgroundColor: sugarColors,
-                            borderRadius: 4
-                        }]
-                    },
-                    options: { responsive: true, plugins: { legend: { display: false }, tooltip: { callbacks: { label: (ctx) => `${ctx.raw} mg/dL (${recentVitals[ctx.dataIndex].meal})` } } } }
-                });
+                // ==========================================
+                // 2. จัดการกราฟประเมิน (ADL และ ซึมเศร้า)
+                // ==========================================
+                if(assessments.length > 0) {
+                    // กราฟ ADL (เอาแค่ Type = 'ADL')
+                    const adlRecords = assessments.filter(a => a.type === 'ADL').slice(-10);
+                    if(adlRecords.length > 0) {
+                        new Chart(document.getElementById('adlChart'), {
+                            type: 'line',
+                            data: {
+                                labels: adlRecords.map(a => a.date.split(' ')[0].substring(0,5)),
+                                datasets: [{ label: 'คะแนน ADL', data: adlRecords.map(a => a.score1), borderColor: '#F59E0B', backgroundColor: '#F59E0B', tension: 0.2, pointRadius: 5, fill: true, backgroundColor: 'rgba(245, 158, 11, 0.1)' }]
+                            },
+                            options: { responsive: true, plugins: { tooltip: { callbacks: { label: (ctx) => `ได้ ${ctx.raw} คะแนน (${adlRecords[ctx.dataIndex].result})` } } }, scales: { y: { min: 0, max: 20 } } }
+                        });
+                    } else { document.getElementById('adlChart').parentElement.innerHTML = '<p class="text-xs text-gray-400 text-center">ไม่มีประวัติ ADL</p>'; }
+
+                    // กราฟซึมเศร้า (เอาแค่ Type = 'DEP') โดยใช้คะแนน 9Q
+                    const depRecords = assessments.filter(a => a.type === 'DEP').slice(-10);
+                    if(depRecords.length > 0) {
+                        new Chart(document.getElementById('depChart'), {
+                            type: 'bar',
+                            data: {
+                                labels: depRecords.map(a => a.date.split(' ')[0].substring(0,5)),
+                                datasets: [{ label: 'คะแนน 9Q', data: depRecords.map(a => a.score2 || 0), backgroundColor: '#1e3a8a', borderRadius: 4 }]
+                            },
+                            options: { responsive: true, plugins: { tooltip: { callbacks: { label: (ctx) => `9Q: ${ctx.raw} คะแนน (${depRecords[ctx.dataIndex].result})` } } }, scales: { y: { min: 0, max: 27 } } }
+                        });
+                    } else { document.getElementById('depChart').parentElement.innerHTML = '<p class="text-xs text-gray-400 text-center">ไม่มีประวัติ 9Q</p>'; }
+                }
 
             } catch (err) { console.log("โหลดกราฟผิดพลาด", err); }
         }
 
-        // อย่าลืมเรียกใช้ฟังก์ชันโหลดกราฟ
-        loadVitalsChart();
+        // อย่าลืมเปลี่ยนชื่อฟังก์ชันเรียกตอนท้ายสุดเป็นอันใหม่นี้ด้วยนะครับ
+        // เปลี่ยนจาก loadVitalsChart(); เป็น:
+        loadAllCharts();
         loadPatientProfile();
     </script>
 </body>
