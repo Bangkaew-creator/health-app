@@ -8,24 +8,24 @@
     <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700&display=swap" rel="stylesheet"/>
     <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
     <style>
-        body { font-family: 'Sarabun', sans-serif; background-color: #f9fafb; padding-bottom: 90px; -webkit-tap-highlight-color: transparent;}
+        body { font-family: 'Sarabun', sans-serif; background-color: #f8fafc; padding-bottom: 90px; -webkit-tap-highlight-color: transparent;}
         .material-symbols-outlined { font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24; }
-        .filter-pill { padding: 8px 16px; border-radius: 9999px; font-size: 12px; font-weight: 600; background-color: #eef2ff; color: #475569; transition: all 0.2s; cursor: pointer; white-space: nowrap; border: none; }
+        .filter-pill { padding: 8px 18px; border-radius: 9999px; font-size: 12px; font-weight: 600; background-color: #f1f5f9; color: #475569; transition: all 0.2s; cursor: pointer; white-space: nowrap; border: none; }
         .filter-pill.active { background-color: #00694a; color: #ffffff; box-shadow: 0 4px 10px rgba(0,105,74,0.15); }
         .loader { border: 3px solid #d8e3fb; border-bottom-color: #00694a; border-radius: 50%; width: 36px; height: 36px; animation: spin 1s linear infinite; }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        .scrollbar-hidden::-webkit-scrollbar { display: none; }
+        .scrollbar-hidden { -ms-overflow-style: none; scrollbar-width: none; }
     </style>
 </head>
 <body class="text-[#111c2d]">
 
-    <header class="pt-6 pb-4 px-4 flex justify-between items-center sticky top-0 bg-[#f9fafb]/90 backdrop-blur-md z-50">
+    <header class="pt-6 pb-4 px-4 flex justify-between items-center sticky top-0 bg-[#f8fafc]/90 backdrop-blur-md z-50">
         <div class="flex items-center gap-3">
-            <div class="w-12 h-12 rounded-full bg-[#e8f5e9] flex items-center justify-center text-[#00694a] font-bold text-xl overflow-hidden border border-emerald-100 shadow-sm">
-                ส
-            </div>
+            <div class="w-10 h-10 rounded-full bg-[#00694a] flex items-center justify-center text-white font-bold text-lg shadow-sm">อส</div>
             <div>
-                <h1 class="text-sm font-bold text-[#00694a]">สมหญิง ใจดี</h1>
-                <p class="text-[10px] text-gray-500 font-medium mt-0.5">หมู่ 4 บ้านทุ่งสว่าง</p>
+                <h1 class="text-sm font-bold text-[#00694a]">อสม. เทศบาลบางแก้ว</h1>
+                <p class="text-[10px] text-gray-500 font-medium mt-0.5">ระบบดูแลผู้ป่วยในชุมชน</p>
             </div>
         </div>
         <button onclick="window.location.href='map_overview.html'" class="w-10 h-10 flex items-center justify-center rounded-full bg-white shadow-sm border border-gray-100 text-[#00694a] hover:bg-gray-50 transition-colors">
@@ -41,17 +41,17 @@
             <div class="bg-white rounded-[20px] p-4 shadow-sm border-l-4 border-[#00694a] relative">
                 <div class="flex justify-between items-start">
                     <span class="material-symbols-outlined text-[#00694a] text-xl">sentiment_satisfied</span>
-                    <span class="bg-[#e8f5e9] text-[#00694a] text-[9px] font-bold px-2 py-0.5 rounded-full">ปกติ</span>
+                    <span class="bg-[#e0f2fe] text-[#0284c7] text-[9px] font-bold px-2 py-0.5 rounded-full">ปกติ</span>
                 </div>
-                <h3 class="text-3xl font-bold text-[#111c2d] mt-2" id="stat-social">-</h3>
+                <h3 class="text-3xl font-bold text-[#111c2d] mt-2" id="stat-social">0</h3>
                 <p class="text-[11px] text-gray-600 mt-0.5 font-medium">ติดสังคม</p>
             </div>
-            <div class="bg-white rounded-[20px] p-4 shadow-sm border-l-4 border-[#b45309] relative">
+            <div class="bg-white rounded-[20px] p-4 shadow-sm border-l-4 border-[#f59e0b] relative">
                 <div class="flex justify-between items-start">
-                    <span class="material-symbols-outlined text-[#b45309] text-xl">home</span>
-                    <span class="bg-[#fef3c7] text-[#b45309] text-[9px] font-bold px-2 py-0.5 rounded-full">เฝ้าระวัง</span>
+                    <span class="material-symbols-outlined text-[#f59e0b] text-xl">home</span>
+                    <span class="bg-[#fef3c7] text-[#d97706] text-[9px] font-bold px-2 py-0.5 rounded-full">เฝ้าระวัง</span>
                 </div>
-                <h3 class="text-3xl font-bold text-[#111c2d] mt-2" id="stat-home">-</h3>
+                <h3 class="text-3xl font-bold text-[#111c2d] mt-2" id="stat-home">0</h3>
                 <p class="text-[11px] text-gray-600 mt-0.5 font-medium">ติดบ้าน</p>
             </div>
         </div>
@@ -61,11 +61,11 @@
                 <div class="flex justify-between items-start">
                     <div class="flex items-center gap-2">
                         <span class="material-symbols-outlined text-[#dc2626] text-xl">bed</span>
-                        <span class="text-[#dc2626] font-bold text-xs">High Priority</span>
+                        <span class="text-[#dc2626] font-bold text-[13px]">High Priority</span>
                     </div>
                     <span class="bg-[#fee2e2] text-[#dc2626] text-[9px] font-bold px-2.5 py-0.5 rounded-full">วิกฤต</span>
                 </div>
-                <h3 class="text-3xl font-bold text-[#111c2d] mt-2" id="stat-bed">-</h3>
+                <h3 class="text-3xl font-bold text-[#111c2d] mt-2" id="stat-bed">0</h3>
                 <p class="text-[11px] text-gray-600 mt-0.5 font-medium">ติดเตียง</p>
             </div>
         </div>
@@ -75,16 +75,16 @@
                 <span class="material-symbols-outlined text-3xl">person_add</span>
                 <span class="text-[13px] font-bold">ลงทะเบียนผู้ป่วย</span>
             </button>
-            <button onclick="window.location.href='assessments.html'" class="bg-[#e2e8f0] text-gray-700 rounded-[20px] p-5 flex flex-col items-center justify-center gap-2 shadow-sm hover:bg-gray-300 active:scale-95 transition-all">
-                <span class="material-symbols-outlined text-3xl">assignment</span>
+            <button onclick="window.location.href='assessments.html'" class="bg-[#e2e8f0] text-[#334155] rounded-[20px] p-5 flex flex-col items-center justify-center gap-2 shadow-sm hover:bg-gray-300 active:scale-95 transition-all">
+                <span class="material-symbols-outlined text-3xl text-gray-500">assignment_turned_in</span>
                 <span class="text-[13px] font-bold">ประเมิน ADL</span>
             </button>
         </div>
 
         <div class="px-4 mt-6">
             <div class="relative">
-                <span class="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-gray-600 text-[20px]">search</span>
-                <input type="text" id="search-input" oninput="filterPatients()" class="w-full pl-11 pr-4 py-3.5 bg-[#eef2ff] border-none rounded-full text-sm focus:outline-none focus:ring-2 focus:ring-[#00694a] shadow-inner text-gray-700 placeholder-gray-500" placeholder="ค้นหาชื่อผู้ป่วย หรือ บ้านเลขที่...">
+                <span class="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-gray-500 text-[20px]">search</span>
+                <input type="text" id="search-input" oninput="filterPatients()" class="w-full pl-11 pr-4 py-3.5 bg-[#f1f5f9] border-none rounded-[16px] text-sm focus:outline-none focus:ring-2 focus:ring-[#00694a] shadow-inner text-gray-700 placeholder-gray-500" placeholder="ค้นหาชื่อผู้ป่วย หรือ บ้านเลขที่...">
             </div>
         </div>
 
@@ -105,7 +105,7 @@
             <p class="text-xs text-gray-400 animate-pulse">กำลังดึงข้อมูล...</p>
         </div>
 
-        <div id="patient-list" class="space-y-3 px-4 hidden"></div>
+        <div id="patient-list" class="space-y-3 px-4 hidden mb-6"></div>
         
         <div id="empty-state" class="hidden text-center py-12 space-y-2 text-gray-400">
             <span class="material-symbols-outlined text-4xl">person_search</span>
@@ -114,18 +114,22 @@
 
     </main>
 
-    <nav class="fixed bottom-0 left-0 w-full bg-white border-t border-gray-100 shadow-[0_-4px_20px_rgba(0,0,0,0.02)] grid grid-cols-3 h-[70px] z-50">
-        <button onclick="window.location.href='dashboard.html'" class="flex flex-col items-center justify-center text-[#00694a] font-bold">
-            <span class="material-symbols-outlined mb-1 text-[26px]" style="font-variation-settings: 'FILL' 1;">group</span>
-            <span class="text-[10px]">ผู้ป่วย</span>
+    <nav class="fixed bottom-0 left-0 w-full bg-white border-t border-gray-100 shadow-[0_-4px_20px_rgba(0,0,0,0.03)] grid grid-cols-4 h-[70px] z-50 px-2 pb-1">
+        <button onclick="window.location.href='dashboard.html'" class="flex flex-col items-center justify-center m-1.5 bg-[#00694a] text-white rounded-2xl">
+            <span class="material-symbols-outlined mb-0.5 text-[22px]" style="font-variation-settings: 'FILL' 1;">home</span>
+            <span class="text-[9px] font-bold">หน้าหลัก</span>
+        </button>
+        <button class="flex flex-col items-center justify-center text-gray-400 hover:text-gray-600 transition-colors">
+            <span class="material-symbols-outlined mb-0.5 text-[22px]">group</span>
+            <span class="text-[9px] font-medium">ผู้ป่วย</span>
         </button>
         <button onclick="window.location.href='assessments.html'" class="flex flex-col items-center justify-center text-gray-400 hover:text-gray-600 transition-colors">
-            <span class="material-symbols-outlined mb-1 text-[24px]">assignment</span>
-            <span class="text-[10px] font-medium">การประเมิน</span>
+            <span class="material-symbols-outlined mb-0.5 text-[22px]">assignment</span>
+            <span class="text-[9px] font-medium">การประเมิน</span>
         </button>
         <button onclick="window.location.href='vhv_settings.html'" class="flex flex-col items-center justify-center text-gray-400 hover:text-gray-600 transition-colors">
-            <span class="material-symbols-outlined mb-1 text-[24px]">settings</span>
-            <span class="text-[10px] font-medium">ตั้งค่า</span>
+            <span class="material-symbols-outlined mb-0.5 text-[22px]">settings</span>
+            <span class="text-[9px] font-medium">ตั้งค่า</span>
         </button>
     </nav>
 
@@ -150,20 +154,21 @@
             }
         }
 
-        // อัปเดตตัวเลข 3 การ์ดบนสุด
+        // อัปเดตตัวเลขการ์ดสรุปยอด
         function updateTopSummaryCards() {
             document.getElementById('stat-social').innerText = allPatients.filter(p => p.group === 'ติดสังคม').length;
             document.getElementById('stat-home').innerText = allPatients.filter(p => p.group === 'ติดบ้าน').length;
             document.getElementById('stat-bed').innerText = allPatients.filter(p => p.group === 'ติดเตียง').length;
         }
 
+        // ฟังก์ชันจัดการตอนกดปุ่มตัวกรองแคปซูล
         function changeFilter(filterType, element) {
             document.querySelectorAll('.filter-pill').forEach(btn => btn.classList.remove('active'));
             element.classList.add('active');
             currentFilter = filterType;
             
-            // เปลี่ยนชื่อหัวข้อตาม Filter
-            const titles = { 'all': 'รายชื่อผู้ป่วยทั้งหมด', 'visited': 'เยี่ยมแล้ววันนี้', 'pending': 'ค้างประเมิน (รอติดตาม)', 'new': 'ผู้ป่วยรายใหม่' };
+            // เปลี่ยนหัวข้อให้สัมพันธ์กับปุ่มที่กด
+            const titles = { 'all': 'รายการที่ต้องติดตาม', 'visited': 'เยี่ยมแล้ววันนี้', 'pending': 'ค้างประเมิน (รอติดตาม)', 'new': 'ผู้ป่วยรายใหม่' };
             document.getElementById('list-title').innerText = titles[filterType];
             
             renderPatientList();
@@ -179,41 +184,43 @@
             let displayCount = 0;
 
             allPatients.forEach(p => {
-                // กรองแคปซูล
+                // ตัวกรองสถานะแคปซูล
                 if (currentFilter === 'visited' && p.last_assess !== todayStr) return;
                 if (currentFilter === 'pending' && p.group !== 'ยังไม่ประเมิน' && p.adl !== '-') return;
                 if (currentFilter === 'new' && p.last_assess !== '') return;
 
-                // กรองค้นหา
+                // ตัวกรองค้นหา
                 const nameMatch = p.name ? p.name.toLowerCase().includes(searchKeyword) : false;
                 const houseMatch = p.house_no ? p.house_no.toLowerCase().includes(searchKeyword) : false;
                 if (searchKeyword && !nameMatch && !houseMatch) return;
 
                 displayCount++;
 
-                // รูปโปรไฟล์ (สี่เหลี่ยมขอบมน ตามภาพ)
-                let avatarHtml = `<div class="w-14 h-14 rounded-xl bg-gray-100 text-gray-500 font-bold text-xl flex items-center justify-center flex-shrink-0">${p.name ? p.name.substring(0,1) : '?'}</div>`;
+                // รูปโปรไฟล์ (กรอบสี่เหลี่ยมมนแบบในภาพ)
+                let avatarHtml = `<div class="w-12 h-12 rounded-xl bg-[#eef2ff] text-[#00694a] font-bold text-lg flex items-center justify-center flex-shrink-0">${p.name ? p.name.substring(0,1) : '?'}</div>`;
                 if(p.profile_pic && p.profile_pic.startsWith('http')) {
                     const match = p.profile_pic.match(/d\/([a-zA-Z0-9_-]+)/) || p.profile_pic.match(/id=([a-zA-Z0-9_-]+)/);
-                    if(match) avatarHtml = `<img src="https://drive.google.com/thumbnail?id=${match[1]}&sz=150" class="w-14 h-14 rounded-xl object-cover flex-shrink-0 shadow-sm">`;
+                    if(match) avatarHtml = `<img src="https://drive.google.com/thumbnail?id=${match[1]}&sz=150" class="w-12 h-12 rounded-xl object-cover flex-shrink-0 shadow-sm">`;
                 }
 
-                // สีและป้ายบอกกลุ่มด้านขวา
+                // ป้ายสถานะกลุ่มมุมขวา
                 let badgeColor = 'bg-gray-100 text-gray-600';
-                let badgeText = 'ปกติ';
-                if (p.group === 'ติดสังคม') { badgeColor = 'bg-[#00694a] text-white'; badgeText = 'ปกติ'; }
-                else if (p.group === 'ติดบ้าน') { badgeColor = 'bg-[#b45309] text-white'; badgeText = 'เฝ้าระวัง'; }
-                else if (p.group === 'ติดเตียง') { badgeColor = 'bg-[#dc2626] text-white'; badgeText = 'ต้องเยี่ยม'; }
+                if (p.group === 'ติดสังคม') badgeColor = 'bg-[#00694a] text-white';
+                else if (p.group === 'ติดบ้าน') badgeColor = 'bg-[#f59e0b] text-white';
+                else if (p.group === 'ติดเตียง') badgeColor = 'bg-[#dc2626] text-white';
 
+                let groupDisplay = p.group !== 'ยังไม่ประเมิน' ? p.group : 'ต้องประเมิน';
+
+                // โค้ดสร้างการ์ดคนไข้
                 const cardHtml = `
-                    <div onclick="window.location.href='patient_profile.html?id=${p.id}'" class="bg-white rounded-2xl p-3.5 shadow-sm border border-gray-100 flex items-center gap-3 cursor-pointer active:scale-[0.98] transition-transform">
+                    <div onclick="window.location.href='patient_profile.html?id=${p.id}'" class="bg-white rounded-[16px] p-3 shadow-sm border border-gray-100 flex items-center gap-3 cursor-pointer active:scale-[0.98] transition-transform">
                         ${avatarHtml}
                         <div class="flex-1 min-w-0">
                             <h3 class="font-bold text-[14px] text-gray-900 truncate">${p.name || 'ไม่ระบุชื่อ'}</h3>
-                            <p class="text-[11px] text-gray-500 mt-0.5 truncate">บ้านเลขที่ ${p.house_no || '-'} • ${p.group || 'ยังไม่ประเมิน'}</p>
+                            <p class="text-[11px] text-gray-500 mt-0.5 truncate">บ้านเลขที่ ${p.house_no || '-'} • หมู่ ${p.village_no || '-'}</p>
                         </div>
                         <div class="flex flex-col items-end justify-center gap-1.5 flex-shrink-0">
-                            <span class="${badgeColor} text-[10px] font-bold px-2.5 py-0.5 rounded-full shadow-sm">${badgeText}</span>
+                            <span class="${badgeColor} text-[9px] font-bold px-2 py-0.5 rounded-full shadow-sm">${groupDisplay}</span>
                             <span class="text-[9px] text-gray-400 italic">ADL: ${p.adl || '-'}</span>
                         </div>
                     </div>
@@ -225,6 +232,7 @@
             else emptyState.classList.add('hidden');
         }
 
+        // เชื่อมช่องค้นหากับฟังก์ชันกรอง
         function filterPatients() { renderPatientList(); }
 
         function getTodayString() {
