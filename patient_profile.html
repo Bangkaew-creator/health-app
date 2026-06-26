@@ -1,6 +1,8 @@
 <!DOCTYPE html>
 <html lang="th">
 <head>
+    <script src="https://cdn.tailwindcss.com?plugins=forms"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script> ```
     <meta charset="utf-8"/>
     <meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" name="viewport"/>
     <title>ข้อมูลผู้ป่วย - Health Volunteer</title>
@@ -105,6 +107,23 @@
                         <span class="text-xs text-[#526069] font-bold mb-1">รายการยาที่ใช้ประจำ</span>
                         <div class="text-sm font-semibold text-[#111c2d] bg-gray-50 p-3 rounded-xl border border-gray-100" id="profile-medication">-</div>
                     </div>
+                </div>
+            </div
+                <div class="bg-white rounded-[20px] p-5 shadow-sm border border-[#bdcac1]/30">
+                <div class="flex justify-between items-center mb-4">
+                    <h3 class="text-sm font-bold flex items-center gap-2 text-[#0284c7]">
+                        <span class="material-symbols-outlined text-[18px]">trending_up</span> กราฟสัญญาณชีพ & น้ำตาล
+                    </h3>
+                    <button onclick="window.location.href='vitals_record.html?id=' + patientId" class="bg-[#f0f9ff] text-[#0284c7] px-3 py-1 rounded-full text-[10px] font-bold border border-[#bae6fd] flex items-center gap-1">
+                        <span class="material-symbols-outlined text-[12px]">add</span> บันทึกค่า
+                    </button>
+                </div>
+                
+                <div class="mb-4">
+                    <canvas id="bpChart" height="150"></canvas>
+                </div>
+                <div>
+                    <canvas id="sugarChart" height="120"></canvas>
                 </div>
             </div>
 
@@ -238,7 +257,61 @@
         
         // [เพิ่มใหม่] ฟังก์ชันไปหน้าซึมเศร้า
         function startDepression() { window.location.href = `depression_assessment.html?id=${patientId}`; }
+async function loadVitalsChart() {
+            try {
+                const response = await fetch(API_URL, {
+                    method: 'POST', body: JSON.stringify({ action: 'getVitals', id: patientId })
+                });
+                const vitals = await response.json();
+                
+                if(vitals.length === 0) return; // ถ้าไม่มีข้อมูลไม่ต้องวาดกราฟ
 
+                // ดึงข้อมูลมาสูงสุด 10 ครั้งล่าสุด (เพื่อให้กราฟไม่อัดแน่นไป)
+                const recentVitals = vitals.slice(-10);
+                
+                const labels = recentVitals.map(v => v.date.split(' ')[0].substring(0,5)); // เอาแค่วัน/เดือน
+                const sysData = recentVitals.map(v => v.sys || null);
+                const diaData = recentVitals.map(v => v.dia || null);
+                const hrData = recentVitals.map(v => v.hr || null);
+                
+                // ข้อมูลน้ำตาล (โชว์จุดสีต่างกันตามช่วงเวลา)
+                const sugarData = recentVitals.map(v => v.sugar || null);
+                const sugarColors = recentVitals.map(v => v.meal === 'หลังอาหาร' ? '#f59e0b' : '#0284c7');
+
+                // 1. วาดกราฟความดันและชีพจร
+                new Chart(document.getElementById('bpChart'), {
+                    type: 'line',
+                    data: {
+                        labels: labels,
+                        datasets: [
+                            { label: 'ตัวบน (Sys)', data: sysData, borderColor: '#ba1a1a', backgroundColor: '#ba1a1a', tension: 0.3, pointRadius: 4 },
+                            { label: 'ตัวล่าง (Dia)', data: diaData, borderColor: '#f97316', backgroundColor: '#f97316', tension: 0.3, pointRadius: 4 },
+                            { label: 'ชีพจร (HR)', data: hrData, borderColor: '#00694a', backgroundColor: '#00694a', borderDash: [5, 5], tension: 0.3, pointRadius: 4 }
+                        ]
+                    },
+                    options: { responsive: true, plugins: { legend: { labels: { font: { size: 10, family: 'Sarabun' } } } }, scales: { y: { suggestedMin: 60, suggestedMax: 160 } } }
+                });
+
+                // 2. วาดกราฟน้ำตาล
+                new Chart(document.getElementById('sugarChart'), {
+                    type: 'bar', // ใชักราฟแท่งเพื่อดูแยกเป็นครั้งๆ
+                    data: {
+                        labels: labels,
+                        datasets: [{
+                            label: 'ระดับน้ำตาล (mg/dL)',
+                            data: sugarData,
+                            backgroundColor: sugarColors,
+                            borderRadius: 4
+                        }]
+                    },
+                    options: { responsive: true, plugins: { legend: { display: false }, tooltip: { callbacks: { label: (ctx) => `${ctx.raw} mg/dL (${recentVitals[ctx.dataIndex].meal})` } } } }
+                });
+
+            } catch (err) { console.log("โหลดกราฟผิดพลาด", err); }
+        }
+
+        // อย่าลืมเรียกใช้ฟังก์ชันโหลดกราฟ
+        loadVitalsChart();
         loadPatientProfile();
     </script>
 </body>
