@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="utf-8"/>
+    <meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" name="viewport"/>
+    <title>แผนที่พิกัดผู้ป่วย - Health Volunteer</title>
+    <script src="https://cdn.tailwindcss.com?plugins=forms"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700&display=swap" rel="stylesheet"/>
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+    
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+
+    <style>
+        body { font-family: 'Sarabun', sans-serif; background-color: #f8fafc; -webkit-tap-highlight-color: transparent;}
+        .material-symbols-outlined { font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24; }
+        #map { height: calc(100dvh - 64px); width: 100%; z-index: 1; }
+        .custom-popup .leaflet-popup-content-wrapper { border-radius: 16px; padding: 4px; box-shadow: 0 4px 20px rgba(0,0,0,0.08); }
+        .custom-popup .leaflet-popup-content { margin: 8px 12px; }
+    </style>
+</head>
+<body class="text-[#111c2d] overflow-hidden">
+
+    <header class="bg-[#00694a] shadow-md flex items-center w-full px-4 h-16 text-white gap-3 sticky top-0 z-50">
+        <button onclick="window.location.href='dashboard.html'" class="w-10 h-10 flex items-center justify-center rounded-full hover:bg-white/20 transition-colors">
+            <span class="material-symbols-outlined">arrow_back</span>
+        </button>
+        <div class="flex-1">
+            <h1 class="text-base font-bold leading-tight">แผนที่พิกัดผู้ป่วย</h1>
+            <p class="text-[10px] text-white/80 font-medium">ภาพรวมการกระจายตัวในชุมชน</p>
+        </div>
+    </header>
+
+    <div class="relative w-full h-full">
+        <div id="map"></div>
+
+        <div class="absolute bottom-24 right-4 bg-white/95 backdrop-blur-sm p-4 rounded-2xl shadow-lg border border-gray-100 z-[1000] space-y-2.5 text-xs max-w-[180px]">
+            <p class="font-bold text-gray-700 border-b pb-1.5 flex items-center gap-1">
+                <span class="material-symbols-outlined text-sm text-[#00694a]">layers</span> กลุ่มผู้ป่วย
+            </p>
+            <div class="flex items-center gap-2">
+                <span class="w-3.5 h-3.5 rounded-full bg-[#00694a] border-2 border-white shadow-sm inline-block"></span>
+                <span class="font-medium text-gray-600">ติดสังคม</span>
+            </div>
+            <div class="flex items-center gap-2">
+                <span class="w-3.5 h-3.5 rounded-full bg-[#f59e0b] border-2 border-white shadow-sm inline-block"></span>
+                <span class="font-medium text-gray-600">ติดบ้าน</span>
+            </div>
+            <div class="flex items-center gap-2">
+                <span class="w-3.5 h-3.5 rounded-full bg-[#dc2626] border-2 border-white shadow-sm inline-block"></span>
+                <span class="font-medium text-gray-600">ติดเตียง</span>
+            </div>
+            <div class="flex items-center gap-2">
+                <span class="w-3.5 h-3.5 rounded-full bg-gray-400 border-2 border-white shadow-sm inline-block"></span>
+                <span class="font-medium text-gray-400">ยังไม่ประเมิน</span>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const API_URL = "https://script.google.com/macros/s/AKfycbyzPy7sklwURcJiqFDzlK4OEQ8616CJLuNyAjb8euQNzYJLXz_dj4UJM63w8-nI1L3r/exec";
+        
+        let map;
+        let markersGroup;
+
+        // เริ่มต้นสร้างแผนที่ (Default Center จะปรับอัตโนมัติเมื่อโหลดพิกัดคนไข้อ่านค่าได้)
+        function initMap() {
+            map = L.map('map', { zoomControl: false }).setView([13.6375, 100.6750], 14); // พิกัดเริ่มต้นบางแก้ว สมุทรปราการ
+            
+            // ใช้แผนที่ OpenStreetMap แบบคลีน
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                attribution: '&copy; OpenStreetMap'
+            }).addTo(map);
+
+            // ย้ายปุ่มควบคุมการซูมไปไว้มุมซ้ายล่างแทนเพื่อไม่ให้บังเมนู
+            L.control.zoom({ position: 'bottomleft' }).addTo(map);
+            
+            markersGroup = L.featureGroup().addTo(map);
+        }
+
+        async function loadMarkers() {
+            try {
+                const response = await fetch(API_URL, { method: 'POST', body: JSON.stringify({ action: 'getAllPatients' }) });
+                const patients = await response.json();
+                
+                let validCoordsCount = 0;
+
+                patients.forEach(p => {
+                    if (!p.lat_long || !p.lat_long.includes(',')) return;
+
+                    const coords = p.lat_long.split(',');
+                    const lat = parseFloat(coords[0].trim());
+                    const lng = parseFloat(coords[1].trim());
+
+                    if (isNaN(lat) || isNaN(lng)) return;
+
+                    validCoordsCount++;
+
+                    // เลือกสีหมุดวงกลมตามกลุ่มระดับภาวะพึ่งพิง
+                    let markerColor = '#94a3b8'; // สีเทา = ยังไม่ประเมิน
+                    if (p.group === 'ติดสังคม') markerColor = '#00694a';
+                    else if (p.group === 'ติดบ้าน') markerColor = '#f59e0b';
+                    else if (p.group === 'ติดเตียง') markerColor = '#dc2626';
+
+                    // สร้างหมุดวงกลมสไตล์โมเดิร์น (CircleMarker) อ่านง่ายสบายตาบนโมบาย
+                    const marker = L.circleMarker([lat, lng], {
+                        radius: 9,
+                        fillColor: markerColor,
+                        color: '#ffffff',
+                        weight: 2,
+                        opacity: 1,
+                        fillOpacity: 0.9
+                    });
+
+                    // ออกแบบป๊อปอัปเมื่อคลิกที่หมุดคนไข้
+                    const popupContent = `
+                        <div class="custom-popup space-y-1">
+                            <h4 class="font-bold text-sm text-gray-900">${p.name || 'ไม่ระบุชื่อ'}</h4>
+                            <p class="text-[11px] text-gray-500">บ้านเลขที่ ${p.house_no || '-'} หมู่ ${p.village_no || '-'}</p>
+                            <p class="text-[11px] font-semibold mt-1" style="color: ${markerColor}">สถานะ: ${p.group || 'ยังไม่ประเมิน'}</p>
+                            <div class="pt-2 border-t border-gray-100 mt-1.5 flex justify-end">
+                                <button onclick="window.location.href='patient_profile.html?id=${p.id}'" class="bg-[#00694a] text-white text-[10px] font-bold px-3 py-1.5 rounded-lg flex items-center gap-0.5 shadow-sm">
+                                    เปิดแฟ้มประวัติ <span class="material-symbols-outlined text-[12px]">chevron_right</span>
+                                </button>
+                            </div>
+                        </div>
+                    `;
+
+                    marker.bindPopup(popupContent, { className: 'custom-popup', closeButton: false });
+                    markersGroup.addLayer(marker);
+                });
+
+                // ถ้ามีพิกัดสมบูรณ์ ระบบจะปรับมุมมอง (Zoom & Pan) ให้ครอบคลุมทุกหมุดโดยอัตโนมัติ ไม่ต้องกดเลื่อนหาเอง
+                if (validCoordsCount > 0) {
+                    map.fitBounds(markersGroup.getBounds(), { padding: [40, 40] });
+                }
+
+            } catch (error) {
+                console.error(error);
+                alert("ไม่สามารถดึงข้อมูลพิกัดผู้ป่วยได้");
+            }
+        }
+
+        // เริ่มทำงาน
+        initMap();
+        loadMarkers();
+    </script>
+</body>
+</html>
