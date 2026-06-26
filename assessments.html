@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="utf-8"/>
+    <meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" name="viewport"/>
+    <title>งานประเมินที่ได้รับมอบหมาย</title>
+    <script src="https://cdn.tailwindcss.com?plugins=forms"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700&display=swap" rel="stylesheet"/>
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+    <style>
+        body { font-family: 'Sarabun', sans-serif; background-color: #f8fafc; padding-bottom: 90px; -webkit-tap-highlight-color: transparent;}
+        .material-symbols-outlined { font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24; }
+        .tab-btn { flex: 1; text-align: center; padding: 12px 0; font-size: 14px; font-weight: bold; color: #64748b; border-bottom: 3px solid transparent; transition: all 0.2s; }
+        .tab-btn.active { color: #00694a; border-bottom-color: #00694a; }
+        .loader { border: 3px solid #d8e3fb; border-bottom-color: #00694a; border-radius: 50%; width: 36px; height: 36px; animation: spin 1s linear infinite; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+    </style>
+</head>
+<body class="text-[#111c2d]">
+
+    <header class="bg-white sticky top-0 z-50 shadow-sm w-full border-b border-gray-100">
+        <div class="flex items-center px-4 h-16 gap-3">
+            <button onclick="window.location.href='dashboard.html'" class="w-10 h-10 flex items-center justify-center rounded-full bg-gray-50 text-[#00694a] hover:bg-gray-100 transition-colors">
+                <span class="material-symbols-outlined">arrow_back</span>
+            </button>
+            <h1 class="text-base font-bold text-[#00694a]">งานประเมิน (ที่ได้รับมอบหมาย)</h1>
+        </div>
+        
+        <div class="flex px-4 bg-white">
+            <button onclick="switchTab('pending')" id="tab-pending" class="tab-btn active">รอการประเมิน</button>
+            <button onclick="switchTab('completed')" id="tab-completed" class="tab-btn">ประเมินแล้ว</button>
+        </div>
+    </header>
+
+    <main class="max-w-2xl mx-auto pt-6 pb-4">
+
+        <div id="loading-state" class="flex flex-col items-center justify-center py-10 space-y-3">
+            <div class="loader"></div>
+            <p class="text-xs text-gray-400 animate-pulse">กำลังโหลดงานที่ได้รับมอบหมาย...</p>
+        </div>
+
+        <div id="assignment-list" class="space-y-4 px-4 hidden mb-6"></div>
+        
+        <div id="empty-state" class="hidden text-center py-16 space-y-3 text-gray-400">
+            <div class="w-20 h-20 bg-green-50 rounded-full flex items-center justify-center mx-auto mb-2">
+                <span class="material-symbols-outlined text-[40px] text-green-500">task_alt</span>
+            </div>
+            <h3 class="text-gray-700 font-bold">ไม่มีงานค้าง</h3>
+            <p class="text-[13px]">เยี่ยมมาก! คุณไม่มีงานประเมินที่ค้างอยู่</p>
+        </div>
+
+    </main>
+
+    <nav class="fixed bottom-0 left-0 w-full bg-white border-t border-gray-100 shadow-[0_-4px_20px_rgba(0,0,0,0.03)] grid grid-cols-4 h-[75px] z-50 px-2 pb-2">
+        <button onclick="window.location.href='dashboard.html'" class="flex flex-col items-center justify-center text-gray-400 hover:text-gray-600 transition-colors">
+            <span class="material-symbols-outlined mb-0.5 text-[24px]">home</span>
+            <span class="text-[10px] font-medium">หน้าหลัก</span>
+        </button>
+        <button onclick="window.location.href='patient_list.html'" class="flex flex-col items-center justify-center text-gray-400 hover:text-gray-600 transition-colors">
+            <span class="material-symbols-outlined mb-0.5 text-[24px]">group</span>
+            <span class="text-[10px] font-medium">ผู้ป่วย</span>
+        </button>
+        <button onclick="window.scrollTo({top: 0, behavior: 'smooth'})" class="flex flex-col items-center justify-center m-1.5 bg-[#00694a] text-white rounded-[18px] shadow-sm">
+            <span class="material-symbols-outlined mb-0.5 text-[24px]" style="font-variation-settings: 'FILL' 1;">assignment</span>
+            <span class="text-[10px] font-bold">การประเมิน</span>
+        </button>
+        <button onclick="window.location.href='vhv_settings.html'" class="flex flex-col items-center justify-center text-gray-400 hover:text-gray-600 transition-colors">
+            <span class="material-symbols-outlined mb-0.5 text-[24px]">settings</span>
+            <span class="text-[10px] font-medium">ตั้งค่า</span>
+        </button>
+    </nav>
+
+    <script>
+        const API_URL = "https://script.google.com/macros/s/AKfycbyzPy7sklwURcJiqFDzlK4OEQ8616CJLuNyAjb8euQNzYJLXz_dj4UJM63w8-nI1L3r/exec";
+        
+        let assignments = []; 
+        let currentTab = 'pending';
+
+        // โหลดข้อมูลรายชื่อ (ใช้วิธีดึงคนไข้ทั้งหมดแล้วมากรองว่าใคร 'ยังไม่ประเมิน' ไปก่อนในเวอร์ชันนี้)
+        async function fetchAssignments() {
+            try {
+                const response = await fetch(API_URL, { method: 'POST', body: JSON.stringify({ action: 'getAllPatients' }) });
+                const allPatients = await response.json();
+                
+                // สมมติว่าใครที่ค่า ADL เป็น '-' คือคนไข้ที่รอรับการประเมิน (สามารถเปลี่ยน Logic การมอบหมายงานได้ในอนาคต)
+                assignments = allPatients.map(p => {
+                    return {
+                        ...p,
+                        status: (p.adl === '-' || p.group === 'ยังไม่ประเมิน') ? 'pending' : 'completed'
+                    };
+                });
+                
+                renderList();
+                
+                document.getElementById('loading-state').classList.add('hidden');
+                document.getElementById('assignment-list').classList.remove('hidden');
+            } catch (error) {
+                alert("ไม่สามารถดึงข้อมูลงานประเมินได้");
+            }
+        }
+
+        function switchTab(tab) {
+            document.getElementById('tab-pending').classList.remove('active');
+            document.getElementById('tab-completed').classList.remove('active');
+            document.getElementById(`tab-${tab}`).classList.add('active');
+            currentTab = tab;
+            renderList();
+        }
+
+        function renderList() {
+            const container = document.getElementById('assignment-list');
+            const emptyState = document.getElementById('empty-state');
+            container.innerHTML = '';
+            
+            const filteredData = assignments.filter(p => p.status === currentTab);
+
+            if (filteredData.length === 0) {
+                emptyState.classList.remove('hidden');
+            } else {
+                emptyState.classList.add('hidden');
+                
+                filteredData.forEach(p => {
+                    let avatarHtml = `<div class="w-12 h-12 rounded-full bg-gray-100 text-gray-500 font-bold text-lg flex items-center justify-center flex-shrink-0 border">${p.name ? p.name.substring(0,1) : '?'}</div>`;
+                    
+                    if(p.profile_pic && p.profile_pic.startsWith('http')) {
+                        const match = p.profile_pic.match(/d\/([a-zA-Z0-9_-]+)/) || p.profile_pic.match(/id=([a-zA-Z0-9_-]+)/);
+                        if(match) avatarHtml = `<img src="https://drive.google.com/thumbnail?id=${match[1]}&sz=150" class="w-12 h-12 rounded-full object-cover flex-shrink-0 shadow-sm">`;
+                    }
+
+                    // ป้ายสถานะ
+                    const statusBadge = currentTab === 'pending' 
+                        ? `<span class="bg-amber-100 text-amber-700 text-[10px] font-bold px-2 py-0.5 rounded">รอประเมิน ADL</span>`
+                        : `<span class="bg-green-100 text-green-700 text-[10px] font-bold px-2 py-0.5 rounded">เสร็จสิ้น</span>`;
+
+                    const btnColor = currentTab === 'pending' ? 'bg-[#00694a] text-white hover:bg-[#005239]' : 'bg-gray-100 text-gray-500 border border-gray-200';
+                    const btnText = currentTab === 'pending' ? 'ไปที่แฟ้มประวัติเพื่อประเมิน' : 'ดูแฟ้มประวัติ';
+
+                    const cardHtml = `
+                        <div class="bg-white rounded-[20px] p-4 shadow-sm border border-gray-100 flex flex-col gap-3">
+                            <div class="flex items-center gap-3">
+                                ${avatarHtml}
+                                <div class="flex-1 min-w-0">
+                                    <div class="flex justify-between items-start mb-0.5">
+                                        <h3 class="font-bold text-[15px] text-gray-900 truncate">${p.name || 'ไม่ระบุชื่อ'}</h3>
+                                        ${statusBadge}
+                                    </div>
+                                    <p class="text-xs text-gray-500 truncate">บ้านเลขที่ ${p.house_no || '-'} • หมู่ ${p.village_no || '-'}</p>
+                                </div>
+                            </div>
+                            
+                            <button onclick="window.location.href='patient_profile.html?id=${p.id}'" class="w-full py-2.5 rounded-xl font-bold text-xs ${btnColor} transition-colors flex items-center justify-center gap-1 active:scale-[0.98]">
+                                ${btnText} <span class="material-symbols-outlined text-[14px]">arrow_forward</span>
+                            </button>
+                        </div>
+                    `;
+                    container.insertAdjacentHTML('beforeend', cardHtml);
+                });
+            }
+        }
+
+        fetchAssignments();
+    </script>
+</body>
+</html>
