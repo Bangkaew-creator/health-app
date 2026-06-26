@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="utf-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
+    <title>บันทึกสัญญาณชีพ</title>
+    <script src="https://cdn.tailwindcss.com?plugins=forms"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700&display=swap" rel="stylesheet"/>
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+    <style>
+        body { font-family: 'Sarabun', sans-serif; background-color: #f9f9ff; }
+        .input-box { width: 100%; border: 1px solid #e2e8f0; border-radius: 12px; padding: 12px; text-align: center; font-size: 18px; font-weight: bold; color: #111c2d; outline: none; }
+        .input-box:focus { border-color: #0284c7; }
+        input[type="radio"] { display: none; }
+        input[type="radio"]:checked + label { background-color: #0284c7; color: white; border-color: #0284c7; font-weight: bold; }
+    </style>
+</head>
+<body class="pb-24">
+
+    <header class="bg-white sticky top-0 z-50 shadow-sm flex items-center w-full px-4 h-16 border-b border-gray-200 gap-3">
+        <button onclick="window.history.back()" class="w-10 h-10 flex items-center justify-center rounded-full bg-gray-50 text-[#0284c7] hover:bg-gray-100">
+            <span class="material-symbols-outlined">close</span>
+        </button>
+        <h1 class="text-base font-bold text-[#0284c7]">บันทึกสัญญาณชีพ & น้ำตาล</h1>
+    </header>
+
+    <main class="max-w-2xl mx-auto p-4 space-y-4">
+        <form id="vitalsForm" onsubmit="saveData(event)" class="space-y-4">
+            
+            <div class="bg-white rounded-2xl p-5 shadow-sm border border-gray-100">
+                <h3 class="font-bold text-[#ba1a1a] flex items-center gap-2 mb-4"><span class="material-symbols-outlined">monitor_heart</span> ความดันโลหิตและชีพจร</h3>
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="text-xs text-gray-500 mb-1 block text-center">ตัวบน (Systolic)</label>
+                        <input type="number" id="sys" class="input-box" placeholder="เช่น 120">
+                    </div>
+                    <div>
+                        <label class="text-xs text-gray-500 mb-1 block text-center">ตัวล่าง (Diastolic)</label>
+                        <input type="number" id="dia" class="input-box" placeholder="เช่น 80">
+                    </div>
+                    <div class="col-span-2 mt-2">
+                        <label class="text-xs text-gray-500 mb-1 block text-center">อัตราการเต้นหัวใจ (Pulse/HR)</label>
+                        <input type="number" id="hr" class="input-box text-[#00694a]" placeholder="เช่น 75">
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-white rounded-2xl p-5 shadow-sm border border-gray-100">
+                <h3 class="font-bold text-[#0284c7] flex items-center gap-2 mb-4"><span class="material-symbols-outlined">water_drop</span> ระดับน้ำตาลในเลือด (ถ้ามี)</h3>
+                <input type="number" id="sugar" class="input-box mb-4" placeholder="เช่น 110 mg/dL">
+                
+                <div class="grid grid-cols-2 gap-2">
+                    <div>
+                        <input type="radio" id="meal_before" name="meal_type" value="ก่อนอาหาร">
+                        <label for="meal_before" class="block text-center p-3 text-sm bg-white border border-gray-200 rounded-xl cursor-pointer">อดอาหาร / ก่อนอาหาร</label>
+                    </div>
+                    <div>
+                        <input type="radio" id="meal_after" name="meal_type" value="หลังอาหาร">
+                        <label for="meal_after" class="block text-center p-3 text-sm bg-white border border-gray-200 rounded-xl cursor-pointer">หลังอาหาร</label>
+                    </div>
+                </div>
+            </div>
+
+        </form>
+    </main>
+
+    <div class="fixed bottom-0 left-0 w-full bg-white border-t p-4 z-50">
+        <button type="submit" form="vitalsForm" id="btn-save" class="w-full bg-[#0284c7] text-white py-3.5 rounded-xl font-bold shadow-md flex items-center justify-center gap-2">
+            บันทึกข้อมูล
+            <span class="material-symbols-outlined text-sm">save</span>
+        </button>
+    </div>
+
+    <script>
+        const API_URL = "https://script.google.com/macros/s/AKfycbyzPy7sklwURcJiqFDzlK4OEQ8616CJLuNyAjb8euQNzYJLXz_dj4UJM63w8-nI1L3r/exec";
+        const urlParams = new URLSearchParams(window.location.search);
+        const patientId = urlParams.get('id');
+
+        async function saveData(e) {
+            e.preventDefault();
+            const btn = document.getElementById('btn-save');
+            
+            const sys = document.getElementById('sys').value;
+            const dia = document.getElementById('dia').value;
+            const hr = document.getElementById('hr').value;
+            const sugar = document.getElementById('sugar').value;
+            const mealSelected = document.querySelector('input[name="meal_type"]:checked');
+            
+            if (!sys && !dia && !hr && !sugar) {
+                return alert("กรุณากรอกข้อมูลอย่างน้อย 1 อย่าง");
+            }
+            if (sugar && !mealSelected) {
+                return alert("กรุณาเลือกช่วงเวลา (ก่อน/หลังอาหาร) สำหรับค่าน้ำตาล");
+            }
+
+            btn.innerHTML = 'กำลังบันทึก...'; btn.disabled = true;
+
+            const data = {
+                patient_id: patientId, sys: sys, dia: dia, hr: hr,
+                sugar: sugar, meal_type: mealSelected ? mealSelected.value : ''
+            };
+
+            try {
+                const response = await fetch(API_URL, {
+                    method: 'POST', body: JSON.stringify({ action: 'saveVitals', data: data })
+                });
+                const result = await response.json();
+                if (result.success) {
+                    alert('บันทึกสัญญาณชีพเรียบร้อย!');
+                    window.location.href = `patient_profile.html?id=${patientId}`;
+                } else {
+                    alert('เกิดข้อผิดพลาด');
+                }
+            } catch (err) { alert('การเชื่อมต่อล้มเหลว'); }
+            
+            btn.innerHTML = 'บันทึกข้อมูล <span class="material-symbols-outlined text-sm">save</span>'; btn.disabled = false;
+        }
+    </script>
+</body>
+</html>
