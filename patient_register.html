@@ -5,29 +5,29 @@
     <meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" name="viewport"/>
     <title>ลงทะเบียนผู้ป่วยใหม่ - Health Volunteer</title>
     <script src="https://cdn.tailwindcss.com?plugins=forms"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700&family=Sarabun:wght@300;400;500;600;700&display=swap" rel="stylesheet"/>
+    <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700&display=swap" rel="stylesheet"/>
     <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
     <style>
-        body { font-family: 'Sarabun', 'Be Vietnam Pro', sans-serif; background-color: #f9f9ff; -webkit-tap-highlight-color: transparent;}
+        body { font-family: 'Sarabun', sans-serif; background-color: #f8fafc; padding-bottom: 100px; -webkit-tap-highlight-color: transparent;}
         .material-symbols-outlined { font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24; }
         .loader-small { border: 2px solid #d8e3fb; border-bottom-color: #00694a; border-radius: 50%; width: 20px; height: 20px; animation: spin 1s linear infinite; }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        .input-field { width: 100%; border: 1px solid #e2e8f0; border-radius: 14px; padding: 14px; font-size: 15px; outline: none; transition: all 0.2s; background-color: #ffffff; }
+        .input-field:focus { border-color: #00694a; box-shadow: 0 0 0 3px rgba(0,105,74,0.1); }
     </style>
 </head>
-<body class="text-[#111c2d] pb-24">
+<body class="text-[#111c2d]">
 
-<header class="bg-[#f9f9ff] sticky top-0 z-50 shadow-sm flex justify-between items-center w-full px-4 h-16 border-b border-[#bdcac1]/30">
-    <div class="flex items-center gap-3">
-        <a href="dashboard.html" class="w-10 h-10 flex items-center justify-center rounded-full hover:bg-[#d8e3fb] transition-colors text-[#00694a]">
-            <span class="material-symbols-outlined">arrow_back</span>
-        </a>
-        <h1 class="text-lg font-bold text-[#00694a]">ลงทะเบียนผู้ป่วยใหม่</h1>
-    </div>
+<header class="bg-white sticky top-0 z-50 shadow-sm flex items-center w-full px-4 h-16 border-b border-gray-200 gap-3">
+    <button onclick="window.history.back()" class="w-10 h-10 flex items-center justify-center rounded-full bg-gray-50 text-[#00694a] hover:bg-gray-100">
+        <span class="material-symbols-outlined">arrow_back</span>
+    </button>
+    <h1 class="text-base font-bold text-[#00694a]">ลงทะเบียนผู้ป่วยใหม่</h1>
 </header>
 
-<main class="max-w-2xl mx-auto p-4 space-y-6">
+<main class="max-w-2xl mx-auto p-4 pt-6 space-y-6">
     
-    <section class="bg-[#f5fff7] rounded-2xl p-5 border-2 border-dashed border-[#00694a]/50 shadow-sm text-center relative">
+    <section class="bg-[#f5fff7] rounded-[22px] p-5 border-2 border-dashed border-[#00694a]/30 shadow-sm text-center relative">
         <div class="absolute top-0 right-0 bg-[#00694a] text-white text-[10px] font-bold px-2 py-1 rounded-bl-lg">แนะนำ</div>
         <div class="w-12 h-12 bg-[#00694a]/10 text-[#00694a] rounded-full flex items-center justify-center mx-auto mb-3">
             <span class="material-symbols-outlined text-2xl">smart_button</span>
@@ -37,29 +37,29 @@
         
         <input type="file" id="camera-input" accept="image/*" capture="environment" class="hidden">
         
-        <button type="button" onclick="document.getElementById('camera-input').click()" class="w-full py-3 bg-[#00694a] text-white rounded-xl text-sm font-bold flex items-center justify-center gap-2 active:scale-95 transition-transform shadow-md">
+        <button type="button" onclick="document.getElementById('camera-input').click()" class="w-full py-3.5 bg-[#00694a] text-white rounded-xl text-sm font-bold flex items-center justify-center gap-2 active:scale-95 transition-transform shadow-md">
             <span class="material-symbols-outlined text-[20px]">document_scanner</span>
             เปิดกล้องสแกนบัตร (OCR)
         </button>
         <p id="ocr-status" class="text-xs text-[#ba1a1a] mt-2 hidden">ถ่ายรูปสำเร็จ รอการเชื่อมต่อ API OCR ในเฟสถัดไป...</p>
     </section>
 
-    <form id="patient-form" class="space-y-5">
+    <form id="patient-form" class="space-y-6">
         
-        <div class="bg-white rounded-xl p-5 border border-[#bdcac1]/30 shadow-sm space-y-4">
-            <h3 class="text-sm font-bold flex items-center gap-2 border-b border-[#bdcac1]/30 pb-2">
-                <span class="material-symbols-outlined text-[#00694a]">person</span> ข้อมูลส่วนบุคคล
+        <div class="bg-white rounded-[22px] p-6 shadow-sm border border-gray-100 space-y-4">
+            <h3 class="font-bold text-[#00694a] flex items-center gap-2 border-b pb-3 mb-2">
+                <span class="material-symbols-outlined text-[20px]">person</span> ข้อมูลส่วนบุคคล
             </h3>
             
             <div class="space-y-1.5">
                 <label class="text-xs font-bold text-[#526069]">เลขประจำตัวประชาชน (13 หลัก)</label>
-                <input type="tel" id="id_card" maxlength="13" class="w-full px-4 py-3 rounded-xl border border-[#6e7a72]/30 focus:ring-2 focus:ring-[#00694a] focus:border-[#00694a] text-sm">
+                <input type="tel" id="id_card" maxlength="13" class="input-field" placeholder="ระบุเลขบัตรประชาชน">
             </div>
 
             <div class="grid grid-cols-3 gap-3">
                 <div class="space-y-1.5 col-span-1">
                     <label class="text-xs font-bold text-[#526069]">คำนำหน้า</label>
-                    <select id="prefix" class="w-full px-3 py-3 rounded-xl border border-[#6e7a72]/30 text-sm bg-white">
+                    <select id="prefix" class="input-field bg-white">
                         <option value="นาย">นาย</option>
                         <option value="นาง">นาง</option>
                         <option value="นางสาว">นางสาว</option>
@@ -67,96 +67,93 @@
                 </div>
                 <div class="space-y-1.5 col-span-2">
                     <label class="text-xs font-bold text-[#526069]">ชื่อ - นามสกุล <span class="text-[#ba1a1a]">*</span></label>
-                    <input type="text" id="fullname" required class="w-full px-4 py-3 rounded-xl border border-[#6e7a72]/30 text-sm" placeholder="เช่น สมชาย ใจดี">
+                    <input type="text" id="fullname" required class="input-field" placeholder="เช่น สมชาย ใจดี">
                 </div>
             </div>
 
             <div class="grid grid-cols-2 gap-3">
                 <div class="space-y-1.5">
-                    <label class="text-xs font-bold text-[#526069]">วันเกิด (ค.ศ. หรือ พ.ศ.)</label>
-                    <input type="date" id="dob" class="w-full px-3 py-3 rounded-xl border border-[#6e7a72]/30 text-sm bg-white">
+                    <label class="text-xs font-bold text-[#526069]">วันเกิด</label>
+                    <input type="date" id="dob" class="input-field bg-white">
                 </div>
                 <div class="space-y-1.5">
                     <label class="text-xs font-bold text-[#526069]">อายุ (ปี)</label>
-                    <input type="number" id="age" readonly class="w-full px-4 py-3 rounded-xl bg-[#f0f3ff] text-[#00694a] font-bold text-sm cursor-not-allowed" placeholder="คำนวณอัตโนมัติ">
+                    <input type="number" id="age" readonly class="input-field bg-gray-50 text-[#00694a] font-bold cursor-not-allowed" placeholder="คำนวณอัตโนมัติ">
                 </div>
             </div>
         </div>
 
-        <div class="bg-white rounded-xl p-5 border border-[#bdcac1]/30 shadow-sm space-y-4">
-            <h3 class="text-sm font-bold flex items-center gap-2 border-b border-[#bdcac1]/30 pb-2">
-                <span class="material-symbols-outlined text-[#00694a]">home</span> ที่อยู่ปัจจุบัน
+        <div class="bg-white rounded-[22px] p-6 shadow-sm border border-gray-100 space-y-4">
+            <h3 class="font-bold text-[#00694a] flex items-center gap-2 border-b pb-3 mb-2">
+                <span class="material-symbols-outlined text-[20px]">home</span> ที่อยู่ปัจจุบัน
             </h3>
             
             <div class="grid grid-cols-2 gap-3">
                 <div class="space-y-1.5">
                     <label class="text-xs font-bold text-[#526069]">บ้านเลขที่ <span class="text-[#ba1a1a]">*</span></label>
-                    <input type="text" id="house_no" required class="w-full px-4 py-3 rounded-xl border border-[#6e7a72]/30 text-sm">
+                    <input type="text" id="house_no" required class="input-field" placeholder="เช่น 45/1">
                 </div>
                 <div class="space-y-1.5">
                     <label class="text-xs font-bold text-[#526069]">หมู่ที่ <span class="text-[#ba1a1a]">*</span></label>
-                    <select id="village_no" required class="w-full px-3 py-3 rounded-xl border border-[#6e7a72]/30 text-sm bg-white">
-                        <option value="" disabled selected>เลือก...</option>
-                        <option value="1">หมู่ที่ 1</option>
-                        <option value="2">หมู่ที่ 2</option>
-                        <option value="3">หมู่ที่ 3</option>
-                    </select>
+                    <input type="number" id="village_no" required class="input-field" placeholder="เช่น 4">
                 </div>
             </div>
             
             <div class="pt-2">
                 <input type="hidden" id="lat_long_value" value="">
-                <button type="button" id="btn-gps" class="w-full py-3 border-2 border-[#bdcac1] text-[#526069] rounded-xl text-xs font-bold flex items-center justify-center gap-2 hover:bg-[#d8e3fb] transition-colors">
+                <button type="button" id="btn-gps" class="w-full py-3.5 border-2 border-[#bdcac1] text-[#526069] rounded-xl text-xs font-bold flex items-center justify-center gap-2 hover:bg-[#d8e3fb] transition-colors">
                     <span class="material-symbols-outlined text-[18px]">pin_drop</span> ปักหมุดพิกัด GPS บ้าน
                 </button>
             </div>
         </div>
 
-        <div class="pt-4 pb-8">
-            <button type="submit" id="btn-save" class="w-full bg-[#00694a] text-white py-4 rounded-xl font-bold shadow-lg hover:bg-[#00855e] active:scale-95 transition-all flex items-center justify-center gap-2 text-base">
+        <div class="bg-white rounded-[22px] p-6 shadow-sm border border-gray-100 space-y-4">
+            <h3 class="font-bold text-[#f59e0b] flex items-center gap-2 border-b pb-3 mb-2">
+                <span class="material-symbols-outlined text-[20px]">group</span> ญาติ / ผู้ดูแลใกล้ชิด
+            </h3>
+            
+            <div class="space-y-1.5">
+                <label class="text-xs font-bold text-[#526069]">ชื่อ - นามสกุล ผู้ดูแล</label>
+                <input type="text" id="caregiver_name" class="input-field" placeholder="ระบุชื่อผู้ติดต่อหลัก (ถ้ามี)">
+            </div>
+
+            <div class="space-y-1.5">
+                <label class="text-xs font-bold text-[#526069]">เบอร์โทรศัพท์ติดต่อ</label>
+                <input type="tel" id="caregiver_phone" class="input-field" placeholder="เช่น 0812345678">
+            </div>
+        </div>
+
+        <div class="fixed bottom-0 left-0 w-full bg-white/90 backdrop-blur-md border-t p-4 z-50">
+            <button type="submit" id="btn-save" class="w-full max-w-2xl mx-auto bg-[#00694a] text-white py-4 rounded-xl font-bold shadow-md hover:bg-[#005239] active:scale-95 transition-all flex items-center justify-center gap-2 text-base">
                 <span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">save</span>
-                บันทึกข้อมูลผู้ป่วย
+                บันทึกข้อมูลและลงทะเบียนผู้ป่วย
             </button>
         </div>
     </form>
 </main>
 
 <script>
-    // ===== ใส่ URL ของคุณตรงนี้ =====
     const API_URL = "https://script.google.com/macros/s/AKfycbyzPy7sklwURcJiqFDzlK4OEQ8616CJLuNyAjb8euQNzYJLXz_dj4UJM63w8-nI1L3r/exec";
-    // =============================
 
-    // 1. คำนวณอายุอัตโนมัติ (รองรับทั้ง ค.ศ. และ พ.ศ.)
+    // 1. คำนวณอายุอัตโนมัติ
     document.getElementById('dob').addEventListener('change', function() {
         if(this.value) {
             const parts = this.value.split('-');
             let inputYear = parseInt(parts[0]);
-            
-            // ถ้าระบุปีมากกว่า 2400 แสดงว่ากรอกเป็น พ.ศ. ให้ลบ 543 เพื่อแปลงเป็น ค.ศ. ชั่วคราวสำหรับการคำนวณอายุ
-            if (inputYear > 2400) {
-                inputYear -= 543;
-            }
+            if (inputYear > 2400) inputYear -= 543;
 
             const birthDate = new Date(inputYear, parseInt(parts[1]) - 1, parseInt(parts[2]));
             const today = new Date();
-            
             let age = today.getFullYear() - birthDate.getFullYear();
             const m = today.getMonth() - birthDate.getMonth();
-            
-            // เช็คว่าถึงวันเกิดในปีนี้หรือยัง ถ้ายังไม่ถึงให้ลบอายุออก 1 ปี
-            if (m < 0 || (m === 0 && today.getDate() < birthDate.getDate())) {
-                age--;
-            }
-            
-            // ป้องกันอายุติดลบ (กรณีเลือกวันอนาคต)
+            if (m < 0 || (m === 0 && today.getDate() < birthDate.getDate())) age--;
             document.getElementById('age').value = age >= 0 ? age : 0;
         }
     });
 
-    // 2. การเปิดกล้อง (ดักอีเวนต์ตอนถ่ายรูปเสร็จ)
+    // 2. ดักจับถ่ายรูปกล้อง
     document.getElementById('camera-input').addEventListener('change', function(e) {
         if(e.target.files.length > 0) {
-            // ถ่ายรูปเสร็จแล้ว แสดงข้อความแจ้งเตือน (เดี๋ยวเราจะทำระบบ OCR หลังบ้านในเฟสถัดไป)
             const statusText = document.getElementById('ocr-status');
             statusText.classList.remove('hidden');
             statusText.innerText = "รูปถ่ายพร้อมแล้ว! (เตรียมส่งทำ OCR ในเฟสถัดไป)";
@@ -164,7 +161,7 @@
         }
     });
 
-    // 3. ระบบดึงพิกัด GPS
+    // 3. ดึงตำแหน่ง GPS อัตโนมัติ
     document.getElementById('btn-gps').addEventListener('click', function() {
         const btn = this;
         btn.innerHTML = `<div class="loader-small border-b-[#526069]"></div> กำลังค้นหาตำแหน่ง...`;
@@ -174,71 +171,62 @@
                 function(position) {
                     const lat = position.coords.latitude;
                     const lon = position.coords.longitude;
-                    document.getElementById('lat_long_value').value = `${lat},${lon}`;
+                    document.getElementById('lat_long_value').value = `${lat}, ${lon}`;
                     btn.innerHTML = `<span class="material-symbols-outlined">check_circle</span> พิกัด: ${lat.toFixed(5)}, ${lon.toFixed(5)}`;
-                    btn.classList.replace('text-[#526069]', 'text-[#00694a]');
-                    btn.classList.replace('border-[#bdcac1]', 'border-[#00694a]');
-                    btn.classList.add('bg-[#e7eeff]');
+                    btn.className = "w-full py-3.5 border-2 border-[#00694a] text-[#00694a] bg-[#f0fdf4] rounded-xl text-xs font-bold flex items-center justify-center gap-2";
                 }, 
                 function(error) {
                     btn.innerHTML = `<span class="material-symbols-outlined">error</span> ไม่สามารถดึงตำแหน่งได้ โปรดเปิด GPS`;
-                    btn.classList.replace('text-[#526069]', 'text-[#ba1a1a]');
+                    btn.className = "w-full py-3.5 border-2 border-[#dc2626] text-[#dc2626] rounded-xl text-xs font-bold flex items-center justify-center gap-2";
                 },
-                { enableHighAccuracy: true } // ร้องขอความแม่นยำสูง
+                { enableHighAccuracy: true, timeout: 8000 }
             );
         } else {
             alert('เบราว์เซอร์ของคุณไม่รองรับการดึงตำแหน่ง GPS');
         }
     });
 
-    // 4. บันทึกข้อมูลทะลุลง Google Sheets
+    // 4. บันทึกข้อมูลเข้าฐานข้อมูลจริง
     document.getElementById('patient-form').addEventListener('submit', async function(e) {
         e.preventDefault();
         const btn = document.getElementById('btn-save');
-        btn.innerHTML = `<div class="loader-small" style="border-bottom-color: white;"></div> กำลังบันทึกข้อมูล...`;
+        btn.innerHTML = `<div class="loader-small" style="border-bottom-color:#fff;"></div> กำลังบันทึกข้อมูล...`;
         btn.disabled = true;
 
-        // ในส่วน <script> ของ patient_register.html
-const payload = {
-    action: 'saveNewPatient', // ตรวจสอบว่าตรงกับ switch case ใน Code.gs
-    patient: {
-        id_card: document.getElementById('id_card').value,
-        prefix: document.getElementById('prefix').value,
-        fullname: document.getElementById('fullname').value,
-        dob: document.getElementById('dob').value,
-        age: document.getElementById('age').value,
-        house_no: document.getElementById('house_no').value,
-        village_no: document.getElementById('village_no').value,
-        lat_long: document.getElementById('lat_long_value').value
-    }
-};
+        const payload = {
+            action: 'updatePatientData', // ใช้ฟังก์ชันรวมหลังบ้าน
+            data: {
+                id: 'NEW_' + Date.now(), // รหัสชั่วคราวสร้างแถวใหม่ในระบบอัปเดตชีต
+                prefix: document.getElementById('prefix')?.value || '',
+                fullname: document.getElementById('fullname').value,
+                id_card: document.getElementById('id_card')?.value || '-',
+                dob: document.getElementById('dob').value || '-',
+                house_no: document.getElementById('house_no').value,
+                village_no: document.getElementById('village_no').value,
+                lat_long: document.getElementById('lat_long_value').value || '-',
+                disease: '-', medication: '[]',
+                caregiver_name: document.getElementById('caregiver_name').value || '-',
+                caregiver_phone: document.getElementById('caregiver_phone').value || '-',
+                diaper: JSON.stringify({ result: 'ยังไม่ประเมิน', indications: [], req_diaper: false, size: '-', req_underpad: false }),
+                equipment: ''
+            }
+        };
 
         try {
-            const response = await fetch(API_URL, {
-                method: 'POST',
-                headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-                body: JSON.stringify(payload)
-            });
-            const data = await response.json();
-            
-            if(data.success) {
-                btn.innerHTML = `<span class="material-symbols-outlined">check_circle</span> บันทึกสำเร็จ`;
-                btn.classList.replace('bg-[#00694a]', 'bg-[#22c55e]');
-                
-                alert('บันทึกข้อมูลเรียบร้อยแล้ว!\nรหัสผู้ป่วย: ' + data.patient_id);
+            const response = await fetch(API_URL, { method: 'POST', body: JSON.stringify(payload) });
+            const result = await response.json();
+            if (result.success) {
+                alert('ลงทะเบียนผู้ป่วยใหม่เรียบร้อยแล้ว!');
                 window.location.href = 'dashboard.html';
             } else {
-                alert('เกิดข้อผิดพลาด: ' + data.message);
-                btn.innerHTML = "บันทึกข้อมูลผู้ป่วย";
-                btn.disabled = false;
+                alert('เกิดข้อผิดพลาดในการบันทึกข้อมูล');
             }
         } catch (error) {
-            alert('ไม่สามารถเชื่อมต่อเซิร์ฟเวอร์ได้: ' + error);
-            btn.innerHTML = "บันทึกข้อมูลผู้ป่วย";
-            btn.disabled = false;
+            alert('การเชื่อมต่อฐานข้อมูลล้มเหลว');
         }
+        btn.innerHTML = 'ลงทะเบียนผู้ป่วย';
+        btn.disabled = false;
     });
 </script>
-
 </body>
 </html>
