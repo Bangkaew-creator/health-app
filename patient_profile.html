@@ -17,12 +17,16 @@
 </head>
 <body class="text-[#111c2d] pb-24">
 
-    <!-- Header -->
-    <header class="bg-[#00694a] sticky top-0 z-50 shadow-md flex items-center w-full px-4 h-16 text-white gap-3">
-        <button onclick="window.location.href='dashboard.html'" class="w-10 h-10 flex items-center justify-center rounded-full hover:bg-white/20 transition-colors">
-            <span class="material-symbols-outlined">arrow_back</span>
+    <header class="bg-[#00694a] sticky top-0 z-50 shadow-md flex justify-between items-center w-full px-4 h-16 text-white">
+        <div class="flex items-center gap-3">
+            <button onclick="window.location.href='dashboard.html'" class="w-10 h-10 flex items-center justify-center rounded-full hover:bg-white/20 transition-colors">
+                <span class="material-symbols-outlined">arrow_back</span>
+            </button>
+            <h1 class="text-lg font-bold">แฟ้มประวัติผู้ป่วย</h1>
+        </div>
+        <button id="btn-edit" class="w-10 h-10 flex items-center justify-center rounded-full hover:bg-white/20 transition-colors hidden">
+            <span class="material-symbols-outlined">edit_square</span>
         </button>
-        <h1 class="text-lg font-bold">แฟ้มประวัติผู้ป่วย</h1>
     </header>
 
     <main class="max-w-2xl mx-auto p-4 space-y-4">
@@ -34,7 +38,6 @@
 
         <div id="profile-content" class="hidden space-y-4">
             
-            <!-- 1. การ์ดสรุปโปรไฟล์ & 6 ปุ่มจัดการด่วน -->
             <div class="bg-white rounded-[20px] p-5 shadow-sm border border-[#bdcac1]/30 relative overflow-hidden">
                 <div class="absolute top-0 right-0 w-24 h-24 bg-[#00694a]/5 rounded-bl-full -z-10"></div>
                 <div class="flex items-center gap-4">
@@ -63,9 +66,7 @@
                     <span id="profile-depression" class="bg-gray-100 text-gray-600 px-3 py-1 rounded-full text-xs font-bold inline-block mt-1 shadow-sm">-</span>
                 </div>
 
-                <!-- เมนู 6 ปุ่ม ควบคุมการแก้ไขและประเมิน (Control Center) -->
                 <div class="grid grid-cols-3 gap-2 mt-4 pt-4 border-t border-[#bdcac1]/30">
-                    <!-- แถวบน: ประเมิน & รูปภาพ -->
                     <button onclick="startADL()" class="bg-[#F59E0B] text-white py-2 rounded-xl text-[11px] font-bold shadow-sm hover:bg-[#D97706] active:scale-95 transition-all flex flex-col items-center justify-center gap-1">
                         <span class="material-symbols-outlined text-[18px]" style="font-variation-settings: 'FILL' 1;">assignment</span> ประเมิน ADL
                     </button>
@@ -75,7 +76,6 @@
                     <button onclick="window.location.href='patient_images.html?id=' + patientId" class="bg-[#f0f9ff] text-[#0284c7] border border-[#bae6fd] py-2 rounded-xl text-[11px] font-bold shadow-sm hover:bg-blue-50 active:scale-95 transition-all flex flex-col items-center justify-center gap-1">
                         <span class="material-symbols-outlined text-[18px]">add_a_photo</span> จัดการรูปภาพ
                     </button>
-                    <!-- แถวล่าง: แก้ไขแยกหมวดหมู่ -->
                     <button onclick="window.location.href='patient_edit.html?id=' + patientId + '#sec-personal'" class="bg-white text-[#00694a] border border-[#00694a]/30 py-2 rounded-xl text-[11px] font-bold shadow-sm hover:bg-gray-50 active:scale-95 transition-all flex flex-col items-center justify-center gap-1">
                         <span class="material-symbols-outlined text-[18px]">manage_accounts</span> ข้อมูลส่วนตัว
                     </button>
@@ -88,7 +88,6 @@
                 </div>
             </div>
 
-            <!-- 2. ข้อมูลส่วนบุคคล -->
             <div class="bg-white rounded-[20px] p-5 shadow-sm border border-[#bdcac1]/30">
                 <h3 class="text-sm font-bold flex items-center gap-2 mb-4 text-[#00694a]">
                     <span class="material-symbols-outlined text-[18px]">badge</span> ข้อมูลส่วนบุคคล
@@ -114,7 +113,6 @@
                 </div>
             </div>
 
-            <!-- 3. ญาติ / ผู้ดูแลใกล้ชิด -->
             <div class="bg-white rounded-[20px] p-5 shadow-sm border border-[#bdcac1]/30">
                 <h3 class="text-sm font-bold flex items-center gap-2 mb-4 text-[#F59E0B]">
                     <span class="material-symbols-outlined text-[18px]">group</span> ญาติ / ผู้ดูแลใกล้ชิด
@@ -132,7 +130,6 @@
                 </div>
             </div>
 
-            <!-- 4. ข้อมูลสุขภาพและการรักษา -->
             <div class="bg-white rounded-[20px] p-5 shadow-sm border border-[#bdcac1]/30">
                 <h3 class="text-sm font-bold flex items-center gap-2 mb-4 text-[#ba1a1a]">
                     <span class="material-symbols-outlined text-[18px]">monitor_heart</span> ข้อมูลสุขภาพและการรักษา
@@ -148,7 +145,6 @@
                 </div>
             </div>
 
-            <!-- 5. กราฟประเมินสุขภาพ (ADL & 2Q9Q) -->
             <div class="bg-white rounded-[20px] p-5 shadow-sm border border-[#bdcac1]/30">
                 <h3 class="text-sm font-bold flex items-center gap-2 mb-4 text-[#F59E0B]">
                     <span class="material-symbols-outlined text-[18px]">timeline</span> กราฟประเมินสุขภาพ (ADL & 2Q9Q)
@@ -157,7 +153,6 @@
                 <div><canvas id="depChart" height="120"></canvas></div>
             </div>
 
-            <!-- 6. กราฟสัญญาณชีพ & น้ำตาล -->
             <div class="bg-white rounded-[20px] p-5 shadow-sm border border-[#bdcac1]/30">
                 <h3 class="text-sm font-bold flex items-center gap-2 mb-4 text-[#0284c7]">
                     <span class="material-symbols-outlined text-[18px]">trending_up</span> กราฟสัญญาณชีพ & น้ำตาล
@@ -170,7 +165,6 @@
                 </button>
             </div>
 
-            <!-- 7. สิทธิ์ผ้าอ้อม & อุปกรณ์การแพทย์ -->
             <div class="bg-white rounded-[20px] p-5 shadow-sm border border-[#bdcac1]/30">
                 <h3 class="text-sm font-bold flex items-center gap-2 mb-4 text-[#2563eb]">
                     <span class="material-symbols-outlined text-[18px]">wc</span> สิทธิ์ผ้าอ้อม & อุปกรณ์การแพทย์
@@ -188,7 +182,6 @@
                 </div>
             </div>
 
-            <!-- 8. รูปภาพสภาพแวดล้อม -->
             <div class="bg-white rounded-[20px] p-5 shadow-sm border border-[#bdcac1]/30">
                 <h3 class="text-sm font-bold flex items-center gap-2 mb-4 text-[#00694a]">
                     <span class="material-symbols-outlined text-[18px]">home</span> รูปภาพสภาพแวดล้อม
@@ -201,7 +194,6 @@
         </div>
     </main>
 
-    <!-- Modal ภาพซูม -->
     <div id="imageModal" class="fixed inset-0 bg-black/90 z-[100] hidden flex-col items-center justify-center opacity-0 transition-opacity duration-300">
         <button onclick="closeModal()" class="absolute top-4 right-4 text-white p-3 bg-black/50 rounded-full hover:bg-white/20"><span class="material-symbols-outlined">close</span></button>
         <img id="modalImage" src="" class="max-w-[95%] max-h-[90%] object-contain rounded-lg shadow-2xl">
@@ -251,7 +243,8 @@
                 document.getElementById('profile-gps').innerText = data.lat_long || 'ยังไม่มีข้อมูล';
                 if (data.lat_long && typeof data.lat_long === 'string' && data.lat_long.includes(',')) {
                     const mapLink = document.getElementById('profile-map-link');
-                    mapLink.href = `https://maps.google.com/?q=${data.lat_long.replace(/\s/g, '')}`;
+                    // แก้ไขลิงก์ Google Maps ให้ทำงานได้สมบูรณ์
+                    mapLink.href = `https://www.google.com/maps/search/?api=1&query=${data.lat_long.replace(/\s/g, '')}`;
                     mapLink.classList.remove('hidden');
                 }
 
@@ -327,6 +320,10 @@
                     if (imgUrl) galleryHtml += `<div class="space-y-1"><p class="text-[10px] text-gray-500 font-bold">${img.label}</p><div class="aspect-square rounded-xl overflow-hidden border border-gray-200 shadow-sm cursor-pointer" onclick="openModal('${imgUrl}')"><img src="${imgUrl}" class="w-full h-full object-cover hover:scale-110 transition-transform"></div></div>`;
                 });
                 gallery.innerHTML = galleryHtml === '' ? '<p class="text-xs text-gray-400 col-span-2 text-center py-4">ยังไม่ได้นำเข้าภาพถ่าย</p>' : galleryHtml;
+
+                // ใส่ปุ่มดินสอกลับมาแล้ว
+                document.getElementById('btn-edit').onclick = () => window.location.href = `patient_edit.html?id=${patientId}`;
+                document.getElementById('btn-edit').classList.remove('hidden');
 
                 document.getElementById('loading-state').classList.add('hidden');
                 document.getElementById('profile-content').classList.remove('hidden');
