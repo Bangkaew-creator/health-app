@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="utf-8"/>
+    <meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" name="viewport"/>
+    <title>จัดการรูปภาพผู้ป่วย</title>
+    <script src="https://cdn.tailwindcss.com?plugins=forms"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700&display=swap" rel="stylesheet"/>
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+    <style>
+        body { font-family: 'Sarabun', sans-serif; background-color: #f9f9ff; -webkit-tap-highlight-color: transparent; }
+        .material-symbols-outlined { font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24; }
+        .upload-card { position: relative; border: 2px dashed #cbd5e1; border-radius: 16px; overflow: hidden; background-color: #ffffff; aspect-ratio: 4/3; display: flex; flex-col: column; align-items: center; justify-content: center; transition: all 0.2s; cursor: pointer; }
+        .upload-card:active { transform: scale(0.98); border-color: #0284c7; }
+        .preview-img { width: 100%; height: 100%; object-fit: cover; }
+        .loading-overlay { position: absolute; inset: 0; background-color: rgba(255,255,255,0.8); display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 10; }
+        .spinner { border: 3px solid #f3f3f3; border-top: 3px solid #0284c7; border-radius: 50%; width: 24px; height: 24px; animation: spin 1s linear infinite; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+    </style>
+</head>
+<body class="text-[#111c2d] pb-12">
+
+    <header class="bg-white sticky top-0 z-50 shadow-sm flex justify-between items-center w-full px-4 h-16 border-b border-gray-200">
+        <div class="flex items-center gap-3">
+            <button onclick="window.history.back()" class="w-10 h-10 flex items-center justify-center rounded-full bg-gray-50 text-[#0284c7] hover:bg-gray-100">
+                <span class="material-symbols-outlined">arrow_back</span>
+            </button>
+            <div>
+                <h1 class="text-base font-bold text-[#0284c7]">อัลบั้มภาพถ่ายผู้ป่วย</h1>
+                <p class="text-xs text-gray-500" id="patient-id-display">รหัส: กำลังโหลด...</p>
+            </div>
+        </div>
+    </header>
+
+    <main class="max-w-2xl mx-auto p-4 space-y-6">
+
+        <section class="bg-white rounded-[20px] p-5 shadow-sm border border-gray-100 flex flex-col items-center space-y-3">
+            <h3 class="text-sm font-bold text-gray-700 w-full text-left flex items-center gap-1">
+                <span class="material-symbols-outlined text-base">account_circle</span> รูปโปรไฟล์ผู้ป่วย
+            </h3>
+            
+            <div onclick="triggerUpload('Profile_Pic')" class="relative w-32 h-32 rounded-full border-2 dashed border-gray-300 overflow-hidden bg-gray-50 flex flex-col items-center justify-center cursor-pointer shadow-inner" id="card-Profile_Pic">
+                <div class="loading-overlay hidden" id="loading-Profile_Pic"><div class="spinner"></div></div>
+                <div class="text-center text-gray-400" id="placeholder-Profile_Pic">
+                    <span class="material-symbols-outlined text-3xl">add_a_photo</span>
+                    <p class="text-[10px] mt-1">เพิ่มรูปภาพ</p>
+                </div>
+                <img src="" class="preview-img hidden rounded-full" id="img-Profile_Pic" alt="Profile">
+            </div>
+            <p class="text-[11px] text-gray-400">แตะที่รูปเพื่อถ่ายภาพหรือเปลี่ยนรูปโปรไฟล์</p>
+        </section>
+
+        <section class="bg-white rounded-[20px] p-5 shadow-sm border border-gray-100 space-y-4">
+            <h3 class="text-sm font-bold text-gray-700 flex items-center gap-1 border-b pb-2">
+                <span class="material-symbols-outlined text-base">cabin</span> สภาพแวดล้อมบ้านผู้ป่วย (4 จุดหลัก)
+            </h3>
+
+            <div class="grid grid-cols-2 gap-4">
+                <div class="space-y-1">
+                    <label class="text-xs text-gray-500 font-medium">1. สภาพที่นอน/เตียง</label>
+                    <div onclick="triggerUpload('Pic_Bed')" class="upload-card" id="card-Pic_Bed">
+                        <div class="loading-overlay hidden" id="loading-Pic_Bed"><div class="spinner"></div></div>
+                        <div class="text-center text-gray-400" id="placeholder-Pic_Bed">
+                            <span class="material-symbols-outlined text-2xl">bed</span>
+                            <p class="text-[10px] mt-0.5">ถ่ายภาพ</p>
+                        </div>
+                        <img src="" class="preview-img hidden" id="img-Pic_Bed" alt="Bed">
+                    </div>
+                </div>
+
+                <div class="space-y-1">
+                    <label class="text-xs text-gray-500 font-medium">2. สภาพห้องน้ำ</label>
+                    <div onclick="triggerUpload('Pic_Bath')" class="upload-card" id="card-Pic_Bath">
+                        <div class="loading-overlay hidden" id="loading-Pic_Bath"><div class="spinner"></div></div>
+                        <div class="text-center text-gray-400" id="placeholder-Pic_Bath">
+                            <span class="material-symbols-outlined text-2xl">bathtub</span>
+                            <p class="text-[10px] mt-0.5">ถ่ายภาพ</p>
+                        </div>
+                        <img src="" class="preview-img hidden" id="img-Pic_Bath" alt="Bathroom">
+                    </div>
+                </div>
+
+                <div class="space-y-1">
+                    <label class="text-xs text-gray-500 font-medium">3. ทางเข้าบ้าน/บันได</label>
+                    <div onclick="triggerUpload('Pic_Entrance')" class="upload-card" id="card-Pic_Entrance">
+                        <div class="loading-overlay hidden" id="loading-Pic_Entrance"><div class="spinner"></div></div>
+                        <div class="text-center text-gray-400" id="placeholder-Pic_Entrance">
+                            <span class="material-symbols-outlined text-2xl">door_front</span>
+                            <p class="text-[10px] mt-0.5">ถ่ายภาพ</p>
+                        </div>
+                        <img src="" class="preview-img hidden" id="img-Pic_Entrance" alt="Entrance">
+                    </div>
+                </div>
+
+                <div class="space-y-1">
+                    <label class="text-xs text-gray-500 font-medium">4. ทางเดินภายในบ้าน</label>
+                    <div onclick="triggerUpload('Pic_Walkway')" class="upload-card" id="card-Pic_Walkway">
+                        <div class="loading-overlay hidden" id="loading-Pic_Walkway"><div class="spinner"></div></div>
+                        <div class="text-center text-gray-400" id="placeholder-Pic_Walkway">
+                            <span class="material-symbols-outlined text-2xl">sensor_door</span>
+                            <p class="text-[10px] mt-0.5">ถ่ายภาพ</p>
+                        </div>
+                        <img src="" class="preview-img hidden" id="img-Pic_Walkway" alt="Walkway">
+                    </div>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <input type="file" id="file-hidden-input" accept="image/*" class="hidden" onchange="handleFileSelect(event)">
+
+    <script>
+        const API_URL = "https://script.google.com/macros/s/AKfycbyzPy7sklwURcJiqFDzlK4OEQ8616CJLuNyAjb8euQNzYJLXz_dj4UJM63w8-nI1L3r/exec";
+        const urlParams = new URLSearchParams(window.location.search);
+        const patientId = urlParams.get('id');
+        
+        document.getElementById('patient-id-display').innerText = `รหัส: ${patientId || '-'}`;
+        
+        let currentTargetType = ''; // เก็บประเภทรูปภาพที่กำลังดำเนินการอยู่ตอนนี้
+
+        // ฟังก์ชันสั่งคลิกช่อง Input ไฟล์ที่ซ่อนไว้
+        function triggerUpload(type) {
+            currentTargetType = type;
+            document.getElementById('file-hidden-input').click();
+        }
+
+        // โหลดรูปภาพเดิมที่มีอยู่แล้วขึ้นมาแสดงผล (ถ้ามี)
+        async function loadExistingImages() {
+            if (!patientId) return;
+            try {
+                const response = await fetch(API_URL, {
+                    method: 'POST', body: JSON.stringify({ action: 'getPatientById', id: patientId })
+                });
+                const data = await response.json();
+                
+                // ตรวจเช็คข้อมูลลิงก์ภาพรายตัว
+                displaySavedImage('Profile_Pic', data.profile_pic);
+                displaySavedImage('Pic_Bed', data.pic_bed);
+                displaySavedImage('Pic_Bath', data.pic_bath);
+                displaySavedImage('Pic_Entrance', data.pic_entrance);
+                displaySavedImage('Pic_Walkway', data.pic_walkway);
+            } catch (e) { console.log("โหลดภาพเดิมไม่สำเร็จ", e); }
+        }
+
+        function displaySavedImage(type, url) {
+            if (url && url.startsWith('http')) {
+                const img = document.getElementById(`img-${type}`);
+                const placeholder = document.getElementById(`placeholder-${type}`);
+                
+                // แปลงลิงก์ดนตรี Google Drive ธรรมดาให้สามารถแสดงภาพในแท็ก img ได้โดยตรง
+                let directUrl = url;
+                if(url.includes('id=')){
+                    const id = url.split('id=')[1];
+                    directUrl = `http://googleusercontent.com/drive-viewer/${id}=w1000`;
+                }
+                
+                img.src = directUrl;
+                img.classList.remove('hidden');
+                placeholder.classList.add('hidden');
+            }
+        }
+
+        // จัดการเมื่อคุณป้า อสม. เลือกรูปภาพหรือถ่ายเสร็จแล้ว
+        function handleFileSelect(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const loading = document.getElementById(`loading-${currentTargetType}`);
+            loading.classList.remove('hidden'); // แสดง Spinner โหลดตัวหมุน
+
+            const reader = new FileReader();
+            reader.onload = async function(e) {
+                const base64Data = e.target.result;
+                const filename = `${patientId}_${currentTargetType}_${Date.now()}.jpg`;
+
+                try {
+                    const res = await fetch(API_URL, {
+                        method: 'POST',
+                        body: JSON.stringify({
+                            action: 'uploadImage',
+                            id: patientId,
+                            imageType: currentTargetType,
+                            base64: base64Data,
+                            filename: filename
+                        })
+                    });
+                    const result = await res.json();
+                    
+                    if (result.success) {
+                        // อัปโหลดสำเร็จ -> แสดงพรีวิวรูปบนหน้าเว็บทันที
+                        const img = document.getElementById(`img-${currentTargetType}`);
+                        const placeholder = document.getElementById(`placeholder-${currentTargetType}`);
+                        
+                        img.src = base64Data;
+                        img.classList.remove('hidden');
+                        placeholder.classList.add('hidden');
+                        alert('อัปโหลดรูปภาพสำเร็จ!');
+                    } else {
+                        alert('อัปโหลดล้มเหลว: ' + result.error);
+                    }
+                } catch (err) {
+                    alert('เกิดข้อผิดพลาดในการเชื่อมต่อเซิร์ฟเวอร์');
+                } finally {
+                    loading.classList.add('hidden'); // ปิดหน้าจอโหลดหมุนๆ
+                    event.target.value = ''; // เคลียร์อินพุต
+                }
+            };
+            reader.readAsDataURL(file); // แปลงไฟล์ภาพเป็นก้อน Base64 สำหรับจัดส่ง
+        }
+
+        // โหลดข้อมูลภาพประวัติตั้งต้น
+        loadExistingImages();
+    </script>
+</body>
+</html>
