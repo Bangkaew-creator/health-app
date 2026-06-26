@@ -115,14 +115,17 @@
     </main>
 
     <nav class="fixed bottom-0 left-0 w-full bg-white border-t border-gray-100 shadow-[0_-4px_20px_rgba(0,0,0,0.03)] grid grid-cols-4 h-[75px] z-50 px-2 pb-2">
-        <button onclick="window.scrollTo({top: 0, behavior: 'smooth'})" class="flex flex-col items-center justify-center m-1.5 bg-[#00694a] text-white rounded-[18px]">
+        <button onclick="window.location.href='dashboard.html'" class="flex flex-col items-center justify-center m-1.5 bg-[#00694a] text-white rounded-[18px]">
             <span class="material-symbols-outlined mb-0.5 text-[24px]" style="font-variation-settings: 'FILL' 1;">home</span>
             <span class="text-[10px] font-bold">หน้าหลัก</span>
         </button>
-        <button onclick="resetAllFilters(); window.scrollTo({top: 0, behavior: 'smooth'})" class="flex flex-col items-center justify-center text-gray-400 hover:text-gray-600 transition-colors">
+        
+        <!-- [แก้ไขจุดนี้] กลับมาใช้คำสั่งย้ายไปหน้า patient_list.html เหมือนเดิม -->
+        <button onclick="window.location.href='patient_list.html'" class="flex flex-col items-center justify-center text-gray-400 hover:text-gray-600 transition-colors">
             <span class="material-symbols-outlined mb-0.5 text-[24px]">group</span>
             <span class="text-[10px] font-medium">ผู้ป่วย</span>
         </button>
+
         <button onclick="window.location.href='assessments.html'" class="flex flex-col items-center justify-center text-gray-400 hover:text-gray-600 transition-colors">
             <span class="material-symbols-outlined mb-0.5 text-[24px]">assignment</span>
             <span class="text-[10px] font-medium">การประเมิน</span>
