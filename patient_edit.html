@@ -3,7 +3,7 @@
 <head>
     <meta charset="utf-8"/>
     <meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" name="viewport"/>
-    <title>แก้ไขประวัติและประเมินผ้าอ้อม</title>
+    <title>แก้ไขประวัติและประเมินสิทธิ์</title>
     <script src="https://cdn.tailwindcss.com?plugins=forms"></script>
     <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700&display=swap" rel="stylesheet"/>
     <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
@@ -12,8 +12,11 @@
         .material-symbols-outlined { font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24; }
         .input-field { width: 100%; border: 1px solid #e2e8f0; border-radius: 12px; padding: 12px; font-size: 14px; outline: none; transition: border-color 0.2s; }
         .input-field:focus { border-color: #00694a; box-shadow: 0 0 0 2px rgba(0,105,74,0.1); }
-        .check-card:checked + label { background-color: #f0fdf4; border-color: #16a34a; color: #15803d; font-weight: 600; }
+        
+        /* แก้ไข CSS ให้ปุ่มทำงานได้สมบูรณ์และเปลี่ยนสีตามหมวดหมู่ */
         .radio-card:checked + label { background-color: #eff6ff; border-color: #2563eb; color: #1d4ed8; font-weight: 600; }
+        .eq-cb:checked + label { background-color: #fff7ed; border-color: #ea580c; color: #ea580c; font-weight: 600; }
+        .disease-cb:checked + label { background-color: #ffe4e6; border-color: #e11d48; color: #e11d48; font-weight: 600; }
     </style>
 </head>
 <body class="text-[#111c2d]">
@@ -59,7 +62,7 @@
             <!-- ส่วนที่ 2: แบบประเมินผ้าอ้อม (อ้างอิง สปสช.) -->
             <div class="bg-white rounded-[20px] p-5 shadow-sm border border-blue-100">
                 <h3 class="font-bold text-[#2563eb] flex items-center gap-2 border-b border-blue-50 pb-2 mb-4">
-                    <span class="material-symbols-outlined">wc</span> แบบประเมินสิทธิ์ผ้าอ้อม สปสช.
+                    <span class="material-symbols-outlined">wc</span> แบบประเมินสิทธิ์ผ้าอ้อม
                 </h3>
                 
                 <!-- 2.1 ผลการประเมิน -->
@@ -83,7 +86,7 @@
                     </div>
                 </div>
 
-                <!-- 2.3 ความเห็นผู้ประเมิน (ขอรับการสนับสนุน) -->
+                <!-- 2.3 ความเห็นผู้ประเมิน -->
                 <div>
                     <label class="text-sm font-bold text-gray-700 block mb-2">3. ความเห็นผู้ประเมินควรได้รับการสนับสนุน</label>
                     
@@ -91,35 +94,30 @@
                         <label class="flex items-center gap-2 font-bold text-sm mb-2 text-[#0284c7]">
                             <input type="checkbox" id="req_diaper" class="w-4 h-4 text-[#0284c7] rounded"> ผ้าอ้อมผู้ใหญ่
                         </label>
-                        <div class="grid grid-cols-2 gap-2 pl-6">
-                            <div>
-                                <label class="text-[10px] text-gray-500 block mb-1">ระบุไซส์ (Size)</label>
-                                <select id="diaper_size" class="input-field py-2 text-sm bg-white">
-                                    <option value="-">- เลือก -</option><option value="M">ไซส์ M</option><option value="L">ไซส์ L</option><option value="XL">ไซส์ XL</option>
-                                </select>
-                            </div>
-                            <div>
-                                <label class="text-[10px] text-gray-500 block mb-1">จำนวน (ชิ้น/เดือน)</label>
-                                <input type="number" id="diaper_qty" class="input-field py-2 text-sm bg-white" placeholder="เช่น 90">
-                            </div>
+                        <div class="pl-6">
+                            <label class="text-[10px] text-gray-500 block mb-1">ระบุไซส์ (Size)</label>
+                            <select id="diaper_size" class="input-field py-2 text-sm bg-white">
+                                <option value="-">- เลือกไซส์ -</option>
+                                <option value="S">ไซส์ S</option>
+                                <option value="M">ไซส์ M</option>
+                                <option value="L">ไซส์ L</option>
+                                <option value="XL">ไซส์ XL</option>
+                            </select>
                         </div>
                     </div>
 
                     <div class="border border-gray-200 rounded-xl p-3 bg-gray-50">
-                        <label class="flex items-center gap-2 font-bold text-sm mb-2 text-[#00694a]">
+                        <label class="flex items-center gap-2 font-bold text-sm text-[#00694a]">
                             <input type="checkbox" id="req_underpad" class="w-4 h-4 text-[#00694a] rounded"> แผ่นรองซับการขับถ่าย
                         </label>
-                        <div class="pl-6">
-                            <input type="number" id="underpad_qty" class="input-field py-2 text-sm bg-white" placeholder="ระบุจำนวน (ชิ้น/เดือน)">
-                        </div>
                     </div>
                 </div>
             </div>
 
-            <!-- ส่วนที่ 3: อุปกรณ์ทางการแพทย์ (ครุภัณฑ์ & วัสดุสิ้นเปลือง) -->
+            <!-- ส่วนที่ 3: อุปกรณ์ทางการแพทย์ -->
             <div class="bg-white rounded-[20px] p-5 shadow-sm border border-orange-100">
                 <h3 class="font-bold text-[#ea580c] flex items-center gap-2 border-b border-orange-50 pb-2 mb-4">
-                    <span class="material-symbols-outlined">medical_services</span> ความต้องการอุปกรณ์ทางการแพทย์
+                    <span class="material-symbols-outlined">medical_services</span> ความต้องการอุปกรณ์การแพทย์
                 </h3>
                 <div class="grid grid-cols-2 gap-2" id="equipment-list">
                     <!-- จะถูกสร้างโดย JavaScript -->
@@ -130,17 +128,28 @@
                 </div>
             </div>
 
-            <!-- ส่วนที่ 4: โรคและยา -->
-            <div class="bg-white rounded-[20px] p-5 shadow-sm border border-gray-100">
-                <h3 class="font-bold text-[#ba1a1a] flex items-center gap-2 border-b pb-2 mb-4"><span class="material-symbols-outlined">monitor_heart</span> โรคประจำตัว & ยา</h3>
-                <label class="text-xs text-gray-500 mb-1 block">โรคประจำตัว (คั่นด้วยลูกน้ำ)</label>
-                <input type="text" id="disease" class="input-field mb-3" placeholder="เช่น เบาหวาน, ความดัน">
-                
-                <label class="text-xs text-gray-500 mb-1 block">ยาที่ใช้ประจำ</label>
-                <textarea id="medication" class="input-field" rows="2" placeholder="พิมพ์รายการยา..."></textarea>
+            <!-- ส่วนที่ 4: โรคประจำตัว (กลับมาใช้แบบเดิม) -->
+            <div class="bg-white rounded-[20px] p-5 shadow-sm border border-[#bdcac1]/30">
+                <h3 class="font-bold text-[#ba1a1a] flex items-center gap-2 border-b pb-2 mb-4"><span class="material-symbols-outlined">monitor_heart</span> โรคประจำตัว</h3>
+                <div class="grid grid-cols-2 gap-2 mb-3" id="disease-checkboxes"></div>
+                <div>
+                    <label class="text-xs text-gray-500 mb-1 block">โรคอื่นๆ (ระบุ)</label>
+                    <input type="text" id="disease_other" class="input-field" placeholder="พิมพ์ชื่อโรคอื่นๆ (ถ้ามี)...">
+                </div>
             </div>
 
-            <!-- ส่วนที่ 5: ผู้ดูแล -->
+            <!-- ส่วนที่ 5: รายการยาที่ใช้ (กลับมาใช้แบบเดิม) -->
+            <div class="bg-white rounded-[20px] p-5 shadow-sm border border-[#bdcac1]/30">
+                <div class="flex justify-between items-center border-b pb-2 mb-4">
+                    <h3 class="font-bold text-[#0284c7] flex items-center gap-2"><span class="material-symbols-outlined">medication</span> รายการยา</h3>
+                </div>
+                <div id="med-list-container" class="space-y-3 mb-3"></div>
+                <button type="button" onclick="addMedRow()" class="w-full py-3 border-2 border-dashed border-[#bae6fd] text-[#0284c7] rounded-xl font-medium hover:bg-[#f0f9ff] transition-colors flex justify-center items-center gap-1 text-sm">
+                    <span class="material-symbols-outlined text-sm">add</span> เพิ่มรายการยา
+                </button>
+            </div>
+
+            <!-- ส่วนที่ 6: ผู้ดูแล -->
             <div class="bg-white rounded-[20px] p-5 shadow-sm border border-gray-100">
                 <h3 class="font-bold text-[#F59E0B] flex items-center gap-2 border-b pb-2 mb-4"><span class="material-symbols-outlined">group</span> ญาติ / ผู้ดูแล</h3>
                 <div class="mb-3"><label class="text-xs text-gray-500 mb-1 block">ชื่อ-นามสกุล ผู้ดูแล</label><input type="text" id="caregiver_name" class="input-field"></div>
@@ -162,16 +171,43 @@
         const patientId = urlParams.get('id');
 
         const medicalEquipments = ['เตียงผู้ป่วย', 'เตียงลมแผลกดทับ', 'รถเข็นนั่ง (Wheelchair)', 'เครื่องผลิตออกซิเจน', 'เครื่องดูดเสมหะ', 'วอล์กเกอร์ / ไม้เท้า', 'ชุดทำแผลปลอดเชื้อ', 'สายดูดเสมหะ/ถุงมือ'];
+        const commonDiseases = ['เบาหวาน', 'ความดันโลหิตสูง', 'ไตวาย', 'หลอดเลือดหัวใจ', 'หลอดเลือดสมอง', 'กล้ามเนื้ออ่อนแรง'];
 
         function initUI() {
-            const container = document.getElementById('equipment-list');
+            // สร้าง Checkbox อุปกรณ์การแพทย์
+            const eqContainer = document.getElementById('equipment-list');
             medicalEquipments.forEach((eq, idx) => {
-                container.innerHTML += `
+                eqContainer.innerHTML += `
                     <div>
                         <input type="checkbox" id="eq_${idx}" value="${eq}" class="eq-cb hidden">
-                        <label for="eq_${idx}" class="block w-full text-center p-2 text-xs border border-gray-200 rounded-lg cursor-pointer bg-white text-gray-600 check-card">${eq}</label>
+                        <label for="eq_${idx}" class="block w-full text-center p-2 text-xs border border-gray-200 rounded-lg cursor-pointer bg-white text-gray-600 transition-colors">${eq}</label>
                     </div>`;
             });
+
+            // สร้าง Checkbox โรคประจำตัว
+            const disContainer = document.getElementById('disease-checkboxes');
+            commonDiseases.forEach((disease, index) => {
+                disContainer.innerHTML += `
+                    <div>
+                        <input type="checkbox" id="disease_${index}" value="${disease}" class="disease-cb hidden">
+                        <label for="disease_${index}" class="block w-full text-center py-2 px-1 text-sm border border-gray-200 rounded-lg cursor-pointer transition-colors bg-white text-gray-600">${disease}</label>
+                    </div>`;
+            });
+        }
+
+        function addMedRow(name = '', dose = '', usage = '') {
+            const container = document.getElementById('med-list-container');
+            const rowId = 'med_' + Date.now() + Math.floor(Math.random() * 100);
+            const html = `
+                <div id="${rowId}" class="bg-gray-50 p-3 rounded-xl border border-gray-100 relative">
+                    <button type="button" onclick="document.getElementById('${rowId}').remove()" class="absolute top-2 right-2 text-gray-400 hover:text-red-500"><span class="material-symbols-outlined text-sm">delete</span></button>
+                    <div class="grid grid-cols-2 gap-2 mt-1">
+                        <div class="col-span-2"><input type="text" class="med-name input-field bg-white py-2 text-sm" placeholder="ชื่อยา" value="${name}"></div>
+                        <div><input type="text" class="med-dose input-field bg-white py-2 text-sm" placeholder="ขนาด" value="${dose}"></div>
+                        <div><input type="text" class="med-usage input-field bg-white py-2 text-sm" placeholder="วิธีใช้" value="${usage}"></div>
+                    </div>
+                </div>`;
+            container.insertAdjacentHTML('beforeend', html);
         }
 
         function getLocation() {
@@ -196,10 +232,27 @@
                 document.getElementById('house_no').value = data.house_no || '';
                 document.getElementById('village_no').value = data.village_no || '';
                 document.getElementById('lat_long').value = data.lat_long || '';
-                document.getElementById('disease').value = data.disease || '';
-                document.getElementById('medication').value = (typeof data.medication === 'string' && data.medication.startsWith('[')) ? 'มีข้อมูลในระบบ (กรุณาแก้ไขในคอมพิวเตอร์)' : (data.medication || '');
                 document.getElementById('caregiver_name').value = data.caregiver_name || '';
                 document.getElementById('caregiver_phone').value = data.caregiver_phone || '';
+
+                // โหลดข้อมูลโรคประจำตัว
+                if (data.disease) {
+                    const savedDiseases = data.disease.split(',').map(item => item.trim());
+                    let otherDiseases = [];
+                    savedDiseases.forEach(d => {
+                        const idx = commonDiseases.indexOf(d);
+                        if (idx !== -1) document.getElementById(`disease_${idx}`).checked = true;
+                        else if (d !== '') otherDiseases.push(d);
+                    });
+                    document.getElementById('disease_other').value = otherDiseases.join(', ');
+                }
+
+                // โหลดข้อมูลยา
+                if (data.medication && data.medication.startsWith('[')) {
+                    try { JSON.parse(data.medication).forEach(med => addMedRow(med.name, med.dose, med.usage)); } 
+                    catch(e) { addMedRow(); }
+                } else if (data.medication) { addMedRow(data.medication, '', ''); } 
+                else { addMedRow(); }
 
                 // โหลดข้อมูลประเมินผ้าอ้อม
                 if(data.diaper) {
@@ -216,10 +269,7 @@
                         }
                         document.getElementById('req_diaper').checked = dp.req_diaper || false;
                         document.getElementById('diaper_size').value = dp.size || '-';
-                        document.getElementById('diaper_qty').value = dp.diaper_qty || '';
-                        
                         document.getElementById('req_underpad').checked = dp.req_underpad || false;
-                        document.getElementById('underpad_qty').value = dp.underpad_qty || '';
                     } catch(e) {}
                 }
 
@@ -228,13 +278,14 @@
                     const savedEq = data.equipment.split(',').map(item => item.trim());
                     let otherEq = [];
                     savedEq.forEach(eq => {
-                        if (medicalEquipments.includes(eq)) document.getElementById(`eq_${medicalEquipments.indexOf(eq)}`).checked = true;
+                        const idx = medicalEquipments.indexOf(eq);
+                        if (idx !== -1) document.getElementById(`eq_${idx}`).checked = true;
                         else if (eq !== '') otherEq.push(eq);
                     });
                     document.getElementById('equip_other').value = otherEq.join(', ');
                 }
 
-                document.getElementById('btn-save').innerHTML = 'บันทึกข้อมูล <span class="material-symbols-outlined text-sm">save</span>'; document.getElementById('btn-save').disabled = false;
+                document.getElementById('btn-save').innerHTML = 'บันทึกข้อมูลและแบบประเมิน <span class="material-symbols-outlined text-sm">save</span>'; document.getElementById('btn-save').disabled = false;
             } catch (error) { alert("โหลดข้อมูลล้มเหลว"); }
         }
 
@@ -242,6 +293,20 @@
             e.preventDefault();
             const btn = document.getElementById('btn-save');
             btn.innerHTML = 'กำลังบันทึก...'; btn.disabled = true;
+
+            // รวบรวมข้อมูลโรค
+            let finalDiseases = [];
+            document.querySelectorAll('.disease-cb:checked').forEach(cb => finalDiseases.push(cb.value));
+            if (document.getElementById('disease_other').value.trim()) finalDiseases.push(document.getElementById('disease_other').value.trim());
+
+            // รวบรวมข้อมูลยา
+            let medArray = [];
+            document.querySelectorAll('[id^="med_"]').forEach(row => {
+                const name = row.querySelector('.med-name').value.trim();
+                const dose = row.querySelector('.med-dose').value.trim();
+                const usage = row.querySelector('.med-usage').value.trim();
+                if (name || dose || usage) medArray.push({ name, dose, usage });
+            });
 
             // รวบรวมข้อมูลแบบประเมินผ้าอ้อม
             const diaperResult = document.querySelector('input[name="diaper_result"]:checked');
@@ -251,9 +316,7 @@
                 indications: indications,
                 req_diaper: document.getElementById('req_diaper').checked,
                 size: document.getElementById('diaper_size').value,
-                diaper_qty: document.getElementById('diaper_qty').value,
-                req_underpad: document.getElementById('req_underpad').checked,
-                underpad_qty: document.getElementById('underpad_qty').value
+                req_underpad: document.getElementById('req_underpad').checked
             };
 
             // รวบรวมข้อมูลอุปกรณ์
@@ -261,24 +324,22 @@
             if (document.getElementById('equip_other').value.trim()) eqArray.push(document.getElementById('equip_other').value.trim());
 
             const updateData = {
-                id: patientId, prefix: document.getElementById('prefix').value,
-                fullname: document.getElementById('fullname').value,
+                id: patientId, prefix: document.getElementById('prefix').value, fullname: document.getElementById('fullname').value,
                 house_no: document.getElementById('house_no').value, village_no: document.getElementById('village_no').value,
-                lat_long: document.getElementById('lat_long').value, disease: document.getElementById('disease').value,
-                medication: document.getElementById('medication').value, caregiver_name: document.getElementById('caregiver_name').value, caregiver_phone: document.getElementById('caregiver_phone').value,
-                diaper: JSON.stringify(diaperObj),
-                equipment: eqArray.join(', ')
+                lat_long: document.getElementById('lat_long').value, disease: finalDiseases.join(', '),
+                medication: JSON.stringify(medArray), caregiver_name: document.getElementById('caregiver_name').value, caregiver_phone: document.getElementById('caregiver_phone').value,
+                diaper: JSON.stringify(diaperObj), equipment: eqArray.join(', ')
             };
 
             try {
                 const response = await fetch(API_URL, { method: 'POST', body: JSON.stringify({ action: 'updatePatientData', data: updateData }) });
                 const result = await response.json();
                 if (result.success) {
-                    alert('บันทึกข้อมูลและประเมินสิทธิ์สำเร็จ!');
+                    alert('บันทึกข้อมูลสำเร็จ!');
                     window.location.href = `patient_profile.html?id=${patientId}`;
                 } else alert('เกิดข้อผิดพลาด');
             } catch (err) { alert('การเชื่อมต่อล้มเหลว'); }
-            btn.innerHTML = 'บันทึกข้อมูล <span class="material-symbols-outlined text-sm">save</span>'; btn.disabled = false;
+            btn.innerHTML = 'บันทึกข้อมูลและแบบประเมิน <span class="material-symbols-outlined text-sm">save</span>'; btn.disabled = false;
         }
 
         loadPatientData();
