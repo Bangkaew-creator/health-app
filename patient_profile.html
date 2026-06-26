@@ -114,7 +114,27 @@
                     </div>
                 </div>
             </div>
-
+            <!-- [เพิ่มใหม่] การ์ดประเมินสิทธิ์ผ้าอ้อมและอุปกรณ์ -->
+            <div class="bg-white rounded-[20px] p-5 shadow-sm border border-[#bdcac1]/30">
+                <h3 class="text-sm font-bold flex items-center gap-2 mb-4 text-[#2563eb]">
+                    <span class="material-symbols-outlined text-[18px]">wc</span> สิทธิ์ผ้าอ้อม & อุปกรณ์การแพทย์
+                </h3>
+                
+                <div class="space-y-3">
+                    <!-- สิทธิ์ผ้าอ้อม -->
+                    <div class="flex flex-col gap-1 border-b border-gray-50 pb-3">
+                        <span class="text-xs text-[#526069] font-bold">ผลการประเมินผ้าอ้อม (สปสช.)</span>
+                        <span class="text-sm font-semibold text-[#111c2d]" id="profile-diaper-status">-</span>
+                        <div id="profile-diaper-items" class="text-xs mt-1 empty:hidden"></div>
+                    </div>
+                    
+                    <!-- อุปกรณ์ทางการแพทย์ -->
+                    <div class="flex flex-col gap-1 pt-1">
+                        <span class="text-xs text-[#526069] font-bold mb-1">ความต้องการอุปกรณ์การแพทย์</span>
+                        <div class="text-sm font-semibold text-[#111c2d] bg-orange-50/50 p-3 rounded-xl border border-orange-100" id="profile-equipment">-</div>
+                    </div>
+                </div>
+            </div>
             <div class="bg-white rounded-[20px] p-5 shadow-sm border border-[#bdcac1]/30">
                 <h3 class="text-sm font-bold flex items-center gap-2 mb-4 text-[#F59E0B]">
                     <span class="material-symbols-outlined text-[18px]">group</span> ญาติ / ผู้ดูแลใกล้ชิด
@@ -275,7 +295,37 @@
                         }
                     } catch(e) { medContainer.innerText = data.medication; }
                 } else medContainer.innerText = data.medication || '-';
+                // สิทธิ์ผ้าอ้อม
+                const diaperStatus = document.getElementById('profile-diaper-status');
+                const diaperItems = document.getElementById('profile-diaper-items');
+                if (data.diaper) {
+                    try {
+                        const dp = JSON.parse(data.diaper);
+                        diaperStatus.innerText = dp.result || 'ยังไม่มีผลประเมิน';
+                        
+                        let reqHtml = [];
+                        if (dp.req_diaper) reqHtml.push(`<span class="bg-blue-50 text-blue-600 px-2 py-1 rounded font-bold border border-blue-100">ผ้าอ้อมผู้ใหญ่ (ไซส์ ${dp.size !== '-' ? dp.size : 'ไม่ระบุ'})</span>`);
+                        if (dp.req_underpad) reqHtml.push(`<span class="bg-emerald-50 text-emerald-600 px-2 py-1 rounded font-bold border border-emerald-100">แผ่นรองซับการขับถ่าย</span>`);
+                        
+                        if(reqHtml.length > 0) {
+                            diaperItems.innerHTML = '<div class="flex gap-2 flex-wrap mt-1">' + reqHtml.join('') + '</div>';
+                        }
+                    } catch(e) { diaperStatus.innerText = '-'; }
+                } else {
+                    diaperStatus.innerText = 'ยังไม่ได้ทำแบบประเมิน';
+                }
 
+                // อุปกรณ์ทางการแพทย์
+                const eqContainer = document.getElementById('profile-equipment');
+                if (data.equipment) {
+                    const eqs = data.equipment.split(',').filter(e => e.trim() !== '');
+                    if (eqs.length > 0) {
+                        let eqHtml = '<ul class="list-disc pl-4 space-y-1.5">';
+                        eqs.forEach(e => { eqHtml += `<li><span class="text-[#ea580c]">${e.trim()}</span></li>`; });
+                        eqHtml += '</ul>';
+                        eqContainer.innerHTML = eqHtml;
+                    } else { eqContainer.innerText = 'ไม่มีความต้องการเพิ่มเติม'; }
+                } else { eqContainer.innerText = 'ไม่มีความต้องการเพิ่มเติม'; }
                 // ผู้ดูแล
                 document.getElementById('profile-caregiver-name').innerText = data.caregiver_name || '-';
                 const phoneElement = document.getElementById('profile-caregiver-phone');
