@@ -109,16 +109,18 @@ function F_getConfig(key) {
   return null;
 }
 
-// [F4] ฟังก์ชันตรวจสอบผู้ใช้งานเมื่อเข้าสู่ระบบ (อิงตามโครงสร้าง 7 คอลัมน์ A-G)
+// [F4] ฟังก์ชันตรวจสอบผู้ใช้งานเมื่อเข้าสู่ระบบ (เพิ่มการดึงชื่อหน่วยงานจาก Config)
 function F_checkUser(uid) {
   const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(SHEET_NAMES.USERS);
   const data = sheet.getDataRange().getValues();
   
+  // ดึงชื่อหน่วยงานส่วนกลางจากชีต Config (ถ้าไม่มีให้ใช้ค่าเริ่มต้น)
+  const hospitalName = F_getConfig('HOSPITAL_NAME') || 'เทศบาลเมืองบางแก้ว';
+  
   for (let i = 1; i < data.length; i++) {
     if (data[i][0] === uid) {
-      if (data[i][4] !== 'Active') return { status: 'inactive' };
+      if (data[i][4] !== 'Active') return { status: 'inactive', hospital_name: hospitalName };
       
-      // [วิเคราะห์สิทธิ์] ถ้าช่อง Village_No (ดัชนี 2) บันทึกคำว่า ADMIN ให้ถือว่าเป็นแอดมิน
       const role = (data[i][2] === 'ADMIN') ? 'ADMIN' : 'VHV';
       
       return { 
@@ -126,12 +128,13 @@ function F_checkUser(uid) {
         name: data[i][1] || '', 
         village: data[i][2] || '',
         role: role,
-        phone: data[i][5] || '',  // คอลัมน์ F (Phone)
-        pic_url: data[i][6] || '' // คอลัมน์ G (Profile_Pic)
+        phone: data[i][5] || '',  
+        pic_url: data[i][6] || '',
+        hospital_name: hospitalName // ส่งชื่อหน่วยงานไปให้หน้าเว็บใช้งาน
       };
     }
   }
-  return { status: 'unregistered' };
+  return { status: 'unregistered', hospital_name: hospitalName };
 }
 
 // [F5] ฟังก์ชันลงทะเบียนผู้ใช้ใหม่แบบแยกรหัสผ่าน (จำกัด 7 คอลัมน์ A-G)
