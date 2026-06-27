@@ -142,7 +142,7 @@
             });
         });
 
-        // ดึงข้อมูล อสม. จากระบบด้วย action 'checkUserRegistration'
+                // ดึงข้อมูลผู้ใช้งานมาแสดงผล
         async function fetchVHVData(uid) {
             try {
                 const response = await fetch(API_URL, {
@@ -154,12 +154,27 @@
                 
                 if (data.status === 'registered') {
                     document.getElementById('vhv_name').value = data.name;
-                    document.getElementById('vhv_village').value = data.village;
                     document.getElementById('vhv_phone').value = data.phone || '';
                     document.getElementById('display-name').innerText = data.name;
-                    document.getElementById('display-village').innerText = 'พื้นที่: หมู่ ' + data.village;
                     
-                    // แปรง URL Google Drive เป็นภาพ Thumbnail
+                    // [แก้ไขใหม่] ดักจับว่าหากล็อกอินมาด้วยสิทธิ์แอดมิน
+                    if (data.role === 'ADMIN') {
+                        document.getElementById('display-village').innerText = 'สิทธิ์ใช้งาน: เจ้าหน้าที่สาธารณสุข (ADMIN)';
+                        
+                        // สร้างตัวเลือกหน่วยงานส่วนกลาง (ADMIN) แทรกเข้าไปในกล่อง Dropdown หมู่ชั่วครู่เพื่อให้ระบบบันทึกค่าต่อได้
+                        const villageSelect = document.getElementById('vhv_village');
+                        const adminOption = document.createElement('option');
+                        adminOption.value = 'ADMIN';
+                        adminOption.innerText = 'เจ้าหน้าที่สาธารณสุข (ADMIN)';
+                        villageSelect.appendChild(adminOption);
+                        villageSelect.value = 'ADMIN';
+                    } else {
+                        // หากเป็น อสม. ทั่วไป ให้ดึงเลขหมู่ปกติ
+                        document.getElementById('vhv_village').value = data.village;
+                        document.getElementById('display-village').innerText = 'พื้นที่: หมู่ ' + data.village;
+                    }
+                    
+                    // แสดงผลรูปภาพโปรไฟล์
                     if (data.pic_url) {
                         const match = data.pic_url.match(/d\/([a-zA-Z0-9_-]+)/) || data.pic_url.match(/id=([a-zA-Z0-9_-]+)/);
                         if (match) {
@@ -168,12 +183,11 @@
                     }
                 }
                 
-                // ปิดโหลดดิ้ง แสดงฟอร์ม
                 document.getElementById('loading-overlay').classList.add('hidden');
                 document.getElementById('profile-form').classList.remove('hidden');
 
             } catch (error) {
-                alert("โหลดข้อมูลผิดพลาด: " + error);
+                alert("โหลดข้อมูลโปรไฟล์ผิดพลาด");
             }
         }
 
