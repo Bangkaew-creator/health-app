@@ -438,6 +438,49 @@ function F_updatePatientStatus(id, newStatus) {
   return { success: false, message: 'ไม่พบข้อมูลผู้ป่วยรายนี้' };
 }
 
+// [F15] ฟังก์ชันบันทึกการอนุมัติผ้าอ้อม/แผ่นรองซับ
+function F_updateResourceApproval(id, diaperQty, underpadQty) {
+  // เปลี่ยนชื่อชีตให้ตรงกับที่คุณตั้งไว้ (เช่น 'Patients' หรือ 'ผู้ป่วย')
+  const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('Patients'); 
+  const data = sheet.getDataRange().getValues();
+  
+  // ค้นหาว่าคอลัมน์ Diaper อยู่ที่ Index ไหนจากหัวตาราง (แถวที่ 1)
+  let diaperColIndex = -1;
+  for (let c = 0; c < data[0].length; c++) {
+    if (String(data[0][c]).toLowerCase() === 'diaper' || String(data[0][c]) === 'ผ้าอ้อม') {
+      diaperColIndex = c + 1; // +1 เพราะ getRange เริ่มที่ 1
+      break;
+    }
+  }
+  
+  if (diaperColIndex === -1) return { success: false, message: 'ระบบหาหัวตารางคอลัมน์ Diaper ไม่พบ กรุณาตรวจสอบชื่อคอลัมน์' };
+
+  // ค้นหาแถวของผู้ป่วยจาก ID
+  for (let i = 1; i < data.length; i++) {
+    if (data[i][0] === id) {
+      let currentDiaper = data[i][diaperColIndex - 1];
+      let diaperObj = {};
+      
+      // แปลงข้อมูลเดิมเป็น Object
+      if (currentDiaper) {
+        try { diaperObj = JSON.parse(currentDiaper); } catch(e) {}
+      }
+      
+      // เพิ่มข้อมูลการอนุมัติเข้าไป
+      diaperObj.approved_diaper = diaperQty || 0;
+      diaperObj.approved_underpad = underpadQty || 0;
+      diaperObj.approve_status = "อนุมัติแล้ว";
+      diaperObj.approve_date = Utilities.formatDate(new Date(), "GMT+7", "dd/MM/yyyy");
+      
+      // บันทึกกลับลงไปในชีต
+      sheet.getRange(i + 1, diaperColIndex).setValue(JSON.stringify(diaperObj));
+      return { success: true, message: 'บันทึกการอนุมัติเรียบร้อยแล้ว' };
+    }
+  }
+  return { success: false, message: 'ไม่พบรหัสผู้ป่วยรายนี้' };
+}
+
+
 
 // ==========================================
 // [F99] ฟังก์ชันพิเศษ: ใช้สำหรับรันเพื่อจัดหัวตารางอัตโนมัติ (อัปเดต 31 คอลัมน์)
