@@ -166,6 +166,7 @@
             });
         });
 
+                // แก้ไขฟังก์ชันจุดนี้ในหน้า dashboard.html ของ อสม.
         async function fetchVHVProfile(uid) {
             try {
                 const response = await fetch(API_URL, {
@@ -176,9 +177,12 @@
                 
                 if (data.status === 'registered') {
                     document.getElementById('header-vhv-name').innerText = data.name;
+                    
+                    // [แก้ไขให้ดึงแบบไดนามิก] ใช้ค่าโรงพยาบาล/หน่วยงานจากหลังบ้านมาโชว์คู่กับเลขหมู่
+                    const hospital = data.hospital_name || 'เทศบาลเมืองบางแก้ว';
                     if (data.village) {
                         vhvCurrentVillage = data.village;
-                        document.getElementById('header-vhv-village').innerText = 'หมู่ที่ ' + data.village + ' | ระบบดูแลผู้ป่วย';
+                        document.getElementById('header-vhv-village').innerText = 'หมู่ที่ ' + data.village + ' | ' + hospital;
                         document.getElementById('my-village-number').innerText = data.village;
                     }
                     
@@ -191,7 +195,7 @@
                         picContainer.innerHTML = data.name.substring(0, 1);
                     }
 
-                    updateVillageTotal(); // อัปเดตตัวเลขในหมู่
+                    updateVillageTotal();
                 } else {
                     setDefaultVHVProfile();
                 }
