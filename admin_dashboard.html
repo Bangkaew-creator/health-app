@@ -3,7 +3,7 @@
 <head>
     <meta charset="utf-8"/>
     <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-    <title>แดชบอร์ดผู้บริหาร - เทศบาลเมืองบางแก้ว</title>
+    <title>แดชบอร์ดผู้บริหาร - ระบบจัดการผู้ป่วย</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700&display=swap" rel="stylesheet"/>
     <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
@@ -11,8 +11,6 @@
     <style>
         body { font-family: 'Sarabun', sans-serif; background-color: #f4f7fa; }
         .material-symbols-outlined { font-variation-settings: 'FILL' 1, 'wght' 400, 'GRAD' 0, 'opsz' 24; }
-        
-        /* ซอฟต์ Neumorphism สไตล์สำหรับกล่องข้อมูล */
         .neo-card {
             background: #ffffff;
             border-radius: 24px;
@@ -21,26 +19,29 @@
             transition: all 0.2s ease-in-out;
         }
         .neo-card:hover { transform: translateY(-2px); box-shadow: 8px 8px 20px #cbd5e1, -8px -8px 20px #ffffff; }
-        
-        /* สีกรมท่า (Navy) และ สีทอง (Gold) */
         .bg-navy { background-color: #0f172a; }
         .text-navy { color: #0f172a; }
         .text-gold { color: #d97706; }
-        .bg-gold { background-color: #fbbf24; }
-        .border-gold { border-color: #fbbf24; }
     </style>
 </head>
-<body class="flex h-screen overflow-hidden text-slate-800">
+<body class="flex h-screen overflow-hidden text-slate-800 relative">
 
-    <aside class="w-72 bg-navy text-white flex flex-col hidden lg:flex z-20 shadow-2xl">
-        <div class="p-6 flex items-center gap-3 border-b border-slate-700/40">
-            <div class="w-11 h-11 rounded-xl bg-white/10 flex items-center justify-center border border-amber-400/30">
-                <span class="material-symbols-outlined text-amber-400 text-[26px]">local_hospital</span>
+    <div id="sidebar-overlay" class="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-40 hidden lg:hidden" onclick="toggleSidebar()"></div>
+
+    <aside id="sidebar" class="fixed inset-y-0 left-0 w-72 bg-navy text-white flex flex-col z-50 transform -translate-x-full lg:translate-x-0 lg:static transition-transform duration-300 ease-in-out shadow-2xl lg:shadow-none">
+        <div class="p-6 flex items-center justify-between border-b border-slate-700/40">
+            <div class="flex items-center gap-3">
+                <div class="w-11 h-11 rounded-xl bg-white/10 flex items-center justify-center border border-amber-400/30">
+                    <span class="material-symbols-outlined text-amber-400 text-[26px]">local_hospital</span>
+                </div>
+                <div>
+                    <h1 id="sidebar-hospital-name" class="font-bold text-[15px] tracking-wide text-white">กำลังโหลด...</h1>
+                    <p class="text-[10px] text-amber-400 font-medium">ระบบสนับสนุนการดูแลผู้ป่วย</p>
+                </div>
             </div>
-            <div>
-                <h1 class="font-bold text-[15px] tracking-wide text-white">เทศบาลเมืองบางแก้ว</h1>
-                <p class="text-[10px] text-amber-400 font-medium">ระบบสนับสนุนการดูแลผู้ป่วย</p>
-            </div>
+            <button onclick="toggleSidebar()" class="lg:hidden text-slate-400 hover:text-white p-1">
+                <span class="material-symbols-outlined">close</span>
+            </button>
         </div>
 
         <nav class="flex-1 px-4 py-6 space-y-2 overflow-y-auto">
@@ -72,15 +73,20 @@
 
     <main class="flex-1 flex flex-col h-screen overflow-hidden">
         
-        <header class="h-20 bg-white shadow-sm flex items-center justify-between px-8 z-10 flex-shrink-0 border-b border-slate-100">
-            <div>
-                <h2 class="text-lg font-bold text-slate-900">แดชบอร์ดภาพรวมระดับเทศบาล</h2>
-                <p class="text-xs text-slate-400 font-medium mt-0.5">ข้อมูลอัปเดตแบบเรียลไทม์จากพื้นที่</p>
+        <header class="h-20 bg-white shadow-sm flex items-center justify-between px-6 lg:px-8 z-10 flex-shrink-0 border-b border-slate-100">
+            <div class="flex items-center">
+                <button onclick="toggleSidebar()" class="lg:hidden p-2.5 -ml-2 mr-3 text-slate-600 hover:bg-slate-100 rounded-xl transition-colors">
+                    <span class="material-symbols-outlined text-[26px]">menu</span>
+                </button>
+                <div>
+                    <h2 class="text-base lg:text-lg font-bold text-slate-900 leading-tight">แดชบอร์ดภาพรวมระบบ</h2>
+                    <p id="header-hospital-name" class="text-[11px] lg:text-xs text-slate-400 font-medium mt-0.5">กำลังโหลดชื่อหน่วยงาน...</p>
+                </div>
             </div>
             
-            <div class="flex items-center gap-3 bg-slate-50 px-4 py-1.5 rounded-full border border-slate-100">
-                <div class="text-right">
-                    <p id="admin-name" class="text-xs font-bold text-slate-800">กำลังยืนยันสิทธิ์...</p>
+            <div class="flex items-center gap-3 bg-slate-50 px-3 lg:px-4 py-1.5 rounded-full border border-slate-100">
+                <div class="text-right hidden sm:block">
+                    <p id="admin-name" class="text-xs font-bold text-slate-800">กำลังตรวจสอบ...</p>
                     <p class="text-[10px] text-amber-600 font-bold uppercase tracking-wider">Administrator</p>
                 </div>
                 <div id="admin-avatar" class="w-9 h-9 rounded-full bg-navy text-white font-bold text-sm flex items-center justify-center overflow-hidden shadow-sm border border-slate-200">
@@ -89,9 +95,9 @@
             </div>
         </header>
 
-        <div class="flex-1 overflow-y-auto p-8 space-y-8">
+        <div class="flex-1 overflow-y-auto p-4 lg:p-8 space-y-6 lg:space-y-8">
             
-            <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6">
+            <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4 lg:gap-6">
                 <div class="neo-card p-6 border-l-4 border-blue-500">
                     <div class="flex justify-between items-start">
                         <div>
@@ -131,7 +137,6 @@
             </div>
 
             <div class="grid grid-cols-1 xl:grid-cols-2 gap-6">
-                
                 <div class="neo-card p-6 flex flex-col justify-between">
                     <div>
                         <div class="flex justify-between items-center mb-5 border-b border-slate-100 pb-3">
@@ -144,7 +149,6 @@
                         <p class="text-xs text-slate-500 mb-4 leading-relaxed">
                             รายการคำขอที่ได้รับการชี้เป้าและคัดกรองขนาดจาก อสม. ในพื้นที่เรียบร้อยแล้ว รอเจ้าหน้าที่สาธารณสุขตรวจสอบเพื่อระบุจำนวนชิ้นจัดสรรและกดอนุมัติการเบิกจ่าย
                         </p>
-                        
                         <div class="p-4 bg-slate-50 border border-slate-100 rounded-2xl flex items-center justify-between mb-2">
                             <div class="flex items-center gap-3">
                                 <div class="w-9 h-9 rounded-lg bg-amber-500/10 text-amber-600 flex items-center justify-center"><span class="material-symbols-outlined text-[20px]">package_2</span></div>
@@ -176,7 +180,6 @@
                         <p class="text-xs text-slate-500 mb-4 leading-relaxed">
                             ระบบตรวจจับเวลาอัตโนมัติสำหรับผู้ป่วยวิกฤต (กลุ่มติดเตียง) ที่ไม่มีบันทึกข้อมูลการตรวจวัดสัญญาณชีพหรือประเมินซ้ำจาก อสม. เกินกำหนดรอบระยะเวลา 30 วัน
                         </p>
-
                         <div class="p-4 bg-red-50/50 border border-red-100 rounded-2xl flex items-center justify-between mb-2">
                             <div class="flex items-center gap-3">
                                 <div class="w-9 h-9 rounded-lg bg-red-500/10 text-red-600 flex items-center justify-center"><span class="material-symbols-outlined text-[20px]">running_with_errors</span></div>
@@ -204,7 +207,7 @@
                         สรุปสัดส่วนคัดกรองความเสี่ยงภาวะซึมเศร้า (2Q / 9Q Summary)
                     </h3>
                 </div>
-                <div class="grid grid-cols-1 md:grid-cols-3 gap-4 text-center">
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 text-center">
                     <div class="p-4 bg-purple-50/40 border border-purple-100 rounded-2xl">
                         <span class="text-[11px] font-bold text-purple-700 block mb-1">ปกติ (ปลอดภัย)</span>
                         <span class="text-2xl font-black text-slate-800" id="depression-normal">0</span>
@@ -227,7 +230,14 @@
         const LIFF_ID = "2010500776-6r1shNwL"; 
         const API_URL = "https://script.google.com/macros/s/AKfycbyzPy7sklwURcJiqFDzlK4OEQ8616CJLuNyAjb8euQNzYJLXz_dj4UJM63w8-nI1L3r/exec";
 
-        // 1. ตรวจสิทธิ์การเข้าใช้งานผ่านระบบ LINE LIFF และดักสิทธิ์แอดมินจริง
+        // ฟังก์ชันควบคุมการแสดงผลสไลด์ Sidebar ในจอมือถือ
+        function toggleSidebar() {
+            const sidebar = document.getElementById('sidebar');
+            const overlay = document.getElementById('sidebar-overlay');
+            sidebar.classList.toggle('-translate-x-full');
+            overlay.classList.toggle('hidden');
+        }
+
         document.addEventListener("DOMContentLoaded", () => {
             liff.init({ liffId: LIFF_ID }).then(() => {
                 if (liff.isLoggedIn()) {
@@ -248,9 +258,15 @@
                 });
                 const data = await response.json();
                 
-                // ความปลอดภัยชั้นสูง: หากสิทธิ์ในฐานข้อมูลไม่ใช่ ADMIN ให้เด้งออกทันที
                 if (data.status === 'registered' && data.role === 'ADMIN') {
+                    // เปลี่ยนชื่อแอดมินตามจริง
                     document.getElementById('admin-name').innerText = data.name;
+                    
+                    // [ไดนามิก] อัปเดตชื่อหน่วยงานจากชีต Config ให้ทุกส่วนหัวข้อ
+                    const hospital = data.hospital_name || 'เทศบาลเมืองบางแก้ว';
+                    document.getElementById('sidebar-hospital-name').innerText = hospital;
+                    document.getElementById('header-hospital-name').innerText = 'ข้อมูลอัปเดตแบบเรียลไทม์จากพื้นที่ของ ' + hospital;
+
                     if (data.pic_url) {
                         const match = data.pic_url.match(/d\/([a-zA-Z0-9_-]+)/) || data.pic_url.match(/id=([a-zA-Z0-9_-]+)/);
                         if (match) {
@@ -260,7 +276,6 @@
                         document.getElementById('admin-avatar').innerText = data.name.substring(0, 1);
                     }
                     
-                    // โหลดข้อมูลกระดานสรุปทั้งหมดเมื่อยืนยันตัวตนผ่าน
                     loadDashboardData();
                 } else {
                     alert("⚠️ บัญชีของคุณไม่มีสิทธิ์เข้าใช้งานหน้านี้ (Admin Only)");
@@ -271,49 +286,36 @@
             }
         }
 
-        function bounceToLogin() {
-            window.location.href = 'index.html';
-        }
+        function bounceToLogin() { window.location.href = 'index.html'; }
 
-        // 2. ประมวลผลและดึงข้อมูลสรุปสถานะสุขภาพผู้ป่วยทั้งหมดมาแสดงผลแบบเรียลไทม์
         async function loadDashboardData() {
             try {
                 const response = await fetch(API_URL, { method: 'POST', body: JSON.stringify({ action: 'getAllPatients' }) });
                 const patients = await response.json();
 
-                // สรุปยอดแยกกลุ่ม
                 const totalCount = patients.length;
-                const socialCount = patients.filter(p => p.group === 'ติดสังคม').length;
-                const homeCount = patients.filter(p => p.group === 'ติดบ้าน').length;
-                const bedCount = patients.filter(p => p.group === 'ติดเตียง').length;
-
                 document.getElementById('total-all').innerText = totalCount;
-                document.getElementById('total-social').innerText = socialCount;
-                document.getElementById('total-home').innerText = homeCount;
-                document.getElementById('total-bed').innerText = bedCount;
+                document.getElementById('total-social').innerText = patients.filter(p => p.group === 'ติดสังคม').length;
+                document.getElementById('total-home').innerText = patients.filter(p => p.group === 'ติดบ้าน').length;
+                
+                const bedRidden = patients.filter(p => p.group === 'ติดเตียง');
+                document.getElementById('total-bed').innerText = bedRidden.length;
 
-                // --- 2.1 โลจิกคำนวณสิทธิ์คำขอผ้าอ้อม/แผ่นรองซับที่รออนุมัติจำนวนชิ้น ---
                 let pendingDiaper = 0;
                 patients.forEach(p => {
                     if (p.diaper) {
                         try {
                             const diaperObj = JSON.parse(p.diaper);
-                            // หากมีการระบุต้องการผ้าอ้อม (req_diaper) หรือแผ่นรองซับ (req_underpad) 
-                            // แต่ปริมาณในฐานข้อมูลจริงยังไม่ได้อนุมัติ (หรือช่องระบุชิ้นยังเป็นค่าว่าง/0) ให้นับเป็นงานค้าง
-                            if (diaperObj.req_diaper || diaperObj.req_underpad) {
-                                pendingDiaper++; 
-                            }
+                            if (diaperObj.req_diaper || diaperObj.req_underpad) pendingDiaper++; 
                         } catch(e) {}
                     }
                 });
                 document.getElementById('count-pending-diaper').innerText = pendingDiaper;
 
-                // --- 2.2 โลจิกคำนวณ SLA Alert การเยี่ยมบ้านล่าช้าเกิน 30 วัน ---
                 let slaAlertCount = 0;
                 const today = new Date();
                 
-                // ตรวจสอบเฉพาะกลุ่มวิกฤต (ติดเตียง) 
-                patients.filter(p => p.group === 'ติดเตียง').forEach(p => {
+                bedRidden.forEach(p => {
                     if (p.last_assess && p.last_assess.includes('/')) {
                         const parts = p.last_assess.split('/');
                         const lastAssessDate = new Date(parts[2], parts[1] - 1, parts[0]);
@@ -321,18 +323,17 @@
                         const diffDays = Math.ceil(timeDiff / (1000 * 3600 * 24));
                         if (diffDays > 30) slaAlertCount++;
                     } else {
-                        slaAlertCount++; // หากเป็นเคสใหม่ที่ยังไม่เคยได้รับการบันทึกเยี่ยมเลย ให้นับติดธงแดงทันที
+                        slaAlertCount++;
                     }
                 });
                 document.getElementById('count-sla-alert').innerText = slaAlertCount;
 
-                // --- 2.3 รายงานสถิติภาวะสุขภาพจิต (Mockup สัดส่วนอ้างอิงเบื้องต้น) ---
                 document.getElementById('depression-normal').innerText = Math.round(totalCount * 0.8);
                 document.getElementById('depression-risk').innerText = Math.round(totalCount * 0.15);
                 document.getElementById('depression-high').innerText = Math.round(totalCount * 0.05);
 
             } catch (error) {
-                console.error("โหลดข้อมูลแดชบอร์ดแอดมินล้มเหลว:", error);
+                console.error("โหลดข้อมูลล้มเหลว:", error);
             }
         }
     </script>
