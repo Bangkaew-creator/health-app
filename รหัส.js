@@ -23,6 +23,7 @@ function doPost(e) {
       case 'uploadImage': response = F_uploadImage(requestData.id, requestData.imageType, requestData.base64, requestData.filename); break;
       case 'updateVHVProfile': response = F_updateVHVProfile(requestData.data); break;
       case 'updatePatientStatus': response = F_updatePatientStatus(requestData.id, requestData.status); break;
+      case 'updateResourceApproval': response = F_updateResourceApproval(requestData.id, requestData.diaperQty, requestData.underpadQty); break;
       default: response = { status: 'error', message: 'Action not found' };
     }
     return ContentService.createTextOutput(JSON.stringify(response)).setMimeType(ContentService.MimeType.JSON);
