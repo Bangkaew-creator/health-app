@@ -184,11 +184,12 @@
             btn.disabled = true;
             btn.innerHTML = `<div class="loader" style="width: 20px; height: 20px; border-width: 2px; border-bottom-color: white;"></div> กำลังบันทึก...`;
 
-            const payload = {
+                        const payload = {
                 action: 'registerNewUser',
                 uid: document.getElementById('line-uid').value,
                 name: document.getElementById('user-name').value,
-                village: isAdminMode ? '-' : document.getElementById('user-village').value,
+                // [แก้ไข] เปลี่ยนจาก '-' เป็น 'ADMIN'
+                village: isAdminMode ? 'ADMIN' : document.getElementById('user-village').value, 
                 adminPassword: isAdminMode ? document.getElementById('admin-password').value : null
             };
 
