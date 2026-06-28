@@ -146,12 +146,13 @@
         let currentFilter = 'all'; 
         let vhvCurrentVillage = null; // เก็บหมู่ของอสม.
 
-        document.addEventListener("DOMContentLoaded", () => {
+                document.addEventListener("DOMContentLoaded", () => {
             liff.init({ liffId: LIFF_ID }).then(() => {
                 if (liff.isLoggedIn()) {
-                    liff.getProfile().then(profile => {
-                        fetchVHVProfile(profile.userId); 
-                        fetchPatients(); 
+                    liff.getProfile().then(async profile => {
+                        // [แก้ไข] ใส่ await เพื่อบังคับให้ระบบโหลดโปรไฟล์(และเลขหมู่)ให้เสร็จก่อน
+                        await fetchVHVProfile(profile.userId); 
+                        fetchPatients(); // ค่อยไปดึงข้อมูลผู้ป่วย
                     }).catch(err => {
                         setDefaultVHVProfile();
                         fetchPatients();
@@ -211,13 +212,24 @@
             document.getElementById('my-village-number').innerText = '-';
         }
 
+                // ฟังก์ชันดึงข้อมูลผู้ป่วยสำหรับ อสม.
         async function fetchPatients() {
             try {
                 const response = await fetch(API_URL, { method: 'POST', body: JSON.stringify({ action: 'getAllPatients' }) });
-                allPatients = await response.json();
+                const rawPatients = await response.json();
+                
+                // [เพิ่มการกรอง] กรองให้เหลือเฉพาะ "หมู่ตัวเอง" และ "สถานะ Active" เท่านั้น
+                allPatients = rawPatients.filter(p => {
+                    // เช็คว่าเป็นหมู่ที่ อสม. ดูแลอยู่ใช่หรือไม่ (ถ้าไม่ได้ล็อกอิน ข้ามการเช็คหมู่)
+                    const isMyVillage = vhvCurrentVillage ? (String(p.village_no) === String(vhvCurrentVillage)) : true;
+                    // เช็คว่าสถานะยังเป็น Active อยู่ใช่หรือไม่
+                    const isActive = String(p.status || 'Active').trim().toLowerCase() === 'active';
+                    
+                    return isMyVillage && isActive;
+                });
                 
                 updateTopSummaryCards();
-                updateVillageTotal(); // เรียกซ้ำเผื่อข้อมูลคนไข้โหลดเสร็จทีหลังโปรไฟล์
+                updateVillageTotal(); 
                 renderPatientList();
                 
                 document.getElementById('loading-state').classList.add('hidden');
