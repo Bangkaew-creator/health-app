@@ -36,27 +36,41 @@ function doPost(e) {
 function F_getAllPatients() {
   const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(SHEET_NAMES.PATIENTS);
   const data = sheet.getDataRange().getValues();
-  const patients = [];
+  
+  // แปลงหัวตารางแถวแรกให้เป็นตัวพิมพ์เล็กทั้งหมดเพื่อป้องกันการพิมพ์ผิด
+  const headers = data[0].map(h => String(h).trim().toLowerCase());
+  
+  // ค้นหาตำแหน่งคอลัมน์โดยอัตโนมัติจากชื่อหัวตาราง
+  const colId = headers.indexOf('id');
+  const colName = headers.findIndex(h => h.includes('name') || h.includes('ชื่อ'));
+  const colVillage = headers.findIndex(h => h.includes('village_no') || h.includes('หมู่'));
+  const colHouse = headers.findIndex(h => h.includes('house_no') || h.includes('บ้านเลขที่') || h.includes('เลขที่'));
+  const colGroup = headers.findIndex(h => h.includes('group') || h.includes('กลุ่ม'));
+  const colLastAssess = headers.findIndex(h => h.includes('last_assess') || h.includes('ล่าสุด'));
+  const colStatus = headers.findIndex(h => h.includes('status') || h.includes('สถานะ')); // ดักจับช่องคอลัมน์ AE 
+  const colDiaper = headers.findIndex(h => h.includes('diaper') || h.includes('ผ้าอ้อม'));
+  const colPic = headers.findIndex(h => h.includes('profile_pic') || h.includes('รูป'));
+  const colAdl = headers.indexOf('adl');
 
+  const list = [];
   for (let i = 1; i < data.length; i++) {
-     {
-      patients.push({
-        id: data[i][0],
-        name: data[i][3],
-        house_no: data[i][6],
-        village_no: data[i][7],
-        group: data[i][20] || 'ยังไม่ประเมิน',
-        // [แก้ไข] ดักจับว่าถ้าช่องไม่ว่างเปล่า ให้แสดงตัวเลข (รวมถึงเลข 0)
-        adl: data[i][21] !== "" ? data[i][21] : '-',
-        profile_pic: data[i][22] || '',
-        bp: data[i][23] || '-',
-        hr: data[i][24] || '-',
-        lat_long: data[i][8] || '', // <--- [เพิ่มบรรทัดนี้] ดึงพิกัดจากคอลัมน์ I
-        last_assess: data[i][29] || ''
-      });
-    }
+    const row = data[i];
+    if (!row[colId]) continue; // ข้ามแถวว่าง
+    
+    list.push({
+      id: String(row[colId]),
+      name: colName > -1 ? row[colName] : '',
+      village_no: colVillage > -1 ? String(row[colVillage]) : '',
+      house_no: colHouse > -1 ? String(row[colHouse]) : '',
+      group: colGroup > -1 ? row[colGroup] : 'ยังไม่ประเมิน',
+      last_assess: colLastAssess > -1 ? row[colLastAssess] : '',
+      status: colStatus > -1 ? String(row[colStatus]).trim() : 'Active', // ดึงค่าจากคอลัมน์ AE ตรงๆ
+      diaper: colDiaper > -1 ? row[colDiaper] : '',
+      profile_pic: colPic > -1 ? row[colPic] : '',
+      adl: colAdl > -1 ? row[colAdl] : '-'
+    });
   }
-  return patients;
+  return list;
 }
 
 // [F3] ฟังก์ชันบันทึกผู้ป่วยใหม่ (บันทึกให้ครบ 31 คอลัมน์)
@@ -110,12 +124,12 @@ function F_getConfig(key) {
   return null;
 }
 
-// [F4] ฟังก์ชันตรวจสอบผู้ใช้งาน (ดึงค่า Config แบบครบชุด)
+// [F4] ฟังก์ชันตรวจสอบผู้ใช้งานเมื่อเข้าสู่ระบบ (ดึงค่าจาก Config ทุกตัว)
 function F_checkUser(uid) {
   const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(SHEET_NAMES.USERS);
   const data = sheet.getDataRange().getValues();
   
-  // ดึงค่า Config ส่วนกลาง
+  // ดึงค่า Config ส่วนกลางจากแผ่นงาน 'Config'
   const hospitalName = F_getConfig('HOSPITAL_NAME') || 'เทศบาลเมืองบางแก้ว';
   const villageCount = F_getConfig('VILLAGE_COUNT') || 15;
   const diaperPrice = F_getConfig('DIAPER_PRICE') || 9.50;
@@ -134,15 +148,14 @@ function F_checkUser(uid) {
         role: role,
         phone: data[i][5] || '',  
         pic_url: data[i][6] || '',
-        // ส่งค่า Config ทั้งหมดไปให้หน้าเว็บ
         hospital_name: hospitalName,
-        village_count: villageCount,
-        diaper_price: diaperPrice,
-        underpad_price: underpadPrice
+        village_count: villageCount, // ส่งจำนวนหมู่ไปใช้ทุกหน้า
+        diaper_price: diaperPrice,   // ส่งราคาผ้าอ้อม
+        underpad_price: underpadPrice // ส่งราคาแผ่นรอง
       };
     }
   }
-  return { status: 'unregistered', hospital_name: hospitalName };
+  return { status: 'unregistered', hospital_name: hospitalName, village_count: villageCount };
 }
 
 // [F5] ฟังก์ชันลงทะเบียนผู้ใช้ใหม่แบบแยกรหัสผ่าน (จำกัด 7 คอลัมน์ A-G)
