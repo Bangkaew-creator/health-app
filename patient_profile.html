@@ -4,6 +4,7 @@
     <meta charset="utf-8"/>
     <meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" name="viewport"/>
     <title>ข้อมูลผู้ป่วย - Health Volunteer</title>
+    <script charset="utf-8" src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
     <script src="https://cdn.tailwindcss.com?plugins=forms"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700&display=swap" rel="stylesheet"/>
@@ -19,9 +20,9 @@
 
     <header class="bg-[#00694a] sticky top-0 z-50 shadow-md flex justify-between items-center w-full px-4 h-16 text-white">
         <div class="flex items-center gap-3">
-            <button onclick="window.history.back()" class="w-10 h-10 flex items-center justify-center rounded-full hover:bg-white/20 transition-colors">
-            <span class="material-symbols-outlined">arrow_back</span>
-        </button>
+            <button onclick="goBackToList()" class="w-10 h-10 flex items-center justify-center rounded-full hover:bg-white/20 transition-colors">
+                <span class="material-symbols-outlined">arrow_back</span>
+            </button>
             <h1 class="text-lg font-bold">แฟ้มประวัติผู้ป่วย</h1>
         </div>
         <button id="btn-edit" class="w-10 h-10 flex items-center justify-center rounded-full hover:bg-white/20 transition-colors hidden">
@@ -192,7 +193,6 @@
             </div>
 
         </div>
-        <!-- ปุ่มเปลี่ยนสถานะผู้ป่วย -->
         <div class="mt-6 pt-6 border-t border-red-100">
             <button type="button" onclick="openStatusModal()" class="w-full py-4 bg-red-50 text-red-600 rounded-[16px] font-bold shadow-sm border border-red-100 flex items-center justify-center gap-2 hover:bg-red-100 active:scale-95 transition-all">
                 <span class="material-symbols-outlined text-[20px]">manage_accounts</span>
@@ -207,9 +207,45 @@
     </div>
 
     <script>
+        const LIFF_ID = "2010500776-6r1shNwL"; // รหัส LIFF ID
         const API_URL = "https://script.google.com/macros/s/AKfycbyzPy7sklwURcJiqFDzlK4OEQ8616CJLuNyAjb8euQNzYJLXz_dj4UJM63w8-nI1L3r/exec";
+        
         const urlParams = new URLSearchParams(window.location.search);
         const patientId = urlParams.get('id');
+        let currentUserRole = 'VHV'; // ตัวแปรเก็บสิทธิ์ผู้ใช้งาน
+
+        // ฟังก์ชันกำหนดการย้อนกลับไปที่หน้ารายชื่อให้ถูกสิทธิ์
+        function goBackToList() {
+            if (currentUserRole === 'ADMIN') {
+                window.location.replace('admin_datacenter.html'); // แอดมินกลับไปศูนย์ข้อมูล
+            } else {
+                window.location.replace('dashboard.html'); // อสม. กลับไปหน้าจอหลัก
+            }
+        }
+
+        // โหลดข้อมูลสิทธิ์ทันทีที่เปิดหน้า
+        document.addEventListener("DOMContentLoaded", () => {
+            liff.init({ liffId: LIFF_ID }).then(() => {
+                if (liff.isLoggedIn()) {
+                    liff.getProfile().then(profile => {
+                        checkUserRole(profile.userId);
+                    }).catch(err => console.error(err));
+                }
+            });
+        });
+
+        async function checkUserRole(uid) {
+            try {
+                const response = await fetch(API_URL, {
+                    method: 'POST',
+                    body: JSON.stringify({ action: 'checkUserRegistration', uid: uid })
+                });
+                const data = await response.json();
+                if (data.status === 'registered') {
+                    currentUserRole = data.role; // จำสิทธิ์ของคนที่เปิดหน้านี้
+                }
+            } catch(e) { console.error(e); }
+        }
 
         const getDriveImageUrl = (url) => {
             if(!url) return null;
@@ -230,11 +266,11 @@
         }
 
         async function loadPatientProfile() {
-            if (!patientId) { window.location.href = 'dashboard.html'; return; }
+            if (!patientId) { goBackToList(); return; } // ถ้าไม่มี ID ให้เด้งกลับไปที่หน้ารายชื่อ
             try {
                 const response = await fetch(API_URL, { method: 'POST', body: JSON.stringify({ action: 'getPatientById', id: patientId }) });
                 const data = await response.json();
-                if (data.error) { alert(data.error); window.history.back(); return; }
+                if (data.error) { alert(data.error); goBackToList(); return; }
 
                 // โหลดข้อมูลพื้นฐาน
                 const profileUrl = getDriveImageUrl(data.profile_pic);
@@ -250,12 +286,11 @@
                 document.getElementById('profile-gps').innerText = data.lat_long || 'ยังไม่มีข้อมูล';
                 if (data.lat_long && typeof data.lat_long === 'string' && data.lat_long.includes(',')) {
                     const mapLink = document.getElementById('profile-map-link');
-                    // แก้ไขลิงก์ Google Maps ให้ทำงานได้สมบูรณ์
                     mapLink.href = `https://www.google.com/maps/search/?api=1&query=${data.lat_long.replace(/\s/g, '')}`;
                     mapLink.classList.remove('hidden');
                 }
 
-                // สรุป ADL/DEP ที่ป้ายบนสุด
+                // สรุป ADL/DEP
                 document.getElementById('profile-adl').innerText = (data.adl !== "" && data.adl !== null) ? data.adl : '-';
                 if (data.last_assess) document.getElementById('profile-last-assess').innerText = `(${data.last_assess})`;
                 const groupBadge = document.getElementById('profile-group');
@@ -328,7 +363,6 @@
                 });
                 gallery.innerHTML = galleryHtml === '' ? '<p class="text-xs text-gray-400 col-span-2 text-center py-4">ยังไม่ได้นำเข้าภาพถ่าย</p>' : galleryHtml;
 
-                // ใส่ปุ่มดินสอกลับมาแล้ว
                 document.getElementById('btn-edit').onclick = () => window.location.href = `patient_edit.html?id=${patientId}`;
                 document.getElementById('btn-edit').classList.remove('hidden');
 
@@ -343,16 +377,13 @@
                 const [vitalsRes, assessRes] = await Promise.all([ fetch(API_URL, { method: 'POST', body: JSON.stringify({ action: 'getVitals', id: patientId }) }), fetch(API_URL, { method: 'POST', body: JSON.stringify({ action: 'getAssessments', id: patientId }) }) ]);
                 const vitals = await vitalsRes.json(); const assessments = await assessRes.json();
 
-                // [เพิ่มใหม่] ฟังก์ชันช่วยแปลงวันที่ให้แสดงผลเป็น วัน/เดือน (เช่น 26/6)
                 const formatLabel = (dateStr) => {
                     if (!dateStr) return '';
                     const str = String(dateStr);
-                    // กรณี Google Sheets ส่งมาเป็นรูปแบบ ISO Date (มีตัว T เช่น 2026-06-26T...)
                     if (str.includes('T')) {
                         const d = new Date(str);
                         return d.getDate() + '/' + (d.getMonth() + 1);
                     }
-                    // กรณีเก็บเป็น Text ธรรมดา (dd/MM/yyyy)
                     const parts = str.split(' ')[0].split('/');
                     if (parts.length >= 2) return parts[0] + '/' + parts[1];
                     return str.substring(0, 5);
@@ -390,7 +421,7 @@
         function startADL() { window.location.href = `adl_assessment.html?id=${patientId}`; }
         function startDepression() { window.location.href = `depression_assessment.html?id=${patientId}`; }
         loadPatientProfile(); loadAllCharts();
-        // ฟังก์ชันเปิด/ปิด Modal
+
         function openStatusModal() {
             const modal = document.getElementById('status-modal');
             const content = document.getElementById('status-modal-content');
@@ -411,7 +442,6 @@
             }, 300);
         }
 
-        // ฟังก์ชันส่งค่าอัปเดตไปหลังบ้าน
         async function savePatientStatus() {
             const selectedStatus = document.querySelector('input[name="patient_status"]:checked');
             if (!selectedStatus) return alert('กรุณาเลือกสถานะใหม่ที่ต้องการเปลี่ยนครับ');
@@ -421,7 +451,6 @@
             btn.innerHTML = `<div class="loader-small" style="width:16px; height:16px; border-width:2px; border-bottom-color:white; display:inline-block; vertical-align:middle; margin-right:5px;"></div> กำลังบันทึก...`;
             btn.disabled = true;
 
-            // ดึง ID ผู้ป่วยจาก URL ปัจจุบัน
             const urlParams = new URLSearchParams(window.location.search);
             const patientId = urlParams.get('id');
 
@@ -439,7 +468,8 @@
                 
                 if (result.success) {
                     alert('เปลี่ยนสถานะผู้ป่วยสำเร็จ\nผู้ป่วยรายนี้ถูกนำออกจากรายชื่อที่ต้องติดตามแล้ว');
-                    window.location.href = 'patient_list.html'; // เด้งกลับหน้ารายชื่อ
+                    // แก้ไขตรงนี้ให้ใช้ goBackToList() ด้วยเหมือนกัน
+                    goBackToList(); 
                 } else {
                     alert('เกิดข้อผิดพลาด: ' + result.message);
                     resetBtn(btn);
@@ -455,7 +485,6 @@
             btn.disabled = false;
         }
     </script>
-    <!-- Modal เปลี่ยนสถานะผู้ป่วย -->
     <div id="status-modal" class="fixed inset-0 bg-[#111c2d]/40 backdrop-blur-sm z-[60] hidden flex items-center justify-center p-4 opacity-0 transition-opacity duration-300">
         <div class="bg-white rounded-[24px] w-full max-w-sm overflow-hidden shadow-2xl transform scale-95 transition-transform duration-300" id="status-modal-content">
             <div class="p-6">
