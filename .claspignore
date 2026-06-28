@@ -3,7 +3,6 @@
 
 # ยกเว้นไฟล์ CSS และ Javascript (ถ้ามี)
 *.css
-*.js
 
 # ยกเว้นโฟลเดอร์ระบบของ GitHub
 .github/
