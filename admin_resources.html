@@ -159,6 +159,7 @@
         }
         function bounceToLogin() { window.location.href = 'index.html'; }
 
+                // ฟังก์ชันดึงข้อมูลทรัพยากร (แก้ไข: รองรับการอ่านข้อมูลผ้าอ้อมทั้งแบบ JSON และแบบข้อความธรรมดา)
         async function loadResourceData() {
             try {
                 const response = await fetch(API_URL, { method: 'POST', body: JSON.stringify({ action: 'getAllPatients' }) });
@@ -171,22 +172,41 @@
                     const rawStatus = safeGet(p, ['status', 'Status', 'STATUS'], 'Active').toLowerCase();
                     const isActive = rawStatus === 'active';
                     
-                    if (p.diaper) {
+                    if (p.diaper && String(p.diaper).trim() !== '') {
+                        let d = {};
+                        let isRequesting = false;
+                        
                         try {
-                            const d = JSON.parse(p.diaper);
-                            // เก็บเข้ารายการถ้ามีการขอผ้าอ้อมหรือแผ่นรอง
-                            if (d.req_diaper || d.req_underpad) {
-                                allRequests.push({ patient: p, detail: d, isActive: isActive });
-                                
-                                if (isActive && d.approve_status === 'อนุมัติแล้ว') {
-                                    activeApprovedPatients.push({ 
-                                        size: String(d.diaper_size || 'L').toUpperCase().trim(),
-                                        diaperQty: parseInt(d.approved_diaper) || 0,
-                                        underpadQty: parseInt(d.approved_underpad) || 0
-                                    });
-                                }
+                            // ลองอ่านแบบ JSON ก่อน
+                            d = JSON.parse(p.diaper);
+                            if (d.req_diaper || d.req_underpad) isRequesting = true;
+                        } catch(e) {
+                            // ถ้าไม่ใช่ JSON (เช่น พิมพ์เป็นข้อความธรรมดาว่า "ผ้าอ้อมไซส์ L")
+                            const txt = String(p.diaper).toLowerCase();
+                            d = {
+                                req_diaper: txt.includes('ผ้าอ้อม') || txt.includes('diaper'),
+                                diaper_size: txt.includes('xl') ? 'XL' : (txt.includes('m') ? 'M' : 'L'),
+                                req_underpad: txt.includes('รองซับ') || txt.includes('underpad'),
+                                approve_status: txt.includes('อนุมัติแล้ว') ? 'อนุมัติแล้ว' : 'รออนุมัติ',
+                                approved_diaper: 0,
+                                approved_underpad: 0
+                            };
+                            // ถ้ามีข้อมูลในช่องนี้ ให้ถือว่ามีการขอเบิก
+                            isRequesting = true; 
+                        }
+
+                        if (isRequesting) {
+                            allRequests.push({ patient: p, detail: d, isActive: isActive });
+                            
+                            // เก็บคน Active & อนุมัติแล้ว ไว้คำนวณงบ
+                            if (isActive && d.approve_status === 'อนุมัติแล้ว') {
+                                activeApprovedPatients.push({ 
+                                    size: String(d.diaper_size || 'L').toUpperCase().trim(),
+                                    diaperQty: parseInt(d.approved_diaper) || 0,
+                                    underpadQty: parseInt(d.approved_underpad) || 0
+                                });
                             }
-                        } catch(e) {}
+                        }
                     }
                 });
                 
@@ -195,7 +215,7 @@
                 renderList();
             } catch (error) { alert("โหลดข้อมูลล้มเหลว"); }
         }
-
+        
         function calculateBudget() {
             const targetDays = parseInt(document.getElementById('forecast-days').value) || 0;
             let totalM = 0, totalL = 0, totalXL = 0, totalPad = 0;
