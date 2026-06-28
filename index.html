@@ -147,13 +147,24 @@
             }
         }
 
-        function handleLoginResponse(response) {
+                function handleLoginResponse(response) {
             const loading = document.getElementById('loading-screen');
             const register = document.getElementById('register-screen');
 
             if (response.status === 'unregistered') {
                 loading.classList.add('hidden');
                 register.classList.remove('hidden');
+                
+                // [เพิ่มส่วนนี้] ดึงจำนวนหมู่จาก Config มาสร้างตัวเลือกให้ อสม.
+                const vCount = parseInt(response.village_count) || 15;
+                const villageSelect = document.getElementById('user-village');
+                if (villageSelect) {
+                    villageSelect.innerHTML = '<option value="" disabled selected>เลือกหมู่ที่รับผิดชอบ...</option>';
+                    for (let i = 1; i <= vCount; i++) {
+                        villageSelect.insertAdjacentHTML('beforeend', `<option value="${i}">หมู่ที่ ${i}</option>`);
+                    }
+                }
+
             } else if (response.status === 'registered') {
                 document.getElementById('loading-text').innerText = `ยินดีต้อนรับ ${response.name} กำลังพาเข้าสู่ระบบ...`;
                 document.getElementById('loading-text').classList.replace('text-secondary', 'text-primary');
