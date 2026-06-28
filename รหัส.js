@@ -34,37 +34,38 @@ function doPost(e) {
 
 // [F2] ฟังก์ชันดึงรายชื่อผู้ป่วยทั้งหมด (รองรับ 31 คอลัมน์)
 function F_getAllPatients() {
-  // เปลี่ยนชื่อชีตให้ตรงกับที่คุณตั้งไว้ หรือใช้ SHEET_NAMES.PATIENTS ถ้าคุณประกาศตัวแปรไว้
-  const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('Patients') || SpreadsheetApp.getActiveSpreadsheet().getSheetByName('ผู้ป่วย');
+  const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('Patients');
   if (!sheet) return [];
   
   const data = sheet.getDataRange().getValues();
-  if (data.length < 2) return []; // ถ้าไม่มีข้อมูลเลยให้ข้าม
+  if (data.length < 2) return [];
   
-  // แปลงหัวตารางเป็นตัวพิมพ์เล็กเพื่อค้นหา
+  // แปลงหัวตารางให้เป็นตัวเล็กเพื่อเปรียบเทียบแบบเป๊ะๆ
   const headers = data[0].map(h => String(h).trim().toLowerCase());
   
-  // ค้นหาคอลัมน์แบบยืดหยุ่น (รองรับชื่อหลายรูปแบบ)
-  const colId = headers.findIndex(h => h === 'id' || h === 'uid' || h.includes('รหัส'));
-  const colName = headers.findIndex(h => h.includes('name') || h.includes('ชื่อ'));
-  const colVillage = headers.findIndex(h => h === 'village_no' || h === 'village' || h.includes('หมู่'));
-  const colHouse = headers.findIndex(h => h.includes('house') || h.includes('เลขที่'));
-  const colGroup = headers.findIndex(h => h.includes('group') || h.includes('กลุ่ม') || h.includes('adl'));
-  const colLastAssess = headers.findIndex(h => h.includes('last_assess') || h.includes('ล่าสุด') || h.includes('ประเมิน'));
-  const colStatus = headers.findIndex(h => h === 'status' || h.includes('สถานะ')); // ดักคอลัมน์ Status 
-  const colDiaper = headers.findIndex(h => h.includes('diaper') || h.includes('ผ้าอ้อม'));
-  const colPic = headers.findIndex(h => h.includes('pic') || h.includes('รูป'));
-  const colAdl = headers.findIndex(h => h === 'adl' || h.includes('คะแนน'));
-
+  // ล็อกเป้า Index คอลัมน์ตามชื่อที่คุณให้มาเป๊ะๆ (ห้ามคล้าย ต้องตรงเป๊ะ)
+  const colId = headers.indexOf('patient_id');
+  const colName = headers.indexOf('name');
+  const colVillage = headers.indexOf('village_no');
+  const colHouse = headers.indexOf('house_no');
+  const colGroup = headers.indexOf('patient_group');
+  const colLastAssess = headers.indexOf('last_assessment_date');
+  const colStatus = headers.indexOf('status');
+  const colProfilePic = headers.indexOf('profile_pic');
+  const colAdl = headers.indexOf('adl_score');
+  
+  // **หมายเหตุ:** สำหรับข้อมูล JSON เบิกผ้าอ้อม ผมจะอ้างอิงใช้ช่อง Required_Equipment ในการเก็บข้อมูลนะครับ
+  let colDiaper = headers.indexOf('required_equipment');
+  
   const list = [];
   for (let i = 1; i < data.length; i++) {
     const row = data[i];
     
-    // ข้ามเฉพาะแถวที่ว่างเปล่าจริงๆ (ไม่มีชื่อ และไม่มี ID)
-    if ((colId > -1 && !row[colId]) && (colName > -1 && !row[colName])) continue; 
+    // ข้ามแถวที่ไม่มี Patient_ID (กันแถวว่าง)
+    if (colId === -1 || !row[colId]) continue; 
     
     list.push({
-      id: colId > -1 ? String(row[colId]) : `TEMP_${i}`, // ถ้าหา ID ไม่เจอจริงๆ จะสร้างรหัสจำลองให้ระบบไม่พัง
+      id: String(row[colId]),
       name: colName > -1 ? String(row[colName]) : '',
       village_no: colVillage > -1 ? String(row[colVillage]) : '',
       house_no: colHouse > -1 ? String(row[colHouse]) : '',
@@ -72,7 +73,7 @@ function F_getAllPatients() {
       last_assess: colLastAssess > -1 ? String(row[colLastAssess]) : '',
       status: colStatus > -1 ? String(row[colStatus]).trim() : 'Active',
       diaper: colDiaper > -1 ? String(row[colDiaper]) : '',
-      profile_pic: colPic > -1 ? String(row[colPic]) : '',
+      profile_pic: colProfilePic > -1 ? String(row[colProfilePic]) : '',
       adl: colAdl > -1 ? String(row[colAdl]) : '-'
     });
   }
@@ -130,34 +131,51 @@ function F_getConfig(key) {
   return null;
 }
 
-// [F4] ฟังก์ชันตรวจสอบผู้ใช้งานเมื่อเข้าสู่ระบบ (ดึงค่าจาก Config ทุกตัว)
+// [F4] ฟังก์ชันตรวจสอบผู้ใช้งานเมื่อเข้าสู่ระบบ (ล็อกเป้าหมายหัวตารางเป๊ะๆ)
 function F_checkUser(uid) {
-  const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(SHEET_NAMES.USERS);
-  const data = sheet.getDataRange().getValues();
+  const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('Users');
+  if (!sheet) return { status: 'unregistered' };
   
-  // ดึงค่า Config ส่วนกลางจากแผ่นงาน 'Config'
+  const data = sheet.getDataRange().getValues();
+  if (data.length < 2) return { status: 'unregistered' };
+
+  // ดึงค่า Config
   const hospitalName = F_getConfig('HOSPITAL_NAME') || 'เทศบาลเมืองบางแก้ว';
   const villageCount = F_getConfig('VILLAGE_COUNT') || 15;
   const diaperPrice = F_getConfig('DIAPER_PRICE') || 9.50;
   const underpadPrice = F_getConfig('UNDERPAD_PRICE') || 6.00;
   
+  // ล็อกหัวตารางเป๊ะๆ จากชีท Users
+  const headers = data[0].map(h => String(h).trim().toLowerCase());
+  const colUid = headers.indexOf('uid');
+  const colName = headers.indexOf('name');
+  const colVillage = headers.indexOf('village_no');
+  const colStatus = headers.indexOf('status');
+  const colPhone = headers.indexOf('phone');
+  const colPic = headers.indexOf('profile_pic');
+
+  if (colUid === -1) return { status: 'unregistered', hospital_name: hospitalName, village_count: villageCount };
+
   for (let i = 1; i < data.length; i++) {
-    if (data[i][0] === uid) {
-      if (data[i][4] !== 'Active') return { status: 'inactive', hospital_name: hospitalName };
+    if (String(data[i][colUid]) === String(uid)) {
+      if (colStatus > -1 && data[i][colStatus] !== 'Active') {
+        return { status: 'inactive', hospital_name: hospitalName };
+      }
       
-      const role = (data[i][2] === 'ADMIN') ? 'ADMIN' : 'VHV';
+      const village = colVillage > -1 ? String(data[i][colVillage]) : '';
+      const role = (village === 'ADMIN') ? 'ADMIN' : 'VHV';
       
       return { 
         status: 'registered', 
-        name: data[i][1] || '', 
-        village: data[i][2] || '',
+        name: colName > -1 ? data[i][colName] : '', 
+        village: village,
         role: role,
-        phone: data[i][5] || '',  
-        pic_url: data[i][6] || '',
+        phone: colPhone > -1 ? data[i][colPhone] : '',  
+        pic_url: colPic > -1 ? data[i][colPic] : '',
         hospital_name: hospitalName,
-        village_count: villageCount, // ส่งจำนวนหมู่ไปใช้ทุกหน้า
-        diaper_price: diaperPrice,   // ส่งราคาผ้าอ้อม
-        underpad_price: underpadPrice // ส่งราคาแผ่นรอง
+        village_count: villageCount, 
+        diaper_price: diaperPrice,   
+        underpad_price: underpadPrice 
       };
     }
   }
@@ -466,48 +484,38 @@ function F_updatePatientStatus(id, newStatus) {
 }
 
 // [F15] ฟังก์ชันบันทึกการอนุมัติผ้าอ้อม/แผ่นรองซับ
+// [F8] ฟังก์ชันบันทึกการอนุมัติผ้าอ้อม/แผ่นรองซับ (แก้ไข: ล็อกเป้า Required_Equipment)
 function F_updateResourceApproval(id, diaperQty, underpadQty) {
-  // เปลี่ยนชื่อชีตให้ตรงกับที่คุณตั้งไว้ (เช่น 'Patients' หรือ 'ผู้ป่วย')
   const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('Patients'); 
   const data = sheet.getDataRange().getValues();
   
-  // ค้นหาว่าคอลัมน์ Diaper อยู่ที่ Index ไหนจากหัวตาราง (แถวที่ 1)
-  let diaperColIndex = -1;
-  for (let c = 0; c < data[0].length; c++) {
-    if (String(data[0][c]).toLowerCase() === 'diaper' || String(data[0][c]) === 'ผ้าอ้อม') {
-      diaperColIndex = c + 1; // +1 เพราะ getRange เริ่มที่ 1
-      break;
-    }
-  }
+  const headers = data[0].map(h => String(h).trim().toLowerCase());
+  const colId = headers.indexOf('patient_id');
+  const colDiaper = headers.indexOf('required_equipment'); // ล็อกช่องเก็บข้อมูล JSON
   
-  if (diaperColIndex === -1) return { success: false, message: 'ระบบหาหัวตารางคอลัมน์ Diaper ไม่พบ กรุณาตรวจสอบชื่อคอลัมน์' };
+  if (colId === -1 || colDiaper === -1) return { success: false, message: 'หารหัสผู้ป่วย หรือ คอลัมน์ Required_Equipment ไม่พบในฐานข้อมูล' };
 
-  // ค้นหาแถวของผู้ป่วยจาก ID
   for (let i = 1; i < data.length; i++) {
-    if (data[i][0] === id) {
-      let currentDiaper = data[i][diaperColIndex - 1];
+    if (String(data[i][colId]) === String(id)) {
+      let currentDiaper = data[i][colDiaper];
       let diaperObj = {};
       
-      // แปลงข้อมูลเดิมเป็น Object
       if (currentDiaper) {
         try { diaperObj = JSON.parse(currentDiaper); } catch(e) {}
       }
       
-      // เพิ่มข้อมูลการอนุมัติเข้าไป
       diaperObj.approved_diaper = diaperQty || 0;
       diaperObj.approved_underpad = underpadQty || 0;
       diaperObj.approve_status = "อนุมัติแล้ว";
       diaperObj.approve_date = Utilities.formatDate(new Date(), "GMT+7", "dd/MM/yyyy");
       
       // บันทึกกลับลงไปในชีต
-      sheet.getRange(i + 1, diaperColIndex).setValue(JSON.stringify(diaperObj));
+      sheet.getRange(i + 1, colDiaper + 1).setValue(JSON.stringify(diaperObj));
       return { success: true, message: 'บันทึกการอนุมัติเรียบร้อยแล้ว' };
     }
   }
   return { success: false, message: 'ไม่พบรหัสผู้ป่วยรายนี้' };
 }
-
-
 
 // ==========================================
 // [F99] ฟังก์ชันพิเศษ: ใช้สำหรับรันเพื่อจัดหัวตารางอัตโนมัติ (อัปเดต 31 คอลัมน์)
