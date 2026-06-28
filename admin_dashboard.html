@@ -24,7 +24,7 @@
         .text-gold { color: #d97706; }
     </style>
 </head>
-<body class="flex h-screen overflow-hidden text-slate-800 relative">
+<body class="flex h-[100dvh] overflow-hidden text-slate-800 relative">
 
     <div id="sidebar-overlay" class="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-40 hidden lg:hidden" onclick="toggleSidebar()"></div>
 
@@ -71,10 +71,10 @@
         </div>
     </aside>
 
-    <main class="flex-1 flex flex-col h-screen overflow-hidden">
+    <main class="flex-1 flex flex-col h-[100dvh] overflow-hidden">
         
         <header class="h-20 bg-white shadow-sm flex items-center justify-between px-6 lg:px-8 z-10 flex-shrink-0 border-b border-slate-100">
-            <div class="flex items-center">
+            <div class="flex-1 overflow-y-auto p-4 lg:p-8 pb-32 lg:pb-32 space-y-6 lg:space-y-8">
                 <button onclick="toggleSidebar()" class="lg:hidden p-2.5 -ml-2 mr-3 text-slate-600 hover:bg-slate-100 rounded-xl transition-colors">
                     <span class="material-symbols-outlined text-[26px]">menu</span>
                 </button>
