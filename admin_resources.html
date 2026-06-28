@@ -53,32 +53,34 @@
                     <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-4 mb-4 border-b border-slate-100 pb-4">
                         <div>
                             <h3 class="text-base font-bold text-navy flex items-center gap-2"><span class="material-symbols-outlined text-amber-500">account_balance_wallet</span> คาดการณ์งบประมาณและทรัพยากร</h3>
-                            <p class="text-[11px] text-slate-500 mt-1">คำนวณเฉพาะผู้ป่วย <strong class="text-blue-600">Active (กำลังดูแล)</strong> ที่ได้รับการ <strong class="text-emerald-600">อนุมัติแล้ว</strong> เท่านั้น</p>
+                            <p class="text-[11px] text-slate-500 mt-1">คำนวณเฉพาะผู้ป่วย <strong class="text-blue-600">Active</strong> ที่ได้รับการ <strong class="text-emerald-600">อนุมัติแล้ว</strong></p>
                         </div>
                         <div class="flex items-center gap-2 bg-slate-50 p-2 rounded-xl border border-slate-200 shadow-inner">
                             <label class="text-sm font-bold text-slate-700 pl-2">ดูระยะเวลา</label>
-                            <input type="number" id="forecast-days" value="30" oninput="calculateBudget()" class="w-20 px-2 py-1.5 border border-slate-300 rounded-lg text-center font-bold text-navy">
+                            <input type="number" id="forecast-days" value="30" oninput="calculateBudget()" class="w-20 px-2 py-1.5 border border-slate-300 rounded-lg text-center font-bold text-navy focus:ring-navy focus:border-navy">
                             <span class="text-sm text-slate-500 pr-2">วัน</span>
                         </div>
                     </div>
                     
                     <div class="grid grid-cols-1 xl:grid-cols-3 gap-6">
                         
-                        <div class="bg-slate-50 p-4 rounded-xl border border-slate-200">
-                            <p class="text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-3">1. ตั้งค่าราคาอ้างอิง (บาท/ชิ้น)</p>
-                            <div class="space-y-3">
-                                <div class="flex justify-between items-center">
-                                    <span class="text-xs font-bold text-slate-700">ผ้าอ้อมผู้ใหญ่</span>
-                                    <input type="number" step="0.01" id="price-diaper" oninput="calculateBudget()" class="w-24 text-right px-2 py-1 border border-slate-300 rounded text-sm font-bold text-navy">
+                        <!-- Block 1: ราคาอ้างอิงจาก Config (แก้ไขไม่ได้ 100%) -->
+                        <div class="bg-slate-50 p-4 rounded-xl border border-slate-200 flex flex-col justify-center">
+                            <p class="text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-3">1. ราคาวัสดุอ้างอิง (จาก Config)</p>
+                            <div class="space-y-2">
+                                <div class="flex justify-between items-center bg-white p-3 rounded-lg border border-slate-100 shadow-sm">
+                                    <span class="text-xs font-bold text-slate-600">ผ้าอ้อมผู้ใหญ่</span>
+                                    <span class="text-sm font-black text-navy"><span id="label-price-diaper">0.00</span> ฿</span>
                                 </div>
-                                <div class="flex justify-between items-center">
-                                    <span class="text-xs font-bold text-slate-700">แผ่นรองซับ</span>
-                                    <input type="number" step="0.01" id="price-underpad" oninput="calculateBudget()" class="w-24 text-right px-2 py-1 border border-slate-300 rounded text-sm font-bold text-emerald-700">
+                                <div class="flex justify-between items-center bg-white p-3 rounded-lg border border-slate-100 shadow-sm">
+                                    <span class="text-xs font-bold text-slate-600">แผ่นรองซับ</span>
+                                    <span class="text-sm font-black text-emerald-700"><span id="label-price-underpad">0.00</span> ฿</span>
                                 </div>
                             </div>
                         </div>
 
-                        <div class="bg-blue-50/50 p-4 rounded-xl border border-blue-100">
+                        <!-- Block 2: สรุปชิ้น -->
+                        <div class="bg-blue-50/50 p-4 rounded-xl border border-blue-100 flex flex-col justify-center">
                             <p class="text-[11px] font-bold text-blue-800 uppercase tracking-wider mb-3">2. จำนวนชิ้นรวมที่ต้องใช้</p>
                             <div class="grid grid-cols-2 lg:grid-cols-4 gap-2 text-center">
                                 <div class="bg-white p-2 rounded-lg border border-slate-100"><span class="text-[10px] text-slate-400 block">ไซส์ M</span><span class="font-bold text-navy text-lg" id="sum-m">0</span></div>
@@ -88,6 +90,7 @@
                             </div>
                         </div>
 
+                        <!-- Block 3: งบประมาณรวม -->
                         <div class="bg-gradient-to-br from-amber-50 to-orange-50 p-4 rounded-xl border border-amber-200 flex flex-col justify-center items-center text-center shadow-sm">
                             <p class="text-[11px] font-bold text-amber-800 uppercase tracking-wider mb-2">3. งบประมาณที่ต้องใช้รวม (THB)</p>
                             <h3 class="text-3xl lg:text-4xl font-black text-amber-600 tracking-tight" id="sum-cost">0.00 <span class="text-base text-amber-500 font-bold">฿</span></h3>
@@ -98,7 +101,7 @@
 
             <div class="bg-white px-6 lg:px-8 border-y border-slate-200 flex flex-shrink-0 sticky top-0 z-10 shadow-sm mt-4">
                 <button class="tab-btn active" id="tab-pending" onclick="switchTab('pending')">รอการอนุมัติ <span id="badge-pending" class="ml-2 bg-amber-100 text-amber-700 py-0.5 px-2 rounded-full text-[10px]">0</span></button>
-                <button class="tab-btn" id="tab-approved" onclick="switchTab('approved')">ตรวจสอบแล้ว <span id="badge-approved" class="ml-2 bg-slate-100 text-slate-600 py-0.5 px-2 rounded-full text-[10px]">0</span></button>
+                <button class="tab-btn" id="tab-approved" onclick="switchTab('approved')">อนุมัติแล้ว <span id="badge-approved" class="ml-2 bg-slate-100 text-slate-600 py-0.5 px-2 rounded-full text-[10px]">0</span></button>
             </div>
 
             <div class="p-4 lg:p-6">
@@ -116,9 +119,11 @@
         let allRequests = [];
         let activeApprovedPatients = [];
         let currentTab = 'pending';
+        let configDiaperPrice = 9.50;
+        let configUnderpadPrice = 6.00;
 
         function safeGet(obj, keys, defaultVal = '') {
-            for (let k of keys) { if (obj[k] !== undefined && obj[k] !== null) return String(obj[k]).trim(); }
+            for (let k of keys) { if (obj[k] !== undefined && obj[k] !== null && String(obj[k]).trim() !== '') return String(obj[k]).trim(); }
             return defaultVal;
         }
 
@@ -142,8 +147,11 @@
                     document.getElementById('sidebar-hospital-name').innerText = hospital;
                     document.getElementById('header-hospital-name').innerText = 'อนุมัติและคาดการณ์งบประมาณ • ' + hospital;
                     
-                    document.getElementById('price-diaper').value = parseFloat(data.diaper_price || 9.50).toFixed(2);
-                    document.getElementById('price-underpad').value = parseFloat(data.underpad_price || 6.00).toFixed(2);
+                    configDiaperPrice = parseFloat(data.diaper_price || 9.50);
+                    configUnderpadPrice = parseFloat(data.underpad_price || 6.00);
+                    
+                    document.getElementById('label-price-diaper').innerText = configDiaperPrice.toFixed(2);
+                    document.getElementById('label-price-underpad').innerText = configUnderpadPrice.toFixed(2);
 
                     loadResourceData();
                 } else window.location.href = 'dashboard.html';
@@ -166,10 +174,10 @@
                     if (p.diaper) {
                         try {
                             const d = JSON.parse(p.diaper);
+                            // เก็บเข้ารายการถ้ามีการขอผ้าอ้อมหรือแผ่นรอง
                             if (d.req_diaper || d.req_underpad) {
                                 allRequests.push({ patient: p, detail: d, isActive: isActive });
                                 
-                                // เก็บคน Active & อนุมัติแล้ว ไว้คำนวณงบ
                                 if (isActive && d.approve_status === 'อนุมัติแล้ว') {
                                     activeApprovedPatients.push({ 
                                         size: String(d.diaper_size || 'L').toUpperCase().trim(),
@@ -190,9 +198,6 @@
 
         function calculateBudget() {
             const targetDays = parseInt(document.getElementById('forecast-days').value) || 0;
-            const priceDiaper = parseFloat(document.getElementById('price-diaper').value) || 0;
-            const priceUnderpad = parseFloat(document.getElementById('price-underpad').value) || 0;
-
             let totalM = 0, totalL = 0, totalXL = 0, totalPad = 0;
 
             activeApprovedPatients.forEach(p => {
@@ -200,7 +205,7 @@
                 if (calcDiaper > 0) {
                     if (p.size === 'M') totalM += calcDiaper;
                     else if (p.size === 'XL') totalXL += calcDiaper;
-                    else totalL += calcDiaper; // Default L
+                    else totalL += calcDiaper;
                 }
                 totalPad += Math.ceil((p.underpadQty / 30) * targetDays);
             });
@@ -210,7 +215,7 @@
             document.getElementById('sum-xl').innerText = totalXL.toLocaleString();
             document.getElementById('sum-pad').innerText = totalPad.toLocaleString();
 
-            const totalCost = ((totalM + totalL + totalXL) * priceDiaper) + (totalPad * priceUnderpad);
+            const totalCost = ((totalM + totalL + totalXL) * configDiaperPrice) + (totalPad * configUnderpadPrice);
             document.getElementById('sum-cost').innerHTML = totalCost.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2}) + ' <span class="text-base text-amber-500 font-bold">฿</span>';
         }
 
@@ -254,16 +259,16 @@
 
                 const actionSection = isPending ? `
                     <div class="mt-4 pt-4 border-t border-slate-100 space-y-3">
-                        ${d.req_diaper ? `<div class="flex items-center justify-between"><label class="text-sm font-bold text-slate-600">ผ้าอ้อม (ชิ้น/เดือน)</label><input type="number" id="diaper_${p.id}" class="w-20 px-2 py-1 border border-slate-200 rounded text-center focus:ring-amber-500" placeholder="0"></div>` : ''}
-                        ${d.req_underpad ? `<div class="flex items-center justify-between"><label class="text-sm font-bold text-slate-600">แผ่นรอง (ชิ้น/เดือน)</label><input type="number" id="underpad_${p.id}" class="w-20 px-2 py-1 border border-slate-200 rounded text-center focus:ring-amber-500" placeholder="0"></div>` : ''}
+                        ${d.req_diaper ? `<div class="flex items-center justify-between"><label class="text-sm font-bold text-slate-600">ผ้าอ้อม (ชิ้น/เดือน)</label><input type="number" id="diaper_${p.id}" class="w-20 px-2 py-1.5 border border-slate-200 rounded text-center focus:ring-amber-500" placeholder="0"></div>` : ''}
+                        ${d.req_underpad ? `<div class="flex items-center justify-between"><label class="text-sm font-bold text-slate-600">แผ่นรอง (ชิ้น/เดือน)</label><input type="number" id="underpad_${p.id}" class="w-20 px-2 py-1.5 border border-slate-200 rounded text-center focus:ring-amber-500" placeholder="0"></div>` : ''}
                         <button onclick="approveRequest('${p.id}', ${d.req_diaper}, ${d.req_underpad})" id="btn_${p.id}" class="w-full mt-2 py-2.5 bg-navy text-white text-sm font-bold rounded-lg hover:bg-opacity-90">บันทึกอนุมัติ</button>
                     </div>
                 ` : `
                     <div class="mt-4 pt-4 border-t border-slate-100 bg-slate-50 rounded-xl p-3">
                         <p class="text-[10px] text-slate-500 mb-2">อนุมัติ: <strong class="text-slate-700">${d.approve_date || '-'}</strong></p>
                         <div class="flex gap-2 text-center">
-                            ${d.req_diaper ? `<div class="flex-1 bg-white p-2 rounded border border-slate-100"><p class="text-[9px] text-slate-400">ผ้าอ้อม/ด.</p><p class="font-bold text-navy">${d.approved_diaper || 0}</p></div>` : ''}
-                            ${d.req_underpad ? `<div class="flex-1 bg-white p-2 rounded border border-slate-100"><p class="text-[9px] text-slate-400">แผ่นรอง/ด.</p><p class="font-bold text-navy">${d.approved_underpad || 0}</p></div>` : ''}
+                            ${d.req_diaper ? `<div class="flex-1 bg-white p-2 rounded border border-slate-100"><p class="text-[9px] text-slate-400">ผ้าอ้อม/ด.</p><p class="font-bold text-navy text-lg">${d.approved_diaper || 0}</p></div>` : ''}
+                            ${d.req_underpad ? `<div class="flex-1 bg-white p-2 rounded border border-slate-100"><p class="text-[9px] text-slate-400">แผ่นรอง/ด.</p><p class="font-bold text-navy text-lg">${d.approved_underpad || 0}</p></div>` : ''}
                         </div>
                     </div>
                 `;
@@ -283,9 +288,11 @@
         async function approveRequest(id, hasDiaper, hasUnderpad) {
             const diaperQty = hasDiaper ? document.getElementById(`diaper_${id}`).value : 0;
             const underpadQty = hasUnderpad ? document.getElementById(`underpad_${id}`).value : 0;
+            
             if ((hasDiaper && !diaperQty) || (hasUnderpad && !underpadQty)) return alert('กรุณาระบุจำนวนชิ้นให้ครบถ้วน');
 
             const btn = document.getElementById(`btn_${id}`);
+            const originalText = btn.innerHTML;
             btn.disabled = true; btn.innerHTML = 'กำลังบันทึก...';
 
             try {
@@ -295,8 +302,8 @@
                 });
                 const result = await response.json();
                 if (result.success) await loadResourceData();
-                else { alert(result.message); btn.disabled = false; btn.innerHTML = 'บันทึกอนุมัติ'; }
-            } catch (error) { alert('การเชื่อมต่อล้มเหลว'); btn.disabled = false; }
+                else { alert(result.message); btn.disabled = false; btn.innerHTML = originalText; }
+            } catch (error) { alert('การเชื่อมต่อล้มเหลว'); btn.disabled = false; btn.innerHTML = originalText; }
         }
     </script>
 </body>
