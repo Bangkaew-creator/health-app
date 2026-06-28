@@ -143,16 +143,25 @@
         });
 
                         // ดึงข้อมูลผู้ใช้งานมาแสดงผล
-        async function fetchVHVData(uid) {
+                async function fetchVHVData(uid) {
             try {
                 const response = await fetch(API_URL, {
                     method: 'POST',
-                    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
                     body: JSON.stringify({ action: 'checkUserRegistration', uid: uid })
                 });
                 const data = await response.json();
                 
                 if (data.status === 'registered') {
+                    // [เพิ่มส่วนนี้] สร้าง Dropdown หมู่ตาม Config ก่อนเซ็ตค่า
+                    const vCount = parseInt(data.village_count) || 15;
+                    const villageSelect = document.getElementById('vhv_village');
+                    if (villageSelect) {
+                        villageSelect.innerHTML = '<option value="" disabled selected>เลือกหมู่ที่ดูแล...</option>';
+                        for (let i = 1; i <= vCount; i++) {
+                            villageSelect.insertAdjacentHTML('beforeend', `<option value="${i}">หมู่ที่ ${i}</option>`);
+                        }
+                    }
+
                     document.getElementById('vhv_name').value = data.name;
                     document.getElementById('vhv_phone').value = data.phone || '';
                     document.getElementById('display-name').innerText = data.name;
