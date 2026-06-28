@@ -34,40 +34,46 @@ function doPost(e) {
 
 // [F2] ฟังก์ชันดึงรายชื่อผู้ป่วยทั้งหมด (รองรับ 31 คอลัมน์)
 function F_getAllPatients() {
-  const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(SHEET_NAMES.PATIENTS);
-  const data = sheet.getDataRange().getValues();
+  // เปลี่ยนชื่อชีตให้ตรงกับที่คุณตั้งไว้ หรือใช้ SHEET_NAMES.PATIENTS ถ้าคุณประกาศตัวแปรไว้
+  const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('Patients') || SpreadsheetApp.getActiveSpreadsheet().getSheetByName('ผู้ป่วย');
+  if (!sheet) return [];
   
-  // แปลงหัวตารางแถวแรกให้เป็นตัวพิมพ์เล็กทั้งหมดเพื่อป้องกันการพิมพ์ผิด
+  const data = sheet.getDataRange().getValues();
+  if (data.length < 2) return []; // ถ้าไม่มีข้อมูลเลยให้ข้าม
+  
+  // แปลงหัวตารางเป็นตัวพิมพ์เล็กเพื่อค้นหา
   const headers = data[0].map(h => String(h).trim().toLowerCase());
   
-  // ค้นหาตำแหน่งคอลัมน์โดยอัตโนมัติจากชื่อหัวตาราง
-  const colId = headers.indexOf('id');
+  // ค้นหาคอลัมน์แบบยืดหยุ่น (รองรับชื่อหลายรูปแบบ)
+  const colId = headers.findIndex(h => h === 'id' || h === 'uid' || h.includes('รหัส'));
   const colName = headers.findIndex(h => h.includes('name') || h.includes('ชื่อ'));
-  const colVillage = headers.findIndex(h => h.includes('village_no') || h.includes('หมู่'));
-  const colHouse = headers.findIndex(h => h.includes('house_no') || h.includes('บ้านเลขที่') || h.includes('เลขที่'));
-  const colGroup = headers.findIndex(h => h.includes('group') || h.includes('กลุ่ม'));
-  const colLastAssess = headers.findIndex(h => h.includes('last_assess') || h.includes('ล่าสุด'));
-  const colStatus = headers.findIndex(h => h.includes('status') || h.includes('สถานะ')); // ดักจับช่องคอลัมน์ AE 
+  const colVillage = headers.findIndex(h => h === 'village_no' || h === 'village' || h.includes('หมู่'));
+  const colHouse = headers.findIndex(h => h.includes('house') || h.includes('เลขที่'));
+  const colGroup = headers.findIndex(h => h.includes('group') || h.includes('กลุ่ม') || h.includes('adl'));
+  const colLastAssess = headers.findIndex(h => h.includes('last_assess') || h.includes('ล่าสุด') || h.includes('ประเมิน'));
+  const colStatus = headers.findIndex(h => h === 'status' || h.includes('สถานะ')); // ดักคอลัมน์ Status 
   const colDiaper = headers.findIndex(h => h.includes('diaper') || h.includes('ผ้าอ้อม'));
-  const colPic = headers.findIndex(h => h.includes('profile_pic') || h.includes('รูป'));
-  const colAdl = headers.indexOf('adl');
+  const colPic = headers.findIndex(h => h.includes('pic') || h.includes('รูป'));
+  const colAdl = headers.findIndex(h => h === 'adl' || h.includes('คะแนน'));
 
   const list = [];
   for (let i = 1; i < data.length; i++) {
     const row = data[i];
-    if (!row[colId]) continue; // ข้ามแถวว่าง
+    
+    // ข้ามเฉพาะแถวที่ว่างเปล่าจริงๆ (ไม่มีชื่อ และไม่มี ID)
+    if ((colId > -1 && !row[colId]) && (colName > -1 && !row[colName])) continue; 
     
     list.push({
-      id: String(row[colId]),
-      name: colName > -1 ? row[colName] : '',
+      id: colId > -1 ? String(row[colId]) : `TEMP_${i}`, // ถ้าหา ID ไม่เจอจริงๆ จะสร้างรหัสจำลองให้ระบบไม่พัง
+      name: colName > -1 ? String(row[colName]) : '',
       village_no: colVillage > -1 ? String(row[colVillage]) : '',
       house_no: colHouse > -1 ? String(row[colHouse]) : '',
-      group: colGroup > -1 ? row[colGroup] : 'ยังไม่ประเมิน',
-      last_assess: colLastAssess > -1 ? row[colLastAssess] : '',
-      status: colStatus > -1 ? String(row[colStatus]).trim() : 'Active', // ดึงค่าจากคอลัมน์ AE ตรงๆ
-      diaper: colDiaper > -1 ? row[colDiaper] : '',
-      profile_pic: colPic > -1 ? row[colPic] : '',
-      adl: colAdl > -1 ? row[colAdl] : '-'
+      group: colGroup > -1 && row[colGroup] ? String(row[colGroup]) : 'ยังไม่ประเมิน',
+      last_assess: colLastAssess > -1 ? String(row[colLastAssess]) : '',
+      status: colStatus > -1 ? String(row[colStatus]).trim() : 'Active',
+      diaper: colDiaper > -1 ? String(row[colDiaper]) : '',
+      profile_pic: colPic > -1 ? String(row[colPic]) : '',
+      adl: colAdl > -1 ? String(row[colAdl]) : '-'
     });
   }
   return list;
