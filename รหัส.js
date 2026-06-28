@@ -24,6 +24,7 @@ function doPost(e) {
       case 'updateVHVProfile': response = F_updateVHVProfile(requestData.data); break;
       case 'updatePatientStatus': response = F_updatePatientStatus(requestData.id, requestData.status); break;
       case 'updateResourceApproval': response = F_updateResourceApproval(requestData.id, requestData.diaperQty, requestData.underpadQty); break;
+      case 'getAllVHVs': response = F_getAllVHVs(); break;
       default: response = { status: 'error', message: 'Action not found' };
     }
     return ContentService.createTextOutput(JSON.stringify(response)).setMimeType(ContentService.MimeType.JSON);
@@ -525,6 +526,39 @@ function F_updateResourceApproval(id, diaperQty, underpadQty) {
     }
   }
   return { success: false, message: 'ไม่พบรหัสผู้ป่วยรายนี้' };
+}
+
+// [F_VHVs] ฟังก์ชันดึงรายชื่อ อสม. ทั้งหมดในระบบ
+function F_getAllVHVs() {
+  const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('Users');
+  if (!sheet) return [];
+  
+  const data = sheet.getDataRange().getValues();
+  const headers = data[0].map(h => String(h).trim().toLowerCase());
+
+  const colUid = headers.indexOf('uid');
+  const colName = headers.indexOf('name');
+  const colVillage = headers.indexOf('village_no');
+  const colStatus = headers.indexOf('status');
+  const colPhone = headers.indexOf('phone');
+
+  const list = [];
+  for (let i = 1; i < data.length; i++) {
+    if (colUid > -1 && data[i][colUid]) {
+       const status = colStatus > -1 ? String(data[i][colStatus]).trim() : '';
+       const village = colVillage > -1 ? String(data[i][colVillage]).trim() : '';
+       
+       // ดึงเฉพาะคนที่สถานะ Active และไม่ใช่ ADMIN
+       if (status === 'Active' && village.toUpperCase() !== 'ADMIN') {
+         list.push({
+           name: colName > -1 ? String(data[i][colName]) : 'ไม่ระบุชื่อ',
+           village_no: village,
+           phone: colPhone > -1 ? String(data[i][colPhone]) : '-'
+         });
+       }
+    }
+  }
+  return list;
 }
 
 // ==========================================
