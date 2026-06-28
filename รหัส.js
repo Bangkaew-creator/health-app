@@ -484,32 +484,40 @@ function F_updatePatientStatus(id, newStatus) {
 }
 
 // [F15] ฟังก์ชันบันทึกการอนุมัติผ้าอ้อม/แผ่นรองซับ
-// [F8] ฟังก์ชันบันทึกการอนุมัติผ้าอ้อม/แผ่นรองซับ (แก้ไข: ล็อกเป้า Required_Equipment)
+// [F8] ฟังก์ชันบันทึกการอนุมัติผ้าอ้อม/แผ่นรองซับ (อัปเดต: รองรับการล้างฟันหนูซ้อน "" -> ")
 function F_updateResourceApproval(id, diaperQty, underpadQty) {
   const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('Patients'); 
   const data = sheet.getDataRange().getValues();
   
   const headers = data[0].map(h => String(h).trim().toLowerCase());
   const colId = headers.indexOf('patient_id');
-  const colDiaper = headers.indexOf('required_equipment'); // ล็อกช่องเก็บข้อมูล JSON
+  const colDiaper = headers.indexOf('required_equipment'); 
   
-  if (colId === -1 || colDiaper === -1) return { success: false, message: 'หารหัสผู้ป่วย หรือ คอลัมน์ Required_Equipment ไม่พบในฐานข้อมูล' };
+  if (colId === -1 || colDiaper === -1) return { success: false, message: 'หารหัสผู้ป่วย หรือ คอลัมน์ Required_Equipment ไม่พบ' };
 
   for (let i = 1; i < data.length; i++) {
     if (String(data[i][colId]) === String(id)) {
-      let currentDiaper = data[i][colDiaper];
+      let currentDiaper = String(data[i][colDiaper]).trim();
       let diaperObj = {};
       
-      if (currentDiaper) {
-        try { diaperObj = JSON.parse(currentDiaper); } catch(e) {}
+      if (currentDiaper && currentDiaper !== '') {
+        // ล้างเครื่องหมายคำพูดซ้อนกัน "" ให้เหลือ " ตัวเดียว เพื่อให้ระบบอ่านค่าได้
+        if (currentDiaper.includes('""')) {
+          currentDiaper = currentDiaper.replace(/""/g, '"');
+        }
+        if (currentDiaper.startsWith('"') && currentDiaper.endsWith('"')) {
+          currentDiaper = currentDiaper.substring(1, currentDiaper.length - 1);
+        }
+        try { diaperObj = JSON.parse(currentDiaper); } catch(e) { console.log("Parse error in backend: " + e); }
       }
       
+      // บันทึกจำนวนชิ้นที่แอดมินระบุ แทรกลงไปในก้อน JSON เดิม
       diaperObj.approved_diaper = diaperQty || 0;
       diaperObj.approved_underpad = underpadQty || 0;
       diaperObj.approve_status = "อนุมัติแล้ว";
       diaperObj.approve_date = Utilities.formatDate(new Date(), "GMT+7", "dd/MM/yyyy");
       
-      // บันทึกกลับลงไปในชีต
+      // บันทึกกลับลงไปในช่อง Required_Equipment คอลัมน์ O
       sheet.getRange(i + 1, colDiaper + 1).setValue(JSON.stringify(diaperObj));
       return { success: true, message: 'บันทึกการอนุมัติเรียบร้อยแล้ว' };
     }
