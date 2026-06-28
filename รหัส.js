@@ -33,6 +33,7 @@ function doPost(e) {
 }
 
 // [F2] ฟังก์ชันดึงรายชื่อผู้ป่วยทั้งหมด (รองรับ 31 คอลัมน์)
+// [F_Patients] ฟังก์ชันดึงข้อมูลผู้ป่วย (แก้ไข: ชี้เป้าคอลัมน์ O Diaper_Size และแก้ปัญหาสถานะว่างเปล่า)
 function F_getAllPatients() {
   const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('Patients');
   if (!sheet) return [];
@@ -40,10 +41,8 @@ function F_getAllPatients() {
   const data = sheet.getDataRange().getValues();
   if (data.length < 2) return [];
   
-  // แปลงหัวตารางให้เป็นตัวเล็กเพื่อเปรียบเทียบแบบเป๊ะๆ
   const headers = data[0].map(h => String(h).trim().toLowerCase());
   
-  // ล็อกเป้า Index คอลัมน์ตามชื่อที่คุณให้มาเป๊ะๆ (ห้ามคล้าย ต้องตรงเป๊ะ)
   const colId = headers.indexOf('patient_id');
   const colName = headers.indexOf('name');
   const colVillage = headers.indexOf('village_no');
@@ -54,15 +53,21 @@ function F_getAllPatients() {
   const colProfilePic = headers.indexOf('profile_pic');
   const colAdl = headers.indexOf('adl_score');
   
-  // **หมายเหตุ:** สำหรับข้อมูล JSON เบิกผ้าอ้อม ผมจะอ้างอิงใช้ช่อง Required_Equipment ในการเก็บข้อมูลนะครับ
-  let colDiaper = headers.indexOf('required_equipment');
+  // *** จุดสำคัญที่แก้ไข ***
+  // ชี้เป้าไปที่คอลัมน์ O (Diaper_Size) ตามที่คุณบันทึกข้อมูลไว้จริง
+  const colDiaper = headers.indexOf('diaper_size'); 
+  const colEquipment = headers.indexOf('required_equipment');
   
   const list = [];
   for (let i = 1; i < data.length; i++) {
     const row = data[i];
-    
-    // ข้ามแถวที่ไม่มี Patient_ID (กันแถวว่าง)
     if (colId === -1 || !row[colId]) continue; 
+    
+    // ดักจับ: ถ้าช่อง Status เป็นค่าว่าง ให้ระบบยัดคำว่า 'Active' ให้โดยอัตโนมัติ
+    let currentStatus = 'Active';
+    if (colStatus > -1 && String(row[colStatus]).trim() !== '') {
+      currentStatus = String(row[colStatus]).trim();
+    }
     
     list.push({
       id: String(row[colId]),
@@ -71,8 +76,9 @@ function F_getAllPatients() {
       house_no: colHouse > -1 ? String(row[colHouse]) : '',
       group: colGroup > -1 && row[colGroup] ? String(row[colGroup]) : 'ยังไม่ประเมิน',
       last_assess: colLastAssess > -1 ? String(row[colLastAssess]) : '',
-      status: colStatus > -1 ? String(row[colStatus]).trim() : 'Active',
-      diaper: colDiaper > -1 ? String(row[colDiaper]) : '',
+      status: currentStatus, 
+      diaper: colDiaper > -1 ? String(row[colDiaper]) : '', // ดึงก้อน JSON จากคอลัมน์ O
+      equipment: colEquipment > -1 ? String(row[colEquipment]) : '',
       profile_pic: colProfilePic > -1 ? String(row[colProfilePic]) : '',
       adl: colAdl > -1 ? String(row[colAdl]) : '-'
     });
@@ -484,16 +490,16 @@ function F_updatePatientStatus(id, newStatus) {
 }
 
 // [F15] ฟังก์ชันบันทึกการอนุมัติผ้าอ้อม/แผ่นรองซับ
-// [F8] ฟังก์ชันบันทึกการอนุมัติผ้าอ้อม/แผ่นรองซับ (อัปเดต: รองรับการล้างฟันหนูซ้อน "" -> ")
+// [F8] ฟังก์ชันบันทึกการอนุมัติผ้าอ้อม/แผ่นรองซับ (แก้ไข: บันทึกกลับลงคอลัมน์ O)
 function F_updateResourceApproval(id, diaperQty, underpadQty) {
   const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('Patients'); 
   const data = sheet.getDataRange().getValues();
   
   const headers = data[0].map(h => String(h).trim().toLowerCase());
   const colId = headers.indexOf('patient_id');
-  const colDiaper = headers.indexOf('required_equipment'); 
+  const colDiaper = headers.indexOf('diaper_size'); // เป้าหมายคือคอลัมน์ O
   
-  if (colId === -1 || colDiaper === -1) return { success: false, message: 'หารหัสผู้ป่วย หรือ คอลัมน์ Required_Equipment ไม่พบ' };
+  if (colId === -1 || colDiaper === -1) return { success: false, message: 'หารหัสผู้ป่วย หรือ คอลัมน์ Diaper_Size ไม่พบ' };
 
   for (let i = 1; i < data.length; i++) {
     if (String(data[i][colId]) === String(id)) {
@@ -501,23 +507,19 @@ function F_updateResourceApproval(id, diaperQty, underpadQty) {
       let diaperObj = {};
       
       if (currentDiaper && currentDiaper !== '') {
-        // ล้างเครื่องหมายคำพูดซ้อนกัน "" ให้เหลือ " ตัวเดียว เพื่อให้ระบบอ่านค่าได้
-        if (currentDiaper.includes('""')) {
-          currentDiaper = currentDiaper.replace(/""/g, '"');
-        }
-        if (currentDiaper.startsWith('"') && currentDiaper.endsWith('"')) {
-          currentDiaper = currentDiaper.substring(1, currentDiaper.length - 1);
-        }
-        try { diaperObj = JSON.parse(currentDiaper); } catch(e) { console.log("Parse error in backend: " + e); }
+        // ล้างเครื่องหมายคำพูดซ้อนกันออกก่อนอ่านค่า
+        if (currentDiaper.includes('""')) { currentDiaper = currentDiaper.replace(/""/g, '"'); }
+        if (currentDiaper.startsWith('"') && currentDiaper.endsWith('"')) { currentDiaper = currentDiaper.substring(1, currentDiaper.length - 1); }
+        try { diaperObj = JSON.parse(currentDiaper); } catch(e) {}
       }
       
-      // บันทึกจำนวนชิ้นที่แอดมินระบุ แทรกลงไปในก้อน JSON เดิม
+      // เพิ่มยอดจำนวนชิ้นที่แอดมินอนุมัติเข้าไปในก้อน JSON
       diaperObj.approved_diaper = diaperQty || 0;
       diaperObj.approved_underpad = underpadQty || 0;
       diaperObj.approve_status = "อนุมัติแล้ว";
       diaperObj.approve_date = Utilities.formatDate(new Date(), "GMT+7", "dd/MM/yyyy");
       
-      // บันทึกกลับลงไปในช่อง Required_Equipment คอลัมน์ O
+      // บันทึกกลับลงไปในชีต
       sheet.getRange(i + 1, colDiaper + 1).setValue(JSON.stringify(diaperObj));
       return { success: true, message: 'บันทึกการอนุมัติเรียบร้อยแล้ว' };
     }
