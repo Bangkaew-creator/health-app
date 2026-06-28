@@ -39,7 +39,7 @@ function F_getAllPatients() {
   const patients = [];
 
   for (let i = 1; i < data.length; i++) {
-    if (String(data[i][30]).trim().toLowerCase() === 'active') {
+     {
       patients.push({
         id: data[i][0],
         name: data[i][3],
@@ -110,13 +110,16 @@ function F_getConfig(key) {
   return null;
 }
 
-// [F4] ฟังก์ชันตรวจสอบผู้ใช้งานเมื่อเข้าสู่ระบบ (เพิ่มการดึงชื่อหน่วยงานจาก Config)
+// [F4] ฟังก์ชันตรวจสอบผู้ใช้งาน (ดึงค่า Config แบบครบชุด)
 function F_checkUser(uid) {
   const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(SHEET_NAMES.USERS);
   const data = sheet.getDataRange().getValues();
   
-  // ดึงชื่อหน่วยงานส่วนกลางจากชีต Config (ถ้าไม่มีให้ใช้ค่าเริ่มต้น)
+  // ดึงค่า Config ส่วนกลาง
   const hospitalName = F_getConfig('HOSPITAL_NAME') || 'เทศบาลเมืองบางแก้ว';
+  const villageCount = F_getConfig('VILLAGE_COUNT') || 15;
+  const diaperPrice = F_getConfig('DIAPER_PRICE') || 9.50;
+  const underpadPrice = F_getConfig('UNDERPAD_PRICE') || 6.00;
   
   for (let i = 1; i < data.length; i++) {
     if (data[i][0] === uid) {
@@ -131,7 +134,11 @@ function F_checkUser(uid) {
         role: role,
         phone: data[i][5] || '',  
         pic_url: data[i][6] || '',
-        hospital_name: hospitalName // ส่งชื่อหน่วยงานไปให้หน้าเว็บใช้งาน
+        // ส่งค่า Config ทั้งหมดไปให้หน้าเว็บ
+        hospital_name: hospitalName,
+        village_count: villageCount,
+        diaper_price: diaperPrice,
+        underpad_price: underpadPrice
       };
     }
   }
