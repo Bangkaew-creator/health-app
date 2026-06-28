@@ -16,17 +16,18 @@
         .loader-small { border: 2px solid #f3f3f3; border-bottom-color: #0f172a; border-radius: 50%; width: 24px; height: 24px; animation: spin 1s linear infinite; }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
         
-        /* ตกแต่ง Scrollbar ของตารางให้ดูซอฟต์ขึ้น */
+        .tab-btn { padding: 12px 24px; font-weight: bold; font-size: 14px; border-bottom: 3px solid transparent; color: #64748b; transition: all 0.2s; cursor: pointer; }
+        .tab-btn.active { color: #0f172a; border-bottom-color: #0f172a; }
+        
         .table-container::-webkit-scrollbar { height: 6px; }
         .table-container::-webkit-scrollbar-track { background: #f1f5f9; border-radius: 4px; }
         .table-container::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
-        .table-container::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
     </style>
 </head>
 <body class="flex h-[100dvh] overflow-hidden text-slate-800 relative">
 
     <div id="sidebar-overlay" class="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-40 hidden lg:hidden" onclick="toggleSidebar()"></div>
-    <aside id="sidebar" class="fixed inset-y-0 left-0 w-72 bg-navy text-white flex flex-col z-50 transform -translate-x-full lg:translate-x-0 lg:static transition-transform duration-300 ease-in-out shadow-2xl lg:shadow-none">
+    <aside id="sidebar" class="fixed inset-y-0 left-0 w-72 bg-navy text-white flex flex-col z-50 transform -translate-x-full lg:translate-x-0 lg:static transition-transform duration-300 ease-in-out">
         <div class="p-6 flex items-center justify-between border-b border-slate-700/40">
             <div class="flex items-center gap-3">
                 <div class="w-11 h-11 rounded-xl bg-white/10 flex items-center justify-center border border-amber-400/30">
@@ -37,35 +38,21 @@
                     <p class="text-[10px] text-amber-400 font-medium">ระบบสนับสนุนการดูแลผู้ป่วย</p>
                 </div>
             </div>
-            <button onclick="toggleSidebar()" class="lg:hidden text-slate-400 hover:text-white p-1"><span class="material-symbols-outlined">close</span></button>
+            <button onclick="toggleSidebar()" class="lg:hidden text-slate-400 p-1"><span class="material-symbols-outlined">close</span></button>
         </div>
         <nav class="flex-1 px-4 py-6 space-y-2 overflow-y-auto">
-            <a href="admin_dashboard.html" class="flex items-center gap-3 px-4 py-3.5 text-slate-400 hover:bg-white/5 hover:text-white rounded-xl font-medium transition-all">
-                <span class="material-symbols-outlined">dashboard</span> ภาพรวมระบบ
-            </a>
-            <a href="admin_resources.html" class="flex items-center gap-3 px-4 py-3.5 text-slate-400 hover:bg-white/5 hover:text-white rounded-xl font-medium transition-all">
-                <span class="material-symbols-outlined">inventory_2</span> บริหารทรัพยากร
-            </a>
-            <a href="admin_datacenter.html" class="flex items-center justify-between px-4 py-3.5 bg-white/10 text-amber-400 rounded-xl font-bold transition-all">
-                <span class="flex items-center gap-3"><span class="material-symbols-outlined">folder_shared</span> ศูนย์ข้อมูลผู้ป่วย</span>
-                <span class="w-1.5 h-1.5 rounded-full bg-amber-400"></span>
-            </a>
-            <a href="admin_delegation.html" class="flex items-center gap-3 px-4 py-3.5 text-slate-400 hover:bg-white/5 hover:text-white rounded-xl font-medium transition-all">
-                <span class="material-symbols-outlined">assignment_ind</span> มอบหมายงาน อสม.
-            </a>
-            <a href="admin_reports.html" class="flex items-center gap-3 px-4 py-3.5 text-slate-400 hover:bg-white/5 hover:text-white rounded-xl font-medium transition-all">
-                <span class="material-symbols-outlined">summarize</span> รายงาน (Export)
-            </a>
+            <a href="admin_dashboard.html" class="flex items-center gap-3 px-4 py-3.5 text-slate-400 hover:bg-white/5 hover:text-white rounded-xl font-medium transition-all"><span class="material-symbols-outlined">dashboard</span> ภาพรวมระบบ</a>
+            <a href="admin_resources.html" class="flex items-center gap-3 px-4 py-3.5 text-slate-400 hover:bg-white/5 hover:text-white rounded-xl font-medium transition-all"><span class="material-symbols-outlined">inventory_2</span> บริหารทรัพยากร</a>
+            <a href="admin_datacenter.html" class="flex items-center justify-between px-4 py-3.5 bg-white/10 text-amber-400 rounded-xl font-bold transition-all"><span class="flex items-center gap-3"><span class="material-symbols-outlined">folder_shared</span> ศูนย์ข้อมูลผู้ป่วย</span><span class="w-1.5 h-1.5 rounded-full bg-amber-400"></span></a>
+            <a href="admin_delegation.html" class="flex items-center gap-3 px-4 py-3.5 text-slate-400 hover:bg-white/5 hover:text-white rounded-xl font-medium transition-all"><span class="material-symbols-outlined">assignment_ind</span> มอบหมายงาน อสม.</a>
+            <a href="admin_reports.html" class="flex items-center gap-3 px-4 py-3.5 text-slate-400 hover:bg-white/5 hover:text-white rounded-xl font-medium transition-all"><span class="material-symbols-outlined">summarize</span> รายงาน (Export)</a>
         </nav>
     </aside>
 
     <main class="flex-1 flex flex-col min-h-0 bg-slate-50">
-        
         <header class="h-20 min-h-[80px] bg-white shadow-sm flex items-center justify-between px-6 lg:px-8 z-10 flex-shrink-0 border-b border-slate-100">
             <div class="flex items-center">
-                <button onclick="toggleSidebar()" class="lg:hidden p-2.5 -ml-2 mr-3 text-slate-600 hover:bg-slate-100 rounded-xl transition-colors">
-                    <span class="material-symbols-outlined text-[26px]">menu</span>
-                </button>
+                <button onclick="toggleSidebar()" class="lg:hidden p-2.5 -ml-2 mr-3 text-slate-600 hover:bg-slate-100 rounded-xl transition-colors"><span class="material-symbols-outlined text-[26px]">menu</span></button>
                 <div>
                     <h2 class="text-base lg:text-lg font-bold text-slate-900 leading-tight">ศูนย์ข้อมูลผู้ป่วย (Data Center)</h2>
                     <p id="header-hospital-name" class="text-[11px] lg:text-xs text-slate-400 font-medium mt-0.5">ฐานข้อมูลผู้ป่วยทั้งหมดในความดูแล</p>
@@ -73,54 +60,55 @@
             </div>
         </header>
 
-        <div class="flex-1 flex flex-col overflow-hidden p-4 lg:p-8">
-            
-            <div class="bg-white p-4 rounded-t-[20px] border border-slate-200 border-b-0 flex flex-col md:flex-row md:items-center justify-between gap-4">
-                <div class="relative flex-1 max-w-md">
+        <div class="bg-white px-6 lg:px-8 border-b border-slate-200 flex flex-shrink-0">
+            <button class="tab-btn active" id="tab-active" onclick="switchTab('active')">กำลังดูแล (Active) <span id="badge-active" class="ml-2 bg-blue-100 text-blue-700 py-0.5 px-2 rounded-full text-[10px]">0</span></button>
+            <button class="tab-btn" id="tab-inactive" onclick="switchTab('inactive')">ยุติการดูแล (เสียชีวิต/ย้าย/หายดี) <span id="badge-inactive" class="ml-2 bg-slate-100 text-slate-600 py-0.5 px-2 rounded-full text-[10px]">0</span></button>
+        </div>
+
+        <div class="flex-1 flex flex-col overflow-hidden p-4 lg:p-6 pb-20 lg:pb-8">
+            <div class="bg-white p-4 rounded-t-[20px] border border-slate-200 border-b-0 flex flex-col md:flex-row md:items-center gap-4">
+                <div class="relative flex-1 max-w-sm">
                     <span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-[20px]">search</span>
-                    <input type="text" id="search-input" oninput="filterTable()" class="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-navy focus:border-navy transition-all" placeholder="ค้นหาชื่อ, นามสกุล, หมู่, บ้านเลขที่...">
+                    <input type="text" id="search-input" oninput="filterTable()" class="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-navy focus:border-navy" placeholder="ค้นหาชื่อ, บ้านเลขที่...">
                 </div>
-                <div class="flex gap-2">
-                    <button class="px-4 py-2.5 bg-navy text-white text-sm font-bold rounded-xl flex items-center gap-2 hover:bg-opacity-90 shadow-sm transition-all">
-                        <span class="material-symbols-outlined text-[18px]">person_add</span> เพิ่มผู้ป่วยใหม่
-                    </button>
+                <div class="relative w-full md:w-48">
+                    <select id="village-filter" onchange="filterTable()" class="w-full pl-4 pr-8 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-navy focus:border-navy appearance-none">
+                        <option value="">ทุกหมู่ (ทั้งหมด)</option>
+                        </select>
+                    <span class="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none">expand_more</span>
                 </div>
             </div>
 
             <div class="bg-white border border-slate-200 rounded-b-[20px] flex-1 overflow-hidden flex flex-col shadow-sm">
-                
                 <div id="loading-state" class="flex-1 flex flex-col items-center justify-center py-20 space-y-3">
                     <div class="loader-small"></div>
                     <p class="text-sm text-slate-400 animate-pulse">กำลังโหลดฐานข้อมูล...</p>
                 </div>
-
+                
                 <div class="table-container flex-1 overflow-auto hidden" id="table-container">
-                    <table class="w-full text-left border-collapse whitespace-nowrap">
+                    <table class="w-full text-left border-collapse whitespace-nowrap min-w-[800px]">
                         <thead class="bg-slate-50 sticky top-0 z-10 shadow-[0_1px_2px_rgba(0,0,0,0.05)]">
                             <tr>
-                                <th class="px-6 py-4 text-[12px] font-bold text-slate-500 tracking-wider">ชื่อ - นามสกุล</th>
-                                <th class="px-6 py-4 text-[12px] font-bold text-slate-500 tracking-wider">ที่อยู่ (หมู่ / บ้านเลขที่)</th>
-                                <th class="px-6 py-4 text-[12px] font-bold text-slate-500 tracking-wider">กลุ่มผู้ป่วย (ADL)</th>
-                                <th class="px-6 py-4 text-[12px] font-bold text-slate-500 tracking-wider">ประเมินล่าสุด</th>
-                                <th class="px-6 py-4 text-[12px] font-bold text-slate-500 tracking-wider">สถานะ</th>
-                                <th class="px-6 py-4 text-[12px] font-bold text-slate-500 tracking-wider text-center">จัดการ</th>
+                                <th class="px-6 py-4 text-[12px] font-bold text-slate-500">ชื่อ - นามสกุล</th>
+                                <th class="px-6 py-4 text-[12px] font-bold text-slate-500">ที่อยู่ (หมู่ / บ้านเลขที่)</th>
+                                <th class="px-6 py-4 text-[12px] font-bold text-slate-500">กลุ่ม (ADL)</th>
+                                <th class="px-6 py-4 text-[12px] font-bold text-slate-500" id="col-status">สถานะ / อัปเดตล่าสุด</th>
+                                <th class="px-6 py-4 text-[12px] font-bold text-slate-500 text-center">จัดการ</th>
                             </tr>
                         </thead>
-                        <tbody id="patient-table-body" class="divide-y divide-slate-100">
-                            </tbody>
+                        <tbody id="patient-table-body" class="divide-y divide-slate-100"></tbody>
                     </table>
                 </div>
 
                 <div id="empty-state" class="hidden flex-1 flex flex-col items-center justify-center py-20">
                     <span class="material-symbols-outlined text-5xl text-slate-300 mb-3">search_off</span>
-                    <h3 class="text-slate-500 font-bold">ไม่พบข้อมูลที่ค้นหา</h3>
+                    <h3 class="text-slate-500 font-bold">ไม่พบข้อมูล</h3>
                 </div>
-
+                
                 <div class="bg-slate-50 px-6 py-3 border-t border-slate-200 text-xs text-slate-500 font-medium flex justify-between items-center">
                     <span>แสดงผลรวม: <strong id="total-rows" class="text-navy">0</strong> รายการ</span>
                 </div>
             </div>
-
         </div>
     </main>
 
@@ -129,6 +117,7 @@
         const API_URL = "https://script.google.com/macros/s/AKfycbyzPy7sklwURcJiqFDzlK4OEQ8616CJLuNyAjb8euQNzYJLXz_dj4UJM63w8-nI1L3r/exec";
         
         let allPatients = [];
+        let currentTab = 'active';
 
         function toggleSidebar() {
             document.getElementById('sidebar').classList.toggle('-translate-x-full');
@@ -138,12 +127,8 @@
         document.addEventListener("DOMContentLoaded", () => {
             liff.init({ liffId: LIFF_ID }).then(() => {
                 if (liff.isLoggedIn()) {
-                    liff.getProfile().then(profile => {
-                        verifyAdminAccess(profile.userId);
-                    }).catch(() => bounceToLogin());
-                } else {
-                    bounceToLogin();
-                }
+                    liff.getProfile().then(profile => verifyAdminAccess(profile.userId)).catch(() => bounceToLogin());
+                } else bounceToLogin();
             }).catch(() => bounceToLogin());
         });
 
@@ -152,30 +137,70 @@
                 const response = await fetch(API_URL, { method: 'POST', body: JSON.stringify({ action: 'checkUserRegistration', uid: uid }) });
                 const data = await response.json();
                 if (data.status === 'registered' && data.role === 'ADMIN') {
+                    // กำหนดค่า Config
                     const hospital = data.hospital_name || 'เทศบาลเมืองบางแก้ว';
                     document.getElementById('sidebar-hospital-name').innerText = hospital;
                     document.getElementById('header-hospital-name').innerText = 'ฐานข้อมูลผู้ป่วยทั้งหมด • ' + hospital;
+                    
+                    // สร้าง Dropdown หมู่ตามจำนวนใน Config
+                    const vCount = data.village_count || 15;
+                    const villageSelect = document.getElementById('village-filter');
+                    for(let i=1; i<=vCount; i++){
+                        villageSelect.insertAdjacentHTML('beforeend', `<option value="${i}">หมู่ที่ ${i}</option>`);
+                    }
+
                     loadDataCenter();
-                } else {
-                    window.location.href = 'dashboard.html';
-                }
+                } else window.location.href = 'dashboard.html';
             } catch (error) { bounceToLogin(); }
         }
         function bounceToLogin() { window.location.href = 'index.html'; }
 
         async function loadDataCenter() {
             try {
-                // ดึงข้อมูลผู้ป่วยจากหลังบ้าน
                 const response = await fetch(API_URL, { method: 'POST', body: JSON.stringify({ action: 'getAllPatients' }) });
                 allPatients = await response.json();
                 
-                renderTable(allPatients);
-                
+                updateBadges();
+                filterTable();
                 document.getElementById('loading-state').classList.add('hidden');
-                document.getElementById('table-container').classList.remove('hidden');
-            } catch (error) {
-                alert("โหลดข้อมูลฐานข้อมูลล้มเหลว");
-            }
+            } catch (error) { alert("โหลดข้อมูลล้มเหลว"); }
+        }
+
+        function switchTab(tab) {
+            document.getElementById('tab-active').classList.remove('active');
+            document.getElementById('tab-inactive').classList.remove('active');
+            document.getElementById(`tab-${tab}`).classList.add('active');
+            currentTab = tab;
+            
+            document.getElementById('col-status').innerText = tab === 'active' ? 'สถานะ / อัปเดตล่าสุด' : 'สาเหตุยุติการดูแล';
+            filterTable();
+        }
+
+        function updateBadges() {
+            document.getElementById('badge-active').innerText = allPatients.filter(p => String(p.status).trim().toLowerCase() === 'active').length;
+            document.getElementById('badge-inactive').innerText = allPatients.filter(p => String(p.status).trim().toLowerCase() !== 'active').length;
+        }
+
+        function filterTable() {
+            const keyword = document.getElementById('search-input').value.toLowerCase();
+            const villageFilter = document.getElementById('village-filter').value;
+            
+            const filteredData = allPatients.filter(p => {
+                const pStatus = String(p.status || '').trim().toLowerCase();
+                const isActiveTab = currentTab === 'active';
+                const isUserActive = pStatus === 'active';
+                
+                if (isActiveTab !== isUserActive) return false;
+
+                const matchName = (p.name || '').toLowerCase().includes(keyword);
+                const matchHouse = String(p.house_no || '').toLowerCase().includes(keyword);
+                const matchKeyword = matchName || matchHouse;
+                
+                const matchVillage = villageFilter === '' || String(p.village_no) === villageFilter;
+
+                return matchKeyword && matchVillage;
+            });
+            renderTable(filteredData);
         }
 
         function renderTable(dataArray) {
@@ -196,50 +221,36 @@
             tableContainer.classList.remove('hidden');
 
             dataArray.forEach(p => {
-                // สี Badge ตามกลุ่ม
-                let badgeColor = 'bg-slate-100 text-slate-600';
-                if (p.group === 'ติดสังคม') badgeColor = 'bg-emerald-100 text-emerald-700';
-                else if (p.group === 'ติดบ้าน') badgeColor = 'bg-amber-100 text-amber-700';
-                else if (p.group === 'ติดเตียง') badgeColor = 'bg-red-100 text-red-700';
+                let badgeGroup = 'bg-slate-100 text-slate-600';
+                if (p.group === 'ติดสังคม') badgeGroup = 'bg-emerald-100 text-emerald-700';
+                else if (p.group === 'ติดบ้าน') badgeGroup = 'bg-amber-100 text-amber-700';
+                else if (p.group === 'ติดเตียง') badgeGroup = 'bg-red-100 text-red-700';
                 
-                let groupDisplay = p.group !== 'ยังไม่ประเมิน' ? p.group : 'รอประเมิน';
+                // สถานะ
+                let statusHtml = '';
+                if(currentTab === 'active') {
+                    statusHtml = `<span class="px-2.5 py-1 text-[11px] font-bold rounded-md bg-blue-50 text-blue-600 border border-blue-100">กำลังดูแล</span>
+                                  <span class="text-xs text-slate-400 ml-2">${p.last_assess || '-'}</span>`;
+                } else {
+                    statusHtml = `<span class="px-2.5 py-1 text-[11px] font-bold rounded-md bg-slate-100 text-slate-700 border border-slate-200">${p.status || 'ไม่ระบุ'}</span>`;
+                }
 
-                // โครงสร้างแถวตาราง
                 const tr = document.createElement('tr');
                 tr.className = 'hover:bg-slate-50 transition-colors group cursor-pointer';
-                // ถ้าแอดมินคลิกที่แถว จะพาไปหน้าแฟ้มประวัติ (ใช้ไฟล์ patient_profile.html เดิมของ อสม. ได้เลย)
-                tr.onclick = (e) => {
-                    // ป้องกันไม่ให้ทำงานซ้อนกับปุ่มแก้ไข
-                    if(!e.target.closest('button')) {
-                        window.location.href = `patient_profile.html?id=${p.id}`;
-                    }
-                };
+                tr.onclick = (e) => { if(!e.target.closest('button')) window.location.href = `patient_profile.html?id=${p.id}`; };
 
                 tr.innerHTML = `
                     <td class="px-6 py-4">
                         <div class="flex items-center gap-3">
-                            <div class="w-8 h-8 rounded-full bg-navy/5 text-navy font-bold flex items-center justify-center text-xs">
+                            <div class="w-8 h-8 rounded-full ${currentTab === 'active' ? 'bg-navy/5 text-navy' : 'bg-slate-100 text-slate-400'} font-bold flex items-center justify-center text-xs">
                                 ${p.name ? p.name.substring(0,1) : '?'}
                             </div>
-                            <span class="font-bold text-slate-800 text-sm group-hover:text-navy transition-colors">${p.name || '-'}</span>
+                            <span class="font-bold ${currentTab === 'active' ? 'text-slate-800' : 'text-slate-500'} text-sm group-hover:text-navy">${p.name || '-'}</span>
                         </div>
                     </td>
-                    <td class="px-6 py-4 text-sm text-slate-600">
-                        หมู่ ${p.village_no || '-'} <span class="text-slate-300 mx-1">|</span> บ้านเลขที่ ${p.house_no || '-'}
-                    </td>
-                    <td class="px-6 py-4">
-                        <span class="px-2.5 py-1 text-[11px] font-bold rounded-md ${badgeColor}">
-                            ${groupDisplay}
-                        </span>
-                    </td>
-                    <td class="px-6 py-4 text-sm text-slate-500">
-                        ${p.last_assess || '-'}
-                    </td>
-                    <td class="px-6 py-4">
-                        <span class="px-2.5 py-1 text-[11px] font-bold rounded-md bg-blue-50 text-blue-600 border border-blue-100">
-                            Active
-                        </span>
-                    </td>
+                    <td class="px-6 py-4 text-sm text-slate-600">หมู่ ${p.village_no || '-'} <span class="text-slate-300 mx-1">|</span> บ้านเลขที่ ${p.house_no || '-'}</td>
+                    <td class="px-6 py-4"><span class="px-2.5 py-1 text-[11px] font-bold rounded-md ${badgeGroup}">${p.group !== 'ยังไม่ประเมิน' ? p.group : 'รอประเมิน'}</span></td>
+                    <td class="px-6 py-4">${statusHtml}</td>
                     <td class="px-6 py-4 text-center">
                         <button class="text-slate-400 hover:text-navy transition-colors p-1" title="เปิดแฟ้มประวัติ">
                             <span class="material-symbols-outlined text-[20px]">visibility</span>
@@ -248,18 +259,6 @@
                 `;
                 tbody.appendChild(tr);
             });
-        }
-
-        // ฟังก์ชันค้นหาข้อมูลในตาราง
-        function filterTable() {
-            const keyword = document.getElementById('search-input').value.toLowerCase();
-            const filteredData = allPatients.filter(p => {
-                const matchName = (p.name || '').toLowerCase().includes(keyword);
-                const matchVillage = String(p.village_no || '').toLowerCase().includes(keyword);
-                const matchHouse = String(p.house_no || '').toLowerCase().includes(keyword);
-                return matchName || matchVillage || matchHouse;
-            });
-            renderTable(filteredData);
         }
     </script>
 </body>
