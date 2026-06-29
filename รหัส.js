@@ -565,6 +565,7 @@ function F_getAllVHVs() {
 }
 
 // [F17] ฟังก์ชันอัปเดตผู้รับผิดชอบเคสผู้ป่วย (Assigned VHV)
+// [F9] ฟังก์ชันอัปเดตผู้รับผิดชอบเคส และส่ง LINE พร้อมระบบดักจับ Error
 function F_updatePatientVHV(id, vhvId) {
   const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('Patients');
   const data = sheet.getDataRange().getValues();
@@ -580,49 +581,56 @@ function F_updatePatientVHV(id, vhvId) {
 
   for (let i = 1; i < data.length; i++) {
     if (String(data[i][colId]) === String(id)) {
-      // 1. บันทึก UID อสม. ลงคอลัมน์ AC (Assigned_VHV_ID)
+      // 1. บันทึกคนรับผิดชอบ
       sheet.getRange(i + 1, colAssignedVHV + 1).setValue(String(vhvId).trim());
       
-      // 2. [ฟีเจอร์ส่ง LINE อัตโนมัติ] ดึงชื่อคนไข้ไปทำข้อความ
       const pName = colName > -1 ? data[i][colName] : 'ไม่ระบุชื่อ';
       const pHouse = colHouse > -1 ? data[i][colHouse] : '-';
       const pVillage = colVillage > -1 ? data[i][colVillage] : '-';
       
-      const messageText = `📋 มีการมอบหมายภารกิจ อสม. รายบุคคล\n\nรบกวนลงพื้นที่ติดตามดูแลและประเมินอาการผู้ป่วยในความรับผิดชอบของท่านครับ:\n\n👤 ผู้ป่วย: ${pName}\n🏠 ที่อยู่: บ้านเลขที่ ${pHouse} หมู่ที่ ${pVillage}\n\nเมื่อดำเนินการเสร็จสิ้น รบกวนบันทึกผ่านแอปพลิเคชันด้วยครับ ขอบคุณครับ 🙏`;
+      const messageText = `📋 มีการมอบหมายภารกิจ อสม.\n\nรบกวนลงพื้นที่ติดตามดูแลและประเมินอาการผู้ป่วย:\n\n👤 ผู้ป่วย: ${pName}\n🏠 ที่อยู่: บ้านเลขที่ ${pHouse} หมู่ที่ ${pVillage}\n\nเมื่อดำเนินการเสร็จสิ้น รบกวนบันทึกผ่านแอปพลิเคชันด้วยครับ 🙏`;
       
-      // ดึง Channel Access Token จากหน้า Config มาใช้งาน
+      let lineResultMsg = "ไม่ได้ส่ง (หา Token จาก Config ไม่เจอ)";
       const lineToken = F_getConfig('LINE_CHANNEL_ACCESS_TOKEN'); 
-      if (lineToken && vhvId && !vhvId.startsWith('TEMP_')) {
+      
+      if (lineToken && vhvId) {
         try {
-          sendLinePushMessage(vhvId, messageText, lineToken);
+          const resText = sendLinePushMessage(vhvId, messageText, lineToken);
+          // ถ้า LINE ตอบกลับมาเป็น {} (ปีกกาว่างๆ) แปลว่าส่งสำเร็จ 100%
+          if (resText === "{}") {
+             lineResultMsg = "ส่งแจ้งเตือนเข้า LINE สำเร็จ!";
+          } else {
+             lineResultMsg = "LINE แจ้งเตือนข้อผิดพลาด: " + resText;
+          }
         } catch(e) {
-          console.log("LINE Push Error: " + e);
+          lineResultMsg = "Error ฝั่ง Google: " + e.message;
         }
       }
       
-      return { success: true, message: 'บันทึกการมอบหมายและส่งแจ้งเตือน LINE เรียบร้อยแล้ว' };
+      return { success: true, message: `บันทึกการมอบหมายงานเรียบร้อยแล้ว\n\n[สถานะ LINE]\n${lineResultMsg}` };
     }
   }
   return { success: false, message: 'ไม่พบรหัสผู้ป่วยรายนี้' };
 }
 
-// ฟังก์ชันภายในสำหรับเชื่อมต่อกับเซิร์ฟเวอร์ LINE Developers
+// ฟังก์ชันภายในสำหรับเชื่อมต่อ LINE (มีระบบล้างช่องว่างอัตโนมัติ)
 function sendLinePushMessage(toUid, textMessage, accessToken) {
   const url = "https://api.line.me/v2/bot/message/push";
   const payload = {
-    "to": toUid,
+    "to": String(toUid).trim(),
     "messages": [{ "type": "text", "text": textMessage }]
   };
   const options = {
     "method": "post",
     "headers": {
       "Content-Type": "application/json",
-      "Authorization": "Bearer " + accessToken
+      "Authorization": "Bearer " + String(accessToken).trim()
     },
     "payload": JSON.stringify(payload),
-    "muteHttpExceptions": true
+    "muteHttpExceptions": true // อนุญาตให้อ่านข้อความ Error จาก LINE ได้
   };
-  UrlFetchApp.fetch(url, options);
+  const response = UrlFetchApp.fetch(url, options);
+  return response.getContentText();
 }
 
 // ==========================================
