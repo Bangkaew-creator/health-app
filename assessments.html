@@ -15,6 +15,8 @@
         .loader { border: 3px solid #d8e3fb; border-bottom-color: #00694a; border-radius: 50%; width: 36px; height: 36px; animation: spin 1s linear infinite; }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
     </style>
+    <script charset="utf-8" src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+    <script src="config.js"></script>
 </head>
 <body class="text-[#111c2d]">
 
@@ -71,19 +73,40 @@
     </nav>
 
     <script>
-        const API_URL = "https://script.google.com/macros/s/AKfycbyzPy7sklwURcJiqFDzlK4OEQ8616CJLuNyAjb8euQNzYJLXz_dj4UJM63w8-nI1L3r/exec";
-        
         let assignments = []; 
         let currentTab = 'pending';
+        let currentUserUid = ""; // เก็บ UID ตัวเองเพื่อไว้กรองงาน
 
-        // โหลดข้อมูลรายชื่อ (ใช้วิธีดึงคนไข้ทั้งหมดแล้วมากรองว่าใคร 'ยังไม่ประเมิน' ไปก่อนในเวอร์ชันนี้)
+        // 1. โหลด LIFF ก่อน
+        document.addEventListener("DOMContentLoaded", () => {
+            liff.init({ liffId: LIFF_ID }).then(() => {
+                if (liff.isLoggedIn()) {
+                    liff.getProfile().then(p => {
+                        currentUserUid = String(p.userId).trim();
+                        fetchAssignments();
+                    });
+                } else { liff.login(); }
+            }).catch(err => {
+                fetchAssignments();
+            });
+        });
+
+        // 2. ดึงข้อมูลและกรองงาน
         async function fetchAssignments() {
             try {
                 const response = await fetch(API_URL, { method: 'POST', body: JSON.stringify({ action: 'getAllPatients' }) });
                 const allPatients = await response.json();
                 
-                // สมมติว่าใครที่ค่า ADL เป็น '-' คือคนไข้ที่รอรับการประเมิน (สามารถเปลี่ยน Logic การมอบหมายงานได้ในอนาคต)
-                assignments = allPatients.map(p => {
+                // [ปิดบั๊ก] กรองเอาเฉพาะเคสที่ Assigned_VHV_ID ตรงกับ UID ของตัวเอง
+                const myAssignedPatients = allPatients.filter(p => {
+                    const isActive = String(p.status || 'Active').trim().toLowerCase() === 'active';
+                    const isMyAssignedCase = String(p.assigned_vhv_id).trim() === currentUserUid;
+                    
+                    return isActive && isMyAssignedCase && currentUserUid !== "";
+                });
+                
+                // นำเคสของตัวเองมาแยกสถานะ รอประเมิน/ประเมินแล้ว
+                assignments = myAssignedPatients.map(p => {
                     return {
                         ...p,
                         status: (p.adl === '-' || p.group === 'ยังไม่ประเมิน') ? 'pending' : 'completed'
@@ -91,7 +114,6 @@
                 });
                 
                 renderList();
-                
                 document.getElementById('loading-state').classList.add('hidden');
                 document.getElementById('assignment-list').classList.remove('hidden');
             } catch (error) {
@@ -127,7 +149,6 @@
                         if(match) avatarHtml = `<img src="https://drive.google.com/thumbnail?id=${match[1]}&sz=150" class="w-12 h-12 rounded-full object-cover flex-shrink-0 shadow-sm">`;
                     }
 
-                    // ป้ายสถานะ
                     const statusBadge = currentTab === 'pending' 
                         ? `<span class="bg-amber-100 text-amber-700 text-[10px] font-bold px-2 py-0.5 rounded">รอประเมิน ADL</span>`
                         : `<span class="bg-green-100 text-green-700 text-[10px] font-bold px-2 py-0.5 rounded">เสร็จสิ้น</span>`;
@@ -157,8 +178,6 @@
                 });
             }
         }
-
-        fetchAssignments();
     </script>
 </body>
 </html>
