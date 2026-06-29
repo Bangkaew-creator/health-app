@@ -81,7 +81,6 @@
             }
         }
 
-        // ฟังก์ชันตรวจสอบสิทธิ์ (อัปเดต: ล็อกหน้าจอ Pending อย่างเหนียวแน่น)
         async function checkRegistration(isManualRecheck = false) {
             const btnRecheck = document.getElementById('btn-recheck');
             if(isManualRecheck) { 
@@ -89,7 +88,6 @@
                 btnRecheck.innerHTML = '<div class="loader" style="width:20px;height:20px;border-width:2px;border-top-color:white;border-bottom-color:transparent;"></div> กำลังตรวจสอบ...'; 
             }
 
-            // ซ่อนทุกหน้าจอเริ่มแรก
             document.getElementById('registration-screen').classList.add('hidden');
             document.getElementById('pending-screen').classList.add('hidden');
             document.getElementById('loading-screen').classList.remove('hidden');
@@ -102,28 +100,27 @@
                 document.getElementById('loading-screen').classList.add('hidden');
 
                 if (data.status === 'registered') {
-                    // แปลงสถานะเป็นตัวพิมพ์เล็กทั้งหมดเพื่อป้องกันปัญหาการพิมพ์ในชีต (Pending, pending, PENDING)
                     const uStatus = String(data.user_status).toLowerCase();
-                    
                     if (uStatus === 'pending') {
                         document.getElementById('pending-screen').classList.remove('hidden');
-                        if(isManualRecheck) alert('ระบบพบข้อมูล UID ของคุณแล้ว\nแต่สถานะยังอยู่ระหว่าง "รอการตรวจสอบ" จากเจ้าหน้าที่ครับ');
+                        if(isManualRecheck) alert('ระบบพบข้อมูลของคุณแล้ว\nแต่สถานะยังอยู่ระหว่าง "รอการตรวจสอบ" จากเจ้าหน้าที่ครับ');
                     } else if (uStatus === 'rejected') {
                         alert('บัญชีของคุณไม่อนุญาตให้เข้าถึงระบบ');
                     } else { 
-                        // อนุมัติแล้ว (Active)
                         if (data.role === 'ADMIN') window.location.href = 'admin_dashboard.html';
                         else window.location.href = 'vhv_dashboard.html';
                     }
                 } else {
-                    // ถ้าหา UID ไม่เจอจริงๆ ถึงจะโชว์หน้าลงทะเบียน
+                    // หากยังเด้งมาที่นี่อีก ให้โชว์รหัส UID บนหน้าจอเพื่อนำไปเทียบกับใน Google Sheets
+                    if(isManualRecheck) {
+                        alert('ไม่พบรหัส UID นี้ในฐานข้อมูล\n(UID: ' + profile.userId + ')\nกรุณาแจ้งแอดมินให้ตรวจสอบใน Google Sheets ครับ');
+                    }
                     buildVillageOptions(parseInt(data.village_count) || 15);
                     document.getElementById('registration-screen').classList.remove('hidden');
                 }
             } catch (error) { 
                 alert("เกิดข้อผิดพลาดในการเชื่อมต่อเครือข่าย"); 
                 document.getElementById('loading-screen').classList.add('hidden');
-                // ถ้าเน็ตหลุดตอนกดปุ่มเช็ค ให้กลับมาหน้า Pending เหมือนเดิม
                 if (isManualRecheck) document.getElementById('pending-screen').classList.remove('hidden');
             }
 
