@@ -280,6 +280,7 @@
 
         function bounceToLogin() { window.location.href = 'index.html'; }
 
+        // ฟังก์ชันโหลดข้อมูลหน้า Dashboard (เวอร์ชันแก้ไข: ดึงสถิติจริง ไม่ใช้เปอร์เซ็นต์หลอก, แก้บักวันที่ค้างเยี่ยม)
         async function loadDashboardData() {
             try {
                 const response = await fetch(API_URL, { method: 'POST', body: JSON.stringify({ action: 'getAllPatients' }) });
@@ -293,36 +294,61 @@
                 const bedRidden = patients.filter(p => p.group === 'ติดเตียง');
                 document.getElementById('total-bed').innerText = bedRidden.length;
 
+                // 1. นับเคสผ้าอ้อมรออนุมัติจริงจากการ Parse JSON
                 let pendingDiaper = 0;
                 patients.forEach(p => {
-                    if (p.diaper) {
+                    if (p.diaper && p.diaper !== '') {
                         try {
                             const diaperObj = JSON.parse(p.diaper);
-                            if (diaperObj.req_diaper || diaperObj.req_underpad) pendingDiaper++; 
+                            if (diaperObj.req_diaper || diaperObj.req_underpad || diaperObj.approve_status === "รออนุมัติ") {
+                                pendingDiaper++;
+                            }
                         } catch(e) {}
                     }
                 });
                 document.getElementById('count-pending-diaper').innerText = pendingDiaper;
 
+                // 2. ปรับปรุงตัวสแกนวันที่ค้างเยี่ยมบ้านให้ฉลาดขึ้น (รองรับ Date Object จาก Sheets)
                 let slaAlertCount = 0;
                 const today = new Date();
                 
                 bedRidden.forEach(p => {
-                    if (p.last_assess && p.last_assess.includes('/')) {
-                        const parts = p.last_assess.split('/');
-                        const lastAssessDate = new Date(parts[2], parts[1] - 1, parts[0]);
+                    let lastAssessDate = null;
+                    if (p.last_assess) {
+                        if (String(p.last_assess).includes('/')) {
+                            const parts = String(p.last_assess).split('/');
+                            lastAssessDate = new Date(parts[2], parts[1] - 1, parts[0]);
+                        } else {
+                            // รองรับ Date Object หรือรูปแบบ ISO สากลที่ส่งมาจากตารางชีตโดยตรง
+                            lastAssessDate = new Date(p.last_assess);
+                        }
+                    }
+                    
+                    if (lastAssessDate && !isNaN(lastAssessDate.getTime())) {
                         const timeDiff = Math.abs(today.getTime() - lastAssessDate.getTime());
                         const diffDays = Math.ceil(timeDiff / (1000 * 3600 * 24));
                         if (diffDays > 30) slaAlertCount++;
                     } else {
-                        slaAlertCount++;
+                        slaAlertCount++; // ไม่มีประวัติเลยให้นับค้างเยี่ยมทันที
                     }
                 });
                 document.getElementById('count-sla-alert').innerText = slaAlertCount;
 
-                document.getElementById('depression-normal').innerText = Math.round(totalCount * 0.8);
-                document.getElementById('depression-risk').innerText = Math.round(totalCount * 0.15);
-                document.getElementById('depression-high').innerText = Math.round(totalCount * 0.05);
+                // 3. เปลี่ยนมาดึงสถิติจริงจากผลประเมินซึมเศร้าในฐานข้อมูล (ถ้ายังไม่ประเมินจะไม่โชว์มั่ว)
+                let depNormal = 0;
+                let depRisk = 0;
+                let depHigh = 0;
+                
+                patients.forEach(p => {
+                    const dep = String(p.dep_status || '').trim();
+                    if (dep === 'ปกติ') depNormal++;
+                    else if (dep === 'เสี่ยงซึมเศร้า') depRisk++;
+                    else if (dep === 'เสี่ยงสูง') depHigh++;
+                });
+
+                document.getElementById('depression-normal').innerText = depNormal;
+                document.getElementById('depression-risk').innerText = depRisk;
+                document.getElementById('depression-high').innerText = depHigh;
 
             } catch (error) {
                 console.error("โหลดข้อมูลล้มเหลว:", error);
