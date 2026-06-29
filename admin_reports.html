@@ -282,7 +282,7 @@
             btn.disabled = false; btn.innerText = 'บันทึกมติ';
         }
 
-        // --- ระบบออก Excel ---
+        // --- ระบบออก Excel (อัปเดต: แยกคอลัมน์ขนาด/จำนวน และคำนวณยอดจัดสรรจริง) ---
         function exportToExcel() {
             const checkedBoxes = document.querySelectorAll('.row-checkbox:checked');
             if (checkedBoxes.length === 0) return alert('กรุณาติ๊กเลือกรายชื่อที่ต้องการออกรายงาน');
@@ -295,46 +295,72 @@
                 const p = JSON.parse(tr.dataset.rawData);
                 const d = p.detail;
 
-                // ตรรกะคำนวณจำนวนชิ้นตามเดือนที่จัดสรร (ข้อ 2)
-                let exportText = '-';
+                let diaperSize = '-';
+                let diaperQty = '-';
+                let underpadSize = '-';
+                let underpadQty = '-';
+                let remarkText = '';
+
+                // ตรรกะคำนวณจำนวนชิ้นตามเดือนที่จัดสรร
                 if (d) {
-                    const allocMonths = parseInt(d.alloc_months) || 1; // ถ้ายังไม่ลงมติ ให้ถือว่าเป็น 1 เดือนไปก่อน
-                    let requirements = [];
+                    const allocMonths = parseInt(d.alloc_months) || 1; // ดึงจำนวนเดือนจากมติกรรมการ
                     
-                    if (d.req_diaper && d.approved_diaper > 0) {
-                        const totalDiaper = parseInt(d.approved_diaper) * allocMonths;
-                        requirements.push(`ผ้าอ้อม ขนาด ${d.size} จำนวน ${totalDiaper} ชิ้น`);
-                    }
-                    if (d.req_underpad && d.approved_underpad > 0) {
-                        const totalUnderpad = parseInt(d.approved_underpad) * allocMonths;
-                        requirements.push(`แผ่นรองซับ จำนวน ${totalUnderpad} ชิ้น`);
+                    if (d.req_diaper && parseInt(d.approved_diaper) > 0) {
+                        diaperSize = d.size || '-';
+                        diaperQty = parseInt(d.approved_diaper) * allocMonths;
                     }
                     
-                    if (requirements.length > 0) exportText = requirements.join(', ');
+                    if (d.req_underpad && parseInt(d.approved_underpad) > 0) {
+                        underpadSize = 'แผ่นรองซับ';
+                        underpadQty = parseInt(d.approved_underpad) * allocMonths;
+                    }
+                    
+                    // เพิ่มหมายเหตุให้รู้ว่าอ้างอิงจากมติรอบไหน
+                    if (d.committee_status === 'จัดสรรแล้ว') {
+                        remarkText = `อนุมัติปีงบ ${d.fy} รอบ ${d.round} (${allocMonths} เดือน)`;
+                    }
                 }
 
+                // สร้างโครงสร้างข้อมูลตามหัวตารางใหม่ที่ต้องการ
                 exportData.push({
                     "ลำดับ": runningNumber++,
-                    "ชื่อ-นามสกุล": p.name,
-                    "เลขประจำตัวประชาชน": p.id_card,
-                    "บ้านเลขที่": p.house_no,
-                    "หมู่": p.village_no,
-                    "ADL": p.adl,
-                    "เบอร์โทรศัพท์": p.phone,
-                    "ผ้าอ้อมผู้ใหญ่(ขนาด)": exportText // ยิงข้อความที่คำนวณแล้วลง Excel
+                    "ชื่อ-สกุล": p.name || '-',
+                    "เลขประจำตัวประชาชน": p.id_card || '-',
+                    "บ้านเลขที่": p.house_no || '-',
+                    "หมู่ที่": p.village_no || '-',
+                    "ADL": p.adl || '-',
+                    "เบอร์โทรศัพท์": p.phone || '-',
+                    "ขนาดผ้าอ้อม": diaperSize,
+                    "จำนวน": diaperQty,
+                    "ขนาดแผ่นรองซับ": underpadSize,
+                    "จำนวน ": underpadQty, // [เทคนิคพิเศษ] เติมช่องว่างด้านหลัง 1 เคาะ เพื่อไม่ให้ชื่อคีย์ซ้ำกัน
+                    "หมายเหตุ": remarkText
                 });
             });
 
+            // สร้าง Workbook และ Sheet
             const worksheet = XLSX.utils.json_to_sheet(exportData);
             const workbook = XLSX.utils.book_new();
-            XLSX.utils.book_append_sheet(workbook, worksheet, "รายชื่ออนุมัติผ้าอ้อม");
+            XLSX.utils.book_append_sheet(workbook, worksheet, "รายชื่อจัดสรรผ้าอ้อม");
 
+            // ปรับความกว้างของคอลัมน์ให้สวยงามพร้อมพิมพ์
             worksheet['!cols'] = [
-                { wch: 8 }, { wch: 25 }, { wch: 20 }, { wch: 15 }, { wch: 8 }, { wch: 8 }, { wch: 15 }, { wch: 45 }
+                { wch: 8 },  // ลำดับ
+                { wch: 25 }, // ชื่อ-สกุล
+                { wch: 22 }, // เลข ปชช
+                { wch: 12 }, // บ้านเลขที่
+                { wch: 8 },  // หมู่ที่
+                { wch: 8 },  // ADL
+                { wch: 15 }, // เบอร์โทร
+                { wch: 15 }, // ขนาดผ้าอ้อม
+                { wch: 10 }, // จำนวน
+                { wch: 18 }, // ขนาดแผ่นรองซับ
+                { wch: 10 }, // จำนวน (แผ่นรองซับ)
+                { wch: 30 }  // หมายเหตุ
             ];
 
             const dateStr = new Date().toISOString().split('T')[0];
-            XLSX.writeFile(workbook, `รายงานเบิกผ้าอ้อม_กปท_${dateStr}.xlsx`);
+            XLSX.writeFile(workbook, `รายงานจัดสรรผ้าอ้อม_กปท_${dateStr}.xlsx`);
         }
     </script>
 </body>
