@@ -27,6 +27,10 @@ function doPost(e) {
       case 'getAllVHVs': response = F_getAllVHVs(); break;
       case 'updatePatientVHV': response = F_updatePatientVHV(requestData.id, requestData.vhvId); break;
       case 'recordCommitteeDecision': response = F_recordCommitteeDecision(requestData.patientIds, requestData.fy, requestData.round, requestData.months); break;
+      case 'registerUser': response = F_registerUser(requestData.uid, requestData.name, requestData.role, requestData.village_no, requestData.phone); break;
+      case 'checkUserRegistration': response = F_checkUserRegistration(requestData.uid); break;
+      case 'getPendingVHVs': response = F_getPendingVHVs(); break;
+      case 'manageVHVStatus': response = F_manageVHVStatus(requestData.targetUid, requestData.actionType); break;
       default: response = { status: 'error', message: 'Action not found' };
     }
     return ContentService.createTextOutput(JSON.stringify(response)).setMimeType(ContentService.MimeType.JSON);
@@ -204,23 +208,31 @@ function F_checkUser(uid) {
 }
 
 // [F5] ฟังก์ชันลงทะเบียนผู้ใช้ใหม่แบบแยกรหัสผ่าน (จำกัด 7 คอลัมน์ A-G)
-function F_registerUser(uid, name, village, adminPassword) {
-  const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(SHEET_NAMES.USERS);
+// 2. ฟังก์ชันลงทะเบียน (อัปเดต: บันทึกเบอร์โทร และตั้งสถานะ อสม. เป็น Pending ทันที)
+function F_registerUser(uid, name, role, village_no, phone) {
+  const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('Users');
+  const data = sheet.getDataRange().getValues();
+  const headers = data[0].map(h => String(h).trim().toLowerCase());
+  const colUid = headers.indexOf('uid');
   
-  // ตรวจสอบกรณีลงทะเบียนโหมดเจ้าหน้าที่
-  if (adminPassword) {
-    const correctPassword = F_getConfig('ADMIN_PASSWORD');
-    if (String(adminPassword) !== String(correctPassword)) {
-      return { success: false, message: 'รหัสผ่านสำหรับเจ้าหน้าที่ไม่ถูกต้อง' };
+  for (let i = 1; i < data.length; i++) {
+    if (colUid > -1 && String(data[i][colUid]) === String(uid)) {
+      return { status: 'already_registered' };
     }
-    village = 'ADMIN'; // เปลี่ยนค่าหมู่เป็นคำว่า ADMIN เพื่อใช้เป็นตัวจำแนกสิทธิ์
   }
   
-  // บันทึกข้อมูลลงชีต Users ครบถ้วนตามหัวตาราง 7 คอลัมน์พอดี
-  // คอลัมน์: UID(A), Name(B), Village_No(C), Register_Date(D), Status(E), Phone(F), Profile_Pic(G)
-  sheet.appendRow([uid, name, village, new Date(), 'Active', '', '']);
+  const initialStatus = role === 'ADMIN' ? 'Active' : 'Pending';
   
-  return { success: true, role: (village === 'ADMIN' ? 'ADMIN' : 'VHV') };
+  let newRow = new Array(headers.length).fill('');
+  if(headers.indexOf('uid') > -1) newRow[headers.indexOf('uid')] = uid;
+  if(headers.indexOf('name') > -1) newRow[headers.indexOf('name')] = name;
+  if(headers.indexOf('role') > -1) newRow[headers.indexOf('role')] = role;
+  if(headers.indexOf('village_no') > -1) newRow[headers.indexOf('village_no')] = village_no;
+  if(headers.indexOf('status') > -1) newRow[headers.indexOf('status')] = initialStatus;
+  if(headers.indexOf('phone') > -1) newRow[headers.indexOf('phone')] = phone || '-';
+  
+  sheet.appendRow(newRow);
+  return { status: 'success', user_status: initialStatus };
 }
 
 // [F5.1] ฟังก์ชันอัปเดตโปรไฟล์ อสม. และ แอดมิน (เขียนพิกัดลงล็อกตารางเดิม)
@@ -680,6 +692,155 @@ function F_recordCommitteeDecision(patientIds, fy, round, months) {
     }
   }
   return { success: true, message: `บันทึกมติจัดสรรให้ผู้ป่วยจำนวน ${updatedCount} ราย สำเร็จ!` };
+}
+
+// 1. ฟังก์ชันตรวจสอบสิทธิ์เข้าใช้งาน (อัปเดต: ส่งสถานะ User กลับไปบอกหน้าเว็บ)
+function F_checkUserRegistration(uid) {
+  const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('Users');
+  const data = sheet.getDataRange().getValues();
+  const headers = data[0].map(h => String(h).trim().toLowerCase());
+  
+  const colUid = headers.indexOf('uid');
+  const colRole = headers.indexOf('role');
+  const colVillage = headers.indexOf('village_no');
+  const colStatus = headers.indexOf('status');
+  
+  if (colUid === -1) return { status: 'error', message: 'ไม่พบคอลัมน์ UID' };
+  
+  for (let i = 1; i < data.length; i++) {
+    if (String(data[i][colUid]) === String(uid)) {
+      return {
+        status: 'registered',
+        role: colRole > -1 ? String(data[i][colRole]) : 'VHV',
+        village_no: colVillage > -1 ? String(data[i][colVillage]) : '',
+        user_status: colStatus > -1 ? String(data[i][colStatus]).trim() : 'Active'
+      };
+    }
+  }
+  return { status: 'not_registered' };
+}
+
+// 2. ฟังก์ชันลงทะเบียน (อัปเดต: บันทึกเบอร์โทร และตั้งสถานะ อสม. เป็น Pending ทันที)
+function F_registerUser(uid, name, role, village_no, phone) {
+  const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('Users');
+  const data = sheet.getDataRange().getValues();
+  const headers = data[0].map(h => String(h).trim().toLowerCase());
+  const colUid = headers.indexOf('uid');
+  
+  for (let i = 1; i < data.length; i++) {
+    if (colUid > -1 && String(data[i][colUid]) === String(uid)) {
+      return { status: 'already_registered' };
+    }
+  }
+  
+  const initialStatus = role === 'ADMIN' ? 'Active' : 'Pending';
+  
+  let newRow = new Array(headers.length).fill('');
+  if(headers.indexOf('uid') > -1) newRow[headers.indexOf('uid')] = uid;
+  if(headers.indexOf('name') > -1) newRow[headers.indexOf('name')] = name;
+  if(headers.indexOf('role') > -1) newRow[headers.indexOf('role')] = role;
+  if(headers.indexOf('village_no') > -1) newRow[headers.indexOf('village_no')] = village_no;
+  if(headers.indexOf('status') > -1) newRow[headers.indexOf('status')] = initialStatus;
+  if(headers.indexOf('phone') > -1) newRow[headers.indexOf('phone')] = phone || '-';
+  
+  sheet.appendRow(newRow);
+  return { status: 'success', user_status: initialStatus };
+}
+
+// 3. (ฟังก์ชันใหม่) ดึงรายชื่อ อสม. ที่ "รออนุมัติ" ไปโชว์หน้าแอดมิน
+function F_getPendingVHVs() {
+  const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('Users');
+  const data = sheet.getDataRange().getValues();
+  const headers = data[0].map(h => String(h).trim().toLowerCase());
+  
+  const colUid = headers.indexOf('uid');
+  const colName = headers.indexOf('name');
+  const colVillage = headers.indexOf('village_no');
+  const colStatus = headers.indexOf('status');
+  const colPhone = headers.indexOf('phone');
+  
+  const list = [];
+  for (let i = 1; i < data.length; i++) {
+    if (colUid > -1 && data[i][colUid]) {
+       const status = colStatus > -1 ? String(data[i][colStatus]).trim() : '';
+       if (status === 'Pending') {
+         list.push({
+           uid: String(data[i][colUid]).trim(),
+           name: colName > -1 ? String(data[i][colName]) : 'ไม่ระบุชื่อ',
+           village_no: colVillage > -1 ? String(data[i][colVillage]) : '',
+           phone: colPhone > -1 ? String(data[i][colPhone]) : '-'
+         });
+       }
+    }
+  }
+  return list;
+}
+
+// [F19] ฟังก์ชันเปลี่ยนสถานะ อสม. เป็น Active หรือ Rejected
+function F_manageVHVStatus(uid, actionType) {
+  const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('Users');
+  const data = sheet.getDataRange().getValues();
+  const headers = data[0].map(h => String(h).trim().toLowerCase());
+  const colUid = headers.indexOf('uid');
+  const colStatus = headers.indexOf('status');
+  
+  if (colUid === -1 || colStatus === -1) return { success: false, message: 'ไม่พบคอลัมน์ที่ต้องการ' };
+  
+  for(let i=1; i<data.length; i++) {
+     if(String(data[i][colUid]) === String(uid)) {
+        sheet.getRange(i+1, colStatus+1).setValue(actionType);
+        return { success: true, message: `อัปเดตสถานะสำเร็จ` };
+     }
+  }
+  return { success: false, message: 'ไม่พบผู้ใช้นี้' };
+}
+
+// [F20] ฟังก์ชันดึงรายชื่อ อสม. ที่ "รออนุมัติ" ไปโชว์หน้าแอดมิน
+function F_getPendingVHVs() {
+  const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('Users');
+  const data = sheet.getDataRange().getValues();
+  const headers = data[0].map(h => String(h).trim().toLowerCase());
+  
+  const colUid = headers.indexOf('uid');
+  const colName = headers.indexOf('name');
+  const colVillage = headers.indexOf('village_no');
+  const colStatus = headers.indexOf('status');
+  const colPhone = headers.indexOf('phone');
+  
+  const list = [];
+  for (let i = 1; i < data.length; i++) {
+    if (colUid > -1 && data[i][colUid]) {
+       const status = colStatus > -1 ? String(data[i][colStatus]).trim() : '';
+       if (status === 'Pending') {
+         list.push({
+           uid: String(data[i][colUid]).trim(),
+           name: colName > -1 ? String(data[i][colName]) : 'ไม่ระบุชื่อ',
+           village_no: colVillage > -1 ? String(data[i][colVillage]) : '',
+           phone: colPhone > -1 ? String(data[i][colPhone]) : '-'
+         });
+       }
+    }
+  }
+  return list;
+}
+
+// [F20] ฟังก์ชันเปลี่ยนสถานะ อสม. เป็น Active หรือ Rejected
+function F_manageVHVStatus(uid, actionType) {
+  const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('Users');
+  const data = sheet.getDataRange().getValues();
+  const headers = data[0].map(h => String(h).trim().toLowerCase());
+  const colUid = headers.indexOf('uid');
+  const colStatus = headers.indexOf('status');
+  
+  if (colUid === -1 || colStatus === -1) return { success: false, message: 'ไม่พบคอลัมน์ที่ต้องการ' };
+  
+  for(let i=1; i<data.length; i++) {
+     if(String(data[i][colUid]) === String(uid)) {
+        sheet.getRange(i+1, colStatus+1).setValue(actionType);
+        return { success: true, message: `อัปเดตสถานะสำเร็จ` };
+     }
+  }
+  return { success: false, message: 'ไม่พบผู้ใช้นี้' };
 }
 
 // ==========================================
