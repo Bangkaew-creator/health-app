@@ -868,13 +868,13 @@ function F_manageVHVStatus(uid, actionType) {
   return { success: false, message: 'ไม่พบผู้ใช้นี้' };
 }
 
-// [F22] ฟังก์ชันนำเข้าข้อมูลผู้ป่วยจาก Excel (อัปเดต: รองรับขนาดผ้าอ้อม, คะแนน ADL และบันทึกวันอัปโหลดอัตโนมัติ)
+// [F22] ฟังก์ชันนำเข้าข้อมูลผู้ป่วยจาก Excel (เวอร์ชันแก้ไข: บันทึกโครงสร้าง JSON ผ้าอ้อมสมบูรณ์)
 function F_importPatients(patients) {
   const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('Patients');
   if (!sheet || !patients || patients.length === 0) return { success: false, message: 'ไม่มีข้อมูลสำหรับนำเข้า' };
 
   const timestamp = Utilities.formatDate(new Date(), "GMT+7", "yyyyMMdd-HHmm");
-  const todayStr = Utilities.formatDate(new Date(), "GMT+7", "dd/MM/yyyy"); // วันที่อัปโหลดปัจจุบัน
+  const todayStr = Utilities.formatDate(new Date(), "GMT+7", "dd/MM/yyyy"); 
   const newRows = [];
   let counter = 1;
 
@@ -882,7 +882,6 @@ function F_importPatients(patients) {
     const patientId = "HN-" + timestamp + "-" + String(counter).padStart(3, '0');
     counter++;
 
-    // สร้างอาร์เรย์ 31 คอลัมน์ให้ตรงกับโครงสร้างฐานข้อมูลเป๊ะๆ
     const row = new Array(31).fill('');
     row[0] = patientId;
     row[1] = p.id_card ? "'" + String(p.id_card) : '';
@@ -898,33 +897,41 @@ function F_importPatients(patients) {
     row[12] = p.caregiver_name || '';
     row[13] = p.caregiver_phone ? "'" + String(p.caregiver_phone) : '';
     
-    // [เพิ่มใหม่] บันทึกขนาดผ้าอ้อมลงคอลัมน์ O (Index 14)
-    row[14] = p.diaper ? String(p.diaper).trim() : '';
+    // [แก้ไขจุดนี้] เปลี่ยนจากการบันทึกไซส์ดิบ เป็นก้อน JSON มอบสิทธิ์การขอ "รออนุมัติ" ทันที
+    if (p.diaper && String(p.diaper).trim() !== '') {
+      row[14] = JSON.stringify({
+        size: String(p.diaper).trim(),
+        req_diaper: true,
+        req_underpad: false,
+        approve_status: "รออนุมัติ",
+        approved_diaper: 0,
+        approved_underpad: 0
+      });
+    } else {
+      row[14] = '';
+    }
 
-    // [เพิ่มใหม่] ตรรกะตรวจสอบคะแนน ADL และจัดกลุ่มผู้ป่วยอัตโนมัติ
     const adlValue = String(p.adl).trim();
     if (adlValue !== '' && adlValue !== '-') {
-      row[21] = Number(adlValue) || adlValue; // คอลัมน์ V (Index 21): ADL_Score
+      row[21] = Number(adlValue) || adlValue; 
       
       const scoreNum = parseInt(adlValue);
       if (!isNaN(scoreNum)) {
-        if (scoreNum <= 4) row[20] = 'ติดเตียง';       // คอลัมน์ U (Index 20)
+        if (scoreNum <= 4) row[20] = 'ติดเตียง';       
         else if (scoreNum <= 11) row[20] = 'ติดบ้าน';
         else row[20] = 'ติดสังคม';
       } else {
         row[20] = 'ยังไม่ประเมิน';
       }
-      
-      // บันทึกวันประเมินเริ่มตั้งแต่วันที่อัปโหลดเป็นต้นไป คอลัมน์ AD (Index 29)
       row[29] = todayStr; 
     } else {
       row[20] = 'ยังไม่ประเมิน';
       row[21] = '-';
-      row[29] = ''; // ถ้าไม่มีคะแนน ADL ก็จะยังไม่มีวันประเมิน
+      row[29] = ''; 
     }
     
-    for(let i=23; i<=27; i++) row[i] = '-'; // คอลัมน์ X ถึง AB (Vitals & Dep)
-    row[30] = 'Active';       // คอลัมน์ AE: Status
+    for(let i=23; i<=27; i++) row[i] = '-'; 
+    row[30] = 'Active';       
 
     newRows.push(row);
   });
