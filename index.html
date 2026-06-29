@@ -24,14 +24,15 @@
         <p class="text-slate-500 font-medium">กำลังตรวจสอบสิทธิ์การเข้าใช้งาน...</p>
     </div>
 
-    <!-- 2. หน้าต่างรอแอดมินอนุมัติ -->
+        <!-- 2. หน้าต่างรอแอดมินอนุมัติ (เวอร์ชันปรับปรุง: ตัดปุ่มออก) -->
     <div id="pending-screen" class="hidden w-full max-w-md bg-white rounded-3xl p-8 shadow-xl text-center">
-        <span class="material-symbols-outlined text-[70px] text-amber-500 mb-4 bg-amber-50 w-24 h-24 rounded-full flex items-center justify-center mx-auto">schedule</span>
+        <span class="material-symbols-outlined text-[70px] text-amber-500 mb-4 bg-amber-50 w-24 h-24 rounded-full flex items-center justify-center mx-auto animate-pulse">schedule</span>
         <h2 class="text-2xl font-bold text-slate-800">รอการตรวจสอบสิทธิ์</h2>
-        <p class="text-sm text-slate-500 mt-2 mb-6">ข้อมูลลงทะเบียนของคุณถูกส่งเข้าระบบเรียบร้อยแล้ว<br>โปรดรอเจ้าหน้าที่อนุมัติการเข้าถึงข้อมูลชุมชนเพื่อความปลอดภัย</p>
-        <button onclick="checkRegistration(true)" id="btn-recheck" class="w-full bg-[#00694a] text-white font-bold py-3.5 rounded-xl shadow-lg hover:bg-[#005239] transition-all flex justify-center items-center gap-2">
-            <span class="material-symbols-outlined text-[20px]">refresh</span> ตรวจสอบสถานะอีกครั้ง
-        </button>
+        <p class="text-sm text-slate-500 mt-2 mb-4 leading-relaxed">ข้อมูลลงทะเบียนของคุณถูกส่งเข้าระบบเรียบร้อยแล้ว</p>
+        <p class="text-xs text-slate-400 leading-relaxed bg-slate-50 p-3 rounded-xl border border-slate-100">
+            โปรดรอเจ้าหน้าที่อนุมัติการเข้าถึงข้อมูลเพื่อความปลอดภัย<br>
+            (เมื่อได้รับอนุมัติแล้ว ระบบจะพาวาร์ปเข้าหน้าจอหลักโดยอัตโนมัติในการเข้าใช้งานครั้งถัดไปครับ)
+        </p>
     </div>
 
     <!-- 3. หน้าต่างลงทะเบียน อสม. (ปิด div ให้จบก่อน) -->
@@ -111,13 +112,7 @@
             }
         }
 
-        async function checkRegistration(isManualRecheck = false) {
-            const btnRecheck = document.getElementById('btn-recheck');
-            if(isManualRecheck) { 
-                btnRecheck.disabled = true; 
-                btnRecheck.innerHTML = '<div class="loader" style="width:20px;height:20px;border-width:2px;border-top-color:white;border-bottom-color:transparent;"></div> กำลังตรวจสอบ...'; 
-            }
-
+                async function checkRegistration() {
             document.getElementById('registration-screen').classList.add('hidden');
             document.getElementById('admin-registration-screen').classList.add('hidden');
             document.getElementById('admin-trigger').classList.add('hidden');
@@ -134,29 +129,23 @@
                 if (data.status === 'registered') {
                     const uStatus = String(data.user_status).toLowerCase();
                     if (uStatus === 'pending') {
+                        // หากสถานะยังค้างอยู่เป็น Pending ก็ให้โชว์หน้าจอรอนี้ค้างไว้เรื่อยๆ
                         document.getElementById('pending-screen').classList.remove('hidden');
-                        if(isManualRecheck) alert('ระบบพบข้อมูลของคุณแล้ว\nแต่สถานะยังอยู่ระหว่าง "รอการตรวจสอบ" จากเจ้าหน้าที่ครับ');
                     } else if (uStatus === 'rejected') {
                         alert('บัญชีของคุณไม่อนุญาตให้เข้าถึงระบบ');
                     } else { 
                         if (data.role === 'ADMIN') window.location.href = 'admin_dashboard.html';
-                        else window.location.href = 'dashboard.html'; // แก้เป็นบรรทัดนี้ครับ
+                        else window.location.href = 'dashboard.html';
                     }
                 } else {
                     buildVillageOptions(parseInt(data.village_count) || 15);
-                    // โชว์หน้าลงทะเบียน อสม. และแสดงปุ่มลับแอดมินไว้ด้านล่างจอ
                     document.getElementById('registration-screen').classList.remove('hidden');
                     document.getElementById('admin-trigger').classList.remove('hidden');
                 }
             } catch (error) { 
                 alert("เกิดข้อผิดพลาดในการเชื่อมต่อเครือข่าย"); 
                 document.getElementById('loading-screen').classList.add('hidden');
-                if (isManualRecheck) document.getElementById('pending-screen').classList.remove('hidden');
-            }
-
-            if(isManualRecheck) { 
-                btnRecheck.disabled = false; 
-                btnRecheck.innerHTML = '<span class="material-symbols-outlined text-[20px]">refresh</span> ตรวจสอบสถานะอีกครั้ง'; 
+                document.getElementById('pending-screen').classList.remove('hidden');
             }
         }
 
