@@ -208,15 +208,17 @@ function F_checkUser(uid) {
 }
 
 // [F5] ฟังก์ชันลงทะเบียนผู้ใช้ใหม่แบบแยกรหัสผ่าน (จำกัด 7 คอลัมน์ A-G)
-// 2. ฟังก์ชันลงทะเบียน (อัปเดต: บันทึกเบอร์โทร และตั้งสถานะ อสม. เป็น Pending ทันที)
+// 2. ฟังก์ชันลงทะเบียน (อัปเดต: บังคับเซฟลงชีตทันที และทำความสะอาดข้อมูล)
 function F_registerUser(uid, name, role, village_no, phone) {
   const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('Users');
   const data = sheet.getDataRange().getValues();
   const headers = data[0].map(h => String(h).trim().toLowerCase());
   const colUid = headers.indexOf('uid');
   
+  const cleanUid = String(uid).trim();
+
   for (let i = 1; i < data.length; i++) {
-    if (colUid > -1 && String(data[i][colUid]) === String(uid)) {
+    if (colUid > -1 && String(data[i][colUid]).trim() === cleanUid) {
       return { status: 'already_registered' };
     }
   }
@@ -224,17 +226,20 @@ function F_registerUser(uid, name, role, village_no, phone) {
   const initialStatus = role === 'ADMIN' ? 'Active' : 'Pending';
   
   let newRow = new Array(headers.length).fill('');
-  if(headers.indexOf('uid') > -1) newRow[headers.indexOf('uid')] = uid;
-  if(headers.indexOf('name') > -1) newRow[headers.indexOf('name')] = name;
-  if(headers.indexOf('role') > -1) newRow[headers.indexOf('role')] = role;
-  if(headers.indexOf('village_no') > -1) newRow[headers.indexOf('village_no')] = village_no;
+  if(colUid > -1) newRow[colUid] = cleanUid;
+  if(headers.indexOf('name') > -1) newRow[headers.indexOf('name')] = String(name).trim();
+  if(headers.indexOf('role') > -1) newRow[headers.indexOf('role')] = String(role).trim();
+  if(headers.indexOf('village_no') > -1) newRow[headers.indexOf('village_no')] = String(village_no).trim();
   if(headers.indexOf('status') > -1) newRow[headers.indexOf('status')] = initialStatus;
-  if(headers.indexOf('phone') > -1) newRow[headers.indexOf('phone')] = phone || '-';
+  if(headers.indexOf('phone') > -1) newRow[headers.indexOf('phone')] = "'" + String(phone).trim();
   
   sheet.appendRow(newRow);
+  
+  // [จุดสำคัญ] บังคับให้ Google Sheets บันทึกข้อมูลลงตาราง "เดี๋ยวนั้นทันที"
+  SpreadsheetApp.flush(); 
+  
   return { status: 'success', user_status: initialStatus };
 }
-
 // [F5.1] ฟังก์ชันอัปเดตโปรไฟล์ อสม. และ แอดมิน (เขียนพิกัดลงล็อกตารางเดิม)
 function F_updateVHVProfile(data) {
   const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(SHEET_NAMES.USERS);
