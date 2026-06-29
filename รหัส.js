@@ -596,11 +596,11 @@ function F_updatePatientVHV(id, vhvId) {
       if (lineToken && vhvId) {
         try {
           const resText = sendLinePushMessage(vhvId, messageText, lineToken);
-          // ถ้า LINE ตอบกลับมาเป็น {} (ปีกกาว่างๆ) แปลว่าส่งสำเร็จ 100%
-          if (resText === "{}") {
+          // [แก้ไข] ให้ระบบรู้จักใบเสร็จแบบใหม่ที่มีคำว่า "sentMessages" ด้วย
+          if (resText === "{}" || resText.includes("sentMessages")) {
              lineResultMsg = "ส่งแจ้งเตือนเข้า LINE สำเร็จ!";
           } else {
-             lineResultMsg = "LINE แจ้งเตือนข้อผิดพลาด: " + resText;
+             lineResultMsg = `LINE ปฏิเสธข้อความ: ${resText}\n(พยายามส่งไปที่ UID: ${vhvId})`;
           }
         } catch(e) {
           lineResultMsg = "Error ฝั่ง Google: " + e.message;
