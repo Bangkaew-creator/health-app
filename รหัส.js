@@ -694,7 +694,7 @@ function F_recordCommitteeDecision(patientIds, fy, round, months) {
   return { success: true, message: `บันทึกมติจัดสรรให้ผู้ป่วยจำนวน ${updatedCount} ราย สำเร็จ!` };
 }
 
-// 1. ฟังก์ชันตรวจสอบสิทธิ์เข้าใช้งาน (อัปเดต: ส่งสถานะ User กลับไปบอกหน้าเว็บ)
+// 1. ฟังก์ชันตรวจสอบสิทธิ์เข้าใช้งาน (อัปเดต: ส่งจำนวนหมู่จาก Config กลับไปด้วย)
 function F_checkUserRegistration(uid) {
   const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('Users');
   const data = sheet.getDataRange().getValues();
@@ -705,6 +705,9 @@ function F_checkUserRegistration(uid) {
   const colVillage = headers.indexOf('village_no');
   const colStatus = headers.indexOf('status');
   
+  // ดึงค่า Config จำนวนหมู่บ้าน (ถ้าไม่มีให้ใช้ 15 เป็นค่าเริ่มต้น)
+  const vCount = F_getConfig('VILLAGE_COUNT') || 15;
+  
   if (colUid === -1) return { status: 'error', message: 'ไม่พบคอลัมน์ UID' };
   
   for (let i = 1; i < data.length; i++) {
@@ -713,14 +716,16 @@ function F_checkUserRegistration(uid) {
         status: 'registered',
         role: colRole > -1 ? String(data[i][colRole]) : 'VHV',
         village_no: colVillage > -1 ? String(data[i][colVillage]) : '',
-        user_status: colStatus > -1 ? String(data[i][colStatus]).trim() : 'Active'
+        user_status: colStatus > -1 ? String(data[i][colStatus]).trim() : 'Active',
+        village_count: vCount
       };
     }
   }
-  return { status: 'not_registered' };
+  // ถึงจะยังไม่ลงทะเบียน ก็ส่งจำนวนหมู่บ้านกลับไปให้ฟอร์มสร้าง Dropdown
+  return { status: 'not_registered', village_count: vCount };
 }
 
-// 2. ฟังก์ชันลงทะเบียน (อัปเดต: บันทึกเบอร์โทร และตั้งสถานะ อสม. เป็น Pending ทันที)
+// 2. ฟังก์ชันลงทะเบียน (อัปเดต: แก้บัคเลข 0 หาย โดยเติมเครื่องหมาย ' นำหน้า)
 function F_registerUser(uid, name, role, village_no, phone) {
   const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('Users');
   const data = sheet.getDataRange().getValues();
@@ -741,7 +746,9 @@ function F_registerUser(uid, name, role, village_no, phone) {
   if(headers.indexOf('role') > -1) newRow[headers.indexOf('role')] = role;
   if(headers.indexOf('village_no') > -1) newRow[headers.indexOf('village_no')] = village_no;
   if(headers.indexOf('status') > -1) newRow[headers.indexOf('status')] = initialStatus;
-  if(headers.indexOf('phone') > -1) newRow[headers.indexOf('phone')] = phone || '-';
+  
+  // [จุดสำคัญ] บังคับให้เป็น Text เพื่อรักษาเลข 0 นำหน้าเอาไว้
+  if(headers.indexOf('phone') > -1) newRow[headers.indexOf('phone')] = "'" + String(phone).trim();
   
   sheet.appendRow(newRow);
   return { status: 'success', user_status: initialStatus };
