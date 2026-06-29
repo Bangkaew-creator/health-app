@@ -260,7 +260,7 @@
             });
         }
 
-        async function saveAssignment(patientId) {
+                async function saveAssignment(patientId) {
             const vhvId = document.getElementById(`select_${patientId}`).value;
             if(!vhvId) return alert('กรุณาเลือก อสม. ผู้รับผิดชอบก่อนบันทึกครับ');
 
@@ -272,12 +272,14 @@
                 const result = await response.json();
                 
                 if(result.success) {
-                    const toast = document.getElementById('toast');
-                    document.getElementById('toast-text').innerText = "บันทึกและสั่งยิงข้อความเข้า LINE อสม. สำเร็จ! 🚀";
-                    toast.classList.remove('translate-y-20', 'opacity-0');
-                    setTimeout(() => { toast.classList.add('translate-y-20', 'opacity-0'); }, 3000);
+                    // ให้เด้งหน้าต่างโชว์สถานะ LINE ขึ้นมาตรงๆ เลย
+                    alert(result.message); 
                     loadDataChannels();
-                } else { alert(result.message); btn.disabled = false; btn.innerText = 'บันทึกมอบหมายงาน'; }
+                } else { 
+                    alert(result.message); 
+                    btn.disabled = false; 
+                    btn.innerText = 'บันทึกมอบหมายงาน'; 
+                }
             } catch(e) { alert("เชื่อมต่อล้มเหลว"); btn.disabled = false; }
         }
     </script>
