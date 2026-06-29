@@ -11,10 +11,10 @@
     <style>
         body { font-family: 'Sarabun', sans-serif; background-color: #f4f7fa; }
         .material-symbols-outlined { font-variation-settings: 'FILL' 1, 'wght' 400, 'GRAD' 0, 'opsz' 24; }
-        .bg-navy { background-color: #0f172a; } .text-navy { color: #0f172a; }
-        .tab-btn { padding: 12px 24px; font-weight: bold; font-size: 14px; border-bottom: 3px solid transparent; color: #64748b; transition: all 0.2s; cursor: pointer; }
+        .bg-navy { background-color: #0f172a; }
+        .tab-btn { padding: 12px 16px; font-weight: bold; font-size: 13px; border-bottom: 3px solid transparent; color: #64748b; transition: all 0.2s; cursor: pointer; white-space: nowrap; }
         .tab-btn.active { color: #00694a; border-bottom-color: #00694a; }
-        .loader-small { border: 2px solid #f3f3f3; border-bottom-color: #0f172a; border-radius: 50%; width: 24px; height: 24px; animation: spin 1s linear infinite; }
+        .loader-small { border: 2px solid #f3f3f3; border-bottom-color: #00694a; border-radius: 50%; width: 24px; height: 24px; animation: spin 1s linear infinite; }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
         .neo-card { background: #ffffff; border-radius: 20px; box-shadow: 4px 4px 12px #e2e8f0, -4px -4px 12px #ffffff; border: 1px solid rgba(255, 255, 255, 0.7); }
     </style>
@@ -25,13 +25,8 @@
     <aside id="sidebar" class="fixed inset-y-0 left-0 w-72 bg-navy text-white flex flex-col z-50 transform -translate-x-full lg:translate-x-0 lg:static transition-transform duration-300 ease-in-out">
         <div class="p-6 flex items-center justify-between border-b border-slate-700/40">
             <div class="flex items-center gap-3">
-                <div class="w-11 h-11 rounded-xl bg-white/10 flex items-center justify-center border border-amber-400/30">
-                    <span class="material-symbols-outlined text-amber-400 text-[26px]">local_hospital</span>
-                </div>
-                <div>
-                    <h1 id="sidebar-hospital-name" class="font-bold text-[15px] tracking-wide text-white">กำลังโหลด...</h1>
-                    <p class="text-[10px] text-amber-400 font-medium">ระบบสนับสนุนการดูแลผู้ป่วย</p>
-                </div>
+                <div class="w-11 h-11 rounded-xl bg-white/10 flex items-center justify-center border border-amber-400/30"><span class="material-symbols-outlined text-amber-400 text-[26px]">local_hospital</span></div>
+                <div><h1 id="sidebar-hospital-name" class="font-bold text-[15px] tracking-wide text-white">กำลังโหลด...</h1><p class="text-[10px] text-amber-400 font-medium">ระบบสนับสนุนการดูแลผู้ป่วย</p></div>
             </div>
             <button onclick="toggleSidebar()" class="lg:hidden text-slate-400 p-1"><span class="material-symbols-outlined">close</span></button>
         </div>
@@ -50,74 +45,49 @@
                 <button onclick="toggleSidebar()" class="lg:hidden p-2.5 -ml-2 mr-3 text-slate-600 hover:bg-slate-100 rounded-xl transition-colors"><span class="material-symbols-outlined text-[26px]">menu</span></button>
                 <div>
                     <h2 class="text-base lg:text-lg font-bold text-slate-900 leading-tight">มอบหมายงาน อสม.</h2>
-                    <p id="header-hospital-name" class="text-[11px] lg:text-xs text-slate-400 font-medium mt-0.5">จัดการและส่งเคสผู้ป่วยรายใหม่ในชุมชน</p>
+                    <p id="header-hospital-name" class="text-[11px] lg:text-xs text-slate-400 font-medium mt-0.5">จัดการผู้รับผิดชอบเคสและการติดตามสิทธิ์</p>
                 </div>
             </div>
         </header>
 
         <div class="flex-1 overflow-y-auto pb-20">
-            
-            <div class="p-4 lg:p-6 pb-2">
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div class="neo-card p-5 border-l-4 border-amber-500 relative overflow-hidden">
-                        <div class="absolute right-[-10px] top-[-10px] opacity-10 text-amber-500"><span class="material-symbols-outlined text-[100px]">person_alerts</span></div>
-                        <h3 class="text-sm font-bold text-slate-600">ผู้ป่วยรายใหม่ (ยังไม่เคยได้รับการประเมิน)</h3>
-                        <div class="mt-2 flex items-baseline gap-2">
-                            <span class="text-4xl font-black text-amber-600" id="count-new-cases">0</span>
-                            <span class="text-sm font-bold text-amber-400">ราย</span>
-                        </div>
-                        <p class="text-[11px] text-slate-400 mt-1">รายชื่อที่รอให้ อสม. ลงพื้นที่คัดกรองครั้งแรก</p>
-                    </div>
-                    
-                    <div class="neo-card p-5 border-l-4 border-emerald-500 relative overflow-hidden">
-                        <div class="absolute right-[-10px] top-[-10px] opacity-10 text-emerald-500"><span class="material-symbols-outlined text-[100px]">groups</span></div>
-                        <h3 class="text-sm font-bold text-slate-600">กำลังพล อสม. ในระบบ (Active)</h3>
-                        <div class="mt-2 flex items-baseline gap-2">
-                            <span class="text-4xl font-black text-emerald-600" id="count-vhv">0</span>
-                            <span class="text-sm font-bold text-emerald-400">คน</span>
-                        </div>
-                        <p class="text-[11px] text-slate-400 mt-1">พร้อมรับเคสเพื่อลงพื้นที่ดูแล</p>
-                    </div>
-                </div>
-            </div>
-
-            <div class="bg-white px-6 lg:px-8 border-y border-slate-200 flex flex-shrink-0 sticky top-0 z-10 shadow-sm mt-2">
-                <button class="tab-btn active" id="tab-new" onclick="switchTab('new')">📋 เคสใหม่รอประเมิน <span id="badge-new" class="ml-2 bg-amber-100 text-amber-700 py-0.5 px-2 rounded-full text-[10px]">0</span></button>
-                <button class="tab-btn" id="tab-vhv" onclick="switchTab('vhv')">👥 ทำเนียบ อสม. แยกหมู่</button>
+            <div class="bg-white px-4 lg:px-8 border-b border-slate-200 flex flex-shrink-0 sticky top-0 z-10 shadow-sm overflow-x-auto scrollbar-hidden">
+                <button class="tab-btn active" id="tab-new" onclick="switchTab('new')">📋 เคสใหม่รอประเมินแรกเข้า (<span id="badge-new">0</span>)</button>
+                <button class="tab-btn" id="tab-reassess" onclick="switchTab('reassess')">🔄 เคสค้างติดตามประเมินซ้ำ (<span id="badge-reassess">0</span>)</button>
+                <button class="tab-btn" id="tab-vhv" onclick="switchTab('vhv')">👥 ทำเนียบ อสม. แยกหมู่ (<span id="badge-vhv-count">0</span>)</button>
             </div>
 
             <div class="p-4 lg:p-6">
                 <div id="loading-state" class="flex flex-col items-center justify-center py-20 space-y-3">
-                    <div class="loader-small" style="border-bottom-color:#00694a;"></div>
-                    <p class="text-sm text-slate-400 animate-pulse">กำลังสแกนหาผู้ป่วยรายใหม่...</p>
+                    <div class="loader-small"></div><p class="text-sm text-slate-400 animate-pulse">กำลังตรวจสอบข้อมูลฐานระบบ...</p>
                 </div>
 
-                <div id="content-new" class="hidden">
-                    <div class="flex flex-col md:flex-row justify-between gap-4 mb-4">
-                        <h3 class="text-sm font-bold text-slate-700">รายชื่อผู้ป่วยที่ยังไม่มีบันทึกการประเมินในระบบ</h3>
-                        <div class="relative w-full md:w-48">
-                            <select id="new-village-filter" onchange="renderNewCases()" class="w-full pl-4 pr-8 py-2 bg-white border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-amber-500 appearance-none">
-                                <option value="">ดูทุกหมู่ (ทั้งหมด)</option>
-                            </select>
-                            <span class="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none">expand_more</span>
-                        </div>
+                <div id="filter-wrapper" class="hidden flex justify-end mb-4">
+                    <div class="relative w-full md:w-48">
+                        <select id="village-filter" onchange="filterDataDisplay()" class="w-full pl-4 pr-8 py-2 bg-white border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-emerald-500 appearance-none">
+                            <option value="">ดูทุกหมู่ (ทั้งหมด)</option>
+                        </select>
+                        <span class="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none">expand_more</span>
                     </div>
-                    <div id="new-cases-list" class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5"></div>
-                    <div id="empty-new" class="hidden text-center py-16"><span class="material-symbols-outlined text-5xl text-emerald-500 mb-3">verified</span><h3 class="text-slate-500 font-bold">เรียบร้อยดี! ผู้ป่วยทุกคนได้รับการประเมินครบถ้วนแล้ว</h3></div>
                 </div>
 
-                <div id="content-vhv" class="hidden">
-                    <div class="mb-4"><h3 class="text-sm font-bold text-slate-700">รายชื่อกำลังพล อสม. และจำนวนผู้ป่วยที่อยู่ในความดูแล</h3></div>
+                <div id="content-new" class="hidden space-y-4">
+                    <div id="new-list" class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5"></div>
+                    <div id="empty-new" class="hidden text-center py-16 text-slate-400"><p class="text-sm">ไม่มีเคสใหม่ที่ค้างประเมินแรกเข้า</p></div>
+                </div>
+
+                <div id="content-reassess" class="hidden space-y-4">
+                    <div id="reassess-list" class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5"></div>
+                    <div id="empty-reassess" class="hidden text-center py-16 text-slate-400"><p class="text-sm">ไม่มีเคสค้างติดตามประเมินซ้ำ</p></div>
+                </div>
+
+                <div id="content-vhv" class="hidden space-y-4">
                     <div id="vhv-list" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5"></div>
                 </div>
 
             </div>
         </div>
-        
-        <div id="toast" class="fixed bottom-6 left-1/2 transform -translate-x-1/2 bg-slate-900 text-white px-6 py-3 rounded-full shadow-2xl flex items-center gap-2 transition-all duration-300 translate-y-20 opacity-0 z-50">
-            <span class="material-symbols-outlined text-emerald-400">check_circle</span>
-            <span class="text-sm font-bold">คัดลอกข้อความมอบหมายงานสำเร็จ</span>
-        </div>
+        <div id="toast" class="fixed bottom-6 left-1/2 transform -translate-x-1/2 bg-slate-900 text-white px-6 py-3 rounded-full shadow-2xl flex items-center gap-2 transition-all duration-300 translate-y-20 opacity-0 z-50"><span class="material-symbols-outlined text-emerald-400">check_circle</span><span class="text-sm font-bold" id="toast-text">คัดลอกสำเร็จ</span></div>
     </main>
 
     <script>
@@ -126,15 +96,15 @@
         
         let allPatients = [];
         let allVHVs = [];
-        let newUnassessedPatients = []; // คลังเก็บผู้ป่วยรายใหม่ที่ยังไม่เคยประเมิน
-        let currentTab = 'new';
+        let newCases = [];
+        let reassessCases = [];
 
         function toggleSidebar() { document.getElementById('sidebar').classList.toggle('-translate-x-full'); }
 
         document.addEventListener("DOMContentLoaded", () => {
             liff.init({ liffId: LIFF_ID }).then(() => {
-                if (liff.isLoggedIn()) { liff.getProfile().then(p => verifyAdminAccess(p.userId)); } else bounceToLogin();
-            }).catch(() => bounceToLogin());
+                if (liff.isLoggedIn()) { liff.getProfile().then(p => verifyAdminAccess(p.userId)); } else window.location.href = 'index.html';
+            }).catch(() => window.location.href = 'index.html');
         });
 
         async function verifyAdminAccess(uid) {
@@ -143,141 +113,227 @@
                 const data = await response.json();
                 if (data.status === 'registered' && data.role === 'ADMIN') {
                     document.getElementById('sidebar-hospital-name').innerText = data.hospital_name || 'เทศบาลเมืองบางแก้ว';
-                    document.getElementById('header-hospital-name').innerText = 'ระบบมอบหมายงาน อสม. • ' + (data.hospital_name || 'เทศบาลเมืองบางแก้ว');
                     
                     const vCount = parseInt(data.village_count) || 15;
-                    const villageSelect = document.getElementById('new-village-filter');
+                    const villageSelect = document.getElementById('village-filter');
                     for(let i=1; i<=vCount; i++){ villageSelect.insertAdjacentHTML('beforeend', `<option value="${i}">หมู่ที่ ${i}</option>`); }
                     
-                    loadDelegationData();
+                    loadDataChannels();
                 } else window.location.href = 'dashboard.html';
-            } catch (error) { bounceToLogin(); }
+            } catch (error) { window.location.href = 'index.html'; }
         }
-        function bounceToLogin() { window.location.href = 'index.html'; }
 
-        async function loadDelegationData() {
+        function calculateDaysSince(dateStr) {
+            if (!dateStr || dateStr.trim() === '' || dateStr === '-') return -1;
+            let targetDate;
+            if (dateStr.includes('/')) {
+                const parts = dateStr.split(' ')[0].split('/');
+                targetDate = new Date(parts[2], parts[1] - 1, parts[0]);
+            } else { targetDate = new Date(dateStr); }
+            if (isNaN(targetDate)) return -1;
+            const diffTime = Math.abs(new Date() - targetDate);
+            return Math.floor(diffTime / (1000 * 60 * 60 * 24));
+        }
+
+        async function loadDataChannels() {
             try {
-                const [patientRes, vhvRes] = await Promise.all([
+                const [pRes, vRes] = await Promise.all([
                     fetch(API_URL, { method: 'POST', body: JSON.stringify({ action: 'getAllPatients' }) }),
                     fetch(API_URL, { method: 'POST', body: JSON.stringify({ action: 'getAllVHVs' }) })
                 ]);
+                allPatients = await pRes.json();
+                allVHVs = await vRes.json();
                 
-                allPatients = await patientRes.json();
-                allVHVs = await vhvRes.json();
-                
-                // โโลจิกใหม่: คัดกรองเฉพาะคน Active และช่องวันประเมินล่าสุดเป็นค่าว่าง หรือเครื่องหมายลบ
-                newUnassessedPatients = allPatients.filter(p => {
-                    const isActive = String(p.status || 'Active').trim().toLowerCase() === 'active';
-                    const lastAssess = String(p.last_assess || '').trim();
-                    const hasNoAssessment = lastAssess === '' || lastAssess === '-';
-                    return isActive && hasNoAssessment;
-                });
-                
-                document.getElementById('count-new-cases').innerText = newUnassessedPatients.length;
-                document.getElementById('badge-new').innerText = newUnassessedPatients.length;
-                document.getElementById('count-vhv').innerText = allVHVs.length;
-                
-                renderNewCases();
-                renderVHVs();
+                distributePatients();
                 document.getElementById('loading-state').classList.add('hidden');
-                document.getElementById('content-new').classList.remove('hidden');
-            } catch (error) { alert("สแกนข้อมูลล้มเหลว"); }
+                document.getElementById('filter-wrapper').classList.remove('hidden');
+                switchTab('new');
+            } catch (e) { alert("ดึงฐานข้อมูลล้มเหลว"); }
         }
 
-        function switchTab(tab) {
-            document.getElementById('tab-new').classList.remove('active');
-            document.getElementById('tab-vhv').classList.remove('active');
-            document.getElementById(`tab-${tab}`).classList.add('active');
+        function distributePatients() {
+            newCases = [];
+            reassessCases = [];
             
-            document.getElementById('content-new').classList.add('hidden');
-            document.getElementById('content-vhv').classList.add('hidden');
-            document.getElementById(`content-${tab}`).classList.remove('hidden');
-            currentTab = tab;
-        }
-
-        function renderNewCases() {
-            const container = document.getElementById('new-cases-list');
-            const emptyState = document.getElementById('empty-new');
-            const villageFilter = document.getElementById('new-village-filter').value;
-            container.innerHTML = '';
-
-            const filteredData = newUnassessedPatients.filter(p => {
-                if (villageFilter === '') return true;
-                return String(p.village_no) === villageFilter;
-            });
-
-            if (filteredData.length === 0) {
-                emptyState.classList.remove('hidden');
-            } else {
-                emptyState.classList.add('hidden');
-                filteredData.forEach(p => {
-                    const card = `
-                        <div class="bg-white rounded-[20px] p-5 border border-amber-100 shadow-sm relative">
-                            <div class="absolute top-0 right-0 bg-amber-500 text-white text-[10px] font-bold px-3 py-1 rounded-bl-xl rounded-tr-[20px]">
-                                ผู้ป่วยรายใหม่
-                            </div>
-                            <div class="flex items-center gap-3 mb-3 mt-1">
-                                <div class="w-10 h-10 rounded-full bg-amber-50 text-amber-600 font-bold flex items-center justify-center">${p.name.substring(0,1)}</div>
-                                <div>
-                                    <h3 class="font-bold text-slate-800 text-sm">${p.name || 'ไม่ระบุชื่อ'}</h3>
-                                    <p class="text-[11px] text-slate-500">หมู่ที่ ${p.village_no || '-'} • เลขที่ ${p.house_no || '-'}</p>
-                                </div>
-                            </div>
-                            <span class="inline-block px-2.5 py-0.5 text-[10px] font-bold rounded bg-slate-100 text-slate-600 border border-slate-200">ยังไม่ได้รับการประเมินแรกเข้า</span>
-                            <div class="mt-4 pt-3 border-t border-slate-100">
-                                <button onclick="copyDelegationMessage('${p.name}', '${p.village_no}', '${p.house_no}')" class="w-full py-2 bg-[#00B900]/10 text-[#00B900] border border-[#00B900]/30 rounded-xl text-xs font-bold hover:bg-[#00B900]/20 flex items-center justify-center gap-1 transition-colors">
-                                    <span class="material-symbols-outlined text-[16px]">chat</span> มอบหมายงานลงกลุ่ม LINE
-                                </button>
-                            </div>
-                        </div>
-                    `;
-                    container.insertAdjacentHTML('beforeend', card);
-                });
-            }
-        }
-
-        function renderVHVs() {
-            const container = document.getElementById('vhv-list');
-            container.innerHTML = '';
-
-            const villageCount = {};
             allPatients.forEach(p => {
-                if(String(p.status || 'Active').trim().toLowerCase() === 'active') {
-                    const v = String(p.village_no);
-                    villageCount[v] = (villageCount[v] || 0) + 1;
+                const isActive = String(p.status || 'Active').trim().toLowerCase() === 'active';
+                if (!isActive) return;
+
+                const lastAssess = String(p.last_assess || '').trim();
+                if (lastAssess === '' || lastAssess === '-') {
+                    newCases.push(p);
+                } else {
+                    p.days_passed = calculateDaysSince(p.last_assess);
+                    if (p.days_passed >= 0) reassessCases.push(p);
                 }
             });
 
-            allVHVs.sort((a, b) => parseInt(a.village_no) - parseInt(b.village_no)).forEach(v => {
-                const pCount = villageCount[v.village_no] || 0;
-                const card = `
-                    <div class="bg-white rounded-[20px] p-5 shadow-sm border border-slate-200">
-                        <div class="flex items-start justify-between mb-2">
-                            <div>
-                                <h3 class="font-bold text-slate-800 text-sm">${v.name}</h3>
-                                <p class="text-[11px] text-emerald-600 font-bold bg-emerald-50 inline-block px-2 py-0.5 rounded mt-1">รับผิดชอบ หมู่ที่ ${v.village_no}</p>
+            // เรียงลำดับจากจำนวนวันที่ค้างนานที่สุดลงไปข้างล่าง
+            reassessCases.sort((a, b) => b.days_passed - a.days_passed);
+
+            document.getElementById('badge-new').innerText = newCases.length;
+            document.getElementById('badge-reassess').innerText = reassessCases.length;
+            document.getElementById('badge-vhv-count').innerText = allVHVs.length;
+        }
+
+        function switchTab(tab) {
+            currentTab = tab;
+            ['new', 'reassess', 'vhv'].forEach(t => {
+                document.getElementById(`tab-${t}`).classList.remove('active');
+                document.getElementById(`content-${t}`).classList.add('hidden');
+            });
+            document.getElementById(`tab-${tab}`).classList.add('active');
+            document.getElementById(`content-${tab}`).classList.remove('hidden');
+            filterDataDisplay();
+        }
+
+        function filterDataDisplay() {
+            const vFilter = document.getElementById('village-filter').value;
+            if (currentTab === 'new') renderNewList(vFilter);
+            else if (currentTab === 'reassess') renderReassessList(vFilter);
+            else if (currentTab === 'vhv') renderVHVList(vFilter);
+        }
+
+        // สร้าง Dropdown รายชื่อ อสม. ประจำการ์ดคนไข้
+        function generateVHVOptions(patientVillage, assignedVhvId) {
+            let html = `<option value="">-- เลือก อสม. ผู้รับผิดชอบดูแล --</option>`;
+            
+            // เรียงให้ อสม. หมู่เดียวกับคนไข้ขึ้นก่อนเพื่อความง่ายในการเลือก
+            const sortedVHVs = [...allVHVs].sort((a, b) => {
+                if (String(a.village_no) === String(patientVillage) && String(b.village_no) !== String(patientVillage)) return -1;
+                if (String(a.village_no) !== String(patientVillage) && String(b.village_no) === String(patientVillage)) return 1;
+                return 0;
+            });
+
+            sortedVHVs.forEach(v => {
+                const isSelected = String(v.uid) === String(assignedVhvId) ? 'selected' : '';
+                const villageMark = String(v.village_no) === String(patientVillage) ? '(หมู่ตรงกัน)' : `(หมู่ที่ ${v.village_no})`;
+                html += `<option value="${v.uid}" ${isSelected}>${v.name} ${villageMark}</option>`;
+            });
+            return html;
+        }
+
+        function renderNewList(vFilter) {
+            const container = document.getElementById('new-list');
+            container.innerHTML = '';
+            const data = newCases.filter(p => vFilter === '' || String(p.village_no) === vFilter);
+            
+            if(data.length === 0) { document.getElementById('empty-new').classList.remove('hidden'); return; }
+            document.getElementById('empty-new').classList.add('hidden');
+
+            data.forEach(p => {
+                container.insertAdjacentHTML('beforeend', `
+                    <div class="bg-white rounded-[20px] p-5 shadow-sm border border-amber-200 flex flex-col justify-between">
+                        <div>
+                            <div class="flex items-start justify-between mb-2">
+                                <h3 class="font-bold text-slate-800 text-sm">${p.name}</h3>
+                                <span class="bg-amber-100 text-amber-700 text-[10px] px-2 py-0.5 rounded font-bold">แรกเข้า</span>
                             </div>
-                            <span class="material-symbols-outlined text-slate-300">badge</span>
+                            <p class="text-[11px] text-slate-500">หมู่ที่ ${p.village_no} • บ้านเลขที่ ${p.house_no}</p>
+                            <div class="mt-4"><label class="text-[11px] font-bold text-slate-500 block mb-1">ระบุผู้รับผิดชอบ:</label><select id="select_${p.id}" class="w-full text-xs rounded-lg border-slate-200 focus:ring-emerald-500 focus:border-emerald-500">${generateVHVOptions(p.village_no, p.assigned_vhv_id)}</select></div>
                         </div>
-                        <div class="flex items-center justify-between text-[11px] text-slate-500 mt-4 border-t border-slate-100 pt-3">
-                            <span class="flex items-center gap-1"><span class="material-symbols-outlined text-[14px]">call</span> ${v.phone}</span>
-                            <span class="font-bold text-navy bg-slate-50 px-2 py-1 rounded">ดูแล ${pCount} ราย</span>
-                        </div>
+                        <button onclick="saveAssignment('${p.id}', 'new')" id="btn_${p.id}" class="w-full mt-4 py-2 bg-navy text-white font-bold text-xs rounded-xl hover:bg-opacity-90 transition-all">บันทึกมอบหมายงานและคัดลอกลง LINE</button>
                     </div>
-                `;
-                container.insertAdjacentHTML('beforeend', card);
+                `);
             });
         }
 
-        // ปรับเทมเพลตข้อความไลน์ให้เป็นการสั่งงานผู้ป่วยรายใหม่แก่อสม.
-        function copyDelegationMessage(name, village, house) {
-            const text = `📋 มอบหมายภารกิจ อสม. หมู่ที่ ${village}\nเนื่องจากมีรายชื่อผู้ป่วยรายใหม่เพิ่มเข้ามาในความดูแล รบกวนลงพื้นที่ดำเนินการประเมินอาการครั้งแรกครับ:\n\n👤 ชื่อผู้ป่วย: ${name}\n🏠 บ้านเลขที่: ${house}\n🔍 ภารกิจ: คัดกรองและประเมินสัญญาณชีพ/แบบฟอร์มครั้งแรกเข้า\n\nเมื่อดำเนินการเสร็จสิ้น รบกวน อสม. บันทึกข้อมูลผ่านเว็บแอปพลิเคชันด้วยครับ ขอบคุณครับ 🙏`;
-            
-            navigator.clipboard.writeText(text).then(() => {
-                const toast = document.getElementById('toast');
-                toast.classList.remove('translate-y-20', 'opacity-0');
-                setTimeout(() => { toast.classList.add('translate-y-20', 'opacity-0'); }, 3000);
-            }).catch(err => { alert('ไม่สามารถคัดลอกข้อความได้'); });
+        function renderReassessList(vFilter) {
+            const container = document.getElementById('reassess-list');
+            container.innerHTML = '';
+            const data = reassessCases.filter(p => vFilter === '' || String(p.village_no) === vFilter);
+
+            if(data.length === 0) { document.getElementById('empty-reassess').classList.remove('hidden'); return; }
+            document.getElementById('empty-reassess').classList.add('hidden');
+
+            data.forEach(p => {
+                container.insertAdjacentHTML('beforeend', `
+                    <div class="bg-white rounded-[20px] p-5 shadow-sm border border-red-100 flex flex-col justify-between">
+                        <div>
+                            <div class="flex items-start justify-between mb-2">
+                                <h3 class="font-bold text-slate-800 text-sm">${p.name}</h3>
+                                <span class="bg-red-50 text-red-600 text-[10px] px-2 py-0.5 rounded font-bold border border-red-100">ผ่านไปแล้ว ${p.days_passed} วัน</span>
+                            </div>
+                            <p class="text-[11px] text-slate-500">หมู่ที่ ${p.village_no} • บ้านเลขที่ ${p.house_no} <br>ประเมินล่าสุดเมื่อ: ${p.last_assess}</p>
+                            <div class="mt-4"><label class="text-[11px] font-bold text-slate-500 block mb-1">ระบุผู้รับผิดชอบ:</label><select id="select_${p.id}" class="w-full text-xs rounded-lg border-slate-200 focus:ring-emerald-500 focus:border-emerald-500">${generateVHVOptions(p.village_no, p.assigned_vhv_id)}</select></div>
+                        </div>
+                        <button onclick="saveAssignment('${p.id}', 'reassess')" id="btn_${p.id}" class="w-full mt-4 py-2 bg-[#00694a] text-white font-bold text-xs rounded-xl hover:bg-opacity-90 transition-all">บันทึกมอบหมายงานและคัดลอกลง LINE</button>
+                    </div>
+                `);
+            });
+        }
+
+        function renderVHVList(vFilter) {
+            const container = document.getElementById('vhv-list');
+            container.innerHTML = '';
+            const data = allVHVs.filter(v => vFilter === '' || String(v.village_no) === vFilter);
+
+            // คำนวณจำนวนคนไข้ที่ผูกเข้ากับ UID ของ อสม. คนนี้โดยตรง (สอดคล้องข้อที่ 3)
+            const vhvWorkloads = {};
+            allPatients.forEach(p => {
+                if (String(p.status || 'Active').trim().toLowerCase() === 'active' && p.assigned_vhv_id) {
+                    const id = String(p.assigned_vhv_id).trim();
+                    vhvWorkloads[id] = (vhvWorkloads[id] || 0) + 1;
+                }
+            });
+
+            data.forEach(v => {
+                const count = vhvWorkloads[v.uid] || 0;
+                container.insertAdjacentHTML('beforeend', `
+                    <div class="bg-white rounded-[20px] p-5 shadow-sm border border-slate-200 flex flex-col justify-between">
+                        <div>
+                            <h3 class="font-bold text-slate-800 text-sm">${v.name}</h3>
+                            <p class="text-[10px] text-emerald-700 bg-emerald-50 font-bold px-2 py-0.5 rounded inline-block mt-1">รับผิดชอบ หมู่ที่ ${v.village_no}</p>
+                        </div>
+                        <div class="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between text-[11px]">
+                            <a href="tel:${v.phone}" class="text-blue-600 hover:underline flex items-center gap-0.5 font-bold">
+                                <span class="material-symbols-outlined text-[13px]">call</span> ${v.phone}
+                            </a>
+                            <span class="font-bold text-navy bg-slate-100 px-2.5 py-1 rounded-lg">ดูแลทั้งหมด ${count} ราย</span>
+                        </div>
+                    </div>
+                `);
+            });
+        }
+
+        async function saveAssignment(patientId, type) {
+            const vhvId = document.getElementById(`select_${patientId}`).value;
+            if(!vhvId) return alert('กรุณาเลือก อสม. ผู้รับผิดชอบก่อนกดบันทึกมอบหมายครับ');
+
+            const btn = document.getElementById(`btn_${patientId}`);
+            btn.disabled = true; btn.innerText = 'กำลังบันทึกฐานข้อมูล...';
+
+            try {
+                const response = await fetch(API_URL, {
+                    method: 'POST',
+                    body: JSON.stringify({ action: 'updatePatientVHV', id: patientId, vhvId: vhvId })
+                });
+                const result = await response.json();
+                
+                if(result.success) {
+                    // ดึงออบเจกต์ข้อมูลมาทำข้อความสั่งไลน์
+                    const pList = type === 'new' ? newCases : reassessCases;
+                    const patient = pList.find(x => x.id === patientId);
+                    const vhv = allVHVs.find(v => v.uid === vhvId);
+                    
+                    let msg = '';
+                    if (type === 'new') {
+                        msg = `📋 มอบหมายภารกิจ อสม.รายบุคคล\nเรียนคุณ: ${vhv.name} (อสม.หมู่ที่ ${vhv.village_no})\n\nมีรายชื่อผู้ป่วยรายใหม่ในเขตความรับผิดชอบของท่าน รบกวนลงพื้นที่ดำเนินการคัดกรองและประเมินแรกเข้าด้วยครับ:\n\n👤 ผู้ป่วย: ${patient.name}\n🏠 บ้านเลขที่: ${patient.house_no} หมู่ที่ ${patient.village_no}\n\nเมื่อดำเนินการเรียบร้อยแล้ว รบกวนบันทึกผ่านระบบเว็บแอปพลิเคชันด้วยครับ ขอบคุณครับ 🙏`;
+                    } else {
+                        msg = `🔄 มอบหมายภารกิจติดตามประเมินซ้ำ\nเรียนคุณ: ${vhv.name} (อสม.หมู่ที่ ${vhv.village_no})\n\nผู้ป่วยในความดูแลของท่านค้างติดตามประเมินซ้ำเป็นเวลานาน (${patient.days_passed} วัน) รบกวนลงพื้นที่ติดตามสัญญาณชีพและอัปเดตชุดฟอร์มครับ:\n\n👤 ผู้ป่วย: ${patient.name}\n🏠 บ้านเลขที่: ${patient.house_no} หมู่ที่ ${patient.village_no}\n\nรบกวนอัปเดตผ่านระบบหลังเสร็จสิ้นภารกิจครับ ขอบคุณครับ 🙏`;
+                    }
+
+                    navigator.clipboard.writeText(msg).then(() => {
+                        const toast = document.getElementById('toast');
+                        document.getElementById('toast-text').innerText = "บันทึกและคัดลอกข้อความส่ง LINE สำเร็จ!";
+                        toast.classList.remove('translate-y-20', 'opacity-0');
+                        setTimeout(() => { toast.classList.add('translate-y-20', 'opacity-0'); }, 3000);
+                        
+                        // โหลดข้อมูลช่องใหม่เพื่อรีเฟรชค่าการ์ดตัวเลข workloads
+                        loadDataChannels();
+                    });
+                } else { alert(result.message); btn.disabled = false; btn.innerText = 'บันทึกมอบหมายงาน'; }
+            } catch(e) { alert("เครือข่ายเชื่อมต่อล้มเหลว"); btn.disabled = false; }
         }
     </script>
 </body>
