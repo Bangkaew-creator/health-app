@@ -18,6 +18,7 @@
         .eq-cb:checked + label { background-color: #fff7ed; border-color: #ea580c; color: #ea580c; font-weight: 600; }
         .disease-cb:checked + label { background-color: #ffe4e6; border-color: #e11d48; color: #e11d48; font-weight: 600; }
     </style>
+    <script src="config.js"></script>
 </head>
 <body class="text-[#111c2d]">
 
@@ -166,7 +167,7 @@
     </div>
 
     <script>
-        const API_URL = "https://script.google.com/macros/s/AKfycbyzPy7sklwURcJiqFDzlK4OEQ8616CJLuNyAjb8euQNzYJLXz_dj4UJM63w8-nI1L3r/exec";
+       
         const urlParams = new URLSearchParams(window.location.search);
         const patientId = urlParams.get('id');
 
