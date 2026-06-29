@@ -250,6 +250,85 @@
                 tbody.appendChild(tr);
             });
         }
+        // ==========================================
+        // ระบบนำเข้าข้อมูลจาก Excel (Import)
+        // ==========================================
+        function handleImportExcel(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const data = new Uint8Array(e.target.result);
+                    const workbook = XLSX.read(data, { type: 'array' });
+                    const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
+                    const jsonData = XLSX.utils.sheet_to_json(firstSheet);
+
+                    if (jsonData.length === 0) return alert('ไม่พบข้อมูลในไฟล์ Excel ครับ');
+
+                    // จับคู่หัวตาราง (Map Headers) จาก Excel ไทย สู่ JSON
+                    const patientsToImport = jsonData.map(row => {
+                        return {
+                            id_card: row['เลขประจำตัวประชาชน'] || row['เลขบัตรประชาชน'] || '',
+                            prefix: row['คำนำหน้า'] || row['คำนำหน้าชื่อ'] || '',
+                            name: row['ชื่อ-นามสกุล'] || row['ชื่อ-สกุล'] || row['ชื่อ'] || '',
+                            dob: row['วันเกิด'] || row['ปีเกิด'] || '',
+                            age: row['อายุ'] || '',
+                            house_no: row['บ้านเลขที่'] || '',
+                            village_no: row['หมู่ที่'] || row['หมู่'] || '',
+                            disease: row['โรคประจำตัว'] || '',
+                            caregiver_name: row['ชื่อผู้ดูแล'] || row['ชื่อญาติ'] || '',
+                            caregiver_phone: row['เบอร์โทรผู้ดูแล'] || row['เบอร์โทรศัพท์'] || ''
+                        };
+                    });
+
+                    // กรองเอาเฉพาะคนที่มีชื่อ
+                    const validPatients = patientsToImport.filter(p => p.name !== '');
+                    
+                    if (validPatients.length > 0) {
+                        if (confirm(`พบข้อมูลผู้ป่วย ${validPatients.length} รายการ\nต้องการนำเข้าสู่ระบบและสร้างรหัส HN อัตโนมัติใช่หรือไม่?`)) {
+                            sendImportDataToBackend(validPatients);
+                        }
+                    } else {
+                        alert('ไม่พบข้อมูลชื่อผู้ป่วย กรุณาตรวจสอบหัวตาราง Excel\n(แนะนำ: เลขประจำตัวประชาชน, คำนำหน้า, ชื่อ-นามสกุล, บ้านเลขที่, หมู่ที่)');
+                    }
+                } catch (error) {
+                    alert('เกิดข้อผิดพลาดในการอ่านไฟล์ Excel');
+                }
+                // เคลียร์ค่า input file ให้สามารถกดเลือกไฟล์เดิมซ้ำได้
+                event.target.value = '';
+            };
+            reader.readAsArrayBuffer(file);
+        }
+
+        async function sendImportDataToBackend(patients) {
+            // โชว์สถานะโหลด
+            const loadingOverlay = document.createElement('div');
+            loadingOverlay.className = 'fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-[100] flex flex-col items-center justify-center';
+            loadingOverlay.innerHTML = '<div class="loader mb-4" style="border-top-color:white;"></div><p class="text-white font-bold">กำลังสร้างรหัสและนำเข้าข้อมูล...</p>';
+            document.body.appendChild(loadingOverlay);
+
+            try {
+                const response = await fetch(API_URL, {
+                    method: 'POST',
+                    body: JSON.stringify({ action: 'importPatients', patients: patients })
+                });
+                const result = await response.json();
+                
+                document.body.removeChild(loadingOverlay);
+                
+                if (result.success) {
+                    alert(result.message);
+                    loadData(); // รีเฟรชตารางหน้าเว็บ
+                } else {
+                    alert(result.message || 'เกิดข้อผิดพลาดในการนำเข้า');
+                }
+            } catch (error) {
+                document.body.removeChild(loadingOverlay);
+                alert('การเชื่อมต่อล้มเหลว');
+            }
+        }
     </script>
 </body>
 </html>
