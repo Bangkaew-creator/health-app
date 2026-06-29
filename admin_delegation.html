@@ -51,7 +51,7 @@
         </header>
 
         <div class="flex-1 overflow-y-auto pb-20">
-            <div class="bg-white px-4 lg:px-8 border-b border-slate-200 flex flex-shrink-0 sticky top-0 z-10 shadow-sm overflow-x-auto scrollbar-hidden">
+            <div class="bg-white px-4 lg:px-8 border-b border-slate-200 flex flex-shrink-0 sticky top-0 z-10 shadow-sm overflow-x-auto">
                 <button class="tab-btn active" id="tab-new" onclick="switchTab('new')">📋 เคสใหม่รอประเมินแรกเข้า (<span id="badge-new">0</span>)</button>
                 <button class="tab-btn" id="tab-reassess" onclick="switchTab('reassess')">🔄 เคสค้างติดตามประเมินซ้ำ (<span id="badge-reassess">0</span>)</button>
                 <button class="tab-btn" id="tab-vhv" onclick="switchTab('vhv')">👥 ทำเนียบ อสม. แยกหมู่ (<span id="badge-vhv-count">0</span>)</button>
@@ -84,27 +84,23 @@
                 <div id="content-vhv" class="hidden space-y-4">
                     <div id="vhv-list" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5"></div>
                 </div>
-
             </div>
         </div>
-        <div id="toast" class="fixed bottom-6 left-1/2 transform -translate-x-1/2 bg-slate-900 text-white px-6 py-3 rounded-full shadow-2xl flex items-center gap-2 transition-all duration-300 translate-y-20 opacity-0 z-50"><span class="material-symbols-outlined text-emerald-400">check_circle</span><span class="text-sm font-bold" id="toast-text">คัดลอกสำเร็จ</span></div>
+        <div id="toast" class="fixed bottom-6 left-1/2 transform -translate-x-1/2 bg-slate-900 text-white px-6 py-3 rounded-full shadow-2xl flex items-center gap-2 transition-all duration-300 translate-y-20 opacity-0 z-50"><span class="material-symbols-outlined text-emerald-400">check_circle</span><span class="text-sm font-bold" id="toast-text">สำเร็จ</span></div>
     </main>
 
     <script>
         const LIFF_ID = "2010500776-6r1shNwL"; 
         const API_URL = "https://script.google.com/macros/s/AKfycbyzPy7sklwURcJiqFDzlK4OEQ8616CJLuNyAjb8euQNzYJLXz_dj4UJM63w8-nI1L3r/exec";
         
-        let allPatients = [];
-        let allVHVs = [];
-        let newCases = [];
-        let reassessCases = [];
+        let allPatients = []; let allVHVs = []; let newCases = []; let reassessCases = []; let currentTab = 'new';
 
         function toggleSidebar() { document.getElementById('sidebar').classList.toggle('-translate-x-full'); }
 
         document.addEventListener("DOMContentLoaded", () => {
             liff.init({ liffId: LIFF_ID }).then(() => {
-                if (liff.isLoggedIn()) { liff.getProfile().then(p => verifyAdminAccess(p.userId)); } else window.location.href = 'index.html';
-            }).catch(() => window.location.href = 'index.html');
+                if (liff.isLoggedIn()) { liff.getProfile().then(p => verifyAdminAccess(p.userId)); }
+            });
         });
 
         async function verifyAdminAccess(uid) {
@@ -113,11 +109,9 @@
                 const data = await response.json();
                 if (data.status === 'registered' && data.role === 'ADMIN') {
                     document.getElementById('sidebar-hospital-name').innerText = data.hospital_name || 'เทศบาลเมืองบางแก้ว';
-                    
                     const vCount = parseInt(data.village_count) || 15;
                     const villageSelect = document.getElementById('village-filter');
                     for(let i=1; i<=vCount; i++){ villageSelect.insertAdjacentHTML('beforeend', `<option value="${i}">หมู่ที่ ${i}</option>`); }
-                    
                     loadDataChannels();
                 } else window.location.href = 'dashboard.html';
             } catch (error) { window.location.href = 'index.html'; }
@@ -141,36 +135,24 @@
                     fetch(API_URL, { method: 'POST', body: JSON.stringify({ action: 'getAllPatients' }) }),
                     fetch(API_URL, { method: 'POST', body: JSON.stringify({ action: 'getAllVHVs' }) })
                 ]);
-                allPatients = await pRes.json();
-                allVHVs = await vRes.json();
-                
+                allPatients = await pRes.json(); allVHVs = await vRes.json();
                 distributePatients();
                 document.getElementById('loading-state').classList.add('hidden');
                 document.getElementById('filter-wrapper').classList.remove('hidden');
-                switchTab('new');
+                switchTab(currentTab);
             } catch (e) { alert("ดึงฐานข้อมูลล้มเหลว"); }
         }
 
         function distributePatients() {
-            newCases = [];
-            reassessCases = [];
-            
+            newCases = []; reassessCases = [];
             allPatients.forEach(p => {
-                const isActive = String(p.status || 'Active').trim().toLowerCase() === 'active';
-                if (!isActive) return;
-
+                if (String(p.status || 'Active').trim().toLowerCase() !== 'active') return;
                 const lastAssess = String(p.last_assess || '').trim();
-                if (lastAssess === '' || lastAssess === '-') {
-                    newCases.push(p);
-                } else {
-                    p.days_passed = calculateDaysSince(p.last_assess);
-                    if (p.days_passed >= 0) reassessCases.push(p);
-                }
+                if (lastAssess === '' || lastAssess === '-') { newCases.push(p); } 
+                else { p.days_passed = calculateDaysSince(p.last_assess); if (p.days_passed >= 0) reassessCases.push(p); }
             });
-
-            // เรียงลำดับจากจำนวนวันที่ค้างนานที่สุดลงไปข้างล่าง
+            // เรียงลำดับค้างนานที่สุด (วันมากที่สุด) ไว้ด้านบนสุด (ข้อ 1)
             reassessCases.sort((a, b) => b.days_passed - a.days_passed);
-
             document.getElementById('badge-new').innerText = newCases.length;
             document.getElementById('badge-reassess').innerText = reassessCases.length;
             document.getElementById('badge-vhv-count').innerText = allVHVs.length;
@@ -194,30 +176,20 @@
             else if (currentTab === 'vhv') renderVHVList(vFilter);
         }
 
-        // สร้าง Dropdown รายชื่อ อสม. ประจำการ์ดคนไข้
-        function generateVHVOptions(patientVillage, assignedVhvId) {
-            let html = `<option value="">-- เลือก อสม. ผู้รับผิดชอบดูแล --</option>`;
-            
-            // เรียงให้ อสม. หมู่เดียวกับคนไข้ขึ้นก่อนเพื่อความง่ายในการเลือก
-            const sortedVHVs = [...allVHVs].sort((a, b) => {
-                if (String(a.village_no) === String(patientVillage) && String(b.village_no) !== String(patientVillage)) return -1;
-                if (String(a.village_no) !== String(patientVillage) && String(b.village_no) === String(patientVillage)) return 1;
-                return 0;
-            });
-
-            sortedVHVs.forEach(v => {
+        // ตรรกะคัดกรอง: แสดงเฉพาะ อสม. ของหมู่ตัวเองเท่านั้น ไม่โชว์ข้ามหมู่ (ข้อ 1)
+        function generateVHVOptionsStrict(patientVillage, assignedVhvId) {
+            let html = `<option value="">-- เลือก อสม. ประจำหมู่ ${patientVillage} --</option>`;
+            const filtered = allVHVs.filter(v => String(v.village_no) === String(patientVillage));
+            filtered.forEach(v => {
                 const isSelected = String(v.uid) === String(assignedVhvId) ? 'selected' : '';
-                const villageMark = String(v.village_no) === String(patientVillage) ? '(หมู่ตรงกัน)' : `(หมู่ที่ ${v.village_no})`;
-                html += `<option value="${v.uid}" ${isSelected}>${v.name} ${villageMark}</option>`;
+                html += `<option value="${v.uid}" ${isSelected}>${v.name}</option>`;
             });
             return html;
         }
 
         function renderNewList(vFilter) {
-            const container = document.getElementById('new-list');
-            container.innerHTML = '';
+            const container = document.getElementById('new-list'); container.innerHTML = '';
             const data = newCases.filter(p => vFilter === '' || String(p.village_no) === vFilter);
-            
             if(data.length === 0) { document.getElementById('empty-new').classList.remove('hidden'); return; }
             document.getElementById('empty-new').classList.add('hidden');
 
@@ -225,24 +197,19 @@
                 container.insertAdjacentHTML('beforeend', `
                     <div class="bg-white rounded-[20px] p-5 shadow-sm border border-amber-200 flex flex-col justify-between">
                         <div>
-                            <div class="flex items-start justify-between mb-2">
-                                <h3 class="font-bold text-slate-800 text-sm">${p.name}</h3>
-                                <span class="bg-amber-100 text-amber-700 text-[10px] px-2 py-0.5 rounded font-bold">แรกเข้า</span>
-                            </div>
+                            <h3 class="font-bold text-slate-800 text-sm mb-1">${p.name}</h3>
                             <p class="text-[11px] text-slate-500">หมู่ที่ ${p.village_no} • บ้านเลขที่ ${p.house_no}</p>
-                            <div class="mt-4"><label class="text-[11px] font-bold text-slate-500 block mb-1">ระบุผู้รับผิดชอบ:</label><select id="select_${p.id}" class="w-full text-xs rounded-lg border-slate-200 focus:ring-emerald-500 focus:border-emerald-500">${generateVHVOptions(p.village_no, p.assigned_vhv_id)}</select></div>
+                            <div class="mt-4"><label class="text-[11px] font-bold text-slate-500 block mb-1">ระบุ อสม. มอบหมาย:</label><select id="select_${p.id}" class="w-full text-xs rounded-lg border-slate-200 focus:ring-emerald-500">${generateVHVOptionsStrict(p.village_no, p.assigned_vhv_id)}</select></div>
                         </div>
-                        <button onclick="saveAssignment('${p.id}', 'new')" id="btn_${p.id}" class="w-full mt-4 py-2 bg-navy text-white font-bold text-xs rounded-xl hover:bg-opacity-90 transition-all">บันทึกมอบหมายงานและคัดลอกลง LINE</button>
+                        <button onclick="saveAssignment('${p.id}')" id="btn_${p.id}" class="w-full mt-4 py-2 bg-navy text-white font-bold text-xs rounded-xl hover:bg-opacity-90">บันทึกและส่งแจ้งเตือน LINE อส.</button>
                     </div>
                 `);
             });
         }
 
         function renderReassessList(vFilter) {
-            const container = document.getElementById('reassess-list');
-            container.innerHTML = '';
+            const container = document.getElementById('reassess-list'); container.innerHTML = '';
             const data = reassessCases.filter(p => vFilter === '' || String(p.village_no) === vFilter);
-
             if(data.length === 0) { document.getElementById('empty-reassess').classList.remove('hidden'); return; }
             document.getElementById('empty-reassess').classList.add('hidden');
 
@@ -250,30 +217,27 @@
                 container.insertAdjacentHTML('beforeend', `
                     <div class="bg-white rounded-[20px] p-5 shadow-sm border border-red-100 flex flex-col justify-between">
                         <div>
-                            <div class="flex items-start justify-between mb-2">
+                            <div class="flex items-start justify-between mb-1">
                                 <h3 class="font-bold text-slate-800 text-sm">${p.name}</h3>
-                                <span class="bg-red-50 text-red-600 text-[10px] px-2 py-0.5 rounded font-bold border border-red-100">ผ่านไปแล้ว ${p.days_passed} วัน</span>
+                                <span class="bg-red-50 text-red-600 text-[10px] px-2 py-0.5 rounded font-bold border border-red-200">ค้างเยี่ยม ${p.days_passed} วัน</span>
                             </div>
-                            <p class="text-[11px] text-slate-500">หมู่ที่ ${p.village_no} • บ้านเลขที่ ${p.house_no} <br>ประเมินล่าสุดเมื่อ: ${p.last_assess}</p>
-                            <div class="mt-4"><label class="text-[11px] font-bold text-slate-500 block mb-1">ระบุผู้รับผิดชอบ:</label><select id="select_${p.id}" class="w-full text-xs rounded-lg border-slate-200 focus:ring-emerald-500 focus:border-emerald-500">${generateVHVOptions(p.village_no, p.assigned_vhv_id)}</select></div>
+                            <p class="text-[11px] text-slate-500">หมู่ที่ ${p.village_no} • บ้านเลขที่ ${p.house_no}<br>เยี่ยมล่าสุด: ${p.last_assess}</p>
+                            <div class="mt-4"><label class="text-[11px] font-bold text-slate-500 block mb-1">ระบุ อสม. มอบหมาย:</label><select id="select_${p.id}" class="w-full text-xs rounded-lg border-slate-200 focus:ring-emerald-500">${generateVHVOptionsStrict(p.village_no, p.assigned_vhv_id)}</select></div>
                         </div>
-                        <button onclick="saveAssignment('${p.id}', 'reassess')" id="btn_${p.id}" class="w-full mt-4 py-2 bg-[#00694a] text-white font-bold text-xs rounded-xl hover:bg-opacity-90 transition-all">บันทึกมอบหมายงานและคัดลอกลง LINE</button>
+                        <button onclick="saveAssignment('${p.id}')" id="btn_${p.id}" class="w-full mt-4 py-2 bg-[#00694a] text-white font-bold text-xs rounded-xl hover:bg-opacity-90">บันทึกและส่งแจ้งเตือน LINE อส.</button>
                     </div>
                 `);
             });
         }
 
         function renderVHVList(vFilter) {
-            const container = document.getElementById('vhv-list');
-            container.innerHTML = '';
+            const container = document.getElementById('vhv-list'); container.innerHTML = '';
             const data = allVHVs.filter(v => vFilter === '' || String(v.village_no) === vFilter);
 
-            // คำนวณจำนวนคนไข้ที่ผูกเข้ากับ UID ของ อสม. คนนี้โดยตรง (สอดคล้องข้อที่ 3)
             const vhvWorkloads = {};
             allPatients.forEach(p => {
                 if (String(p.status || 'Active').trim().toLowerCase() === 'active' && p.assigned_vhv_id) {
-                    const id = String(p.assigned_vhv_id).trim();
-                    vhvWorkloads[id] = (vhvWorkloads[id] || 0) + 1;
+                    vhvWorkloads[String(p.assigned_vhv_id).trim()] = (vhvWorkloads[String(p.assigned_vhv_id).trim()] || 0) + 1;
                 }
             });
 
@@ -283,57 +247,38 @@
                     <div class="bg-white rounded-[20px] p-5 shadow-sm border border-slate-200 flex flex-col justify-between">
                         <div>
                             <h3 class="font-bold text-slate-800 text-sm">${v.name}</h3>
-                            <p class="text-[10px] text-emerald-700 bg-emerald-50 font-bold px-2 py-0.5 rounded inline-block mt-1">รับผิดชอบ หมู่ที่ ${v.village_no}</p>
+                            <p class="text-[10px] text-emerald-700 bg-emerald-50 font-bold px-2 py-0.5 rounded inline-block mt-1">หมู่ที่ ${v.village_no}</p>
                         </div>
                         <div class="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between text-[11px]">
                             <a href="tel:${v.phone}" class="text-blue-600 hover:underline flex items-center gap-0.5 font-bold">
                                 <span class="material-symbols-outlined text-[13px]">call</span> ${v.phone}
                             </a>
-                            <span class="font-bold text-navy bg-slate-100 px-2.5 py-1 rounded-lg">ดูแลทั้งหมด ${count} ราย</span>
+                            <span class="font-bold text-navy bg-slate-100 px-2 py-1 rounded-lg">ดูแลตรงรหัส: ${count} ราย</span>
                         </div>
                     </div>
                 `);
             });
         }
 
-        async function saveAssignment(patientId, type) {
+        async function saveAssignment(patientId) {
             const vhvId = document.getElementById(`select_${patientId}`).value;
-            if(!vhvId) return alert('กรุณาเลือก อสม. ผู้รับผิดชอบก่อนกดบันทึกมอบหมายครับ');
+            if(!vhvId) return alert('กรุณาเลือก อสม. ผู้รับผิดชอบก่อนบันทึกครับ');
 
             const btn = document.getElementById(`btn_${patientId}`);
-            btn.disabled = true; btn.innerText = 'กำลังบันทึกฐานข้อมูล...';
+            btn.disabled = true; btn.innerText = 'กำลังบันทึกแผงควบคุม...';
 
             try {
-                const response = await fetch(API_URL, {
-                    method: 'POST',
-                    body: JSON.stringify({ action: 'updatePatientVHV', id: patientId, vhvId: vhvId })
-                });
+                const response = await fetch(API_URL, { method: 'POST', body: JSON.stringify({ action: 'updatePatientVHV', id: patientId, vhvId: vhvId }) });
                 const result = await response.json();
                 
                 if(result.success) {
-                    // ดึงออบเจกต์ข้อมูลมาทำข้อความสั่งไลน์
-                    const pList = type === 'new' ? newCases : reassessCases;
-                    const patient = pList.find(x => x.id === patientId);
-                    const vhv = allVHVs.find(v => v.uid === vhvId);
-                    
-                    let msg = '';
-                    if (type === 'new') {
-                        msg = `📋 มอบหมายภารกิจ อสม.รายบุคคล\nเรียนคุณ: ${vhv.name} (อสม.หมู่ที่ ${vhv.village_no})\n\nมีรายชื่อผู้ป่วยรายใหม่ในเขตความรับผิดชอบของท่าน รบกวนลงพื้นที่ดำเนินการคัดกรองและประเมินแรกเข้าด้วยครับ:\n\n👤 ผู้ป่วย: ${patient.name}\n🏠 บ้านเลขที่: ${patient.house_no} หมู่ที่ ${patient.village_no}\n\nเมื่อดำเนินการเรียบร้อยแล้ว รบกวนบันทึกผ่านระบบเว็บแอปพลิเคชันด้วยครับ ขอบคุณครับ 🙏`;
-                    } else {
-                        msg = `🔄 มอบหมายภารกิจติดตามประเมินซ้ำ\nเรียนคุณ: ${vhv.name} (อสม.หมู่ที่ ${vhv.village_no})\n\nผู้ป่วยในความดูแลของท่านค้างติดตามประเมินซ้ำเป็นเวลานาน (${patient.days_passed} วัน) รบกวนลงพื้นที่ติดตามสัญญาณชีพและอัปเดตชุดฟอร์มครับ:\n\n👤 ผู้ป่วย: ${patient.name}\n🏠 บ้านเลขที่: ${patient.house_no} หมู่ที่ ${patient.village_no}\n\nรบกวนอัปเดตผ่านระบบหลังเสร็จสิ้นภารกิจครับ ขอบคุณครับ 🙏`;
-                    }
-
-                    navigator.clipboard.writeText(msg).then(() => {
-                        const toast = document.getElementById('toast');
-                        document.getElementById('toast-text').innerText = "บันทึกและคัดลอกข้อความส่ง LINE สำเร็จ!";
-                        toast.classList.remove('translate-y-20', 'opacity-0');
-                        setTimeout(() => { toast.classList.add('translate-y-20', 'opacity-0'); }, 3000);
-                        
-                        // โหลดข้อมูลช่องใหม่เพื่อรีเฟรชค่าการ์ดตัวเลข workloads
-                        loadDataChannels();
-                    });
+                    const toast = document.getElementById('toast');
+                    document.getElementById('toast-text').innerText = "บันทึกและสั่งยิงข้อความเข้า LINE อสม. สำเร็จ! 🚀";
+                    toast.classList.remove('translate-y-20', 'opacity-0');
+                    setTimeout(() => { toast.classList.add('translate-y-20', 'opacity-0'); }, 3000);
+                    loadDataChannels();
                 } else { alert(result.message); btn.disabled = false; btn.innerText = 'บันทึกมอบหมายงาน'; }
-            } catch(e) { alert("เครือข่ายเชื่อมต่อล้มเหลว"); btn.disabled = false; }
+            } catch(e) { alert("เชื่อมต่อล้มเหลว"); btn.disabled = false; }
         }
     </script>
 </body>
