@@ -15,6 +15,7 @@
         .loader-small { border: 3px solid #d8e3fb; border-bottom-color: #00694a; border-radius: 50%; width: 30px; height: 30px; animation: spin 1s linear infinite; }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
     </style>
+    <script src="config.js"></script>
 </head>
 <body class="text-[#111c2d] pb-24">
 
@@ -207,9 +208,7 @@
     </div>
 
     <script>
-        const LIFF_ID = "2010500776-6r1shNwL"; // รหัส LIFF ID
-        const API_URL = "https://script.google.com/macros/s/AKfycbyzPy7sklwURcJiqFDzlK4OEQ8616CJLuNyAjb8euQNzYJLXz_dj4UJM63w8-nI1L3r/exec";
-        
+       
         const urlParams = new URLSearchParams(window.location.search);
         const patientId = urlParams.get('id');
         let currentUserRole = 'VHV'; // ตัวแปรเก็บสิทธิ์ผู้ใช้งาน
