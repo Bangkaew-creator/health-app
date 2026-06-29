@@ -42,7 +42,38 @@
             <h1 class="text-2xl font-bold text-slate-800">ลงทะเบียน อสม.</h1>
             <p class="text-sm text-slate-500 mt-1">กรุณาระบุข้อมูลเพื่อขอสิทธิ์เข้าใช้งานระบบ</p>
         </div>
+        <div id="admin-trigger" class="hidden absolute bottom-6 text-center w-full max-w-md mx-auto">
+        <button onclick="showAdminRegistration()" class="text-[11px] text-slate-300 hover:text-slate-500 font-medium transition-colors flex items-center justify-center mx-auto gap-1">
+            <span class="material-symbols-outlined text-[14px]">lock</span> สำหรับเจ้าหน้าที่ระบบ (Admin)
+        </button>
+    </div>
+
+    <div id="admin-registration-screen" class="hidden w-full max-w-md bg-white rounded-3xl p-8 shadow-2xl border-t-4 border-amber-500 relative z-10">
+        <div class="text-center mb-6">
+            <div class="w-16 h-16 bg-amber-100 text-amber-600 rounded-2xl flex items-center justify-center mx-auto mb-3">
+                <span class="material-symbols-outlined text-4xl">admin_panel_settings</span>
+            </div>
+            <h1 class="text-2xl font-bold text-slate-800">ลงทะเบียนเจ้าหน้าที่</h1>
+            <p class="text-sm text-slate-500 mt-1">เฉพาะผู้ดูแลระบบที่มีรหัสลับเท่านั้น</p>
+        </div>
         
+        <div class="space-y-4">
+            <div>
+                <label class="block text-sm font-bold text-slate-700 mb-1">ชื่อ - นามสกุล</label>
+                <input type="text" id="admin-reg-name" placeholder="ระบุชื่อเจ้าหน้าที่" class="w-full px-4 py-3 rounded-xl border border-slate-200 focus:border-amber-500 focus:ring-2 focus:ring-amber-500/20 outline-none">
+            </div>
+            <div>
+                <label class="block text-sm font-bold text-slate-700 mb-1">เบอร์โทรศัพท์มือถือ</label>
+                <input type="tel" id="admin-reg-phone" placeholder="08X-XXX-XXXX" class="w-full px-4 py-3 rounded-xl border border-slate-200 focus:border-amber-500 focus:ring-2 focus:ring-amber-500/20 outline-none">
+            </div>
+            <div>
+                <label class="block text-sm font-bold text-slate-700 mb-1">รหัสลับ (Secret Code)</label>
+                <input type="password" id="admin-reg-secret" placeholder="กรอกรหัสลับเพื่อยืนยันสิทธิ์" class="w-full px-4 py-3 rounded-xl border border-slate-200 focus:border-amber-500 focus:ring-2 focus:ring-amber-500/20 outline-none">
+            </div>
+            <button onclick="registerAdmin()" id="btn-register-admin" class="w-full bg-amber-500 hover:bg-amber-600 text-white font-bold py-3.5 rounded-xl shadow-lg mt-4 transition-all">ตรวจสอบรหัสและยืนยัน</button>
+            <button onclick="hideAdminRegistration()" class="w-full text-slate-400 font-bold py-2 mt-2 hover:text-slate-600">กลับไปหน้าลงทะเบียน อสม.</button>
+        </div>
+    </div>
         <div class="space-y-4">
             <div>
                 <label class="block text-sm font-bold text-slate-700 mb-1">ชื่อ - นามสกุล</label>
@@ -89,6 +120,8 @@
             }
 
             document.getElementById('registration-screen').classList.add('hidden');
+            document.getElementById('admin-registration-screen').classList.add('hidden');
+            document.getElementById('admin-trigger').classList.add('hidden');
             document.getElementById('pending-screen').classList.add('hidden');
             document.getElementById('loading-screen').classList.remove('hidden');
 
@@ -111,12 +144,10 @@
                         else window.location.href = 'vhv_dashboard.html';
                     }
                 } else {
-                    // หากยังเด้งมาที่นี่อีก ให้โชว์รหัส UID บนหน้าจอเพื่อนำไปเทียบกับใน Google Sheets
-                    if(isManualRecheck) {
-                        alert('ไม่พบรหัส UID นี้ในฐานข้อมูล\n(UID: ' + profile.userId + ')\nกรุณาแจ้งแอดมินให้ตรวจสอบใน Google Sheets ครับ');
-                    }
                     buildVillageOptions(parseInt(data.village_count) || 15);
+                    // โชว์หน้าลงทะเบียน อสม. และแสดงปุ่มลับแอดมินไว้ด้านล่างจอ
                     document.getElementById('registration-screen').classList.remove('hidden');
+                    document.getElementById('admin-trigger').classList.remove('hidden');
                 }
             } catch (error) { 
                 alert("เกิดข้อผิดพลาดในการเชื่อมต่อเครือข่าย"); 
@@ -127,6 +158,58 @@
             if(isManualRecheck) { 
                 btnRecheck.disabled = false; 
                 btnRecheck.innerHTML = '<span class="material-symbols-outlined text-[20px]">refresh</span> ตรวจสอบสถานะอีกครั้ง'; 
+            }
+        }
+
+        // ==========================================
+        // ฟังก์ชันของแอดมินที่เพิ่มใหม่
+        // ==========================================
+        function showAdminRegistration() {
+            document.getElementById('registration-screen').classList.add('hidden');
+            document.getElementById('admin-trigger').classList.add('hidden');
+            document.getElementById('admin-registration-screen').classList.remove('hidden');
+        }
+
+        function hideAdminRegistration() {
+            document.getElementById('admin-registration-screen').classList.add('hidden');
+            document.getElementById('registration-screen').classList.remove('hidden');
+            document.getElementById('admin-trigger').classList.remove('hidden');
+        }
+
+        async function registerAdmin() {
+            const name = document.getElementById('admin-reg-name').value;
+            const phone = document.getElementById('admin-reg-phone').value;
+            const secretCode = document.getElementById('admin-reg-secret').value;
+            
+            if (!name || !phone || !secretCode) return alert("กรุณากรอกข้อมูลให้ครบถ้วน");
+
+            const btn = document.getElementById('btn-register-admin');
+            btn.disabled = true; btn.innerText = "กำลังตรวจสอบรหัส...";
+
+            try {
+                const profile = await liff.getProfile();
+                const response = await fetch(API_URL, {
+                    method: 'POST',
+                    body: JSON.stringify({ action: 'registerAdmin', uid: profile.userId, name: name, phone: phone, secretCode: secretCode })
+                });
+                const data = await response.json();
+                
+                if (data.status === 'success') {
+                    alert("ยินดีต้อนรับเจ้าหน้าที่ระบบ! ลงทะเบียนสำเร็จ");
+                    window.location.href = 'admin_dashboard.html'; // ทะลุเข้าหน้าแอดมินทันที
+                } else if (data.status === 'invalid_code') {
+                    alert("รหัสลับไม่ถูกต้อง! ไม่อนุญาตให้เข้าใช้งานในฐานะแอดมิน");
+                    btn.disabled = false; btn.innerText = "ตรวจสอบรหัสและยืนยัน";
+                } else if (data.status === 'already_registered') {
+                    alert("บัญชีนี้เคยลงทะเบียนไว้แล้ว");
+                    window.location.reload();
+                } else { 
+                    alert(data.message || "เกิดข้อผิดพลาด"); 
+                    btn.disabled = false; btn.innerText = "ตรวจสอบรหัสและยืนยัน"; 
+                }
+            } catch (error) { 
+                alert("การเชื่อมต่อล้มเหลว กรุณาลองใหม่"); 
+                btn.disabled = false; btn.innerText = "ตรวจสอบรหัสและยืนยัน"; 
             }
         }
 
