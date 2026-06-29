@@ -78,23 +78,20 @@
         
         <header class="h-20 min-h-[80px] bg-white shadow-sm flex items-center justify-between px-6 lg:px-8 z-10 flex-shrink-0 border-b border-slate-100">
             <div class="flex items-center">
-                <button onclick="toggleSidebar()" class="lg:hidden p-2.5 -ml-2 mr-3 text-slate-600 hover:bg-slate-100 rounded-xl transition-colors">
-                    <span class="material-symbols-outlined text-[26px]">menu</span>
-                </button>
+                <button onclick="toggleSidebar()" class="lg:hidden p-2.5 -ml-2 mr-3 text-slate-600 hover:bg-slate-100 rounded-xl transition-colors"><span class="material-symbols-outlined text-[26px]">menu</span></button>
                 <div>
-                    <h2 class="text-base lg:text-lg font-bold text-slate-900 leading-tight">แดชบอร์ดภาพรวมระบบ</h2>
-                    <p id="header-hospital-name" class="text-[11px] lg:text-xs text-slate-400 font-medium mt-0.5">กำลังโหลดชื่อหน่วยงาน...</p>
+                    <h2 class="text-base lg:text-lg font-bold text-slate-900 leading-tight">ภาพรวมระบบ (Dashboard)</h2>
+                    <p id="header-hospital-name" class="text-[11px] lg:text-xs text-slate-400 font-medium mt-0.5">ระบบสนับสนุนการดูแลผู้ป่วย</p>
                 </div>
             </div>
             
-            <div class="flex items-center gap-3 bg-slate-50 px-3 lg:px-4 py-1.5 rounded-full border border-slate-100">
+            <!-- ส่วนที่เพิ่มใหม่: รูปโปรไฟล์และชื่อแอดมิน มุมขวาบน -->
+            <div class="flex items-center gap-3 pl-4 border-l border-slate-100 cursor-pointer hover:opacity-80 transition-opacity" onclick="window.location.href='admin_settings.html'" title="ไปที่หน้าตั้งค่าระบบ">
                 <div class="text-right hidden sm:block">
-                    <p id="admin-name" class="text-xs font-bold text-slate-800">กำลังตรวจสอบ...</p>
-                    <p class="text-[10px] text-amber-600 font-bold uppercase tracking-wider">Administrator</p>
+                    <p id="admin-name-display" class="text-xs font-bold text-slate-800 leading-none">ผู้ดูแลระบบ</p>
+                    <p class="text-[10px] text-amber-500 font-bold mt-1">Administrator</p>
                 </div>
-                <div id="admin-avatar" class="w-9 h-9 rounded-full bg-navy text-white font-bold text-sm flex items-center justify-center overflow-hidden shadow-sm border border-slate-200">
-                    สธ
-                </div>
+                <img id="admin-profile-pic" src="https://via.placeholder.com/150" alt="Admin Profile" class="w-10 h-10 rounded-full object-cover border-2 border-slate-200 shadow-sm bg-slate-50">
             </div>
         </header>
 
@@ -255,37 +252,30 @@
 
         async function verifyAdminAccess(uid) {
             try {
-                const response = await fetch(API_URL, {
-                    method: 'POST',
-                    body: JSON.stringify({ action: 'checkUserRegistration', uid: uid })
-                });
+                const response = await fetch(API_URL, { method: 'POST', body: JSON.stringify({ action: 'checkUserRegistration', uid: uid }) });
                 const data = await response.json();
                 
                 if (data.status === 'registered' && data.role === 'ADMIN') {
-                    // เปลี่ยนชื่อแอดมินตามจริง
-                    document.getElementById('admin-name').innerText = data.name;
-                    
-                    // [ไดนามิก] อัปเดตชื่อหน่วยงานจากชีต Config ให้ทุกส่วนหัวข้อ
+                    // อัปเดตชื่อหน่วยงาน
                     const hospital = data.hospital_name || 'เทศบาลเมืองบางแก้ว';
-                    document.getElementById('sidebar-hospital-name').innerText = hospital;
-                    document.getElementById('header-hospital-name').innerText = 'ข้อมูลอัปเดตแบบเรียลไทม์จากพื้นที่ของ ' + hospital;
-
-                    if (data.pic_url) {
-                        const match = data.pic_url.match(/d\/([a-zA-Z0-9_-]+)/) || data.pic_url.match(/id=([a-zA-Z0-9_-]+)/);
-                        if (match) {
-                            document.getElementById('admin-avatar').innerHTML = `<img src="https://drive.google.com/thumbnail?id=${match[1]}&sz=150" class="w-full h-full object-cover">`;
-                        }
-                    } else {
-                        document.getElementById('admin-avatar').innerText = data.name.substring(0, 1);
+                    if (document.getElementById('sidebar-hospital-name')) document.getElementById('sidebar-hospital-name').innerText = hospital;
+                    if (document.getElementById('header-hospital-name')) document.getElementById('header-hospital-name').innerText = hospital;
+                    
+                    // [ส่วนที่เพิ่มใหม่] อัปเดตชื่อและรูปโปรไฟล์แอดมิน
+                    if (document.getElementById('admin-name-display')) {
+                        document.getElementById('admin-name-display').innerText = data.name || 'ผู้ดูแลระบบ';
+                    }
+                    if (document.getElementById('admin-profile-pic')) {
+                        document.getElementById('admin-profile-pic').src = (data.pic_url && data.pic_url !== '') ? data.pic_url : 'https://via.placeholder.com/150';
                     }
                     
-                    loadDashboardData();
+                    // เรียกฟังก์ชันโหลดข้อมูลหน้า Dashboard ต่อ
+                    loadDashboardData(); 
                 } else {
-                    alert("⚠️ บัญชีของคุณไม่มีสิทธิ์เข้าใช้งานหน้านี้ (Admin Only)");
                     window.location.href = 'dashboard.html';
                 }
-            } catch (error) {
-                bounceToLogin();
+            } catch (error) { 
+                window.location.href = 'index.html'; 
             }
         }
 
