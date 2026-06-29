@@ -868,38 +868,82 @@ function F_manageVHVStatus(uid, actionType) {
   return { success: false, message: 'ไม่พบผู้ใช้นี้' };
 }
 
-// [F22] ฟังก์ชันนำเข้าข้อมูลผู้ป่วยจาก Excel (เวอร์ชันแก้ไข: บันทึกโครงสร้าง JSON ผ้าอ้อมสมบูรณ์)
+// [F22] ฟังก์ชันนำเข้าข้อมูลผู้ป่วยจาก Excel (เวอร์ชันอัจฉริยะ: ตรวจสอบข้อมูลซ้ำซ้อน ป้องกันรายชื่อซ้อนกัน 100%)
 function F_importPatients(patients) {
   const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('Patients');
   if (!sheet || !patients || patients.length === 0) return { success: false, message: 'ไม่มีข้อมูลสำหรับนำเข้า' };
 
+  // ดึงข้อมูลปัจจุบันทั้งหมดในตารางเพื่อใช้ตรวจสอบความซ้ำซ้อน
+  const existingData = sheet.getDataRange().getValues();
+  const headers = existingData[0].map(h => String(h).trim().toLowerCase());
+  const colIdCard = headers.indexOf('id_card');
+  const colName = headers.indexOf('name');
+  
   const timestamp = Utilities.formatDate(new Date(), "GMT+7", "yyyyMMdd-HHmm");
   const todayStr = Utilities.formatDate(new Date(), "GMT+7", "dd/MM/yyyy"); 
-  const newRows = [];
+  
+  const newRowsToAppend = []; // คิวสำหรับเก็บรายชื่อคนไข้ใหม่เพื่อยิงเข้าตารางทีเดียว
+  let updateCount = 0;
+  let insertCount = 0;
   let counter = 1;
 
   patients.forEach(p => {
-    const patientId = "HN-" + timestamp + "-" + String(counter).padStart(3, '0');
-    counter++;
-
-    const row = new Array(31).fill('');
-    row[0] = patientId;
-    row[1] = p.id_card ? "'" + String(p.id_card) : '';
-    row[2] = p.prefix || '';
-    row[3] = p.name || '';
-    row[4] = p.dob || ''; 
-    row[5] = p.age || '';
-    row[6] = p.house_no ? "'" + String(p.house_no) : '';
-    row[7] = p.village_no || '';
-    row[8] = ''; 
-    row[9] = p.disease || '';
-    row[10] = p.medication || '';
-    row[12] = p.caregiver_name || '';
-    row[13] = p.caregiver_phone ? "'" + String(p.caregiver_phone) : '';
+    // ทำความสะอาดข้อมูลเพื่อป้องกันความผิดพลาดในการเปรียบเทียบตัวอักษร
+    const cleanIdCard = p.id_card ? String(p.id_card).trim().replace(/-/g, '') : '';
+    const cleanName = p.name ? String(p.name).trim() : '';
     
-    // [แก้ไขจุดนี้] เปลี่ยนจากการบันทึกไซส์ดิบ เป็นก้อน JSON มอบสิทธิ์การขอ "รออนุมัติ" ทันที
+    let existingRowIndex = -1;
+    
+    // 1. วนลูปตรวจสอบข้อมูลซ้ำซ้อน (เช็คเลขบัตรประชาชนก่อน ถ้าไม่มีบัตรให้เช็คชื่อ-นามสกุล)
+    for (let i = 1; i < existingData.length; i++) {
+      const sheetIdCard = colIdCard > -1 ? String(existingData[i][colIdCard]).trim().replace(/-/g, '') : '';
+      const sheetName = colName > -1 ? String(existingData[i][colName]).trim() : '';
+      
+      if (cleanIdCard !== '' && sheetIdCard === cleanIdCard) {
+        existingRowIndex = i + 1; // ล็อกพิกัดแถวใน Google Sheets (1-based index)
+        break;
+      } else if (cleanIdCard === '' && cleanName !== '' && sheetName === cleanName) {
+        existingRowIndex = i + 1;
+        break;
+      }
+    }
+
+    let rowData = new Array(31).fill('');
+
+    if (existingRowIndex > -1) {
+      // [เคสเจอข้อมูลซ้ำ]: คัดลอกข้อมูลเดิมทั้งหมดในแถวนั้นมาตั้งต้นก่อน เพื่อไม่ให้ค่าเก่า (พิกัด, รูปภาพ, ผู้ดูแล) โดนลบหาย
+      for (let c = 0; c < 31; c++) {
+        rowData[c] = existingData[existingRowIndex - 1][c];
+      }
+      updateCount++;
+    } else {
+      // [เคสคนไข้รายใหม่]: ทำการรันรหัสรหัส HN ใหม่ และใส่สถานะตั้งต้นระบบ
+      rowData[0] = "HN-" + timestamp + "-" + String(counter).padStart(3, '0');
+      counter++;
+      
+      rowData[20] = 'ยังไม่ประเมิน';
+      rowData[21] = '-';
+      for (let i = 23; i <= 27; i++) rowData[i] = '-';
+      rowData[30] = 'Active';
+      insertCount++;
+    }
+
+    // 2. เติมข้อมูลหรืออัปเดตข้อมูลล่าสุดจากไฟล์ Excel เข้าไปในคอลัมน์ที่กำหนด
+    if (p.id_card) rowData[1] = "'" + cleanIdCard;
+    if (p.prefix) rowData[2] = String(p.prefix).trim();
+    if (p.name) rowData[3] = cleanName;
+    if (p.dob) rowData[4] = String(p.dob).trim();
+    if (p.age) rowData[5] = p.age;
+    if (p.house_no) rowData[6] = "'" + String(p.house_no).trim();
+    if (p.village_no) rowData[7] = String(p.village_no).trim();
+    if (p.disease) rowData[9] = String(p.disease).trim();
+    if (p.medication) rowData[10] = String(p.medication).trim();
+    if (p.caregiver_name) rowData[12] = String(p.caregiver_name).trim();
+    if (p.caregiver_phone) rowData[13] = "'" + String(p.caregiver_phone).trim();
+    
+    // จัดกลุ่มโครงสร้างผ้าอ้อมเป็นก้อน JSON อัตโนมัติเพื่อส่งเข้าหน้าอนุมัติวัสดุ
     if (p.diaper && String(p.diaper).trim() !== '') {
-      row[14] = JSON.stringify({
+      rowData[14] = JSON.stringify({
         size: String(p.diaper).trim(),
         req_diaper: true,
         req_underpad: false,
@@ -907,40 +951,46 @@ function F_importPatients(patients) {
         approved_diaper: 0,
         approved_underpad: 0
       });
-    } else {
-      row[14] = '';
     }
 
+    // ประมวลผลคะแนน ADL คัดกรองกลุ่มโรค พร้อมประทับตราวันที่ประเมินปัจจุบัน
     const adlValue = String(p.adl).trim();
     if (adlValue !== '' && adlValue !== '-') {
-      row[21] = Number(adlValue) || adlValue; 
-      
+      rowData[21] = Number(adlValue) || adlValue;
       const scoreNum = parseInt(adlValue);
       if (!isNaN(scoreNum)) {
-        if (scoreNum <= 4) row[20] = 'ติดเตียง';       
-        else if (scoreNum <= 11) row[20] = 'ติดบ้าน';
-        else row[20] = 'ติดสังคม';
-      } else {
-        row[20] = 'ยังไม่ประเมิน';
+        if (scoreNum <= 4) rowData[20] = 'ติดเตียง';
+        else if (scoreNum <= 11) rowData[20] = 'ติดบ้าน';
+        else rowData[20] = 'ติดสังคม';
       }
-      row[29] = todayStr; 
-    } else {
-      row[20] = 'ยังไม่ประเมิน';
-      row[21] = '-';
-      row[29] = ''; 
+      rowData[29] = todayStr; // วันเริ่มนับประเมินใหม่
     }
-    
-    for(let i=23; i<=27; i++) row[i] = '-'; 
-    row[30] = 'Active';       
 
-    newRows.push(row);
+    // 3. จัดบันทึกข้อมูลกลับลงแผ่นงาน Google Sheets
+    if (existingRowIndex > -1) {
+      // เขียนแก้ไขทับแถวเดิมตัวที่ซ้ำทันที
+      sheet.getRange(existingRowIndex, 1, 1, 31).setValues([rowData]);
+      // อัปเดตข้อมูลในความจำชั่วคราว เผื่อในไฟล์ Excel มีรายชื่อซ้ำกันซ้อนกันในชุดเดียว
+      existingData[existingRowIndex - 1] = rowData;
+    } else {
+      // หากเป็นผู้ป่วยใหม่ ให้เก็บรวบรวมเข้าคิวไปเขียนลงตารางพร้อมกันตอนท้าย (ช่วยให้ระบบทำงานเร็วมาก)
+      newRowsToAppend.push(rowData);
+      existingData.push(rowData); // เติมเข้าความจำชั่วคราวเพื่อเช็คซ้ำกันเองในตารางด้วย
+    }
   });
 
-  const lastRow = sheet.getLastRow();
-  sheet.getRange(lastRow + 1, 1, newRows.length, 31).setValues(newRows);
-  SpreadsheetApp.flush();
+  // ถ้ารวบรวมแล้วพบว่ามีรายชื่อผู้ป่วยใหม่ ให้ทำการ Batch Insert ยิงลงตารางรวดเดียวเพื่อความเร็ว
+  if (newRowsToAppend.length > 0) {
+    const lastRow = sheet.getLastRow();
+    sheet.getRange(lastRow + 1, 1, newRowsToAppend.length, 31).setValues(newRowsToAppend);
+  }
 
-  return { success: true, message: `นำเข้าข้อมูลสำเร็จจำนวน ${newRows.length} รายการ` };
+  SpreadsheetApp.flush(); // สั่งให้ระบบเซฟข้อมูลลงแผ่นตารางทันที
+
+  return { 
+    success: true, 
+    message: `ระบบคัดกรองข้อมูลเสร็จสิ้น:\n- เพิ่มผู้ป่วยใหม่รายใหม่: ${insertCount} ราย\n- อัปเดตปรับปรุงข้อมูลเดิม: ${updateCount} ราย` 
+  };
 }
 
 // ==========================================
