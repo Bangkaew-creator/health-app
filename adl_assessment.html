@@ -13,6 +13,7 @@
         input[type="radio"] { display: none; }
         input[type="radio"]:checked + label { background-color: #00694a; color: white; border-color: #00694a; font-weight: bold; }
     </style>
+    <script src="config.js"></script>
 </head>
 <body class="text-[#111c2d]">
 
@@ -48,8 +49,7 @@
     </div>
 
     <script>
-        const API_URL = "https://script.google.com/macros/s/AKfycbyzPy7sklwURcJiqFDzlK4OEQ8616CJLuNyAjb8euQNzYJLXz_dj4UJM63w8-nI1L3r/exec";
-        
+     
         const urlParams = new URLSearchParams(window.location.search);
         const patientId = urlParams.get('id');
         document.getElementById('patient-id-display').innerText = `รหัส: ${patientId || 'ไม่ระบุ'}`;
