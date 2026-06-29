@@ -106,13 +106,27 @@
                 </div>
             </div>
 
+            <!-- Tab 3: ผลงาน อสม. -->
             <div id="content-vhv" class="hidden p-4 lg:p-6">
                 <div class="bg-white rounded-[24px] p-8 lg:p-12 shadow-sm border border-slate-200 text-center max-w-3xl mx-auto mt-6">
                     <span class="material-symbols-outlined text-[70px] text-blue-600 mb-4 bg-blue-50 w-24 h-24 rounded-full flex items-center justify-center mx-auto">analytics</span>
                     <h2 class="text-2xl font-bold text-slate-800">รายงานสถิติและผลการปฏิบัติงาน อสม.</h2>
-                    <p class="text-sm text-slate-500 mt-3 mb-8 leading-relaxed max-w-xl mx-auto">
+                    <p class="text-sm text-slate-500 mt-3 mb-6 leading-relaxed max-w-xl mx-auto">
                         ส่งออกสรุปภาระงาน (Workload) ของ อสม. แต่ละท่าน วัดผล KPI การลงพื้นที่เยี่ยมบ้าน (ยอดลงพื้นที่สำเร็จในรอบเดือน) และเช็คยอดผู้ป่วยตกหล่นค้างประเมิน
                     </p>
+                    
+                    <!-- ส่วนเลือกหมู่บ้านที่เพิ่มเข้ามาใหม่ -->
+                    <div class="flex flex-col sm:flex-row justify-center items-center gap-4 mb-8">
+                        <label class="text-sm font-bold text-slate-700">เลือกเขตรับผิดชอบ:</label>
+                        <div class="relative w-full sm:w-64 text-left">
+                            <select id="vhv-village-filter" class="w-full pl-4 pr-8 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-blue-500 appearance-none font-medium text-navy">
+                                <option value="">ดูทุกหมู่ (ทั้งหมด)</option>
+                                <!-- โค้ดจะดึงตัวเลือกหมู่มาใส่ตรงนี้อัตโนมัติ -->
+                            </select>
+                            <span class="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none">expand_more</span>
+                        </div>
+                    </div>
+
                     <button onclick="exportVHVExcel()" class="w-full sm:w-auto bg-blue-600 hover:bg-blue-700 text-white px-8 py-3.5 rounded-[16px] font-bold text-base inline-flex items-center justify-center gap-2 shadow-lg transition-all active:scale-95">
                         <span class="material-symbols-outlined text-[22px]">download</span> ดาวน์โหลด Excel ผลงาน อสม.
                     </button>
@@ -185,6 +199,14 @@
                 const data = await response.json();
                 if (data.status === 'registered' && data.role === 'ADMIN') {
                     document.getElementById('sidebar-hospital-name').innerText = data.hospital_name || 'เทศบาลเมืองบางแก้ว';
+                    
+                    // สร้างตัวเลือกหมู่บ้านให้ Dropdown ของแท็บผลงาน อสม.
+                    const vCount = parseInt(data.village_count) || 15;
+                    const vhvFilter = document.getElementById('vhv-village-filter');
+                    for(let i=1; i<=vCount; i++){ 
+                        vhvFilter.insertAdjacentHTML('beforeend', `<option value="${i}">หมู่ที่ ${i}</option>`); 
+                    }
+
                     loadReportData();
                 } else window.location.href = 'dashboard.html';
             } catch (error) { window.location.href = 'index.html'; }
@@ -386,12 +408,21 @@
         }
 
         // ==========================================
-        // 3. ระบบออกรายงาน ผลงาน อสม. (VHV KPIs)
+        // 3. ระบบออกรายงาน ผลงาน อสม. (อัปเดต: กรองตามหมู่ได้)
         // ==========================================
         function exportVHVExcel() {
-            const exportData = []; let runningNum = 1;
+            const vFilter = document.getElementById('vhv-village-filter').value;
+            const exportData = []; 
+            let runningNum = 1;
 
-            allVHVs.forEach(v => {
+            // คัดกรองเอาเฉพาะ อสม. ที่ตัวเลขหมู่ตรงกับ Dropdown
+            const filteredVHVs = allVHVs.filter(v => vFilter === '' || String(v.village_no) === vFilter);
+
+            if (filteredVHVs.length === 0) {
+                return alert('ไม่พบรายชื่อ อสม. ในเขตรับผิดชอบที่เลือกครับ');
+            }
+
+            filteredVHVs.forEach(v => {
                 let totalAssigned = 0; let visited = 0; let overdue = 0; let pendingNew = 0;
 
                 allPatients.forEach(p => {
@@ -421,9 +452,14 @@
 
             const worksheet = XLSX.utils.json_to_sheet(exportData);
             const workbook = XLSX.utils.book_new();
-            XLSX.utils.book_append_sheet(workbook, worksheet, "สถิติผลงาน อสม.");
+            
+            // ปรับชื่อชีตและชื่อไฟล์ให้สัมพันธ์กับหมู่ที่เลือก
+            const sheetName = vFilter === '' ? "สถิติรวม" : `สถิติ อสม. หมู่ ${vFilter}`;
+            XLSX.utils.book_append_sheet(workbook, worksheet, sheetName);
             worksheet['!cols'] = [{wch:8},{wch:30},{wch:15},{wch:15},{wch:20},{wch:22},{wch:20},{wch:20}];
-            XLSX.writeFile(workbook, `รายงานสถิติผลงานอสม_${getTodayDateStr()}.xlsx`);
+            
+            const fileNameSuffix = vFilter === '' ? 'รวมทุกหมู่' : `หมู่_${vFilter}`;
+            XLSX.writeFile(workbook, `รายงานผลงานอสม_${fileNameSuffix}_${getTodayDateStr()}.xlsx`);
         }
 
     </script>
