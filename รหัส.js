@@ -694,7 +694,7 @@ function F_recordCommitteeDecision(patientIds, fy, round, months) {
   return { success: true, message: `บันทึกมติจัดสรรให้ผู้ป่วยจำนวน ${updatedCount} ราย สำเร็จ!` };
 }
 
-// 1. ฟังก์ชันตรวจสอบสิทธิ์เข้าใช้งาน (อัปเดต: ส่งจำนวนหมู่จาก Config กลับไปด้วย)
+// 1. ฟังก์ชันตรวจสอบสิทธิ์เข้าใช้งาน (อัปเดต: ล้างช่องว่างป้องกันหา UID ไม่เจอ 100%)
 function F_checkUserRegistration(uid) {
   const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('Users');
   const data = sheet.getDataRange().getValues();
@@ -705,23 +705,30 @@ function F_checkUserRegistration(uid) {
   const colVillage = headers.indexOf('village_no');
   const colStatus = headers.indexOf('status');
   
-  // ดึงค่า Config จำนวนหมู่บ้าน (ถ้าไม่มีให้ใช้ 15 เป็นค่าเริ่มต้น)
   const vCount = F_getConfig('VILLAGE_COUNT') || 15;
   
   if (colUid === -1) return { status: 'error', message: 'ไม่พบคอลัมน์ UID' };
   
+  // ล้างช่องว่างออกจาก UID ต้นทางก่อน
+  const targetUid = String(uid).trim();
+  
   for (let i = 1; i < data.length; i++) {
-    if (String(data[i][colUid]) === String(uid)) {
+    // ใช้ .trim() ฝั่งข้อมูลในชีตด้วย เพื่อบังคับจับคู่ให้ตรงเป๊ะ
+    if (String(data[i][colUid]).trim() === targetUid) {
+      
+      // ดึงสถานะ ถ้าช่องว่างเปล่าให้ถือเป็น Pending ทันที
+      let userStatus = colStatus > -1 ? String(data[i][colStatus]).trim() : 'Active';
+      if (userStatus === '') userStatus = 'Pending'; 
+
       return {
         status: 'registered',
-        role: colRole > -1 ? String(data[i][colRole]) : 'VHV',
-        village_no: colVillage > -1 ? String(data[i][colVillage]) : '',
-        user_status: colStatus > -1 ? String(data[i][colStatus]).trim() : 'Active',
+        role: colRole > -1 ? String(data[i][colRole]).trim() : 'VHV',
+        village_no: colVillage > -1 ? String(data[i][colVillage]).trim() : '',
+        user_status: userStatus,
         village_count: vCount
       };
     }
   }
-  // ถึงจะยังไม่ลงทะเบียน ก็ส่งจำนวนหมู่บ้านกลับไปให้ฟอร์มสร้าง Dropdown
   return { status: 'not_registered', village_count: vCount };
 }
 
@@ -831,7 +838,7 @@ function F_getPendingVHVs() {
   return list;
 }
 
-// [F20] ฟังก์ชันเปลี่ยนสถานะ อสม. เป็น Active หรือ Rejected
+// [F21] ฟังก์ชันเปลี่ยนสถานะ อสม. เป็น Active หรือ Rejected
 function F_manageVHVStatus(uid, actionType) {
   const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('Users');
   const data = sheet.getDataRange().getValues();
