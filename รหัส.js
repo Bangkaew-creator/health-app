@@ -36,7 +36,6 @@ function doPost(e) {
 }
 
 // [F2] ฟังก์ชันดึงรายชื่อผู้ป่วยทั้งหมด (รองรับ 31 คอลัมน์)
-// [F_Patients] ฟังก์ชันดึงข้อมูลผู้ป่วย (ฉบับสมบูรณ์: เพิ่มดึงเลขบัตร ปชช. และเบอร์โทร สำหรับออกรายงาน)
 function F_getAllPatients() {
   const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('Patients');
   if (!sheet) return [];
@@ -47,16 +46,21 @@ function F_getAllPatients() {
   const headers = data[0].map(h => String(h).trim().toLowerCase());
   
   const colId = headers.indexOf('patient_id');
+  const colIdCard = headers.indexOf('id_card');
+  const colPrefix = headers.indexOf('prefix');
   const colName = headers.indexOf('name');
-  const colIdCard = headers.indexOf('id_card'); // <--- เพิ่มคอลัมน์นี้
-  const colPhone = headers.indexOf('phone'); // <--- เพิ่มคอลัมน์นี้
-  const colVillage = headers.indexOf('village_no');
+  const colAge = headers.indexOf('age');
   const colHouse = headers.indexOf('house_no');
+  const colVillage = headers.indexOf('village_no');
+  const colDisease = headers.indexOf('disease');
+  const colMedication = headers.indexOf('medication');
+  const colCaregiverName = headers.indexOf('caregiver_name');
+  const colCaregiverPhone = headers.indexOf('caregiver_phone');
   const colGroup = headers.indexOf('patient_group');
+  const colAdl = headers.indexOf('adl_score');
+  const colDepression = headers.indexOf('depression_status');
   const colLastAssess = headers.indexOf('last_assessment_date');
   const colStatus = headers.indexOf('status');
-  const colProfilePic = headers.indexOf('profile_pic');
-  const colAdl = headers.indexOf('adl_score');
   const colDiaper = headers.indexOf('diaper_size'); 
   const colEquipment = headers.indexOf('required_equipment');
   const colAssignedVHV = headers.indexOf('assigned_vhv_id'); 
@@ -73,18 +77,24 @@ function F_getAllPatients() {
     
     list.push({
       id: String(row[colId]),
+      id_card: colIdCard > -1 ? String(row[colIdCard]) : '-',
+      prefix: colPrefix > -1 ? String(row[colPrefix]) : '',
       name: colName > -1 ? String(row[colName]) : '',
-      id_card: colIdCard > -1 ? String(row[colIdCard]) : '-', // <--- ส่งค่าไปหน้าเว็บ
-      phone: colPhone > -1 ? String(row[colPhone]) : '-', // <--- ส่งค่าไปหน้าเว็บ
-      village_no: colVillage > -1 ? String(row[colVillage]) : '',
+      age: colAge > -1 ? String(row[colAge]) : '-',
       house_no: colHouse > -1 ? String(row[colHouse]) : '',
+      village_no: colVillage > -1 ? String(row[colVillage]) : '',
+      disease: colDisease > -1 ? String(row[colDisease]) : '-',
+      medication: colMedication > -1 ? String(row[colMedication]) : '-',
+      caregiver_name: colCaregiverName > -1 ? String(row[colCaregiverName]) : '-',
+      caregiver_phone: colCaregiverPhone > -1 ? String(row[colCaregiverPhone]) : '-',
+      phone: colCaregiverPhone > -1 ? String(row[colCaregiverPhone]) : '-', 
       group: colGroup > -1 && row[colGroup] ? String(row[colGroup]) : 'ยังไม่ประเมิน',
+      adl: colAdl > -1 ? String(row[colAdl]) : '-',
+      dep_status: colDepression > -1 ? String(row[colDepression]) : '-',
       last_assess: colLastAssess > -1 ? String(row[colLastAssess]) : '',
       status: currentStatus, 
       diaper: colDiaper > -1 ? String(row[colDiaper]) : '',
       equipment: colEquipment > -1 ? String(row[colEquipment]) : '',
-      profile_pic: colProfilePic > -1 ? String(row[colProfilePic]) : '',
-      adl: colAdl > -1 ? String(row[colAdl]) : '-',
       assigned_vhv_id: colAssignedVHV > -1 ? String(row[colAssignedVHV]).trim() : ''
     });
   }
