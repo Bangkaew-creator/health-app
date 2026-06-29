@@ -13,6 +13,8 @@
         .loader { border: 3px solid #d8e3fb; border-bottom-color: #00694a; border-radius: 50%; width: 36px; height: 36px; animation: spin 1s linear infinite; }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
     </style>
+    <script charset="utf-8" src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+    <script src="config.js"></script>
 </head>
 <body class="text-[#111c2d]">
 
@@ -79,18 +81,54 @@
     </nav>
 
     <script>
-        const API_URL = "https://script.google.com/macros/s/AKfycbyzPy7sklwURcJiqFDzlK4OEQ8616CJLuNyAjb8euQNzYJLXz_dj4UJM63w8-nI1L3r/exec";
-        
+        // ไม่ต้องประกาศ API_URL แล้ว เพราะดึงจาก config.js
         let allPatients = []; 
         let isSortedByVillage = false;
+        let currentUserUid = "";
+        let vhvCurrentVillage = ""; // เก็บเลขหมู่ของ อสม.
 
+        // 1. โหลด LIFF และเช็คโปรไฟล์ อสม. ทันทีที่เปิดหน้าเว็บ
+        document.addEventListener("DOMContentLoaded", () => {
+            liff.init({ liffId: LIFF_ID }).then(() => {
+                if (liff.isLoggedIn()) {
+                    liff.getProfile().then(async p => {
+                        currentUserUid = p.userId;
+                        await fetchVHVProfile(currentUserUid); // ถามหมู่จากหลังบ้านก่อน
+                        fetchPatients(); // ค่อยดึงข้อมูลคนไข้
+                    });
+                } else { liff.login(); }
+            }).catch(err => {
+                fetchPatients(); // เผื่อกรณีทดสอบบนคอมพิวเตอร์
+            });
+        });
+
+        // 2. ฟังก์ชันไปดึง "เลขหมู่" ของ อสม. ที่กำลังเข้าใช้งาน
+        async function fetchVHVProfile(uid) {
+            try {
+                const response = await fetch(API_URL, { method: 'POST', body: JSON.stringify({ action: 'checkUserRegistration', uid: uid }) });
+                const data = await response.json();
+                if (data.status === 'registered') {
+                    vhvCurrentVillage = String(data.village).trim();
+                }
+            } catch (error) { console.error("ดึงข้อมูล อสม. ล้มเหลว"); }
+        }
+
+        // 3. ฟังก์ชันดึงคนไข้ และ "กรองเอาเฉพาะหมู่ตัวเอง"
         async function fetchPatients() {
             try {
                 const response = await fetch(API_URL, { method: 'POST', body: JSON.stringify({ action: 'getAllPatients' }) });
-                allPatients = await response.json();
+                const rawPatients = await response.json();
+                
+                // [ปิดบั๊ก] กรองสถานะ Active และกรองให้หมู่ตรงกับ อสม.
+                allPatients = rawPatients.filter(p => {
+                    const isActive = String(p.status || 'Active').trim().toLowerCase() === 'active';
+                    const isMyVillage = String(p.village_no).trim() === vhvCurrentVillage;
+                    
+                    // ถ้าเข้าผ่าน LINE และมีหมู่ จะแสดงเฉพาะหมู่ตัวเอง
+                    return isActive && isMyVillage && vhvCurrentVillage !== "";
+                });
                 
                 renderPatientList();
-                
                 document.getElementById('loading-state').classList.add('hidden');
                 document.getElementById('patient-list').classList.remove('hidden');
             } catch (error) {
@@ -108,14 +146,12 @@
         function sortByVillage() {
             isSortedByVillage = !isSortedByVillage;
             if(isSortedByVillage) {
-                // เรียงหมู่จากน้อยไปมาก
                 allPatients.sort((a, b) => {
                     const vA = parseInt(String(a.village_no).replace(/\D/g, '')) || 999;
                     const vB = parseInt(String(b.village_no).replace(/\D/g, '')) || 999;
                     return vA - vB;
                 });
             } else {
-                // คืนค่าการเรียงลำดับดั้งเดิม (ตาม ID หรือตามที่ดึงมา)
                 allPatients.sort((a, b) => parseInt(a.id) - parseInt(b.id));
             }
             renderPatientList();
@@ -146,14 +182,12 @@
 
                 let groupDisplay = p.group !== 'ยังไม่ประเมิน' ? p.group : 'ต้องประเมิน';
 
-                // จัดการรูปภาพ (ใส่ฟังก์ชัน getDriveImageUrl แล้ว)
                 let avatarHtml = `<div class="w-14 h-14 rounded-[14px] bg-[#eef2ff] text-[#00694a] font-bold text-xl flex items-center justify-center flex-shrink-0">${p.name ? p.name.substring(0,1) : '?'}</div>`;
                 const imgUrl = getDriveImageUrl(p.profile_pic);
                 if(imgUrl) {
                     avatarHtml = `<img src="${imgUrl}" class="w-14 h-14 rounded-[14px] object-cover flex-shrink-0 shadow-sm">`;
                 }
 
-                // ดีไซน์การ์ดให้ตรงกับหน้า Dashboard
                 const cardHtml = `
                     <div onclick="window.location.href='patient_profile.html?id=${p.id}'" class="bg-white rounded-[20px] p-4 shadow-sm border border-gray-100 flex items-center gap-4 cursor-pointer active:scale-[0.98] transition-transform">
                         ${avatarHtml}
@@ -177,8 +211,6 @@
         }
 
         function filterPatients() { renderPatientList(); }
-
-        fetchPatients();
     </script>
 </body>
 </html>
