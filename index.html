@@ -141,7 +141,7 @@
                         alert('บัญชีของคุณไม่อนุญาตให้เข้าถึงระบบ');
                     } else { 
                         if (data.role === 'ADMIN') window.location.href = 'admin_dashboard.html';
-                        else window.location.href = 'vhv_dashboard.html';
+                        else window.location.href = 'dashboard.html'; // แก้เป็นบรรทัดนี้ครับ
                     }
                 } else {
                     buildVillageOptions(parseInt(data.village_count) || 15);
