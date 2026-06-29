@@ -868,47 +868,67 @@ function F_manageVHVStatus(uid, actionType) {
   return { success: false, message: 'ไม่พบผู้ใช้นี้' };
 }
 
-// [F22] ฟังก์ชันนำเข้าข้อมูลผู้ป่วยจาก Excel/Google Sheets
+// [F22] ฟังก์ชันนำเข้าข้อมูลผู้ป่วยจาก Excel (อัปเดต: รองรับขนาดผ้าอ้อม, คะแนน ADL และบันทึกวันอัปโหลดอัตโนมัติ)
 function F_importPatients(patients) {
   const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('Patients');
   if (!sheet || !patients || patients.length === 0) return { success: false, message: 'ไม่มีข้อมูลสำหรับนำเข้า' };
 
-  // สร้างฐานรหัส HN เช่น HN-20260629-1530
   const timestamp = Utilities.formatDate(new Date(), "GMT+7", "yyyyMMdd-HHmm");
+  const todayStr = Utilities.formatDate(new Date(), "GMT+7", "dd/MM/yyyy"); // วันที่อัปโหลดปัจจุบัน
   const newRows = [];
   let counter = 1;
 
   patients.forEach(p => {
-    // ป้องกันรหัสซ้ำกันในนาทีเดียวกันด้วยการเติม -001, -002
     const patientId = "HN-" + timestamp + "-" + String(counter).padStart(3, '0');
     counter++;
 
-    // สร้างอาร์เรย์ 31 คอลัมน์ให้ตรงกับโครงสร้างฐานข้อมูล
+    // สร้างอาร์เรย์ 31 คอลัมน์ให้ตรงกับโครงสร้างฐานข้อมูลเป๊ะๆ
     const row = new Array(31).fill('');
     row[0] = patientId;
     row[1] = p.id_card ? "'" + String(p.id_card) : '';
     row[2] = p.prefix || '';
     row[3] = p.name || '';
-    row[4] = p.dob || ''; // วันเกิด
+    row[4] = p.dob || ''; 
     row[5] = p.age || '';
     row[6] = p.house_no ? "'" + String(p.house_no) : '';
     row[7] = p.village_no || '';
-    row[8] = ''; // พิกัดเว้นว่างไว้ก่อน
+    row[8] = ''; 
     row[9] = p.disease || '';
     row[10] = p.medication || '';
     row[12] = p.caregiver_name || '';
     row[13] = p.caregiver_phone ? "'" + String(p.caregiver_phone) : '';
     
-    // ตั้งค่าเริ่มต้นของเคสใหม่
-    row[20] = 'ยังไม่ประเมิน'; // Group
-    row[21] = '-';            // ADL
-    for(let i=23; i<=27; i++) row[i] = '-'; // Vitals & Dep
-    row[30] = 'Active';       // Status
+    // [เพิ่มใหม่] บันทึกขนาดผ้าอ้อมลงคอลัมน์ O (Index 14)
+    row[14] = p.diaper ? String(p.diaper).trim() : '';
+
+    // [เพิ่มใหม่] ตรรกะตรวจสอบคะแนน ADL และจัดกลุ่มผู้ป่วยอัตโนมัติ
+    const adlValue = String(p.adl).trim();
+    if (adlValue !== '' && adlValue !== '-') {
+      row[21] = Number(adlValue) || adlValue; // คอลัมน์ V (Index 21): ADL_Score
+      
+      const scoreNum = parseInt(adlValue);
+      if (!isNaN(scoreNum)) {
+        if (scoreNum <= 4) row[20] = 'ติดเตียง';       // คอลัมน์ U (Index 20)
+        else if (scoreNum <= 11) row[20] = 'ติดบ้าน';
+        else row[20] = 'ติดสังคม';
+      } else {
+        row[20] = 'ยังไม่ประเมิน';
+      }
+      
+      // บันทึกวันประเมินเริ่มตั้งแต่วันที่อัปโหลดเป็นต้นไป คอลัมน์ AD (Index 29)
+      row[29] = todayStr; 
+    } else {
+      row[20] = 'ยังไม่ประเมิน';
+      row[21] = '-';
+      row[29] = ''; // ถ้าไม่มีคะแนน ADL ก็จะยังไม่มีวันประเมิน
+    }
+    
+    for(let i=23; i<=27; i++) row[i] = '-'; // คอลัมน์ X ถึง AB (Vitals & Dep)
+    row[30] = 'Active';       // คอลัมน์ AE: Status
 
     newRows.push(row);
   });
 
-  // ใช้เทคนิคยิงข้อมูลลงตารางรวดเดียว (Batch Insert) เพื่อป้องกันระบบค้าง
   const lastRow = sheet.getLastRow();
   sheet.getRange(lastRow + 1, 1, newRows.length, 31).setValues(newRows);
   SpreadsheetApp.flush();
