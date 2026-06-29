@@ -165,15 +165,24 @@
         // ฟังก์ชันของแอดมินที่เพิ่มใหม่
         // ==========================================
         function showAdminRegistration() {
-            document.getElementById('registration-screen').classList.add('hidden');
-            document.getElementById('admin-trigger').classList.add('hidden');
-            document.getElementById('admin-registration-screen').classList.remove('hidden');
+            // ปิดหน้าจอลงทะเบียน อสม.
+            document.getElementById('registration-screen').style.display = 'none';
+            document.getElementById('admin-trigger').style.display = 'none';
+            
+            // เปิดหน้าจอลงทะเบียน แอดมิน
+            const adminScreen = document.getElementById('admin-registration-screen');
+            adminScreen.classList.remove('hidden');
+            adminScreen.style.display = 'block'; // บังคับให้แสดงผล
         }
-
+        
         function hideAdminRegistration() {
-            document.getElementById('admin-registration-screen').classList.add('hidden');
+            // ปิดหน้าจอลงทะเบียน แอดมิน
+            document.getElementById('admin-registration-screen').style.display = 'none';
+            
+            // เปิดหน้าจอลงทะเบียน อสม.
             document.getElementById('registration-screen').classList.remove('hidden');
-            document.getElementById('admin-trigger').classList.remove('hidden');
+            document.getElementById('registration-screen').style.display = 'block'; // บังคับให้แสดงผล
+            document.getElementById('admin-trigger').style.display = 'block'; // บังคับให้แสดงผล
         }
 
         async function registerAdmin() {
