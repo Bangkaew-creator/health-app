@@ -42,7 +42,6 @@
             <h1 class="text-2xl font-bold text-slate-800">ลงทะเบียน อสม.</h1>
             <p class="text-sm text-slate-500 mt-1">กรุณาระบุข้อมูลเพื่อขอสิทธิ์เข้าใช้งานระบบ</p>
         </div>
-        
         <div class="space-y-4">
             <div>
                 <label class="block text-sm font-bold text-slate-700 mb-1">ชื่อ - นามสกุล</label>
@@ -61,16 +60,12 @@
             <button onclick="registerUser()" id="btn-register" class="w-full bg-[#00694a] hover:bg-[#005239] text-white font-bold py-3.5 rounded-xl shadow-lg mt-4 transition-all">ยืนยันการลงทะเบียน</button>
         </div>
     </div>
-    <!-- จบกล่อง อสม. -->
-
-    <!-- 4. ปุ่มลับสำหรับแอดมิน (แยกออกมาอยู่ข้างนอก) -->
     <div id="admin-trigger" class="hidden absolute bottom-6 text-center w-full max-w-md mx-auto">
-        <button onclick="showAdminRegistration()" class="text-[11px] text-slate-300 hover:text-slate-500 font-medium transition-colors flex items-center justify-center mx-auto gap-1">
+        <button onclick="showAdminRegistration()" class="text-[11px] text-slate-400 hover:text-slate-600 font-medium transition-colors flex items-center justify-center mx-auto gap-1">
             <span class="material-symbols-outlined text-[14px]">lock</span> สำหรับเจ้าหน้าที่ระบบ (Admin)
         </button>
     </div>
 
-    <!-- 5. หน้าต่างลงทะเบียน แอดมิน (แยกออกมาอยู่ข้างนอก) -->
     <div id="admin-registration-screen" class="hidden w-full max-w-md bg-white rounded-3xl p-8 shadow-2xl border-t-4 border-amber-500 relative z-10">
         <div class="text-center mb-6">
             <div class="w-16 h-16 bg-amber-100 text-amber-600 rounded-2xl flex items-center justify-center mx-auto mb-3">
@@ -95,24 +90,6 @@
             </div>
             <button onclick="registerAdmin()" id="btn-register-admin" class="w-full bg-amber-500 hover:bg-amber-600 text-white font-bold py-3.5 rounded-xl shadow-lg mt-4 transition-all">ตรวจสอบรหัสและยืนยัน</button>
             <button onclick="hideAdminRegistration()" class="w-full text-slate-400 font-bold py-2 mt-2 hover:text-slate-600">กลับไปหน้าลงทะเบียน อสม.</button>
-        </div>
-    </div>
-        <div class="space-y-4">
-            <div>
-                <label class="block text-sm font-bold text-slate-700 mb-1">ชื่อ - นามสกุล</label>
-                <input type="text" id="reg-name" placeholder="ระบุชื่อและนามสกุล" class="w-full px-4 py-3 rounded-xl border border-slate-200 focus:border-[#00694a] focus:ring-2 focus:ring-[#00694a]/20 outline-none">
-            </div>
-            <div>
-                <label class="block text-sm font-bold text-slate-700 mb-1">เบอร์โทรศัพท์มือถือ</label>
-                <input type="tel" id="reg-phone" placeholder="08X-XXX-XXXX" class="w-full px-4 py-3 rounded-xl border border-slate-200 focus:border-[#00694a] focus:ring-2 focus:ring-[#00694a]/20 outline-none">
-            </div>
-            <div>
-                <label class="block text-sm font-bold text-slate-700 mb-1">หมู่ที่รับผิดชอบ</label>
-                <select id="reg-village" class="w-full px-4 py-3 rounded-xl border border-slate-200 focus:border-[#00694a] focus:ring-2 focus:ring-[#00694a]/20 outline-none bg-white">
-                    <option value="" disabled selected>-- กำลังโหลดข้อมูลหมู่... --</option>
-                </select>
-            </div>
-            <button onclick="registerUser()" id="btn-register" class="w-full bg-[#00694a] hover:bg-[#005239] text-white font-bold py-3.5 rounded-xl shadow-lg mt-4 transition-all">ยืนยันการลงทะเบียน</button>
         </div>
     </div>
 
