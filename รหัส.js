@@ -26,6 +26,7 @@ function doPost(e) {
       case 'updateResourceApproval': response = F_updateResourceApproval(requestData.id, requestData.diaperQty, requestData.underpadQty); break;
       case 'getAllVHVs': response = F_getAllVHVs(); break;
       case 'updatePatientVHV': response = F_updatePatientVHV(requestData.id, requestData.vhvId); break;
+      case 'recordCommitteeDecision': response = F_recordCommitteeDecision(requestData.patientIds, requestData.fy, requestData.round, requestData.months); break;
       default: response = { status: 'error', message: 'Action not found' };
     }
     return ContentService.createTextOutput(JSON.stringify(response)).setMimeType(ContentService.MimeType.JSON);
@@ -566,7 +567,6 @@ function F_getAllVHVs() {
 }
 
 // [F17] ฟังก์ชันอัปเดตผู้รับผิดชอบเคสผู้ป่วย (Assigned VHV)
-// [F9] ฟังก์ชันอัปเดตผู้รับผิดชอบเคส และส่ง LINE พร้อมระบบดักจับ Error
 function F_updatePatientVHV(id, vhvId) {
   const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('Patients');
   const data = sheet.getDataRange().getValues();
@@ -632,6 +632,44 @@ function sendLinePushMessage(toUid, textMessage, accessToken) {
   };
   const response = UrlFetchApp.fetch(url, options);
   return response.getContentText();
+}
+
+// [F18] ฟังก์ชันบันทึกมติคณะกรรมการ (กปท.) ลงในฐานข้อมูลผู้ป่วย
+function F_recordCommitteeDecision(patientIds, fy, round, months) {
+  const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('Patients');
+  const data = sheet.getDataRange().getValues();
+  const headers = data[0].map(h => String(h).trim().toLowerCase());
+  
+  const colId = headers.indexOf('patient_id');
+  const colDiaper = headers.indexOf('diaper_size'); // คอลัมน์ O ที่เราเก็บ JSON ผ้าอ้อม
+
+  if (colId === -1 || colDiaper === -1) return { success: false, message: 'โครงสร้างตารางไม่สมบูรณ์' };
+
+  let updatedCount = 0;
+  for (let i = 1; i < data.length; i++) {
+    if (patientIds.includes(String(data[i][colId]))) {
+      let currentDiaper = String(data[i][colDiaper]).trim();
+      let diaperObj = {};
+      
+      if (currentDiaper && currentDiaper !== '') {
+        if (currentDiaper.includes('""')) currentDiaper = currentDiaper.replace(/""/g, '"');
+        if (currentDiaper.startsWith('"') && currentDiaper.endsWith('"')) currentDiaper = currentDiaper.substring(1, currentDiaper.length - 1);
+        try { diaperObj = JSON.parse(currentDiaper); } catch(e) {}
+      }
+
+      // เพิ่มข้อมูลมติคณะกรรมการเข้าไปใน JSON
+      diaperObj.committee_status = "จัดสรรแล้ว";
+      diaperObj.fy = String(fy).trim();
+      diaperObj.round = String(round).trim();
+      diaperObj.alloc_months = parseInt(months) || 1;
+      diaperObj.committee_date = Utilities.formatDate(new Date(), "GMT+7", "dd/MM/yyyy");
+
+      // บันทึกกลับลงคอลัมน์ O
+      sheet.getRange(i + 1, colDiaper + 1).setValue(JSON.stringify(diaperObj));
+      updatedCount++;
+    }
+  }
+  return { success: true, message: `บันทึกมติจัดสรรให้ผู้ป่วยจำนวน ${updatedCount} ราย สำเร็จ!` };
 }
 
 // ==========================================
