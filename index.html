@@ -2,231 +2,125 @@
 <html lang="th">
 <head>
     <meta charset="utf-8"/>
-    <meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" name="viewport"/>
-    <title>ลงทะเบียนเข้าสู่ระบบ</title>
-    <script src="https://cdn.tailwindcss.com?plugins=forms"></script>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title>เข้าสู่ระบบ - เทศบาลเมืองบางแก้ว</title>
+    <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700&display=swap" rel="stylesheet"/>
     <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
     <script charset="utf-8" src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
-
-    <script>
-      tailwind.config = {
-        theme: {
-          extend: {
-            colors: { primary: "#00694a", "primary-container": "#00855e", secondary: "#526069", error: "#ba1a1a" },
-            fontFamily: { sans: ["Sarabun", "sans-serif"] }
-          }
-        }
-      }
-    </script>
     <style>
-        body { font-family: 'Sarabun', sans-serif; background-color: #f8fafc; -webkit-tap-highlight-color: transparent;}
-        .material-symbols-outlined { font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24; }
-        .loader { border: 3px solid #d8e3fb; border-bottom-color: #00694a; border-radius: 50%; width: 40px; height: 40px; animation: spin 1s linear infinite; }
+        body { font-family: 'Sarabun', sans-serif; background-color: #f8fafc; }
+        .material-symbols-outlined { font-variation-settings: 'FILL' 1, 'wght' 400, 'GRAD' 0, 'opsz' 24; }
+        .loader { border: 3px solid #f3f3f3; border-top: 3px solid #00694a; border-radius: 50%; width: 30px; height: 30px; animation: spin 1s linear infinite; }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
     </style>
 </head>
-<body class="flex items-center justify-center min-h-[100dvh] p-4 text-[#111c2d]">
+<body class="flex items-center justify-center min-h-screen p-4">
 
-    <div id="loading-screen" class="flex flex-col items-center justify-center w-full max-w-md space-y-4">
-        <div class="loader"></div>
-        <p class="text-secondary text-sm font-medium animate-pulse" id="loading-text">กำลังเชื่อมต่อฐานข้อมูล...</p>
+    <!-- สถานะกำลังโหลด -->
+    <div id="loading-screen" class="flex flex-col items-center justify-center">
+        <div class="loader mb-4"></div>
+        <p class="text-slate-500 font-medium">กำลังตรวจสอบสิทธิ์การเข้าใช้งาน...</p>
     </div>
 
-    <div id="register-screen" class="hidden w-full max-w-md bg-white p-6 rounded-[24px] shadow-sm border border-gray-100">
+    <!-- หน้าต่างรอแอดมินอนุมัติ (ใหม่) -->
+    <div id="pending-screen" class="hidden w-full max-w-md bg-white rounded-3xl p-8 shadow-xl text-center">
+        <span class="material-symbols-outlined text-[70px] text-amber-500 mb-4 bg-amber-50 w-24 h-24 rounded-full flex items-center justify-center mx-auto">schedule</span>
+        <h2 class="text-2xl font-bold text-slate-800">รอการตรวจสอบสิทธิ์</h2>
+        <p class="text-sm text-slate-500 mt-2 mb-6">ข้อมูลลงทะเบียนของคุณถูกส่งเข้าระบบเรียบร้อยแล้ว<br>โปรดรอเจ้าหน้าที่อนุมัติการเข้าถึงข้อมูลชุมชนเพื่อความปลอดภัย</p>
+        <button onclick="location.reload()" class="w-full bg-[#00694a] text-white font-bold py-3.5 rounded-xl shadow-lg hover:bg-[#005239] transition-all">ตรวจสอบสถานะอีกครั้ง</button>
+    </div>
+
+    <!-- หน้าต่างลงทะเบียน อสม. (อัปเดตเบอร์โทร) -->
+    <div id="registration-screen" class="hidden w-full max-w-md bg-white rounded-3xl p-8 shadow-xl">
         <div class="text-center mb-6">
-            <div class="w-16 h-16 bg-[#eef2ff] text-primary rounded-full flex items-center justify-center mx-auto mb-3">
-                <span class="material-symbols-outlined text-3xl" style="font-variation-settings: 'FILL' 1;">how_to_reg</span>
+            <div class="w-16 h-16 bg-[#00694a]/10 text-[#00694a] rounded-2xl flex items-center justify-center mx-auto mb-3">
+                <span class="material-symbols-outlined text-4xl">how_to_reg</span>
             </div>
-            <h2 class="text-xl font-bold text-primary">ลงทะเบียนเข้าใช้งาน</h2>
-            <p class="text-sm text-secondary mt-1">เทศบาลเมืองบางแก้ว</p>
+            <h1 class="text-2xl font-bold text-slate-800">ลงทะเบียน อสม.</h1>
+            <p class="text-sm text-slate-500 mt-1">กรุณาระบุข้อมูลเพื่อขอสิทธิ์เข้าใช้งานระบบ</p>
         </div>
-
-        <form id="register-form" class="space-y-4">
-            <input type="hidden" id="line-uid" name="uid">
-            
-            <div class="space-y-1.5">
-                <label class="text-sm font-bold text-secondary">ชื่อ-นามสกุล</label>
-                <div class="relative">
-                    <span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">person</span>
-                    <input type="text" id="user-name" required class="w-full pl-10 pr-4 py-3.5 rounded-[14px] border border-gray-200 focus:ring-2 focus:ring-primary focus:border-primary transition-all" placeholder="กรอกชื่อและนามสกุล">
-                </div>
+        
+        <div class="space-y-4">
+            <div>
+                <label class="block text-sm font-bold text-slate-700 mb-1">ชื่อ - นามสกุล</label>
+                <input type="text" id="reg-name" placeholder="ระบุชื่อและนามสกุล" class="w-full px-4 py-3 rounded-xl border border-slate-200 focus:border-[#00694a] focus:ring-2 focus:ring-[#00694a]/20 outline-none">
             </div>
-
-            <div id="vhv-fields" class="space-y-1.5 transition-all">
-                <label class="text-sm font-bold text-secondary">พื้นที่รับผิดชอบ (อสม.)</label>
-                <div class="relative">
-                    <span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">location_on</span>
-                    <select id="user-village" class="w-full pl-10 pr-4 py-3.5 rounded-[14px] border border-gray-200 focus:ring-2 focus:ring-primary focus:border-primary transition-all bg-white">
-                        <option value="" disabled selected>เลือกหมู่ที่รับผิดชอบ...</option>
-                        <option value="1">หมู่ที่ 1</option>
-                        <option value="2">หมู่ที่ 2</option>
-                        <option value="3">หมู่ที่ 3</option>
-                    </select>
-                </div>
+            <div>
+                <label class="block text-sm font-bold text-slate-700 mb-1">เบอร์โทรศัพท์ (ใหม่)</label>
+                <input type="tel" id="reg-phone" placeholder="08X-XXX-XXXX" class="w-full px-4 py-3 rounded-xl border border-slate-200 focus:border-[#00694a] focus:ring-2 focus:ring-[#00694a]/20 outline-none">
             </div>
-
-            <div id="admin-fields" class="hidden space-y-1.5 bg-slate-50 p-4 rounded-[14px] border border-slate-200 mt-2">
-                <label class="text-sm font-bold text-slate-700 flex items-center gap-1">
-                    <span class="material-symbols-outlined text-[16px]">admin_panel_settings</span> รหัสผ่านเจ้าหน้าที่
-                </label>
-                <input type="password" id="admin-password" class="w-full px-4 py-3 rounded-[10px] border border-slate-300 focus:ring-2 focus:ring-slate-500 focus:border-slate-500 transition-all" placeholder="กรอกรหัสลับเพื่อยืนยันตัวตน">
+            <div>
+                <label class="block text-sm font-bold text-slate-700 mb-1">หมู่ที่รับผิดชอบ</label>
+                <select id="reg-village" class="w-full px-4 py-3 rounded-xl border border-slate-200 focus:border-[#00694a] focus:ring-2 focus:ring-[#00694a]/20 outline-none bg-white">
+                    <option value="" disabled selected>-- เลือกหมู่ที่รับผิดชอบ --</option>
+                </select>
             </div>
-
-            <div class="flex justify-end pt-1">
-                <button type="button" id="toggle-admin-btn" class="text-xs font-bold text-gray-400 hover:text-primary transition-colors flex items-center gap-1">
-                    <span class="material-symbols-outlined text-[14px]">shield</span> สำหรับเจ้าหน้าที่สาธารณสุข
-                </button>
-            </div>
-
-            <button type="submit" id="btn-submit" class="w-full mt-2 py-4 bg-primary text-white rounded-[16px] font-bold shadow-md hover:bg-primary-container active:scale-95 transition-all flex justify-center items-center gap-2">
-                ยืนยันการลงทะเบียน
-            </button>
-        </form>
+            <button onclick="registerUser()" id="btn-register" class="w-full bg-[#00694a] hover:bg-[#005239] text-white font-bold py-3.5 rounded-xl shadow-lg mt-4 transition-all">ยืนยันการลงทะเบียน</button>
+        </div>
     </div>
 
     <script>
         const LIFF_ID = "2010500776-6r1shNwL"; 
         const API_URL = "https://script.google.com/macros/s/AKfycbyzPy7sklwURcJiqFDzlK4OEQ8616CJLuNyAjb8euQNzYJLXz_dj4UJM63w8-nI1L3r/exec";
-        
-        let isAdminMode = false;
 
         document.addEventListener("DOMContentLoaded", () => {
-            liff.init({ liffId: LIFF_ID })
-                .then(() => {
-                    if (liff.isLoggedIn()) {
-                        liff.getProfile().then(profile => {
-                            document.getElementById('line-uid').value = profile.userId;
-                            checkUserRegistrationAPI(profile.userId);
-                        }).catch(err => handleError("ดึงข้อมูลไม่ได้: " + err));
-                    } else {
-                        liff.login();
-                    }
-                })
-                .catch(err => handleError("LIFF Init Failed: " + err));
-
-            // ฟังก์ชันสลับโหมด อสม. / เจ้าหน้าที่
-            document.getElementById('toggle-admin-btn').addEventListener('click', function() {
-                isAdminMode = !isAdminMode;
-                const adminFields = document.getElementById('admin-fields');
-                const vhvFields = document.getElementById('vhv-fields');
-                const btn = document.getElementById('btn-submit');
-                
-                if (isAdminMode) {
-                    adminFields.classList.remove('hidden');
-                    vhvFields.classList.add('hidden');
-                    this.innerHTML = `<span class="material-symbols-outlined text-[14px]">arrow_back</span> กลับไปโหมด อสม.`;
-                    this.classList.replace('text-gray-400', 'text-slate-600');
-                    btn.classList.replace('bg-primary', 'bg-slate-800');
-                    btn.classList.replace('hover:bg-primary-container', 'hover:bg-slate-700');
-                    document.getElementById('user-village').removeAttribute('required');
-                } else {
-                    adminFields.classList.add('hidden');
-                    vhvFields.classList.remove('hidden');
-                    this.innerHTML = `<span class="material-symbols-outlined text-[14px]">shield</span> สำหรับเจ้าหน้าที่สาธารณสุข`;
-                    this.classList.replace('text-slate-600', 'text-gray-400');
-                    btn.classList.replace('bg-slate-800', 'bg-primary');
-                    btn.classList.replace('hover:bg-slate-700', 'hover:bg-primary-container');
-                    document.getElementById('user-village').setAttribute('required', 'true');
-                    document.getElementById('admin-password').value = ''; // ล้างรหัสผ่าน
-                }
+            liff.init({ liffId: LIFF_ID }).then(() => {
+                if (liff.isLoggedIn()) checkRegistration(); else liff.login();
             });
+            const vSelect = document.getElementById('reg-village');
+            for(let i=1; i<=15; i++) { vSelect.insertAdjacentHTML('beforeend', `<option value="${i}">หมู่ที่ ${i}</option>`); }
         });
 
-        async function checkUserRegistrationAPI(uid) {
+        async function checkRegistration() {
             try {
-                const response = await fetch(API_URL, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-                    body: JSON.stringify({ action: 'checkUserRegistration', uid: uid })
-                });
+                const profile = await liff.getProfile();
+                const response = await fetch(API_URL, { method: 'POST', body: JSON.stringify({ action: 'checkUserRegistration', uid: profile.userId }) });
                 const data = await response.json();
-                handleLoginResponse(data);
-            } catch (error) {
-                handleError(error);
-            }
-        }
 
-                function handleLoginResponse(response) {
-            const loading = document.getElementById('loading-screen');
-            const register = document.getElementById('register-screen');
+                document.getElementById('loading-screen').classList.add('hidden');
 
-            if (response.status === 'unregistered') {
-                loading.classList.add('hidden');
-                register.classList.remove('hidden');
-                
-                // [เพิ่มส่วนนี้] ดึงจำนวนหมู่จาก Config มาสร้างตัวเลือกให้ อสม.
-                const vCount = parseInt(response.village_count) || 15;
-                const villageSelect = document.getElementById('user-village');
-                if (villageSelect) {
-                    villageSelect.innerHTML = '<option value="" disabled selected>เลือกหมู่ที่รับผิดชอบ...</option>';
-                    for (let i = 1; i <= vCount; i++) {
-                        villageSelect.insertAdjacentHTML('beforeend', `<option value="${i}">หมู่ที่ ${i}</option>`);
+                if (data.status === 'registered') {
+                    // [จุดสำคัญ] ตรวจสอบสถานะว่าแอดมินอนุมัติหรือยัง
+                    if (data.user_status === 'Pending') {
+                        document.getElementById('pending-screen').classList.remove('hidden');
+                    } else if (data.user_status === 'Rejected') {
+                        alert('บัญชีของคุณถูกระงับการเข้าถึงข้อมูลชุมชน');
+                    } else { // Active
+                        if (data.role === 'ADMIN') window.location.href = 'admin_dashboard.html';
+                        else window.location.href = 'vhv_dashboard.html';
                     }
-                }
-
-            } else if (response.status === 'registered') {
-                document.getElementById('loading-text').innerText = `ยินดีต้อนรับ ${response.name} กำลังพาเข้าสู่ระบบ...`;
-                document.getElementById('loading-text').classList.replace('text-secondary', 'text-primary');
-                
-                // คัดกรองการเปลี่ยนหน้าตาม Role
-                setTimeout(() => {
-                    if (response.role === 'ADMIN') {
-                        window.location.href = 'admin_dashboard.html';
-                    } else {
-                        window.location.href = 'dashboard.html';
-                    }
-                }, 1000);
-
-            } else if (response.status === 'inactive') {
-                loading.innerHTML = `<span class="material-symbols-outlined text-error text-4xl mb-2">block</span><p class="text-error font-bold">บัญชีของคุณถูกระงับ</p>`;
-            }
-        }
-
-        function handleError(error) {
-            document.getElementById('loading-text').innerText = "เกิดข้อผิดพลาด: " + error;
-            document.getElementById('loading-text').classList.replace('text-secondary', 'text-error');
-        }
-
-        document.getElementById('register-form').addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const btn = document.getElementById('btn-submit');
-            const originalText = btn.innerHTML;
-            btn.disabled = true;
-            btn.innerHTML = `<div class="loader" style="width: 20px; height: 20px; border-width: 2px; border-bottom-color: white;"></div> กำลังบันทึก...`;
-
-                        const payload = {
-                action: 'registerNewUser',
-                uid: document.getElementById('line-uid').value,
-                name: document.getElementById('user-name').value,
-                // [แก้ไข] เปลี่ยนจาก '-' เป็น 'ADMIN'
-                village: isAdminMode ? 'ADMIN' : document.getElementById('user-village').value, 
-                adminPassword: isAdminMode ? document.getElementById('admin-password').value : null
-            };
-
-            try {
-                const response = await fetch(API_URL, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-                    body: JSON.stringify(payload)
-                });
-                const data = await response.json();
-                
-                if(data.success) {
-                    btn.innerHTML = `<span class="material-symbols-outlined">check_circle</span> ลงทะเบียนสำเร็จ`;
-                    btn.classList.replace(isAdminMode ? 'bg-slate-800' : 'bg-primary', 'bg-[#22c55e]');
-                    setTimeout(() => location.reload(), 1500);
                 } else {
-                    alert(data.message);
-                    btn.innerHTML = originalText;
-                    btn.disabled = false;
+                    document.getElementById('registration-screen').classList.remove('hidden');
                 }
-            } catch (error) {
-                alert("เชื่อมต่อฐานข้อมูลล้มเหลว");
-                btn.innerHTML = originalText;
-                btn.disabled = false;
-            }
-        });
+            } catch (error) { alert("เกิดข้อผิดพลาดในการเชื่อมต่อ"); }
+        }
+
+        async function registerUser() {
+            const name = document.getElementById('reg-name').value;
+            const phone = document.getElementById('reg-phone').value;
+            const village = document.getElementById('reg-village').value;
+            
+            if (!name || !phone || !village) return alert("กรุณากรอกข้อมูลให้ครบถ้วน");
+
+            const btn = document.getElementById('btn-register');
+            btn.disabled = true; btn.innerText = "กำลังบันทึก...";
+
+            try {
+                const profile = await liff.getProfile();
+                const response = await fetch(API_URL, {
+                    method: 'POST',
+                    body: JSON.stringify({ action: 'registerUser', uid: profile.userId, name: name, role: 'VHV', village_no: village, phone: phone })
+                });
+                const data = await response.json();
+                
+                if (data.status === 'success') {
+                    // ลงทะเบียนเสร็จ เด้งไปหน้าจอรออนุมัติ
+                    document.getElementById('registration-screen').classList.add('hidden');
+                    document.getElementById('pending-screen').classList.remove('hidden');
+                } else { alert("เกิดข้อผิดพลาด"); btn.disabled = false; btn.innerText = "ยืนยันการลงทะเบียน"; }
+            } catch (error) { alert("เชื่อมต่อล้มเหลว"); btn.disabled = false; btn.innerText = "ยืนยันการลงทะเบียน"; }
+        }
     </script>
 </body>
 </html>
