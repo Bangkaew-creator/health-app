@@ -55,6 +55,7 @@
                 <button class="tab-btn active" id="tab-new" onclick="switchTab('new')">📋 เคสใหม่รอประเมินแรกเข้า (<span id="badge-new">0</span>)</button>
                 <button class="tab-btn" id="tab-reassess" onclick="switchTab('reassess')">🔄 เคสค้างติดตามประเมินซ้ำ (<span id="badge-reassess">0</span>)</button>
                 <button class="tab-btn" id="tab-vhv" onclick="switchTab('vhv')">👥 ทำเนียบ อสม. แยกหมู่ (<span id="badge-vhv-count">0</span>)</button>
+                <button class="tab-btn text-amber-600" id="tab-approve" onclick="switchTab('approve')">🔐 รออนุมัติ อสม. (<span id="badge-pending-vhv">0</span>)</button>           
             </div>
 
             <div class="p-4 lg:p-6">
@@ -83,6 +84,15 @@
 
                 <div id="content-vhv" class="hidden space-y-4">
                     <div id="vhv-list" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5"></div>
+                    <!-- แท็บที่ 4: อนุมัติ อสม. ใหม่ -->
+                <div id="content-approve" class="hidden space-y-4">
+                    <div class="bg-amber-50 border border-amber-200 p-4 rounded-xl mb-4">
+                        <h3 class="text-sm font-bold text-amber-800">ระบบคัดกรองความปลอดภัย (Security Check)</h3>
+                        <p class="text-[11px] text-amber-700 mt-1">ผู้ที่ลงทะเบียนเข้ามาใหม่จะไม่สามารถเห็นข้อมูลชุมชนได้ จนกว่าแอดมินจะกดยืนยันสถานะ "อนุมัติ" ให้บุคคลนี้</p>
+                    </div>
+                    <div id="pending-vhv-list" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5"></div>
+                    <div id="empty-pending" class="hidden text-center py-16 text-slate-400"><p class="text-sm">ไม่มีคำขอลงทะเบียนใหม่ค้างอยู่</p></div>
+                </div>
                 </div>
             </div>
         </div>
@@ -129,18 +139,82 @@
             return Math.floor(diffTime / (1000 * 60 * 60 * 24));
         }
 
+        let pendingVHVs = [];
+
+        // อัปเดต loadDataChannels ให้ดึงข้อมูล Pending มาด้วย
         async function loadDataChannels() {
             try {
-                const [pRes, vRes] = await Promise.all([
+                const [pRes, vRes, pendingRes] = await Promise.all([
                     fetch(API_URL, { method: 'POST', body: JSON.stringify({ action: 'getAllPatients' }) }),
-                    fetch(API_URL, { method: 'POST', body: JSON.stringify({ action: 'getAllVHVs' }) })
+                    fetch(API_URL, { method: 'POST', body: JSON.stringify({ action: 'getAllVHVs' }) }),
+                    fetch(API_URL, { method: 'POST', body: JSON.stringify({ action: 'getPendingVHVs' }) }) // <--- ดึงรออนุมัติ
                 ]);
                 allPatients = await pRes.json(); allVHVs = await vRes.json();
+                pendingVHVs = await pendingRes.json();
+                
                 distributePatients();
+                renderPendingVHVs(); // เรนเดอร์จออนุมัติ
                 document.getElementById('loading-state').classList.add('hidden');
                 document.getElementById('filter-wrapper').classList.remove('hidden');
                 switchTab(currentTab);
             } catch (e) { alert("ดึงฐานข้อมูลล้มเหลว"); }
+        }
+
+        // เพิ่มฟังก์ชันสลับแท็บให้รู้จัก 'approve'
+        function switchTab(tab) {
+            currentTab = tab;
+            ['new', 'reassess', 'vhv', 'approve'].forEach(t => {
+                const btn = document.getElementById(`tab-${t}`);
+                const content = document.getElementById(`content-${t}`);
+                if(btn) btn.classList.remove('active');
+                if(content) content.classList.add('hidden');
+            });
+            document.getElementById(`tab-${tab}`).classList.add('active');
+            document.getElementById(`content-${tab}`).classList.remove('hidden');
+            
+            const filterWrap = document.getElementById('filter-wrapper');
+            if(tab === 'approve') filterWrap.classList.add('hidden'); // ซ่อนตัวกรองหมู่ในหน้าอนุมัติ
+            else { filterWrap.classList.remove('hidden'); filterDataDisplay(); }
+        }
+
+        // สร้างการ์ดรออนุมัติ
+        function renderPendingVHVs() {
+            const container = document.getElementById('pending-vhv-list');
+            container.innerHTML = '';
+            document.getElementById('badge-pending-vhv').innerText = pendingVHVs.length;
+
+            if(pendingVHVs.length === 0) { document.getElementById('empty-pending').classList.remove('hidden'); return; }
+            document.getElementById('empty-pending').classList.add('hidden');
+
+            pendingVHVs.forEach(v => {
+                container.insertAdjacentHTML('beforeend', `
+                    <div class="bg-white rounded-[20px] p-5 shadow-lg border border-amber-300 relative overflow-hidden">
+                        <div class="absolute top-0 right-0 bg-amber-500 text-white text-[10px] font-bold px-3 py-1 rounded-bl-xl rounded-tr-[20px]">รอตรวจสอบ</div>
+                        <h3 class="font-bold text-slate-800 text-sm mt-2">${v.name}</h3>
+                        <p class="text-[11px] text-amber-700 bg-amber-50 font-bold px-2 py-0.5 rounded inline-block mt-1">ขอรับสิทธิ์ หมู่ที่ ${v.village_no}</p>
+                        <p class="text-[11px] text-slate-500 mt-2 flex items-center gap-1"><span class="material-symbols-outlined text-[14px]">call</span> ${v.phone}</p>
+                        
+                        <div class="flex gap-2 mt-4 pt-3 border-t border-slate-100">
+                            <button onclick="manageVHVStatus('${v.uid}', 'Rejected')" class="flex-1 py-2 bg-red-50 text-red-600 font-bold text-xs rounded-xl hover:bg-red-100">ปฏิเสธ</button>
+                            <button onclick="manageVHVStatus('${v.uid}', 'Active')" class="flex-[2] py-2 bg-[#00694a] text-white font-bold text-xs rounded-xl hover:bg-[#005239]">✅ อนุมัติสิทธิ์</button>
+                        </div>
+                    </div>
+                `);
+            });
+        }
+
+        // ฟังก์ชันสั่งยิง API อนุมัติสิทธิ์
+        async function manageVHVStatus(uid, actionType) {
+            if(!confirm(actionType === 'Active' ? 'ยืนยันการอนุมัติสิทธิ์ให้บุคคลนี้ใช่หรือไม่?' : 'ยืนยันการปฏิเสธสิทธิ์ใช่หรือไม่?')) return;
+            
+            try {
+                const response = await fetch(API_URL, { method: 'POST', body: JSON.stringify({ action: 'manageVHVStatus', targetUid: uid, actionType: actionType }) });
+                const result = await response.json();
+                if(result.success) {
+                    alert('ดำเนินการเรียบร้อยแล้ว');
+                    loadDataChannels(); // รีเฟรชข้อมูลทั้งหมด
+                } else alert(result.message);
+            } catch(e) { alert("เชื่อมต่อล้มเหลว"); }
         }
 
         function distributePatients() {
