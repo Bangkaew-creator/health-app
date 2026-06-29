@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="utf-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title>รายงาน Export - ระบบจัดการผู้ป่วย</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700&display=swap" rel="stylesheet"/>
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+    <!-- นำเข้าไลบรารี SheetJS สำหรับสร้างไฟล์ Excel -->
+    <script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
+    <script charset="utf-8" src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+    <style>
+        body { font-family: 'Sarabun', sans-serif; background-color: #f4f7fa; }
+        .material-symbols-outlined { font-variation-settings: 'FILL' 1, 'wght' 400, 'GRAD' 0, 'opsz' 24; }
+        .bg-navy { background-color: #0f172a; } .text-navy { color: #0f172a; }
+        .loader-small { border: 2px solid #f3f3f3; border-bottom-color: #00694a; border-radius: 50%; width: 30px; height: 30px; animation: spin 1s linear infinite; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        /* แต่ง Checkbox ให้สวยงามน่ากด */
+        .check-row { accent-color: #00694a; width: 20px; height: 20px; cursor: pointer; }
+    </style>
+</head>
+<body class="flex h-[100dvh] overflow-hidden text-slate-800 relative">
+
+    <div id="sidebar-overlay" class="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-40 hidden lg:hidden" onclick="toggleSidebar()"></div>
+    <aside id="sidebar" class="fixed inset-y-0 left-0 w-72 bg-navy text-white flex flex-col z-50 transform -translate-x-full lg:translate-x-0 lg:static transition-transform duration-300 ease-in-out">
+        <div class="p-6 flex items-center justify-between border-b border-slate-700/40">
+            <div class="flex items-center gap-3">
+                <div class="w-11 h-11 rounded-xl bg-white/10 flex items-center justify-center border border-amber-400/30"><span class="material-symbols-outlined text-amber-400 text-[26px]">local_hospital</span></div>
+                <div><h1 id="sidebar-hospital-name" class="font-bold text-[15px] tracking-wide text-white">กำลังโหลด...</h1><p class="text-[10px] text-amber-400 font-medium">ระบบสนับสนุนการดูแลผู้ป่วย</p></div>
+            </div>
+            <button onclick="toggleSidebar()" class="lg:hidden text-slate-400 p-1"><span class="material-symbols-outlined">close</span></button>
+        </div>
+        <nav class="flex-1 px-4 py-6 space-y-2 overflow-y-auto">
+            <a href="admin_dashboard.html" class="flex items-center gap-3 px-4 py-3.5 text-slate-400 hover:bg-white/5 hover:text-white rounded-xl font-medium transition-all"><span class="material-symbols-outlined">dashboard</span> ภาพรวมระบบ</a>
+            <a href="admin_resources.html" class="flex items-center gap-3 px-4 py-3.5 text-slate-400 hover:bg-white/5 hover:text-white rounded-xl font-medium transition-all"><span class="material-symbols-outlined">inventory_2</span> บริหารทรัพยากร</a>
+            <a href="admin_datacenter.html" class="flex items-center gap-3 px-4 py-3.5 text-slate-400 hover:bg-white/5 hover:text-white rounded-xl font-medium transition-all"><span class="material-symbols-outlined">folder_shared</span> ศูนย์ข้อมูลผู้ป่วย</a>
+            <a href="admin_delegation.html" class="flex items-center gap-3 px-4 py-3.5 text-slate-400 hover:bg-white/5 hover:text-white rounded-xl font-medium transition-all"><span class="material-symbols-outlined">assignment_ind</span> มอบหมายงาน อสม.</a>
+            <a href="admin_reports.html" class="flex items-center justify-between px-4 py-3.5 bg-white/10 text-amber-400 rounded-xl font-bold transition-all"><span class="flex items-center gap-3"><span class="material-symbols-outlined">summarize</span> รายงาน (Export)</span><span class="w-1.5 h-1.5 rounded-full bg-amber-400"></span></a>
+        </nav>
+    </aside>
+
+    <main class="flex-1 flex flex-col min-h-0 bg-slate-50">
+        <header class="h-20 min-h-[80px] bg-white shadow-sm flex items-center justify-between px-6 lg:px-8 z-10 flex-shrink-0 border-b border-slate-100">
+            <div class="flex items-center">
+                <button onclick="toggleSidebar()" class="lg:hidden p-2.5 -ml-2 mr-3 text-slate-600 hover:bg-slate-100 rounded-xl transition-colors"><span class="material-symbols-outlined text-[26px]">menu</span></button>
+                <div>
+                    <h2 class="text-base lg:text-lg font-bold text-slate-900 leading-tight">สร้างรายงานโครงการ กปท.</h2>
+                    <p id="header-hospital-name" class="text-[11px] lg:text-xs text-slate-400 font-medium mt-0.5">คัดกรองรายชื่อและออกรายงานเป็นไฟล์ Excel</p>
+                </div>
+            </div>
+            
+            <!-- ปุ่มกดโหลด Excel ตัวโตๆ -->
+            <button onclick="exportToExcel()" class="bg-[#00694a] hover:bg-[#005239] text-white px-4 py-2 lg:px-6 lg:py-2.5 rounded-xl font-bold text-sm flex items-center gap-2 shadow-md transition-all active:scale-95">
+                <span class="material-symbols-outlined text-[20px]">download</span> ดาวน์โหลด Excel (<span id="select-count">0</span>)
+            </button>
+        </header>
+
+        <div class="flex-1 overflow-y-auto p-4 lg:p-6 pb-20">
+            
+            <!-- คำแนะนำการใช้งาน -->
+            <div class="bg-blue-50 border border-blue-100 p-4 rounded-xl mb-5 flex items-start gap-3">
+                <span class="material-symbols-outlined text-blue-500 mt-0.5">info</span>
+                <div>
+                    <h3 class="text-sm font-bold text-blue-800">คำแนะนำสำหรับคณะกรรมการ</h3>
+                    <p class="text-xs text-blue-600 mt-1">ให้เจ้าหน้าที่ทำการติ๊กเครื่องหมายถูก (✓) ด้านหน้าชื่อผู้ป่วยที่ผ่านมติการพิจารณา เพื่อนำรายชื่อไปสร้างไฟล์รายงาน Excel สำหรับเบิกจ่าย โดยระบบได้แสดงตัวช่วยการตัดสินใจไว้ในตารางเรียบร้อยแล้ว</p>
+                </div>
+            </div>
+
+            <div id="loading-state" class="flex flex-col items-center justify-center py-20 space-y-3">
+                <div class="loader-small"></div><p class="text-sm text-slate-400 animate-pulse">กำลังดึงบัญชีรายชื่อ...</p>
+            </div>
+
+            <!-- ตารางรายชื่อสำหรับติ๊กเลือก -->
+            <div id="table-container" class="bg-white border border-slate-200 rounded-[20px] shadow-sm overflow-hidden hidden">
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left border-collapse min-w-[1000px]">
+                        <thead>
+                            <tr class="bg-slate-100 text-slate-600 text-[12px] uppercase tracking-wider">
+                                <th class="p-4 w-12 text-center border-b border-slate-200">
+                                    <input type="checkbox" id="check-all" onchange="toggleAll(this)" class="check-row">
+                                </th>
+                                <th class="p-4 font-bold border-b border-slate-200">ชื่อ-นามสกุล / ที่อยู่</th>
+                                <th class="p-4 font-bold border-b border-slate-200 text-center">คะแนน ADL</th>
+                                <th class="p-4 font-bold border-b border-slate-200 text-center">ประเมินผ้าอ้อม</th>
+                                <th class="p-4 font-bold border-b border-slate-200 text-center">ประวัติจัดสรร (กปท.)</th>
+                                <th class="p-4 font-bold border-b border-slate-200">ความต้องการ</th>
+                            </tr>
+                        </thead>
+                        <tbody id="report-list" class="text-sm">
+                            <!-- แถวข้อมูลจะถูกสร้างด้วย Javascript -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+        </div>
+    </main>
+
+    <script>
+        const LIFF_ID = "2010500776-6r1shNwL"; 
+        const API_URL = "https://script.google.com/macros/s/AKfycbyzPy7sklwURcJiqFDzlK4OEQ8616CJLuNyAjb8euQNzYJLXz_dj4UJM63w8-nI1L3r/exec";
+        
+        let reportData = []; // เก็บข้อมูลดิบที่จะเอาไปใส่ Excel
+
+        function toggleSidebar() { document.getElementById('sidebar').classList.toggle('-translate-x-full'); }
+
+        // ฟังก์ชันล้างฟันหนูซ้อน
+        function cleanJSON(rawStr) {
+            if (!rawStr || String(rawStr).trim() === '') return null;
+            let cleanStr = String(rawStr).trim();
+            if (cleanStr.includes('""')) cleanStr = cleanStr.replace(/""/g, '"');
+            if (cleanStr.startsWith('"') && cleanStr.endsWith('"')) cleanStr = cleanStr.substring(1, cleanStr.length - 1);
+            try { return JSON.parse(cleanStr); } catch(e) { return null; }
+        }
+
+        document.addEventListener("DOMContentLoaded", () => {
+            liff.init({ liffId: LIFF_ID }).then(() => {
+                if (liff.isLoggedIn()) { liff.getProfile().then(p => verifyAdminAccess(p.userId)); } else window.location.href = 'index.html';
+            }).catch(() => window.location.href = 'index.html');
+        });
+
+        async function verifyAdminAccess(uid) {
+            try {
+                const response = await fetch(API_URL, { method: 'POST', body: JSON.stringify({ action: 'checkUserRegistration', uid: uid }) });
+                const data = await response.json();
+                if (data.status === 'registered' && data.role === 'ADMIN') {
+                    document.getElementById('sidebar-hospital-name').innerText = data.hospital_name || 'เทศบาลเมืองบางแก้ว';
+                    loadReportData();
+                } else window.location.href = 'dashboard.html';
+            } catch (error) { window.location.href = 'index.html'; }
+        }
+
+        async function loadReportData() {
+            try {
+                const response = await fetch(API_URL, { method: 'POST', body: JSON.stringify({ action: 'getAllPatients' }) });
+                const patients = await response.json();
+                
+                reportData = [];
+                const tbody = document.getElementById('report-list');
+                tbody.innerHTML = '';
+
+                patients.forEach(p => {
+                    // ดึงมาเฉพาะคนไข้ที่สถานะ Active เท่านั้น
+                    if (String(p.status || 'Active').trim().toLowerCase() !== 'active') return;
+
+                    const d = cleanJSON(p.diaper);
+                    const adlScore = (p.adl && p.adl !== '-') ? parseInt(p.adl) : null;
+                    
+                    // วิเคราะห์ข้อมูลเพื่อสร้าง Indicator บนหน้าจอ
+                    
+                    // 1. Indicator ADL
+                    let adlBadge = `<span class="bg-red-50 text-red-600 font-bold px-2 py-1 rounded text-xs border border-red-100 flex items-center justify-center gap-1"><span class="material-symbols-outlined text-[14px]">warning</span> ยังไม่ประเมิน</span>`;
+                    if (adlScore !== null) {
+                        adlBadge = `<span class="bg-blue-50 text-blue-700 font-bold px-3 py-1 rounded-full text-sm">${adlScore}</span>`;
+                    }
+
+                    // 2. Indicator ฟอร์มผ้าอ้อม
+                    let diaperFormBadge = `<span class="bg-red-50 text-red-600 font-bold px-2 py-1 rounded text-xs border border-red-100">ไม่มีฟอร์ม</span>`;
+                    let needText = '-';
+                    let exportSize = '-';
+
+                    if (d) {
+                        diaperFormBadge = `<span class="bg-emerald-50 text-emerald-600 font-bold px-2 py-1 rounded text-xs border border-emerald-100 flex items-center justify-center gap-1"><span class="material-symbols-outlined text-[14px]">check_circle</span> ประเมินแล้ว</span>`;
+                        
+                        let needs = [];
+                        if (d.req_diaper) {
+                            needs.push(`ผ้าอ้อมไซส์ ${d.size || 'ไม่ระบุ'}`);
+                            exportSize = d.size || ''; // ค่าที่จะเอาไปใส่ Excel
+                        }
+                        if (d.req_underpad) {
+                            needs.push(`แผ่นรองซับ`);
+                            exportSize = exportSize === '-' ? 'แผ่นรองซับ' : exportSize; // ถ้ามีแต่แผ่นรอง ก็เอาคำนี้ไปใส่แทน
+                        }
+                        needText = needs.length > 0 ? needs.join(', ') : 'ไม่ต้องการ';
+                    }
+
+                    // 3. Indicator ประวัติจัดสรร
+                    let historyBadge = `<span class="text-slate-400 text-xs font-medium">ยังไม่เคยได้รับ</span>`;
+                    if (d && d.approve_status === 'อนุมัติแล้ว') {
+                        historyBadge = `<span class="bg-amber-100 text-amber-700 font-bold px-2 py-1 rounded text-[10px] border border-amber-200">เคยได้รับ (อนุมัติล่าสุด ${d.approve_date || '-'})</span>`;
+                    }
+
+                    // เก็บออบเจกต์สำหรับดึงไปทำ Excel (จับคู่ชื่อคอลัมน์ให้ตรงเป๊ะ)[cite: 1]
+                    const excelRow = {
+                        "ลำดับ": 0, // จะเติมเลขให้ตอนกด Export
+                        "ชื่อ-นามสกุล": p.name || '',
+                        "เลขประจำตัวประชาชน": p.id_card || '',
+                        "บ้านเลขที่": p.house_no || '',
+                        "หมู่": p.village_no || '',
+                        "ADL": p.adl || '',
+                        "เบอร์โทรศัพท์": p.phone || '',
+                        "ผ้าอ้อมผู้ใหญ่(ขนาด)": exportSize
+                    };
+
+                    // โครงสร้างตาราง HTML
+                    const tr = document.createElement('tr');
+                    tr.className = "border-b border-slate-100 hover:bg-slate-50 transition-colors";
+                    tr.innerHTML = `
+                        <td class="p-4 text-center">
+                            <!-- กล่องเช็คติ๊กเลือก -->
+                            <input type="checkbox" class="check-row row-checkbox" value="${p.id}" onchange="updateSelectCount()">
+                        </td>
+                        <td class="p-4">
+                            <p class="font-bold text-slate-800">${p.name}</p>
+                            <p class="text-[11px] text-slate-500">ID: ${p.id_card || '-'} | หมู่ ${p.village_no || '-'} บ้านเลขที่ ${p.house_no || '-'}</p>
+                        </td>
+                        <td class="p-4 text-center">${adlBadge}</td>
+                        <td class="p-4 text-center">${diaperFormBadge}</td>
+                        <td class="p-4 text-center">${historyBadge}</td>
+                        <td class="p-4">
+                            <p class="text-xs font-bold text-navy">${needText}</p>
+                        </td>
+                    `;
+                    
+                    // ผูก Data ไว้ที่ตัว Element เลยเพื่อง่ายตอนดึง
+                    tr.dataset.excelInfo = JSON.stringify(excelRow);
+                    tbody.appendChild(tr);
+                });
+
+                document.getElementById('loading-state').classList.add('hidden');
+                document.getElementById('table-container').classList.remove('hidden');
+            } catch (error) { alert("ดึงข้อมูลล้มเหลว"); }
+        }
+
+        function toggleAll(source) {
+            const checkboxes = document.querySelectorAll('.row-checkbox');
+            checkboxes.forEach(cb => cb.checked = source.checked);
+            updateSelectCount();
+        }
+
+        function updateSelectCount() {
+            const count = document.querySelectorAll('.row-checkbox:checked').length;
+            document.getElementById('select-count').innerText = count;
+        }
+
+        // ฟังก์ชันหัวใจสำคัญ: แปลงคนที่ถูกติ๊ก ให้กลายเป็นไฟล์ Excel 
+        function exportToExcel() {
+            const checkedBoxes = document.querySelectorAll('.row-checkbox:checked');
+            if (checkedBoxes.length === 0) return alert('กรุณาติ๊กเลือกรายชื่อที่ต้องการออกรายงานอย่างน้อย 1 รายการครับ');
+
+            const exportData = [];
+            let runningNumber = 1;
+
+            // ดึงข้อมูลจากแถวที่ถูกติ๊ก
+            checkedBoxes.forEach(cb => {
+                const tr = cb.closest('tr');
+                const rowData = JSON.parse(tr.dataset.excelInfo);
+                rowData["ลำดับ"] = runningNumber++; // รันเลขลำดับให้ใหม่สวยๆ[cite: 1]
+                exportData.push(rowData);
+            });
+
+            // สร้าง Workbook และ Sheet ด้วยไลบรารี SheetJS
+            const worksheet = XLSX.utils.json_to_sheet(exportData);
+            const workbook = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(workbook, worksheet, "รายชื่ออนุมัติผ้าอ้อม");
+
+            // ปรับความกว้างคอลัมน์ Excel ให้สวยงามอ่านง่าย
+            worksheet['!cols'] = [
+                { wch: 8 },  // ลำดับ
+                { wch: 25 }, // ชื่อ
+                { wch: 20 }, // เลข ปชช
+                { wch: 15 }, // บ้านเลขที่
+                { wch: 8 },  // หมู่
+                { wch: 8 },  // ADL
+                { wch: 15 }, // เบอร์โทร
+                { wch: 20 }  // ขนาดผ้าอ้อม
+            ];
+
+            // สร้างไฟล์แล้วดาวน์โหลดลงเครื่องทันที
+            const dateStr = new Date().toISOString().split('T')[0];
+            XLSX.writeFile(workbook, `รายงานเบิกผ้าอ้อม_กปท_${dateStr}.xlsx`);
+        }
+    </script>
+</body>
+</html>
