@@ -571,18 +571,58 @@ function F_updatePatientVHV(id, vhvId) {
   
   const headers = data[0].map(h => String(h).trim().toLowerCase());
   const colId = headers.indexOf('patient_id');
+  const colName = headers.indexOf('name');
+  const colHouse = headers.indexOf('house_no');
+  const colVillage = headers.indexOf('village_no');
   const colAssignedVHV = headers.indexOf('assigned_vhv_id');
 
-  if (colId === -1 || colAssignedVHV === -1) return { success: false, message: 'โครงสร้างตารางผิดพลาด ไม่พบช่อง Patient_ID หรือ Assigned_VHV_ID' };
+  if (colId === -1 || colAssignedVHV === -1) return { success: false, message: 'โครงสร้างตารางไม่สมบูรณ์' };
 
   for (let i = 1; i < data.length; i++) {
     if (String(data[i][colId]) === String(id)) {
-      // บันทึกรหัส UID ของ อสม. ลงไปในช่องคอลัมน์ AC (Assigned_VHV_ID)
+      // 1. บันทึก UID อสม. ลงคอลัมน์ AC (Assigned_VHV_ID)
       sheet.getRange(i + 1, colAssignedVHV + 1).setValue(String(vhvId).trim());
-      return { success: true, message: 'บันทึกการมอบหมายงานสำเร็จ' };
+      
+      // 2. [ฟีเจอร์ส่ง LINE อัตโนมัติ] ดึงชื่อคนไข้ไปทำข้อความ
+      const pName = colName > -1 ? data[i][colName] : 'ไม่ระบุชื่อ';
+      const pHouse = colHouse > -1 ? data[i][colHouse] : '-';
+      const pVillage = colVillage > -1 ? data[i][colVillage] : '-';
+      
+      const messageText = `📋 มีการมอบหมายภารกิจ อสม. รายบุคคล\n\nรบกวนลงพื้นที่ติดตามดูแลและประเมินอาการผู้ป่วยในความรับผิดชอบของท่านครับ:\n\n👤 ผู้ป่วย: ${pName}\n🏠 ที่อยู่: บ้านเลขที่ ${pHouse} หมู่ที่ ${pVillage}\n\nเมื่อดำเนินการเสร็จสิ้น รบกวนบันทึกผ่านแอปพลิเคชันด้วยครับ ขอบคุณครับ 🙏`;
+      
+      // ดึง Channel Access Token จากหน้า Config มาใช้งาน
+      const lineToken = F_getConfig('LINE_CHANNEL_ACCESS_TOKEN'); 
+      if (lineToken && vhvId && !vhvId.startsWith('TEMP_')) {
+        try {
+          sendLinePushMessage(vhvId, messageText, lineToken);
+        } catch(e) {
+          console.log("LINE Push Error: " + e);
+        }
+      }
+      
+      return { success: true, message: 'บันทึกการมอบหมายและส่งแจ้งเตือน LINE เรียบร้อยแล้ว' };
     }
   }
   return { success: false, message: 'ไม่พบรหัสผู้ป่วยรายนี้' };
+}
+
+// ฟังก์ชันภายในสำหรับเชื่อมต่อกับเซิร์ฟเวอร์ LINE Developers
+function sendLinePushMessage(toUid, textMessage, accessToken) {
+  const url = "https://api.line.me/v2/bot/message/push";
+  const payload = {
+    "to": toUid,
+    "messages": [{ "type": "text", "text": textMessage }]
+  };
+  const options = {
+    "method": "post",
+    "headers": {
+      "Content-Type": "application/json",
+      "Authorization": "Bearer " + accessToken
+    },
+    "payload": JSON.stringify(payload),
+    "muteHttpExceptions": true
+  };
+  UrlFetchApp.fetch(url, options);
 }
 
 // ==========================================
