@@ -81,12 +81,15 @@
             }
         }
 
-        // ฟังก์ชันตรวจสอบสิทธิ์ (อัปเดตแก้ข้อ 3: จัดการหน้าจอให้เนียน ไม่กระพริบ)
+        // ฟังก์ชันตรวจสอบสิทธิ์ (อัปเดต: ล็อกหน้าจอ Pending อย่างเหนียวแน่น)
         async function checkRegistration(isManualRecheck = false) {
             const btnRecheck = document.getElementById('btn-recheck');
-            if(isManualRecheck) { btnRecheck.disabled = true; btnRecheck.innerHTML = '<div class="loader" style="width:20px;height:20px;border-width:2px;"></div> กำลังตรวจสอบ...'; }
+            if(isManualRecheck) { 
+                btnRecheck.disabled = true; 
+                btnRecheck.innerHTML = '<div class="loader" style="width:20px;height:20px;border-width:2px;border-top-color:white;border-bottom-color:transparent;"></div> กำลังตรวจสอบ...'; 
+            }
 
-            // ซ่อนทุกหน้าจอเพื่อกันความสับสน
+            // ซ่อนทุกหน้าจอเริ่มแรก
             document.getElementById('registration-screen').classList.add('hidden');
             document.getElementById('pending-screen').classList.add('hidden');
             document.getElementById('loading-screen').classList.remove('hidden');
@@ -99,28 +102,35 @@
                 document.getElementById('loading-screen').classList.add('hidden');
 
                 if (data.status === 'registered') {
-                    if (data.user_status === 'Pending') {
+                    // แปลงสถานะเป็นตัวพิมพ์เล็กทั้งหมดเพื่อป้องกันปัญหาการพิมพ์ในชีต (Pending, pending, PENDING)
+                    const uStatus = String(data.user_status).toLowerCase();
+                    
+                    if (uStatus === 'pending') {
                         document.getElementById('pending-screen').classList.remove('hidden');
-                        if(isManualRecheck) alert('สถานะของคุณยังอยู่ระหว่างรอการตรวจสอบจากเจ้าหน้าที่ครับ');
-                    } else if (data.user_status === 'Rejected') {
+                        if(isManualRecheck) alert('ระบบพบข้อมูล UID ของคุณแล้ว\nแต่สถานะยังอยู่ระหว่าง "รอการตรวจสอบ" จากเจ้าหน้าที่ครับ');
+                    } else if (uStatus === 'rejected') {
                         alert('บัญชีของคุณไม่อนุญาตให้เข้าถึงระบบ');
                     } else { 
-                        // อนุมัติแล้ว ให้ไปหน้า Dashboard ได้เลย
+                        // อนุมัติแล้ว (Active)
                         if (data.role === 'ADMIN') window.location.href = 'admin_dashboard.html';
                         else window.location.href = 'vhv_dashboard.html';
                     }
                 } else {
-                    // ไม่เคยลงทะเบียน (สร้าง Dropdown หมู่ แล้วเปิดหน้าลงทะเบียน)
+                    // ถ้าหา UID ไม่เจอจริงๆ ถึงจะโชว์หน้าลงทะเบียน
                     buildVillageOptions(parseInt(data.village_count) || 15);
                     document.getElementById('registration-screen').classList.remove('hidden');
                 }
             } catch (error) { 
                 alert("เกิดข้อผิดพลาดในการเชื่อมต่อเครือข่าย"); 
                 document.getElementById('loading-screen').classList.add('hidden');
+                // ถ้าเน็ตหลุดตอนกดปุ่มเช็ค ให้กลับมาหน้า Pending เหมือนเดิม
                 if (isManualRecheck) document.getElementById('pending-screen').classList.remove('hidden');
             }
 
-            if(isManualRecheck) { btnRecheck.disabled = false; btnRecheck.innerHTML = '<span class="material-symbols-outlined text-[20px]">refresh</span> ตรวจสอบสถานะอีกครั้ง'; }
+            if(isManualRecheck) { 
+                btnRecheck.disabled = false; 
+                btnRecheck.innerHTML = '<span class="material-symbols-outlined text-[20px]">refresh</span> ตรวจสอบสถานะอีกครั้ง'; 
+            }
         }
 
         async function registerUser() {
