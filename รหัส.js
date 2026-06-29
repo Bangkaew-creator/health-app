@@ -664,3 +664,10 @@ function testDrivePermission() {
   const folder = DriveApp.getFolderById(IMAGE_FOLDER_ID);
   folder.createFile("test_permission.txt", "ทดสอบสิทธิ์", MimeType.PLAIN_TEXT);
 }
+
+// ฟังก์ชันหลอกเพื่อกระตุ้นให้ Google ขอสิทธิ์ UrlFetchApp
+function forceAuthorize() {
+  UrlFetchApp.fetch("https://www.google.com");
+  Logger.log("ได้รับสิทธิ์การเชื่อมต่ออินเทอร์เน็ตเรียบร้อยแล้ว!");
+}
+
