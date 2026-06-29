@@ -31,6 +31,10 @@ function doPost(e) {
       case 'checkUserRegistration': response = F_checkUserRegistration(requestData.uid); break;
       case 'getPendingVHVs': response = F_getPendingVHVs(); break;
       case 'manageVHVStatus': response = F_manageVHVStatus(requestData.targetUid, requestData.actionType); break;
+      case 'getUserProfile': response = F_getUserProfile(requestData.uid); break;
+      case 'updateUserProfile': response = F_updateUserProfile(requestData.uid, requestData.name, requestData.phone, requestData.pic); break;
+      case 'getAllSystemConfigs': response = F_getAllSystemConfigs(); break;
+      case 'updateSystemConfigs': response = F_updateSystemConfigs(requestData.configs); break;
       default: response = { status: 'error', message: 'Action not found' };
     }
     return ContentService.createTextOutput(JSON.stringify(response)).setMimeType(ContentService.MimeType.JSON);
@@ -860,6 +864,87 @@ function F_manageVHVStatus(uid, actionType) {
      }
   }
   return { success: false, message: 'ไม่พบผู้ใช้นี้' };
+}
+
+// ==========================================
+// ส่วนที่ 1: ระบบจัดการโปรไฟล์แอดมิน/อสม.
+// ==========================================
+function F_getUserProfile(uid) {
+  const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('Users');
+  const data = sheet.getDataRange().getValues();
+  const headers = data[0].map(h => String(h).trim().toLowerCase());
+  const colUid = headers.indexOf('uid');
+  
+  if(colUid === -1) return { success: false, message: 'ไม่พบคอลัมน์ UID' };
+  
+  for(let i = 1; i < data.length; i++) {
+    if(String(data[i][colUid]).trim() === String(uid).trim()) {
+       return {
+         success: true,
+         name: headers.indexOf('name') > -1 ? data[i][headers.indexOf('name')] : '',
+         phone: headers.indexOf('phone') > -1 ? data[i][headers.indexOf('phone')] : '',
+         profile_pic: headers.indexOf('profile_pic') > -1 ? data[i][headers.indexOf('profile_pic')] : ''
+       }
+    }
+  }
+  return { success: false, message: 'ไม่พบผู้ใช้' };
+}
+
+function F_updateUserProfile(uid, name, phone, picUrl) {
+  const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('Users');
+  const data = sheet.getDataRange().getValues();
+  const headers = data[0].map(h => String(h).trim().toLowerCase());
+  const colUid = headers.indexOf('uid');
+  
+  for(let i = 1; i < data.length; i++) {
+    if(String(data[i][colUid]).trim() === String(uid).trim()) {
+       if(headers.indexOf('name') > -1 && name !== undefined) sheet.getRange(i+1, headers.indexOf('name')+1).setValue(String(name).trim());
+       if(headers.indexOf('phone') > -1 && phone !== undefined) sheet.getRange(i+1, headers.indexOf('phone')+1).setValue("'" + String(phone).trim());
+       if(headers.indexOf('profile_pic') > -1 && picUrl !== undefined) sheet.getRange(i+1, headers.indexOf('profile_pic')+1).setValue(String(picUrl).trim());
+       return { success: true, message: 'อัปเดตโปรไฟล์สำเร็จ' };
+    }
+  }
+  return { success: false, message: 'ไม่พบผู้ใช้นี้ในระบบ' };
+}
+
+// ==========================================
+// ส่วนที่ 2: ระบบจัดการการตั้งค่า (Config)
+// ==========================================
+function F_getAllSystemConfigs() {
+  const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('Config');
+  if(!sheet) return [];
+  const data = sheet.getDataRange().getValues();
+  const configs = [];
+  
+  // สมมติว่าแถวที่ 1 เป็นหัวตาราง (Key, Value, Description)
+  for(let i = 1; i < data.length; i++) { 
+     if(data[i][0]) {
+        configs.push({
+           key: String(data[i][0]).trim(),
+           value: String(data[i][1] || ''),
+           description: String(data[i][2] || '') // คอลัมน์ C ไว้ใส่คำอธิบายภาษาไทยให้แอดมินเข้าใจง่าย
+        });
+     }
+  }
+  return configs;
+}
+
+function F_updateSystemConfigs(configArray) {
+  const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('Config');
+  const data = sheet.getDataRange().getValues();
+  
+  let updated = 0;
+  for(let i=1; i<data.length; i++) {
+     const rowKey = String(data[i][0]).trim();
+     // ค้นหาว่าแถวนี้ตรงกับข้อมูลที่ส่งมาให้อัปเดตหรือไม่
+     const match = configArray.find(c => c.key === rowKey);
+     if(match) {
+        sheet.getRange(i+1, 2).setValue(String(match.value).trim());
+        updated++;
+     }
+  }
+  SpreadsheetApp.flush(); // บังคับเซฟทันที
+  return { success: true, message: `อัปเดตการตั้งค่าสำเร็จจำนวน ${updated} รายการ` };
 }
 
 // ==========================================
