@@ -25,6 +25,7 @@ function doPost(e) {
       case 'updatePatientStatus': response = F_updatePatientStatus(requestData.id, requestData.status); break;
       case 'updateResourceApproval': response = F_updateResourceApproval(requestData.id, requestData.diaperQty, requestData.underpadQty); break;
       case 'getAllVHVs': response = F_getAllVHVs(); break;
+      case 'updatePatientVHV': response = F_updatePatientVHV(requestData.id, requestData.vhvId); break;
       default: response = { status: 'error', message: 'Action not found' };
     }
     return ContentService.createTextOutput(JSON.stringify(response)).setMimeType(ContentService.MimeType.JSON);
@@ -53,7 +54,8 @@ function F_getAllPatients() {
   const colStatus = headers.indexOf('status');
   const colProfilePic = headers.indexOf('profile_pic');
   const colAdl = headers.indexOf('adl_score');
-  
+  const colAssignedVHV = headers.indexOf('assigned_vhv_id'); // <--- เพิ่มบรรทัดนี้เพื่อจับคู่ช่อง Assigned_VHV_ID
+
   // *** จุดสำคัญที่แก้ไข ***
   // ชี้เป้าไปที่คอลัมน์ O (Diaper_Size) ตามที่คุณบันทึกข้อมูลไว้จริง
   const colDiaper = headers.indexOf('diaper_size'); 
@@ -78,10 +80,10 @@ function F_getAllPatients() {
       group: colGroup > -1 && row[colGroup] ? String(row[colGroup]) : 'ยังไม่ประเมิน',
       last_assess: colLastAssess > -1 ? String(row[colLastAssess]) : '',
       status: currentStatus, 
-      diaper: colDiaper > -1 ? String(row[colDiaper]) : '', // ดึงก้อน JSON จากคอลัมน์ O
-      equipment: colEquipment > -1 ? String(row[colEquipment]) : '',
+      diaper: colDiaper > -1 ? String(row[colDiaper]) : '',
       profile_pic: colProfilePic > -1 ? String(row[colProfilePic]) : '',
-      adl: colAdl > -1 ? String(row[colAdl]) : '-'
+      adl: colAdl > -1 ? String(row[colAdl]) : '-',
+      assigned_vhv_id: colAssignedVHV > -1 ? String(row[colAssignedVHV]).trim() : '' // <--- เพิ่มบรรทัดนี้
     });
   }
   return list;
@@ -528,14 +530,15 @@ function F_updateResourceApproval(id, diaperQty, underpadQty) {
   return { success: false, message: 'ไม่พบรหัสผู้ป่วยรายนี้' };
 }
 
-// [F_VHVs] ฟังก์ชันดึงรายชื่อ อสม. ทั้งหมดในระบบ
+// [F16_VHVs] ฟังก์ชันดึงรายชื่อ อสม. ทั้งหมดในระบบ (อัปเดต: ดึงรหัส UID ไปผูกเคส)
 function F_getAllVHVs() {
   const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('Users');
   if (!sheet) return [];
   
   const data = sheet.getDataRange().getValues();
+  if (data.length < 2) return [];
+  
   const headers = data[0].map(h => String(h).trim().toLowerCase());
-
   const colUid = headers.indexOf('uid');
   const colName = headers.indexOf('name');
   const colVillage = headers.indexOf('village_no');
@@ -548,9 +551,9 @@ function F_getAllVHVs() {
        const status = colStatus > -1 ? String(data[i][colStatus]).trim() : '';
        const village = colVillage > -1 ? String(data[i][colVillage]).trim() : '';
        
-       // ดึงเฉพาะคนที่สถานะ Active และไม่ใช่ ADMIN
        if (status === 'Active' && village.toUpperCase() !== 'ADMIN') {
          list.push({
+           uid: String(data[i][colUid]).trim(), // <--- ดึง UID ไปใช้ระบุตัวตนหน้าเว็บ
            name: colName > -1 ? String(data[i][colName]) : 'ไม่ระบุชื่อ',
            village_no: village,
            phone: colPhone > -1 ? String(data[i][colPhone]) : '-'
@@ -559,6 +562,27 @@ function F_getAllVHVs() {
     }
   }
   return list;
+}
+
+// [F17] ฟังก์ชันอัปเดตผู้รับผิดชอบเคสผู้ป่วย (Assigned VHV)
+function F_updatePatientVHV(id, vhvId) {
+  const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('Patients');
+  const data = sheet.getDataRange().getValues();
+  
+  const headers = data[0].map(h => String(h).trim().toLowerCase());
+  const colId = headers.indexOf('patient_id');
+  const colAssignedVHV = headers.indexOf('assigned_vhv_id');
+
+  if (colId === -1 || colAssignedVHV === -1) return { success: false, message: 'โครงสร้างตารางผิดพลาด ไม่พบช่อง Patient_ID หรือ Assigned_VHV_ID' };
+
+  for (let i = 1; i < data.length; i++) {
+    if (String(data[i][colId]) === String(id)) {
+      // บันทึกรหัส UID ของ อสม. ลงไปในช่องคอลัมน์ AC (Assigned_VHV_ID)
+      sheet.getRange(i + 1, colAssignedVHV + 1).setValue(String(vhvId).trim());
+      return { success: true, message: 'บันทึกการมอบหมายงานสำเร็จ' };
+    }
+  }
+  return { success: false, message: 'ไม่พบรหัสผู้ป่วยรายนี้' };
 }
 
 // ==========================================
