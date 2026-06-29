@@ -35,6 +35,7 @@ function doPost(e) {
       case 'updateUserProfile': response = F_updateUserProfile(requestData.uid, requestData.name, requestData.phone, requestData.pic); break;
       case 'getAllSystemConfigs': response = F_getAllSystemConfigs(); break;
       case 'updateSystemConfigs': response = F_updateSystemConfigs(requestData.configs); break;
+      case 'registerAdmin': response = F_registerAdmin(requestData.uid, requestData.name, requestData.phone, requestData.secretCode); break;
       default: response = { status: 'error', message: 'Action not found' };
     }
     return ContentService.createTextOutput(JSON.stringify(response)).setMimeType(ContentService.MimeType.JSON);
@@ -945,6 +946,24 @@ function F_updateSystemConfigs(configArray) {
   }
   SpreadsheetApp.flush(); // บังคับเซฟทันที
   return { success: true, message: `อัปเดตการตั้งค่าสำเร็จจำนวน ${updated} รายการ` };
+}
+
+// [ฟังก์ชันใหม่] ตรวจสอบรหัสลับและลงทะเบียนผู้ดูแลระบบ (ADMIN)
+function F_registerAdmin(uid, name, phone, secretCode) {
+  // ไปดึงรหัสลับที่ตั้งไว้ในชีต Config
+  const actualCode = F_getConfig('ADMIN_SECRET_CODE');
+  
+  if (!actualCode) {
+    return { status: 'error', message: 'ระบบยังไม่ได้ตั้งค่า ADMIN_SECRET_CODE ในชีต Config' };
+  }
+  
+  // ตรวจสอบว่ารหัสที่พิมพ์มา ตรงกับใน Config หรือไม่
+  if (String(secretCode).trim() !== String(actualCode).trim()) {
+    return { status: 'invalid_code', message: 'รหัสลับไม่ถูกต้อง' };
+  }
+  
+  // ถ้ารหัสถูกต้อง ให้เรียกใช้ระบบลงทะเบียนปกติ แต่ยัดยศให้เป็น ADMIN และสถานะ Active ทันที
+  return F_registerUser(uid, name, 'ADMIN', 'ADMIN', phone);
 }
 
 // ==========================================
