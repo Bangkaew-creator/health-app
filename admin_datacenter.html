@@ -8,6 +8,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700&display=swap" rel="stylesheet"/>
     <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
     <script charset="utf-8" src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
     <style>
         body { font-family: 'Sarabun', sans-serif; background-color: #f4f7fa; }
         .material-symbols-outlined { font-variation-settings: 'FILL' 1, 'wght' 400, 'GRAD' 0, 'opsz' 24; }
@@ -54,17 +55,28 @@
         </div>
 
         <div class="flex-1 flex flex-col overflow-hidden p-4 lg:p-6 pb-20 lg:pb-8">
-            <div class="bg-white p-4 rounded-t-[20px] border border-slate-200 border-b-0 flex flex-col md:flex-row md:items-center gap-4">
-                <div class="relative flex-1 max-w-sm">
-                    <span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-[20px]">search</span>
-                    <input type="text" id="search-input" oninput="filterTable()" class="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-navy" placeholder="ค้นหาชื่อ, บ้านเลขที่...">
+            <div class="bg-white p-4 rounded-t-[20px] border border-slate-200 border-b-0 flex flex-col md:flex-row md:items-center justify-between gap-4">
+                
+                <div class="flex flex-col md:flex-row gap-4 flex-1">
+                    <div class="relative flex-1 max-w-sm">
+                        <span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-[20px]">search</span>
+                        <input type="text" id="search-input" oninput="filterTable()" class="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-navy" placeholder="ค้นหาชื่อ, บ้านเลขที่...">
+                    </div>
+                    <div class="relative w-full md:w-48">
+                        <select id="village-filter" onchange="filterTable()" class="w-full pl-4 pr-8 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-navy appearance-none">
+                            <option value="">ทุกหมู่ (ทั้งหมด)</option>
+                        </select>
+                        <span class="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none">expand_more</span>
+                    </div>
                 </div>
-                <div class="relative w-full md:w-48">
-                    <select id="village-filter" onchange="filterTable()" class="w-full pl-4 pr-8 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-navy appearance-none">
-                        <option value="">ทุกหมู่ (ทั้งหมด)</option>
-                    </select>
-                    <span class="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none">expand_more</span>
+
+                <div class="flex-shrink-0">
+                    <input type="file" id="import-excel-file" accept=".xlsx, .xls" class="hidden" onchange="handleImportExcel(event)">
+                    <button onclick="document.getElementById('import-excel-file').click()" class="w-full md:w-auto bg-amber-500 hover:bg-amber-600 text-white px-5 py-2.5 rounded-xl font-bold text-sm flex items-center justify-center gap-2 shadow-sm transition-all active:scale-95">
+                        <span class="material-symbols-outlined">upload_file</span> นำเข้าข้อมูล (Excel)
+                    </button>
                 </div>
+
             </div>
 
             <div class="bg-white border border-slate-200 rounded-b-[20px] flex-1 overflow-hidden flex flex-col shadow-sm">
@@ -320,7 +332,7 @@
                 
                 if (result.success) {
                     alert(result.message);
-                    loadData(); // รีเฟรชตารางหน้าเว็บ
+                    loadDataCenter(); // รีเฟรชตารางหน้าเว็บ
                 } else {
                     alert(result.message || 'เกิดข้อผิดพลาดในการนำเข้า');
                 }
