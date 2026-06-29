@@ -35,7 +35,7 @@ function doPost(e) {
 }
 
 // [F2] ฟังก์ชันดึงรายชื่อผู้ป่วยทั้งหมด (รองรับ 31 คอลัมน์)
-// [F_Patients] ฟังก์ชันดึงข้อมูลผู้ป่วย (แก้ไข: ชี้เป้าคอลัมน์ O Diaper_Size และแก้ปัญหาสถานะว่างเปล่า)
+// [F_Patients] ฟังก์ชันดึงข้อมูลผู้ป่วย (ฉบับสมบูรณ์: เพิ่มดึงเลขบัตร ปชช. และเบอร์โทร สำหรับออกรายงาน)
 function F_getAllPatients() {
   const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('Patients');
   if (!sheet) return [];
@@ -47,6 +47,8 @@ function F_getAllPatients() {
   
   const colId = headers.indexOf('patient_id');
   const colName = headers.indexOf('name');
+  const colIdCard = headers.indexOf('id_card'); // <--- เพิ่มคอลัมน์นี้
+  const colPhone = headers.indexOf('phone'); // <--- เพิ่มคอลัมน์นี้
   const colVillage = headers.indexOf('village_no');
   const colHouse = headers.indexOf('house_no');
   const colGroup = headers.indexOf('patient_group');
@@ -54,19 +56,15 @@ function F_getAllPatients() {
   const colStatus = headers.indexOf('status');
   const colProfilePic = headers.indexOf('profile_pic');
   const colAdl = headers.indexOf('adl_score');
-  const colAssignedVHV = headers.indexOf('assigned_vhv_id'); // <--- เพิ่มบรรทัดนี้เพื่อจับคู่ช่อง Assigned_VHV_ID
-
-  // *** จุดสำคัญที่แก้ไข ***
-  // ชี้เป้าไปที่คอลัมน์ O (Diaper_Size) ตามที่คุณบันทึกข้อมูลไว้จริง
   const colDiaper = headers.indexOf('diaper_size'); 
   const colEquipment = headers.indexOf('required_equipment');
+  const colAssignedVHV = headers.indexOf('assigned_vhv_id'); 
   
   const list = [];
   for (let i = 1; i < data.length; i++) {
     const row = data[i];
     if (colId === -1 || !row[colId]) continue; 
     
-    // ดักจับ: ถ้าช่อง Status เป็นค่าว่าง ให้ระบบยัดคำว่า 'Active' ให้โดยอัตโนมัติ
     let currentStatus = 'Active';
     if (colStatus > -1 && String(row[colStatus]).trim() !== '') {
       currentStatus = String(row[colStatus]).trim();
@@ -75,15 +73,18 @@ function F_getAllPatients() {
     list.push({
       id: String(row[colId]),
       name: colName > -1 ? String(row[colName]) : '',
+      id_card: colIdCard > -1 ? String(row[colIdCard]) : '-', // <--- ส่งค่าไปหน้าเว็บ
+      phone: colPhone > -1 ? String(row[colPhone]) : '-', // <--- ส่งค่าไปหน้าเว็บ
       village_no: colVillage > -1 ? String(row[colVillage]) : '',
       house_no: colHouse > -1 ? String(row[colHouse]) : '',
       group: colGroup > -1 && row[colGroup] ? String(row[colGroup]) : 'ยังไม่ประเมิน',
       last_assess: colLastAssess > -1 ? String(row[colLastAssess]) : '',
       status: currentStatus, 
       diaper: colDiaper > -1 ? String(row[colDiaper]) : '',
+      equipment: colEquipment > -1 ? String(row[colEquipment]) : '',
       profile_pic: colProfilePic > -1 ? String(row[colProfilePic]) : '',
       adl: colAdl > -1 ? String(row[colAdl]) : '-',
-      assigned_vhv_id: colAssignedVHV > -1 ? String(row[colAssignedVHV]).trim() : '' // <--- เพิ่มบรรทัดนี้
+      assigned_vhv_id: colAssignedVHV > -1 ? String(row[colAssignedVHV]).trim() : ''
     });
   }
   return list;
