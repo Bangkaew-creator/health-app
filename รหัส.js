@@ -190,7 +190,12 @@ function F_checkUser(uid) {
   for (let i = 1; i < data.length; i++) {
     if (String(data[i][colUid]) === String(uid)) {
       if (colStatus > -1 && data[i][colStatus] !== 'Active') {
-        return { status: 'inactive', hospital_name: hospitalName };
+        // [แก้ไขตรงนี้] เพิ่ม user_status เข้าไป เพื่อให้หน้าเว็บรู้สถานะที่แท้จริง
+        return { 
+          status: 'inactive', 
+          user_status: data[i][colStatus], // เพิ่มบรรทัดนี้
+          hospital_name: hospitalName 
+        };
       }
       
       const village = colVillage > -1 ? String(data[i][colVillage]) : '';
