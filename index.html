@@ -112,7 +112,7 @@
             }
         }
 
-                async function checkRegistration() {
+            async function checkRegistration() {
             document.getElementById('registration-screen').classList.add('hidden');
             document.getElementById('admin-registration-screen').classList.add('hidden');
             document.getElementById('admin-trigger').classList.add('hidden');
@@ -127,17 +127,22 @@
                 document.getElementById('loading-screen').classList.add('hidden');
 
                 if (data.status === 'registered') {
+                    // 1. เป็น Active (ผ่านการอนุมัติ) ให้เข้าสู่ระบบ
+                    if (data.role === 'ADMIN') window.location.href = 'admin_dashboard.html';
+                    else window.location.href = 'dashboard.html';
+                    
+                } else if (data.status === 'inactive') {
+                    // 2. ถ้าเป็น inactive ให้แยกระหว่าง "รออนุมัติ" กับ "โดนปฏิเสธ/บล็อค"
                     const uStatus = String(data.user_status).toLowerCase();
-                    if (uStatus === 'pending') {
-                        // หากสถานะยังค้างอยู่เป็น Pending ก็ให้โชว์หน้าจอรอนี้ค้างไว้เรื่อยๆ
+                    if (uStatus === 'rejected' || uStatus === 'blocked') {
+                        alert('บัญชีของคุณถูกปฏิเสธ หรือไม่อนุญาตให้เข้าถึงระบบ');
+                    } else {
+                        // ถ้าเป็น Pending ก็ตรึงหน้าจอรออนุมัติไว้
                         document.getElementById('pending-screen').classList.remove('hidden');
-                    } else if (uStatus === 'rejected') {
-                        alert('บัญชีของคุณไม่อนุญาตให้เข้าถึงระบบ');
-                    } else { 
-                        if (data.role === 'ADMIN') window.location.href = 'admin_dashboard.html';
-                        else window.location.href = 'dashboard.html';
                     }
+                    
                 } else {
+                    // 3. ถ้าไม่มีชื่อเลย (unregistered) ให้เปิดหน้าลงทะเบียน
                     buildVillageOptions(parseInt(data.village_count) || 15);
                     document.getElementById('registration-screen').classList.remove('hidden');
                     document.getElementById('admin-trigger').classList.remove('hidden');
