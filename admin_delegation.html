@@ -55,11 +55,24 @@
             </div>
         </header>
 
-        <div class="bg-white px-4 lg:px-8 border-b border-slate-200 flex flex-nowrap flex-shrink-0 sticky top-0 z-10 shadow-sm overflow-x-auto scrollbar-hidden">
-            <button class="tab-btn active" id="tab-new" onclick="switchTab('new')">📋 เคสใหม่รอประเมิน (<span id="badge-new">0</span>)</button>
-            <button class="tab-btn" id="tab-reassess" onclick="switchTab('reassess')">🔄 เคสค้างติดตาม (<span id="badge-reassess">0</span>)</button>
-            <button class="tab-btn" id="tab-vhv" onclick="switchTab('vhv')">👥 ทำเนียบ อสม. (<span id="badge-vhv-count">0</span>)</button>
-            <button class="tab-btn text-amber-600" id="tab-approve" onclick="switchTab('approve')">🔐 รออนุมัติ อสม. (<span id="badge-pending-vhv">0</span>)</button>           
+       <!-- แถบเมนูแท็บ (ปรับเป็นแบบ Grid 2 บรรทัดในมือถือ และ 1 บรรทัดในคอมพิวเตอร์) -->
+        <div class="bg-white border-b border-slate-200 grid grid-cols-2 lg:flex lg:flex-nowrap shadow-sm z-10 sticky top-0">
+            <!-- ปุ่มที่ 1 -->
+            <button class="tab-btn active border-r border-b lg:border-b-0 border-slate-100 flex flex-col items-center justify-center py-3 leading-tight" id="tab-new" onclick="switchTab('new')">
+                <span class="flex items-center gap-1">📋 เคสใหม่ <span id="badge-new" class="bg-blue-100 text-blue-700 px-1.5 py-0.5 rounded-md text-[10px]">0</span></span>
+            </button>
+            <!-- ปุ่มที่ 2 -->
+            <button class="tab-btn border-b lg:border-b-0 border-slate-100 flex flex-col items-center justify-center py-3 leading-tight" id="tab-reassess" onclick="switchTab('reassess')">
+                <span class="flex items-center gap-1">🔄 ค้างติดตาม <span id="badge-reassess" class="bg-red-100 text-red-700 px-1.5 py-0.5 rounded-md text-[10px]">0</span></span>
+            </button>
+            <!-- ปุ่มที่ 3 -->
+            <button class="tab-btn border-r lg:border-none border-slate-100 flex flex-col items-center justify-center py-3 leading-tight" id="tab-vhv" onclick="switchTab('vhv')">
+                <span class="flex items-center gap-1">👥 ทำเนียบ <span id="badge-vhv-count" class="bg-emerald-100 text-emerald-700 px-1.5 py-0.5 rounded-md text-[10px]">0</span></span>
+            </button>
+            <!-- ปุ่มที่ 4 -->
+            <button class="tab-btn text-amber-600 lg:border-none border-slate-100 flex flex-col items-center justify-center py-3 leading-tight" id="tab-approve" onclick="switchTab('approve')">
+                <span class="flex items-center gap-1">🔐 รออนุมัติ <span id="badge-pending-vhv" class="bg-amber-100 text-amber-700 px-1.5 py-0.5 rounded-md text-[10px]">0</span></span>
+            </button>           
         </div>
 
         <div class="p-4 lg:p-6">
