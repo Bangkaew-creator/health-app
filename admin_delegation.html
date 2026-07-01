@@ -18,6 +18,9 @@
         .loader-small { border: 2px solid #f3f3f3; border-bottom-color: #00694a; border-radius: 50%; width: 24px; height: 24px; animation: spin 1s linear infinite; }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
         .neo-card { background: #ffffff; border-radius: 20px; box-shadow: 4px 4px 12px #e2e8f0, -4px -4px 12px #ffffff; border: 1px solid rgba(255, 255, 255, 0.7); }
+    /* เพิ่ม CSS ชุดนี้ต่อท้ายใน <style> */
+        .scrollbar-hidden::-webkit-scrollbar { display: none; }
+        .scrollbar-hidden { -ms-overflow-style: none; scrollbar-width: none; }
     </style>
 </head>
 <body class="flex h-[100dvh] overflow-hidden text-slate-800 relative">
@@ -52,11 +55,11 @@
             </div>
         </header>
 
-        <div class="flex-1 overflow-y-auto pb-20">
-            <div class="bg-white px-4 lg:px-8 border-b border-slate-200 flex flex-shrink-0 sticky top-0 z-10 shadow-sm overflow-x-auto">
-                <button class="tab-btn active" id="tab-new" onclick="switchTab('new')">📋 เคสใหม่รอประเมินแรกเข้า (<span id="badge-new">0</span>)</button>
-                <button class="tab-btn" id="tab-reassess" onclick="switchTab('reassess')">🔄 เคสค้างติดตามประเมินซ้ำ (<span id="badge-reassess">0</span>)</button>
-                <button class="tab-btn" id="tab-vhv" onclick="switchTab('vhv')">👥 ทำเนียบ อสม. แยกหมู่ (<span id="badge-vhv-count">0</span>)</button>
+       <!-- [แก้ไข] เพิ่ม flex-nowrap และ scrollbar-hidden เพื่อให้มือถือเลื่อนซ้ายขวาได้ -->
+            <div class="bg-white px-4 lg:px-8 border-b border-slate-200 flex flex-nowrap flex-shrink-0 sticky top-0 z-10 shadow-sm overflow-x-auto scrollbar-hidden">
+                <button class="tab-btn active" id="tab-new" onclick="switchTab('new')">📋 เคสใหม่รอประเมิน (<span id="badge-new">0</span>)</button>
+                <button class="tab-btn" id="tab-reassess" onclick="switchTab('reassess')">🔄 เคสค้างติดตาม (<span id="badge-reassess">0</span>)</button>
+                <button class="tab-btn" id="tab-vhv" onclick="switchTab('vhv')">👥 ทำเนียบ อสม. (<span id="badge-vhv-count">0</span>)</button>
                 <button class="tab-btn text-amber-600" id="tab-approve" onclick="switchTab('approve')">🔐 รออนุมัติ อสม. (<span id="badge-pending-vhv">0</span>)</button>           
             </div>
 
@@ -84,6 +87,21 @@
                     <div id="empty-reassess" class="hidden text-center py-16 text-slate-400"><p class="text-sm">ไม่มีเคสค้างติดตามประเมินซ้ำ</p></div>
                 </div>
 
+                <div id="content-vhv" class="hidden space-y-4">
+                    <div id="vhv-list" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5"></div>
+                </div> <!-- [แก้ไข] ใส่ปิด div ของ content-vhv ตรงนี้เพื่อไม่ให้กินพื้นที่แท็บอื่น -->
+
+                <!-- แท็บที่ 4: อนุมัติ อสม. ใหม่ (แยกออกมาเป็นอิสระแล้ว) -->
+                <div id="content-approve" class="hidden space-y-4">
+                    <div class="bg-amber-50 border border-amber-200 p-4 rounded-xl mb-4">
+                        <h3 class="text-sm font-bold text-amber-800">ระบบคัดกรองความปลอดภัย (Security Check)</h3>
+                        <p class="text-[11px] text-amber-700 mt-1">ผู้ที่ลงทะเบียนเข้ามาใหม่จะไม่สามารถเห็นข้อมูลชุมชนได้ จนกว่าแอดมินจะกดยืนยันสถานะ "อนุมัติ" ให้บุคคลนี้</p>
+                    </div>
+                    <div id="pending-vhv-list" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5"></div>
+                    <div id="empty-pending" class="hidden text-center py-16 text-slate-400"><p class="text-sm">ไม่มีคำขอลงทะเบียนใหม่ค้างอยู่</p></div>
+                </div>
+            </div>
+        
                 <div id="content-vhv" class="hidden space-y-4">
                     <div id="vhv-list" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5"></div>
                     <!-- แท็บที่ 4: อนุมัติ อสม. ใหม่ -->
@@ -230,17 +248,6 @@
             document.getElementById('badge-new').innerText = newCases.length;
             document.getElementById('badge-reassess').innerText = reassessCases.length;
             document.getElementById('badge-vhv-count').innerText = allVHVs.length;
-        }
-
-        function switchTab(tab) {
-            currentTab = tab;
-            ['new', 'reassess', 'vhv'].forEach(t => {
-                document.getElementById(`tab-${t}`).classList.remove('active');
-                document.getElementById(`content-${t}`).classList.add('hidden');
-            });
-            document.getElementById(`tab-${tab}`).classList.add('active');
-            document.getElementById(`content-${tab}`).classList.remove('hidden');
-            filterDataDisplay();
         }
 
         function filterDataDisplay() {
