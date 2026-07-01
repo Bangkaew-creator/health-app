@@ -124,7 +124,7 @@
 
     <script>
         // ---------------------------------------------------
-        // [ใหม่] ตั้งค่าและเชื่อมต่อ Firebase 
+        // ตั้งค่าและเชื่อมต่อ Firebase 
         // ---------------------------------------------------
         firebase.initializeApp(firebaseConfig);
         const db = firebase.firestore();
@@ -152,21 +152,64 @@
 
         function bounceToLogin() { window.location.href = 'index.html'; }
 
-        // [อัปเดต 1] เช็คสิทธิ์ผ่าน Firebase (เร็วกว่า GAS)
+        // [อัปเดตระบบตรวจสอบสิทธิ์] ถ้าย้ายข้อมูลไม่ครบ จะวิ่งไปดึงแอดมินจากของเดิมมาให้
         async function verifyAdminAccess(uid) {
             try {
+                // 1. ลองค้นหาใน Firebase ก่อน (เร็ว 0.1 วิ)
                 const userDoc = await db.collection('VHVs').doc(String(uid)).get();
-                if (userDoc.exists && userDoc.data().role === 'ADMIN') {
-                    const data = userDoc.data();
-                    const hospital = data.hospital_name || 'เทศบาลเมืองบางแก้ว';
+                
+                let isAdmin = false;
+                let hospital = 'เทศบาลเมืองบางแก้ว';
+                let vCount = 15;
+
+                if (userDoc.exists) {
+                    const userData = userDoc.data();
+                    const role = String(userData.role || userData.Role || '').toUpperCase();
+                    if (role === 'ADMIN') {
+                        isAdmin = true;
+                        hospital = userData.hospital_name || hospital;
+                        vCount = parseInt(userData.village_count) || vCount;
+                    }
+                }
+
+                // 2. ถ้าไม่เจอแอดมินใน Firebase (ตกหล่นตอนย้ายข้อมูล) ให้ดึงจาก Google Sheets ทันที
+                if (!isAdmin) {
+                    console.log("กำลังดึงสิทธิ์แอดมินจากระบบเดิม...");
+                    const response = await fetch(API_URL, { 
+                        method: 'POST', 
+                        body: JSON.stringify({ action: 'checkUserRegistration', uid: uid }) 
+                    });
+                    const data = await response.json();
+                    
+                    if (data.status === 'registered' && String(data.role).toUpperCase() === 'ADMIN') {
+                        isAdmin = true;
+                        hospital = data.hospital_name || hospital;
+                        vCount = parseInt(data.village_count) || vCount;
+                        
+                        // แอบบันทึกแอดมินคนนี้ลง Firebase เลย คราวหน้าจะได้เข้าได้เร็วๆ
+                        await db.collection('VHVs').doc(String(uid)).set({
+                            uid: String(uid),
+                            role: 'ADMIN',
+                            hospital_name: hospital,
+                            village_count: vCount,
+                            name: data.name || 'Admin',
+                            phone: data.phone || ''
+                        }, { merge: true });
+                    }
+                }
+
+                // 3. ตรวจสอบขั้นสุดท้าย
+                if (isAdmin) {
                     document.getElementById('sidebar-hospital-name').innerText = hospital;
                     document.getElementById('header-hospital-name').innerText = 'ฐานข้อมูลผู้ป่วยทั้งหมด • ' + hospital;
                     
-                    const vCount = parseInt(data.village_count) || 15;
                     const villageSelect = document.getElementById('village-filter');
-                    for(let i=1; i<=vCount; i++){ villageSelect.insertAdjacentHTML('beforeend', `<option value="${i}">หมู่ที่ ${i}</option>`); }
+                    villageSelect.innerHTML = '<option value="">ทุกหมู่ (ทั้งหมด)</option>';
+                    for(let i = 1; i <= vCount; i++){ 
+                        villageSelect.insertAdjacentHTML('beforeend', `<option value="${i}">หมู่ที่ ${i}</option>`); 
+                    }
                     
-                    loadDataCenter();
+                    loadDataCenter(); // ผ่านด่านแล้ว โหลดข้อมูลคนไข้ได้เลย
                 } else {
                     window.location.href = 'dashboard.html';
                 }
@@ -176,7 +219,6 @@
             }
         }
 
-        // [อัปเดต 2] โหลดข้อมูลผู้ป่วยจาก Firebase
         async function loadDataCenter() {
             try {
                 const snapshot = await db.collection('Patients').get();
@@ -269,7 +311,6 @@
 
                 const tr = document.createElement('tr');
                 tr.className = 'hover:bg-slate-50 transition-colors group cursor-pointer';
-                // ลิงก์ไปหน้าแฟ้มประวัติเหมือนเดิม
                 tr.onclick = (e) => { if(!e.target.closest('button')) window.location.href = `patient_profile.html?id=${p.id}`; };
 
                 tr.innerHTML = `
@@ -360,7 +401,6 @@
             reader.readAsArrayBuffer(file);
         }
 
-        // [อัปเดต 3] นำเข้าข้อมูลด้วย db.batch() ของ Firebase (เร็วมากๆ)
         async function sendImportDataToBackend(patients) {
             const loadingOverlay = document.createElement('div');
             loadingOverlay.className = 'fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-[100] flex flex-col items-center justify-center';
