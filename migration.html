@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ย้ายฐานข้อมูล - Orsomo Smart</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore-compat.js"></script>
+    <script src="config.js"></script>
+</head>
+<body class="bg-slate-50 p-6 md:p-10 flex flex-col items-center text-center font-sans">
+    <div class="bg-white p-8 rounded-[24px] shadow-sm border border-slate-200 w-full max-w-2xl">
+        <h1 class="text-2xl font-bold text-slate-800 mb-2">ระบบขนย้ายข้อมูลอัตโนมัติ</h1>
+        <p class="mb-6 text-slate-500 text-sm">คัดลอกข้อมูลจาก Google Sheets ➡️ สู่ Firebase Firestore</p>
+        
+        <button id="btn-start" onclick="startMigration()" class="w-full bg-[#00694a] text-white px-8 py-4 rounded-xl font-bold text-lg shadow-lg hover:bg-[#005239] transition-all active:scale-95">
+            🚀 เริ่มทำการย้ายข้อมูลเลย
+        </button>
+        
+        <div id="log" class="mt-8 text-left bg-slate-50 p-4 rounded-xl w-full h-64 overflow-y-auto border border-slate-200 text-[13px] text-slate-600 font-mono space-y-2">
+            <p>พร้อมดำเนินการ... กรุณากดปุ่มด้านบน</p>
+        </div>
+    </div>
+
+    <script>
+        // 1. เชื่อมต่อ Firebase
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.firestore();
+
+        function logMessage(msg) {
+            const logDiv = document.getElementById('log');
+            logDiv.innerHTML += `<p class="border-b border-slate-100 pb-1">${msg}</p>`;
+            logDiv.scrollTop = logDiv.scrollHeight;
+        }
+
+        async function startMigration() {
+            document.getElementById('btn-start').disabled = true;
+            document.getElementById('btn-start').innerText = "⏳ กำลังขนย้าย... ห้ามปิดหน้าจอ";
+            logMessage("==================================");
+            logMessage("🚀 เริ่มกระบวนการขนย้ายข้อมูล...");
+            
+            try {
+                // ------------------------------------
+                // ย้ายข้อมูล อสม. (VHVs)
+                // ------------------------------------
+                logMessage("⏳ [1/2] กำลังดึงข้อมูล อสม. จาก Google Sheets...");
+                const vhvRes = await fetch(API_URL, { method: 'POST', body: JSON.stringify({ action: 'getAllVHVs' }) });
+                const vhvs = await vhvRes.json();
+                logMessage(`✅ พบ อสม. จำนวน ${vhvs.length} คน -> กำลังบันทึกลง Firebase...`);
+                
+                let vhvCount = 0;
+                for (let vhv of vhvs) {
+                    await db.collection('VHVs').doc(String(vhv.uid)).set(vhv);
+                    vhvCount++;
+                }
+                logMessage(`🎉 บันทึก อสม. เสร็จสมบูรณ์ (${vhvCount} รายการ)`);
+
+                // ------------------------------------
+                // ย้ายข้อมูล ผู้ป่วย (Patients)
+                // ------------------------------------
+                logMessage("<br>⏳ [2/2] กำลังดึงข้อมูลผู้ป่วย จาก Google Sheets...");
+                const patRes = await fetch(API_URL, { method: 'POST', body: JSON.stringify({ action: 'getAllPatients' }) });
+                const patients = await patRes.json();
+                logMessage(`✅ พบผู้ป่วย จำนวน ${patients.length} คน -> กำลังบันทึกลง Firebase...`);
+                
+                let patCount = 0;
+                for (let p of patients) {
+                    await db.collection('Patients').doc(String(p.id)).set(p);
+                    patCount++;
+                }
+                logMessage(`🎉 บันทึกผู้ป่วย เสร็จสมบูรณ์ (${patCount} รายการ)`);
+
+                logMessage("<br>✨✨✨ <b>ขนย้ายข้อมูลเสร็จสมบูรณ์ 100%!</b> ✨✨✨");
+                logMessage("👉 คุณสามารถปิดหน้านี้ และแจ้งนายได้เลยครับ");
+                document.getElementById('btn-start').innerText = "✅ ย้ายข้อมูลเสร็จสมบูรณ์";
+
+            } catch (error) {
+                logMessage(`<br>❌ เกิดข้อผิดพลาด: ${error.message}`);
+                document.getElementById('btn-start').innerText = "❌ ล้มเหลว กรุณาลองใหม่";
+                document.getElementById('btn-start').disabled = false;
+            }
+        }
+    </script>
+</body>
+</html>
