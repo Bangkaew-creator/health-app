@@ -17,12 +17,47 @@
         body { font-family: 'Sarabun', sans-serif; background-color: #f4f7fa; }
         .material-symbols-outlined { font-variation-settings: 'FILL' 1, 'wght' 400, 'GRAD' 0, 'opsz' 24; }
         .bg-navy { background-color: #0f172a; }
-        .tab-btn { padding: 12px 16px; font-weight: bold; font-size: 13px; border-bottom: 3px solid transparent; color: #64748b; transition: all 0.2s; cursor: pointer; white-space: nowrap; }
-        .tab-btn.active { color: #00694a; border-bottom-color: #00694a; }
+        
+        /* [แก้ไขใหม่] ปรับแต่งปุ่มเป็นแบบ Card Grid 2x2 */
+        .tab-btn { 
+            padding: 12px 8px; 
+            font-weight: bold; 
+            font-size: 13px; 
+            border-radius: 16px; 
+            color: #64748b; 
+            background-color: #f8fafc;
+            border: 1px solid #e2e8f0;
+            transition: all 0.2s ease-in-out; 
+            cursor: pointer; 
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 2px;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.02);
+        }
+        .tab-btn:hover {
+            background-color: #f1f5f9;
+        }
+        .tab-btn.active { 
+            color: #00694a; 
+            background-color: #f0fdf4;
+            border-color: #bbf7d0;
+            box-shadow: 0 4px 12px rgba(0, 105, 74, 0.06);
+        }
+        #tab-approve {
+            color: #d97706;
+            border-color: #fed7aa;
+        }
+        #tab-approve.active {
+            color: #b45309;
+            background-color: #fffbeb;
+            border-color: #fde68a;
+            box-shadow: 0 4px 12px rgba(217, 119, 6, 0.06);
+        }
+        
         .loader-small { border: 2px solid #f3f3f3; border-bottom-color: #00694a; border-radius: 50%; width: 24px; height: 24px; animation: spin 1s linear infinite; }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
-        .scrollbar-hidden::-webkit-scrollbar { display: none; }
-        .scrollbar-hidden { -ms-overflow-style: none; scrollbar-width: none; }
     </style>
 </head>
 <body class="flex h-[100dvh] overflow-hidden text-slate-800 relative">
@@ -57,11 +92,23 @@
             </div>
         </header>
 
-        <div class="bg-white px-4 lg:px-8 border-b border-slate-200 flex flex-nowrap flex-shrink-0 sticky top-0 z-10 shadow-sm overflow-x-auto scrollbar-hidden">
-            <button class="tab-btn active" id="tab-new" onclick="switchTab('new')">📋 เคสใหม่รอประเมิน (<span id="badge-new">0</span>)</button>
-            <button class="tab-btn" id="tab-reassess" onclick="switchTab('reassess')">🔄 เคสค้างติดตาม (<span id="badge-reassess">0</span>)</button>
-            <button class="tab-btn" id="tab-vhv" onclick="switchTab('vhv')">👥 ทำเนียบ อสม. (<span id="badge-vhv-count">0</span>)</button>
-            <button class="tab-btn text-amber-600" id="tab-approve" onclick="switchTab('approve')">🔐 รออนุมัติ อสม. (<span id="badge-pending-vhv">0</span>)</button>           
+        <div class="bg-white p-4 border-b border-slate-200 grid grid-cols-2 gap-3 shadow-sm z-10 sticky top-0 flex-shrink-0 w-full">
+            <button class="tab-btn active" id="tab-new" onclick="switchTab('new')">
+                <span class="text-sm">📋 เคสใหม่รอประเมิน</span>
+                <span class="text-xs font-normal text-slate-400 group-[.active]:text-emerald-600">(<span id="badge-new" class="font-bold">0</span> เคส)</span>
+            </button>
+            <button class="tab-btn" id="tab-reassess" onclick="switchTab('reassess')">
+                <span class="text-sm">🔄 เคสค้างติดตาม</span>
+                <span class="text-xs font-normal text-slate-400 group-[.active]:text-emerald-600">(<span id="badge-reassess" class="font-bold">0</span> เคส)</span>
+            </button>
+            <button class="tab-btn" id="tab-vhv" onclick="switchTab('vhv')">
+                <span class="text-sm">👥 ทำเนียบ อสม.</span>
+                <span class="text-xs font-normal text-slate-400 group-[.active]:text-emerald-600">(<span id="badge-vhv-count" class="font-bold">0</span> คน)</span>
+            </button>
+            <button class="tab-btn" id="tab-approve" onclick="switchTab('approve')">
+                <span class="text-sm">🔐 รออนุมัติ อสม.</span>
+                <span class="text-xs font-normal text-amber-500/70">(<span id="badge-pending-vhv" class="font-bold">0</span> คำขอ)</span>
+            </button>           
         </div>
 
         <div class="p-4 lg:p-6">
@@ -119,7 +166,6 @@
             });
         });
 
-        // [อัปเดต] เช็คสิทธิ์ Hybrid Auth เหมือนศูนย์ข้อมูล
         async function verifyAdminAccess(uid) {
             try {
                 const userDoc = await db.collection('VHVs').doc(String(uid)).get();
@@ -167,10 +213,8 @@
             return Math.floor(Math.abs(new Date() - targetDate) / (1000 * 60 * 60 * 24));
         }
 
-        // [อัปเดต] ดึงข้อมูลรวดเดียวจาก Firebase + ดึงคนค้างอนุมัติจาก GAS 
         async function loadDataChannels() {
             try {
-                // ดึงผู้ป่วยและ อสม. จาก Firebase (เร็วมาก)
                 const [pSnap, vSnap] = await Promise.all([
                     db.collection('Patients').get(),
                     db.collection('VHVs').get()
@@ -185,7 +229,6 @@
                     if(String(v.role).toUpperCase() !== 'ADMIN') allVHVs.push(v);
                 });
 
-                // ดึงคนที่รออนุมัติจาก GAS (เพราะระบบลงทะเบียนหน้าแรกยังเป็น GAS อยู่ จึงต้องดึงจากที่นั่นชั่วคราว)
                 const pendingRes = await fetch(API_URL, { method: 'POST', body: JSON.stringify({ action: 'getPendingVHVs' }) });
                 pendingVHVs = await pendingRes.json();
                 
@@ -238,17 +281,14 @@
             });
         }
 
-        // [อัปเดต] อนุมัติสิทธิ์และสร้างบัญชีลง Firebase ให้ อสม. ใหม่ทันที
         async function manageVHVStatus(uid, actionType) {
             if(!confirm(actionType === 'Active' ? 'ยืนยันการอนุมัติสิทธิ์ให้บุคคลนี้ใช่หรือไม่?' : 'ยืนยันการปฏิเสธสิทธิ์ใช่หรือไม่?')) return;
             
             try {
-                // อัปเดตใน GAS เป็นหลักก่อน (เพราะระบบล็อกอินเก่าผูกไว้ที่นี่)
                 const response = await fetch(API_URL, { method: 'POST', body: JSON.stringify({ action: 'manageVHVStatus', targetUid: uid, actionType: actionType }) });
                 const result = await response.json();
                 
                 if(result.success) {
-                    // ถ้าอนุมัติผ่าน ให้จับคนๆ นี้ฝังลงตารางของ Firebase ด้วย เพื่อให้เข้าแอปได้รวดเร็ว!
                     if (actionType === 'Active') {
                         const targetVHV = pendingVHVs.find(v => String(v.uid) === String(uid));
                         if(targetVHV) {
@@ -275,6 +315,7 @@
             document.getElementById('badge-new').innerText = newCases.length;
             document.getElementById('badge-reassess').innerText = reassessCases.length;
             document.getElementById('badge-vhv-count').innerText = allVHVs.length;
+            document.getElementById('badge-pending-vhv').innerText = pendingVHVs.length;
         }
 
         function filterDataDisplay() {
@@ -367,7 +408,6 @@
             });
         }
 
-        // [อัปเดตสุดยอดท่าไม้ตาย!] บันทึกลง Firebase ให้ UI เร็วปรู๊ด แล้วค่อยส่ง LINE แอบหลังบ้าน
         async function saveAssignment(patientId) {
             const vhvId = document.getElementById(`select_${patientId}`).value;
             if(!vhvId) return alert('กรุณาเลือก อสม. ผู้รับผิดชอบก่อนบันทึกครับ');
@@ -376,16 +416,13 @@
             btn.disabled = true; btn.innerText = 'กำลังประมวลผล...';
 
             try {
-                // 1. สั่งบันทึกลง Firebase ทันทีเพื่อความรวดเร็ว
                 await db.collection('Patients').doc(String(patientId)).update({ 
                     assigned_vhv_id: String(vhvId) 
                 });
                 
-                // 2. แจ้งเตือนผู้ใช้และโหลดหน้าจอใหม่เลย (ไม่ต้องรอ LINE ส่งเสร็จ)
                 alert('มอบหมายงานสำเร็จ! (ระบบกำลังส่งแจ้งเตือน LINE ให้ อสม. เบื้องหลัง)');
                 loadDataChannels();
                 
-                // 3. ปล่อยให้ Google Apps Script ยิง LINE แจ้งเตือนไปแบบเงียบๆ ไม่ต้องรอผลลัพธ์
                 fetch(API_URL, { 
                     method: 'POST', 
                     body: JSON.stringify({ action: 'updatePatientVHV', id: patientId, vhvId: vhvId }) 
