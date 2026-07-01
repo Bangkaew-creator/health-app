@@ -17,7 +17,7 @@
         .loader-small { border: 2px solid #f3f3f3; border-bottom-color: #00694a; border-radius: 50%; width: 30px; height: 30px; animation: spin 1s linear infinite; }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
         .check-row { accent-color: #00694a; width: 20px; height: 20px; cursor: pointer; }
-        .tab-btn { padding: 14px 20px; font-weight: bold; font-size: 14px; border-bottom: 3px solid transparent; color: #64748b; transition: all 0.2s; cursor: pointer; white-space: nowrap; }
+        .tab-btn { padding: 14px 10px; font-weight: bold; font-size: 14px; border-bottom: 3px solid transparent; color: #64748b; transition: all 0.2s; cursor: pointer; }
         .tab-btn.active { color: #00694a; border-bottom-color: #00694a; }
     </style>
 </head>
@@ -42,7 +42,7 @@
         </nav>
     </aside>
 
-    <main class="flex-1 flex flex-col min-h-0 bg-slate-50">
+    <main class="flex-1 flex flex-col min-h-0 bg-slate-50 overflow-y-auto">
         <header class="h-20 min-h-[80px] bg-white shadow-sm flex items-center justify-between px-6 lg:px-8 z-10 flex-shrink-0 border-b border-slate-100">
             <div class="flex items-center">
                 <button onclick="toggleSidebar()" class="lg:hidden p-2.5 -ml-2 mr-3 text-slate-600 hover:bg-slate-100 rounded-xl transition-colors"><span class="material-symbols-outlined text-[26px]">menu</span></button>
@@ -53,11 +53,22 @@
             </div>
         </header>
 
-        <div class="flex-1 overflow-y-auto pb-20">
-            <div class="bg-white px-4 lg:px-8 border-b border-slate-200 flex flex-shrink-0 sticky top-0 z-10 shadow-sm overflow-x-auto scrollbar-hidden">
-                <button class="tab-btn active" id="tab-kpt" onclick="switchTab('kpt')">📦 เบิกจ่าย กปท.</button>
-                <button class="tab-btn" id="tab-registry" onclick="switchTab('registry')">🏥 ทะเบียนสุขภาพผู้ป่วย</button>
-                <button class="tab-btn" id="tab-vhv" onclick="switchTab('vhv')">👥 สถิติผลงาน อสม.</button>
+        <div class="flex-1 pb-20">
+            <div class="bg-white border-b border-slate-200 grid grid-cols-3 shadow-sm z-10 sticky top-0 flex-shrink-0">
+                <button class="tab-btn active border-r border-slate-100 flex flex-col items-center justify-center py-3 px-1 leading-tight" id="tab-kpt" onclick="switchTab('kpt')">
+                    <span class="text-[18px] mb-1">📦</span>
+                    <span class="text-[11px] sm:text-[13px] text-center">เบิกจ่าย กปท.</span>
+                </button>
+                
+                <button class="tab-btn border-r border-slate-100 flex flex-col items-center justify-center py-3 px-1 leading-tight" id="tab-registry" onclick="switchTab('registry')">
+                    <span class="text-[18px] mb-1">🏥</span>
+                    <span class="text-[11px] sm:text-[13px] text-center">ทะเบียนสุขภาพ</span>
+                </button>
+                
+                <button class="tab-btn flex flex-col items-center justify-center py-3 px-1 leading-tight" id="tab-vhv" onclick="switchTab('vhv')">
+                    <span class="text-[18px] mb-1">👥</span>
+                    <span class="text-[11px] sm:text-[13px] text-center">สถิติ อสม.</span>
+                </button>
             </div>
 
             <div id="loading-state" class="flex flex-col items-center justify-center py-24 space-y-3">
