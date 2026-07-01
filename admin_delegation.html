@@ -8,7 +8,11 @@
     <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700&display=swap" rel="stylesheet"/>
     <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
     <script charset="utf-8" src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+    
+    <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore-compat.js"></script>
     <script src="config.js"></script>
+    
     <style>
         body { font-family: 'Sarabun', sans-serif; background-color: #f4f7fa; }
         .material-symbols-outlined { font-variation-settings: 'FILL' 1, 'wght' 400, 'GRAD' 0, 'opsz' 24; }
@@ -17,8 +21,6 @@
         .tab-btn.active { color: #00694a; border-bottom-color: #00694a; }
         .loader-small { border: 2px solid #f3f3f3; border-bottom-color: #00694a; border-radius: 50%; width: 24px; height: 24px; animation: spin 1s linear infinite; }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
-        .neo-card { background: #ffffff; border-radius: 20px; box-shadow: 4px 4px 12px #e2e8f0, -4px -4px 12px #ffffff; border: 1px solid rgba(255, 255, 255, 0.7); }
-    /* เพิ่ม CSS ชุดนี้ต่อท้ายใน <style> */
         .scrollbar-hidden::-webkit-scrollbar { display: none; }
         .scrollbar-hidden { -ms-overflow-style: none; scrollbar-width: none; }
     </style>
@@ -55,29 +57,16 @@
             </div>
         </header>
 
-       <!-- แถบเมนูแท็บ (ปรับเป็นแบบ Grid 2 บรรทัดในมือถือ และ 1 บรรทัดในคอมพิวเตอร์) -->
-        <div class="bg-white border-b border-slate-200 grid grid-cols-2 lg:flex lg:flex-nowrap shadow-sm z-10 sticky top-0">
-            <!-- ปุ่มที่ 1 -->
-            <button class="tab-btn active border-r border-b lg:border-b-0 border-slate-100 flex flex-col items-center justify-center py-3 leading-tight" id="tab-new" onclick="switchTab('new')">
-                <span class="flex items-center gap-1">📋 เคสใหม่ <span id="badge-new" class="bg-blue-100 text-blue-700 px-1.5 py-0.5 rounded-md text-[10px]">0</span></span>
-            </button>
-            <!-- ปุ่มที่ 2 -->
-            <button class="tab-btn border-b lg:border-b-0 border-slate-100 flex flex-col items-center justify-center py-3 leading-tight" id="tab-reassess" onclick="switchTab('reassess')">
-                <span class="flex items-center gap-1">🔄 ค้างติดตาม <span id="badge-reassess" class="bg-red-100 text-red-700 px-1.5 py-0.5 rounded-md text-[10px]">0</span></span>
-            </button>
-            <!-- ปุ่มที่ 3 -->
-            <button class="tab-btn border-r lg:border-none border-slate-100 flex flex-col items-center justify-center py-3 leading-tight" id="tab-vhv" onclick="switchTab('vhv')">
-                <span class="flex items-center gap-1">👥 ทำเนียบ <span id="badge-vhv-count" class="bg-emerald-100 text-emerald-700 px-1.5 py-0.5 rounded-md text-[10px]">0</span></span>
-            </button>
-            <!-- ปุ่มที่ 4 -->
-            <button class="tab-btn text-amber-600 lg:border-none border-slate-100 flex flex-col items-center justify-center py-3 leading-tight" id="tab-approve" onclick="switchTab('approve')">
-                <span class="flex items-center gap-1">🔐 รออนุมัติ <span id="badge-pending-vhv" class="bg-amber-100 text-amber-700 px-1.5 py-0.5 rounded-md text-[10px]">0</span></span>
-            </button>           
+        <div class="bg-white px-4 lg:px-8 border-b border-slate-200 flex flex-nowrap flex-shrink-0 sticky top-0 z-10 shadow-sm overflow-x-auto scrollbar-hidden">
+            <button class="tab-btn active" id="tab-new" onclick="switchTab('new')">📋 เคสใหม่รอประเมิน (<span id="badge-new">0</span>)</button>
+            <button class="tab-btn" id="tab-reassess" onclick="switchTab('reassess')">🔄 เคสค้างติดตาม (<span id="badge-reassess">0</span>)</button>
+            <button class="tab-btn" id="tab-vhv" onclick="switchTab('vhv')">👥 ทำเนียบ อสม. (<span id="badge-vhv-count">0</span>)</button>
+            <button class="tab-btn text-amber-600" id="tab-approve" onclick="switchTab('approve')">🔐 รออนุมัติ อสม. (<span id="badge-pending-vhv">0</span>)</button>           
         </div>
 
         <div class="p-4 lg:p-6">
             <div id="loading-state" class="flex flex-col items-center justify-center py-20 space-y-3">
-                <div class="loader-small"></div><p class="text-sm text-slate-400 animate-pulse">กำลังตรวจสอบข้อมูลฐานระบบ...</p>
+                <div class="loader-small"></div><p class="text-sm text-slate-400 animate-pulse">กำลังตรวจสอบข้อมูลจาก Firebase...</p>
             </div>
 
             <div id="filter-wrapper" class="hidden flex justify-end mb-4">
@@ -101,7 +90,7 @@
 
             <div id="content-vhv" class="hidden space-y-4">
                 <div id="vhv-list" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5"></div>
-            </div>
+            </div> 
 
             <div id="content-approve" class="hidden space-y-4">
                 <div class="bg-amber-50 border border-amber-200 p-4 rounded-xl mb-4">
@@ -112,13 +101,15 @@
                 <div id="empty-pending" class="hidden text-center py-16 text-slate-400"><p class="text-sm">ไม่มีคำขอลงทะเบียนใหม่ค้างอยู่</p></div>
             </div>
         </div>
-
-        <div id="toast" class="fixed bottom-6 left-1/2 transform -translate-x-1/2 bg-slate-900 text-white px-6 py-3 rounded-full shadow-2xl flex items-center gap-2 transition-all duration-300 translate-y-20 opacity-0 z-50"><span class="material-symbols-outlined text-emerald-400">check_circle</span><span class="text-sm font-bold" id="toast-text">สำเร็จ</span></div>
     </main>
-    
+
     <script>
-        
+        // เชื่อมต่อ Firebase
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.firestore();
+
         let allPatients = []; let allVHVs = []; let newCases = []; let reassessCases = []; let currentTab = 'new';
+        let pendingVHVs = [];
 
         function toggleSidebar() { document.getElementById('sidebar').classList.toggle('-translate-x-full'); }
 
@@ -128,13 +119,36 @@
             });
         });
 
+        // [อัปเดต] เช็คสิทธิ์ Hybrid Auth เหมือนศูนย์ข้อมูล
         async function verifyAdminAccess(uid) {
             try {
-                const response = await fetch(API_URL, { method: 'POST', body: JSON.stringify({ action: 'checkUserRegistration', uid: uid }) });
-                const data = await response.json();
-                if (data.status === 'registered' && data.role === 'ADMIN') {
-                    document.getElementById('sidebar-hospital-name').innerText = data.hospital_name || 'เทศบาลเมืองบางแก้ว';
-                    const vCount = parseInt(data.village_count) || 15;
+                const userDoc = await db.collection('VHVs').doc(String(uid)).get();
+                let isAdmin = false;
+                let hospital = 'เทศบาลเมืองบางแก้ว';
+                let vCount = 15;
+
+                if (userDoc.exists && String(userDoc.data().role).toUpperCase() === 'ADMIN') {
+                    isAdmin = true;
+                    hospital = userDoc.data().hospital_name || hospital;
+                    vCount = parseInt(userDoc.data().village_count) || vCount;
+                }
+
+                if (!isAdmin) {
+                    const response = await fetch(API_URL, { method: 'POST', body: JSON.stringify({ action: 'checkUserRegistration', uid: uid }) });
+                    const data = await response.json();
+                    if (data.status === 'registered' && String(data.role).toUpperCase() === 'ADMIN') {
+                        isAdmin = true;
+                        hospital = data.hospital_name || hospital;
+                        vCount = parseInt(data.village_count) || vCount;
+                        await db.collection('VHVs').doc(String(uid)).set({
+                            uid: String(uid), role: 'ADMIN', hospital_name: hospital,
+                            village_count: vCount, name: data.name || 'Admin', phone: data.phone || ''
+                        }, { merge: true });
+                    }
+                }
+
+                if (isAdmin) {
+                    document.getElementById('sidebar-hospital-name').innerText = hospital;
                     const villageSelect = document.getElementById('village-filter');
                     for(let i=1; i<=vCount; i++){ villageSelect.insertAdjacentHTML('beforeend', `<option value="${i}">หมู่ที่ ${i}</option>`); }
                     loadDataChannels();
@@ -150,32 +164,39 @@
                 targetDate = new Date(parts[2], parts[1] - 1, parts[0]);
             } else { targetDate = new Date(dateStr); }
             if (isNaN(targetDate)) return -1;
-            const diffTime = Math.abs(new Date() - targetDate);
-            return Math.floor(diffTime / (1000 * 60 * 60 * 24));
+            return Math.floor(Math.abs(new Date() - targetDate) / (1000 * 60 * 60 * 24));
         }
 
-        let pendingVHVs = [];
-
-        // อัปเดต loadDataChannels ให้ดึงข้อมูล Pending มาด้วย
+        // [อัปเดต] ดึงข้อมูลรวดเดียวจาก Firebase + ดึงคนค้างอนุมัติจาก GAS 
         async function loadDataChannels() {
             try {
-                const [pRes, vRes, pendingRes] = await Promise.all([
-                    fetch(API_URL, { method: 'POST', body: JSON.stringify({ action: 'getAllPatients' }) }),
-                    fetch(API_URL, { method: 'POST', body: JSON.stringify({ action: 'getAllVHVs' }) }),
-                    fetch(API_URL, { method: 'POST', body: JSON.stringify({ action: 'getPendingVHVs' }) }) // <--- ดึงรออนุมัติ
+                // ดึงผู้ป่วยและ อสม. จาก Firebase (เร็วมาก)
+                const [pSnap, vSnap] = await Promise.all([
+                    db.collection('Patients').get(),
+                    db.collection('VHVs').get()
                 ]);
-                allPatients = await pRes.json(); allVHVs = await vRes.json();
+                
+                allPatients = [];
+                pSnap.forEach(doc => allPatients.push(doc.data()));
+                
+                allVHVs = [];
+                vSnap.forEach(doc => {
+                    const v = doc.data();
+                    if(String(v.role).toUpperCase() !== 'ADMIN') allVHVs.push(v);
+                });
+
+                // ดึงคนที่รออนุมัติจาก GAS (เพราะระบบลงทะเบียนหน้าแรกยังเป็น GAS อยู่ จึงต้องดึงจากที่นั่นชั่วคราว)
+                const pendingRes = await fetch(API_URL, { method: 'POST', body: JSON.stringify({ action: 'getPendingVHVs' }) });
                 pendingVHVs = await pendingRes.json();
                 
                 distributePatients();
-                renderPendingVHVs(); // เรนเดอร์จออนุมัติ
+                renderPendingVHVs(); 
                 document.getElementById('loading-state').classList.add('hidden');
                 document.getElementById('filter-wrapper').classList.remove('hidden');
                 switchTab(currentTab);
             } catch (e) { alert("ดึงฐานข้อมูลล้มเหลว"); }
         }
 
-        // เพิ่มฟังก์ชันสลับแท็บให้รู้จัก 'approve'
         function switchTab(tab) {
             currentTab = tab;
             ['new', 'reassess', 'vhv', 'approve'].forEach(t => {
@@ -188,11 +209,10 @@
             document.getElementById(`content-${tab}`).classList.remove('hidden');
             
             const filterWrap = document.getElementById('filter-wrapper');
-            if(tab === 'approve') filterWrap.classList.add('hidden'); // ซ่อนตัวกรองหมู่ในหน้าอนุมัติ
+            if(tab === 'approve') filterWrap.classList.add('hidden'); 
             else { filterWrap.classList.remove('hidden'); filterDataDisplay(); }
         }
 
-        // สร้างการ์ดรออนุมัติ
         function renderPendingVHVs() {
             const container = document.getElementById('pending-vhv-list');
             container.innerHTML = '';
@@ -218,16 +238,27 @@
             });
         }
 
-        // ฟังก์ชันสั่งยิง API อนุมัติสิทธิ์
+        // [อัปเดต] อนุมัติสิทธิ์และสร้างบัญชีลง Firebase ให้ อสม. ใหม่ทันที
         async function manageVHVStatus(uid, actionType) {
             if(!confirm(actionType === 'Active' ? 'ยืนยันการอนุมัติสิทธิ์ให้บุคคลนี้ใช่หรือไม่?' : 'ยืนยันการปฏิเสธสิทธิ์ใช่หรือไม่?')) return;
             
             try {
+                // อัปเดตใน GAS เป็นหลักก่อน (เพราะระบบล็อกอินเก่าผูกไว้ที่นี่)
                 const response = await fetch(API_URL, { method: 'POST', body: JSON.stringify({ action: 'manageVHVStatus', targetUid: uid, actionType: actionType }) });
                 const result = await response.json();
+                
                 if(result.success) {
+                    // ถ้าอนุมัติผ่าน ให้จับคนๆ นี้ฝังลงตารางของ Firebase ด้วย เพื่อให้เข้าแอปได้รวดเร็ว!
+                    if (actionType === 'Active') {
+                        const targetVHV = pendingVHVs.find(v => String(v.uid) === String(uid));
+                        if(targetVHV) {
+                            targetVHV.status = 'Active';
+                            targetVHV.role = 'VHV';
+                            await db.collection('VHVs').doc(String(uid)).set(targetVHV, { merge: true });
+                        }
+                    }
                     alert('ดำเนินการเรียบร้อยแล้ว');
-                    loadDataChannels(); // รีเฟรชข้อมูลทั้งหมด
+                    loadDataChannels(); 
                 } else alert(result.message);
             } catch(e) { alert("เชื่อมต่อล้มเหลว"); }
         }
@@ -240,7 +271,6 @@
                 if (lastAssess === '' || lastAssess === '-') { newCases.push(p); } 
                 else { p.days_passed = calculateDaysSince(p.last_assess); if (p.days_passed >= 0) reassessCases.push(p); }
             });
-            // เรียงลำดับค้างนานที่สุด (วันมากที่สุด) ไว้ด้านบนสุด (ข้อ 1)
             reassessCases.sort((a, b) => b.days_passed - a.days_passed);
             document.getElementById('badge-new').innerText = newCases.length;
             document.getElementById('badge-reassess').innerText = reassessCases.length;
@@ -254,7 +284,6 @@
             else if (currentTab === 'vhv') renderVHVList(vFilter);
         }
 
-        // ตรรกะคัดกรอง: แสดงเฉพาะ อสม. ของหมู่ตัวเองเท่านั้น ไม่โชว์ข้ามหมู่ (ข้อ 1)
         function generateVHVOptionsStrict(patientVillage, assignedVhvId) {
             let html = `<option value="">-- เลือก อสม. ประจำหมู่ ${patientVillage} --</option>`;
             const filtered = allVHVs.filter(v => String(v.village_no) === String(patientVillage));
@@ -338,27 +367,35 @@
             });
         }
 
-                async function saveAssignment(patientId) {
+        // [อัปเดตสุดยอดท่าไม้ตาย!] บันทึกลง Firebase ให้ UI เร็วปรู๊ด แล้วค่อยส่ง LINE แอบหลังบ้าน
+        async function saveAssignment(patientId) {
             const vhvId = document.getElementById(`select_${patientId}`).value;
             if(!vhvId) return alert('กรุณาเลือก อสม. ผู้รับผิดชอบก่อนบันทึกครับ');
 
             const btn = document.getElementById(`btn_${patientId}`);
-            btn.disabled = true; btn.innerText = 'กำลังบันทึกแผงควบคุม...';
+            btn.disabled = true; btn.innerText = 'กำลังประมวลผล...';
 
             try {
-                const response = await fetch(API_URL, { method: 'POST', body: JSON.stringify({ action: 'updatePatientVHV', id: patientId, vhvId: vhvId }) });
-                const result = await response.json();
+                // 1. สั่งบันทึกลง Firebase ทันทีเพื่อความรวดเร็ว
+                await db.collection('Patients').doc(String(patientId)).update({ 
+                    assigned_vhv_id: String(vhvId) 
+                });
                 
-                if(result.success) {
-                    // ให้เด้งหน้าต่างโชว์สถานะ LINE ขึ้นมาตรงๆ เลย
-                    alert(result.message); 
-                    loadDataChannels();
-                } else { 
-                    alert(result.message); 
-                    btn.disabled = false; 
-                    btn.innerText = 'บันทึกมอบหมายงาน'; 
-                }
-            } catch(e) { alert("เชื่อมต่อล้มเหลว"); btn.disabled = false; }
+                // 2. แจ้งเตือนผู้ใช้และโหลดหน้าจอใหม่เลย (ไม่ต้องรอ LINE ส่งเสร็จ)
+                alert('มอบหมายงานสำเร็จ! (ระบบกำลังส่งแจ้งเตือน LINE ให้ อสม. เบื้องหลัง)');
+                loadDataChannels();
+                
+                // 3. ปล่อยให้ Google Apps Script ยิง LINE แจ้งเตือนไปแบบเงียบๆ ไม่ต้องรอผลลัพธ์
+                fetch(API_URL, { 
+                    method: 'POST', 
+                    body: JSON.stringify({ action: 'updatePatientVHV', id: patientId, vhvId: vhvId }) 
+                }).catch(e => console.log("แจ้งเตือน LINE ล้มเหลว แต่บันทึกข้อมูลแล้ว"));
+
+            } catch(e) { 
+                alert("เชื่อมต่อขัดข้อง กรุณาลองใหม่"); 
+                btn.disabled = false; 
+                btn.innerText = 'บันทึกและส่งแจ้งเตือน LINE อส.'; 
+            }
         }
     </script>
 </body>
