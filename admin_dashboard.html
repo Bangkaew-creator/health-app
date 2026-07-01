@@ -8,7 +8,11 @@
     <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700&display=swap" rel="stylesheet"/>
     <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
     <script charset="utf-8" src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+    
+    <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore-compat.js"></script>
     <script src="config.js"></script>
+    
     <style>
         body { font-family: 'Sarabun', sans-serif; background-color: #f4f7fa; }
         .material-symbols-outlined { font-variation-settings: 'FILL' 1, 'wght' 400, 'GRAD' 0, 'opsz' 24; }
@@ -73,7 +77,6 @@
                 <span class="text-sm font-bold">ออกจากระบบ</span>
             </div>
         </div>
-        <!-- เครดิตผู้พัฒนา (Sidebar Footer) -->
         <div class="px-4 py-4 bg-slate-900/50 text-center">
             <p class="text-[8px] text-slate-500 font-medium tracking-widest uppercase mb-1">System Developed By</p>
             <p class="text-[11px] text-amber-500/90 font-bold tracking-wide">Suppawut Asunee</p>
@@ -92,7 +95,6 @@
                 </div>
             </div>
             
-            <!-- ส่วนที่เพิ่มใหม่: รูปโปรไฟล์และชื่อแอดมิน มุมขวาบน -->
             <div class="flex items-center gap-3 pl-4 border-l border-slate-100 cursor-pointer hover:opacity-80 transition-opacity" onclick="window.location.href='admin_settings.html'" title="ไปที่หน้าตั้งค่าระบบ">
                 <div class="text-right hidden sm:block">
                     <p id="admin-name-display" class="text-xs font-bold text-slate-800 leading-none">ผู้ดูแลระบบ</p>
@@ -109,7 +111,7 @@
                     <div class="flex justify-between items-start">
                         <div>
                             <p class="text-[11px] font-bold text-slate-400 uppercase tracking-wider">ผู้ป่วยในระบบทั้งหมด</p>
-                            <h3 class="text-3xl font-bold text-slate-900 mt-2" id="total-all">0</h3>
+                            <h3 class="text-3xl font-bold text-slate-900 mt-2" id="total-all">-</h3>
                         </div>
                         <div class="w-10 h-10 rounded-xl bg-blue-50 flex items-center justify-center text-blue-500 shadow-sm"><span class="material-symbols-outlined text-[22px]">groups</span></div>
                     </div>
@@ -118,7 +120,7 @@
                     <div class="flex justify-between items-start">
                         <div>
                             <p class="text-[11px] font-bold text-slate-400 uppercase tracking-wider">กลุ่มติดสังคม</p>
-                            <h3 class="text-3xl font-bold text-slate-900 mt-2" id="total-social">0</h3>
+                            <h3 class="text-3xl font-bold text-slate-900 mt-2" id="total-social">-</h3>
                         </div>
                         <div class="w-10 h-10 rounded-xl bg-emerald-50 flex items-center justify-center text-emerald-500 shadow-sm"><span class="material-symbols-outlined text-[22px]">sentiment_satisfied</span></div>
                     </div>
@@ -127,7 +129,7 @@
                     <div class="flex justify-between items-start">
                         <div>
                             <p class="text-[11px] font-bold text-slate-400 uppercase tracking-wider">กลุ่มติดบ้าน</p>
-                            <h3 class="text-3xl font-bold text-slate-900 mt-2" id="total-home">0</h3>
+                            <h3 class="text-3xl font-bold text-slate-900 mt-2" id="total-home">-</h3>
                         </div>
                         <div class="w-10 h-10 rounded-xl bg-amber-50 flex items-center justify-center text-amber-500 shadow-sm"><span class="material-symbols-outlined text-[22px]">home</span></div>
                     </div>
@@ -136,7 +138,7 @@
                     <div class="flex justify-between items-start">
                         <div>
                             <p class="text-[11px] font-bold text-slate-400 uppercase tracking-wider">กลุ่มติดเตียง (วิกฤต)</p>
-                            <h3 class="text-3xl font-bold text-slate-900 mt-2" id="total-bed">0</h3>
+                            <h3 class="text-3xl font-bold text-slate-900 mt-2" id="total-bed">-</h3>
                         </div>
                         <div class="w-10 h-10 rounded-xl bg-red-50 flex items-center justify-center text-red-500 shadow-sm"><span class="material-symbols-outlined text-[22px]">bed</span></div>
                     </div>
@@ -149,7 +151,7 @@
                         <div class="flex justify-between items-center mb-5 border-b border-slate-100 pb-3">
                             <h3 class="font-bold text-slate-900 flex items-center gap-2 text-[15px]">
                                 <span class="material-symbols-outlined text-amber-500">inventory</span> 
-                                วัสดุทางการแพทย์รออนุมัติ (ผ้าอ้อม / แผ่นรองซับ)
+                                วัสดุทางการแพทย์รออนุมัติ
                             </h3>
                             <span class="bg-amber-50 text-amber-700 text-[10px] font-bold px-2 py-0.5 rounded-md border border-amber-200">ตรวจสอบด่วน</span>
                         </div>
@@ -165,7 +167,7 @@
                                 </div>
                             </div>
                             <div class="text-right">
-                                <span class="text-2xl font-black text-amber-600" id="count-pending-diaper">0</span>
+                                <span class="text-2xl font-black text-amber-600" id="count-pending-diaper">-</span>
                                 <p class="text-[10px] font-bold text-slate-400">ราย</p>
                             </div>
                         </div>
@@ -180,7 +182,7 @@
                         <div class="flex justify-between items-center mb-5 border-b border-slate-100 pb-3">
                             <h3 class="font-bold text-slate-900 flex items-center gap-2 text-[15px]">
                                 <span class="material-symbols-outlined text-red-500">notification_important</span> 
-                                ระบบควบคุมเวลาเยี่ยมบ้าน (SLA Overdue Alert)
+                                ระบบควบคุมเวลาเยี่ยมบ้าน (SLA Alert)
                             </h3>
                             <span class="bg-red-50 text-red-700 text-[10px] font-bold px-2 py-0.5 rounded-md border border-red-200">ระวัง</span>
                         </div>
@@ -196,7 +198,7 @@
                                 </div>
                             </div>
                             <div class="text-right">
-                                <span class="text-2xl font-black text-red-600" id="count-sla-alert">0</span>
+                                <span class="text-2xl font-black text-red-600" id="count-sla-alert">-</span>
                                 <p class="text-[10px] font-bold text-slate-400">ราย</p>
                             </div>
                         </div>
@@ -217,15 +219,15 @@
                 <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 text-center">
                     <div class="p-4 bg-purple-50/40 border border-purple-100 rounded-2xl">
                         <span class="text-[11px] font-bold text-purple-700 block mb-1">ปกติ (ปลอดภัย)</span>
-                        <span class="text-2xl font-black text-slate-800" id="depression-normal">0</span>
+                        <span class="text-2xl font-black text-slate-800" id="depression-normal">-</span>
                     </div>
                     <div class="p-4 bg-amber-50/40 border border-amber-100 rounded-2xl">
                         <span class="text-[11px] font-bold text-amber-700 block mb-1">เสี่ยงซึมเศร้า (เฝ้าระวัง)</span>
-                        <span class="text-2xl font-black text-slate-800" id="depression-risk">0</span>
+                        <span class="text-2xl font-black text-slate-800" id="depression-risk">-</span>
                     </div>
                     <div class="p-4 bg-red-50/40 border border-red-100 rounded-2xl">
                         <span class="text-[11px] font-bold text-red-700 block mb-1">เสี่ยงสูง / มีแนวโน้มรุนแรง</span>
-                        <span class="text-2xl font-black text-slate-800" id="depression-high">0</span>
+                        <span class="text-2xl font-black text-slate-800" id="depression-high">-</span>
                     </div>
                 </div>
             </div>
@@ -234,8 +236,12 @@
     </main>
 
     <script>
-      
-        // ฟังก์ชันควบคุมการแสดงผลสไลด์ Sidebar ในจอมือถือ
+        // ---------------------------------------------------
+        // เชื่อมต่อ Firebase
+        // ---------------------------------------------------
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.firestore();
+
         function toggleSidebar() {
             const sidebar = document.getElementById('sidebar');
             const overlay = document.getElementById('sidebar-overlay');
@@ -247,7 +253,7 @@
             liff.init({ liffId: LIFF_ID }).then(() => {
                 if (liff.isLoggedIn()) {
                     liff.getProfile().then(profile => {
-                        verifyAdminAccess(profile.userId);
+                        verifyAdminAccess(profile.userId, profile);
                     }).catch(() => bounceToLogin());
                 } else {
                     bounceToLogin();
@@ -255,26 +261,44 @@
             }).catch(() => bounceToLogin());
         });
 
-        async function verifyAdminAccess(uid) {
+        // [อัปเดตระบบตรวจสอบสิทธิ์] ระบบลูกผสม Hybrid Auth 
+        async function verifyAdminAccess(uid, profile) {
             try {
-                const response = await fetch(API_URL, { method: 'POST', body: JSON.stringify({ action: 'checkUserRegistration', uid: uid }) });
-                const data = await response.json();
-                
-                if (data.status === 'registered' && data.role === 'ADMIN') {
-                    // อัปเดตชื่อหน่วยงาน
-                    const hospital = data.hospital_name || 'เทศบาลเมืองบางแก้ว';
+                const userDoc = await db.collection('VHVs').doc(String(uid)).get();
+                let isAdmin = false;
+                let hospital = 'เทศบาลเมืองบางแก้ว';
+
+                if (userDoc.exists) {
+                    const userData = userDoc.data();
+                    if (String(userData.role || userData.Role || '').toUpperCase() === 'ADMIN') {
+                        isAdmin = true;
+                        hospital = userData.hospital_name || hospital;
+                    }
+                }
+
+                if (!isAdmin) {
+                    const response = await fetch(API_URL, { method: 'POST', body: JSON.stringify({ action: 'checkUserRegistration', uid: uid }) });
+                    const data = await response.json();
+                    
+                    if (data.status === 'registered' && String(data.role).toUpperCase() === 'ADMIN') {
+                        isAdmin = true;
+                        hospital = data.hospital_name || hospital;
+                        
+                        await db.collection('VHVs').doc(String(uid)).set({
+                            uid: String(uid), role: 'ADMIN', hospital_name: hospital,
+                            name: data.name || profile.displayName || 'Admin', 
+                            phone: data.phone || '',
+                            pic_url: profile.pictureUrl || ''
+                        }, { merge: true });
+                    }
+                }
+
+                if (isAdmin) {
                     if (document.getElementById('sidebar-hospital-name')) document.getElementById('sidebar-hospital-name').innerText = hospital;
                     if (document.getElementById('header-hospital-name')) document.getElementById('header-hospital-name').innerText = hospital;
+                    if (document.getElementById('admin-name-display')) document.getElementById('admin-name-display').innerText = profile.displayName || 'ผู้ดูแลระบบ';
+                    if (document.getElementById('admin-profile-pic')) document.getElementById('admin-profile-pic').src = profile.pictureUrl || 'https://via.placeholder.com/150';
                     
-                    // [ส่วนที่เพิ่มใหม่] อัปเดตชื่อและรูปโปรไฟล์แอดมิน
-                    if (document.getElementById('admin-name-display')) {
-                        document.getElementById('admin-name-display').innerText = data.name || 'ผู้ดูแลระบบ';
-                    }
-                    if (document.getElementById('admin-profile-pic')) {
-                        document.getElementById('admin-profile-pic').src = (data.pic_url && data.pic_url !== '') ? data.pic_url : 'https://via.placeholder.com/150';
-                    }
-                    
-                    // เรียกฟังก์ชันโหลดข้อมูลหน้า Dashboard ต่อ
                     loadDashboardData(); 
                 } else {
                     window.location.href = 'dashboard.html';
@@ -286,26 +310,33 @@
 
         function bounceToLogin() { window.location.href = 'index.html'; }
 
-        // ฟังก์ชันโหลดข้อมูลหน้า Dashboard (เวอร์ชันแก้ไข: ดึงสถิติจริง ไม่ใช้เปอร์เซ็นต์หลอก, แก้บักวันที่ค้างเยี่ยม)
+        // [อัปเดตระบบดึงข้อมูล] ดึงสถิติทั้งหมดจาก Firebase ในเสี้ยววินาที!
         async function loadDashboardData() {
             try {
-                const response = await fetch(API_URL, { method: 'POST', body: JSON.stringify({ action: 'getAllPatients' }) });
-                const patients = await response.json();
+                const snapshot = await db.collection('Patients').get();
+                const patients = [];
+                
+                snapshot.forEach(doc => {
+                    const data = doc.data();
+                    // ประมวลผลเฉพาะคนที่สถานะกำลังดูแล (Active)
+                    if (String(data.status || 'Active').trim().toLowerCase() === 'active') {
+                        patients.push(data);
+                    }
+                });
 
-                const totalCount = patients.length;
-                document.getElementById('total-all').innerText = totalCount;
+                document.getElementById('total-all').innerText = patients.length;
                 document.getElementById('total-social').innerText = patients.filter(p => p.group === 'ติดสังคม').length;
                 document.getElementById('total-home').innerText = patients.filter(p => p.group === 'ติดบ้าน').length;
                 
                 const bedRidden = patients.filter(p => p.group === 'ติดเตียง');
                 document.getElementById('total-bed').innerText = bedRidden.length;
 
-                // 1. นับเคสผ้าอ้อมรออนุมัติจริงจากการ Parse JSON
+                // นับเคสผ้าอ้อม
                 let pendingDiaper = 0;
                 patients.forEach(p => {
                     if (p.diaper && p.diaper !== '') {
                         try {
-                            const diaperObj = JSON.parse(p.diaper);
+                            const diaperObj = typeof p.diaper === 'string' ? JSON.parse(p.diaper) : p.diaper;
                             if (diaperObj.req_diaper || diaperObj.req_underpad || diaperObj.approve_status === "รออนุมัติ") {
                                 pendingDiaper++;
                             }
@@ -314,37 +345,36 @@
                 });
                 document.getElementById('count-pending-diaper').innerText = pendingDiaper;
 
-                // 2. ปรับปรุงตัวสแกนวันที่ค้างเยี่ยมบ้านให้ฉลาดขึ้น (รองรับ Date Object จาก Sheets)
+                // ค้นหาค้างเยี่ยม (SLA) อิงจากวันที่ใน Firebase
                 let slaAlertCount = 0;
                 const today = new Date();
                 
                 bedRidden.forEach(p => {
                     let lastAssessDate = null;
-                    if (p.last_assess) {
-                        if (String(p.last_assess).includes('/')) {
-                            const parts = String(p.last_assess).split('/');
+                    const dateStr = String(p.last_assess || '').trim();
+                    
+                    if (dateStr !== '' && dateStr !== '-') {
+                        if (dateStr.includes('/')) {
+                            // ตัดเอาเฉพาะวันที่ (ทิ้งเวลา) เพื่อป้องกันบั๊ก
+                            const parts = dateStr.split(' ')[0].split('/');
                             lastAssessDate = new Date(parts[2], parts[1] - 1, parts[0]);
                         } else {
-                            // รองรับ Date Object หรือรูปแบบ ISO สากลที่ส่งมาจากตารางชีตโดยตรง
-                            lastAssessDate = new Date(p.last_assess);
+                            lastAssessDate = new Date(dateStr);
                         }
                     }
                     
                     if (lastAssessDate && !isNaN(lastAssessDate.getTime())) {
                         const timeDiff = Math.abs(today.getTime() - lastAssessDate.getTime());
-                        const diffDays = Math.ceil(timeDiff / (1000 * 3600 * 24));
+                        const diffDays = Math.floor(timeDiff / (1000 * 3600 * 24));
                         if (diffDays > 30) slaAlertCount++;
                     } else {
-                        slaAlertCount++; // ไม่มีประวัติเลยให้นับค้างเยี่ยมทันที
+                        slaAlertCount++; // ไม่มีประวัติให้ถือว่าค้าง
                     }
                 });
                 document.getElementById('count-sla-alert').innerText = slaAlertCount;
 
-                // 3. เปลี่ยนมาดึงสถิติจริงจากผลประเมินซึมเศร้าในฐานข้อมูล (ถ้ายังไม่ประเมินจะไม่โชว์มั่ว)
-                let depNormal = 0;
-                let depRisk = 0;
-                let depHigh = 0;
-                
+                // นับสถิติซึมเศร้า
+                let depNormal = 0, depRisk = 0, depHigh = 0;
                 patients.forEach(p => {
                     const dep = String(p.dep_status || '').trim();
                     if (dep === 'ปกติ') depNormal++;
