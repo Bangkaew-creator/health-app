@@ -55,7 +55,7 @@
             <button class="tab-btn" id="tab-inactive" onclick="switchTab('inactive')">ยุติการดูแล (เสียชีวิต/ย้าย/หายดี) <span id="badge-inactive" class="ml-2 bg-slate-100 text-slate-600 py-0.5 px-2 rounded-full text-[10px]">0</span></button>
         </div>
 
-        <div class="flex-1 flex flex-col overflow-hidden p-4 lg:p-6 pb-20 lg:pb-8">
+        <div class="w-full max-w-full p-4 lg:p-6 pb-20 lg:pb-8">
             <div class="bg-white p-4 rounded-t-[20px] border border-slate-200 border-b-0 flex flex-col md:flex-row md:items-center justify-between gap-4">
                 
                 <div class="flex flex-col md:flex-row gap-4 flex-1">
@@ -71,28 +71,24 @@
                     </div>
                 </div>
 
-               <!-- ปุ่มโหลด Template และ นำเข้า Excel -->
-                <div class="flex-shrink-0 flex flex-col sm:flex-row gap-2">
-                    <!-- ปุ่มโหลดฟอร์มต้นแบบ -->
+               <div class="flex-shrink-0 flex flex-col sm:flex-row gap-2">
                     <button onclick="downloadTemplate()" class="w-full sm:w-auto bg-slate-100 hover:bg-slate-200 text-slate-700 px-4 py-2.5 rounded-xl font-bold text-sm flex items-center justify-center gap-2 shadow-sm transition-all active:scale-95 border border-slate-200">
                         <span class="material-symbols-outlined text-[20px]">download</span> โหลดฟอร์มต้นแบบ
                     </button>
 
-                    <!-- ปุ่มนำเข้าข้อมูล -->
                     <input type="file" id="import-excel-file" accept=".xlsx, .xls" class="hidden" onchange="handleImportExcel(event)">
                     <button onclick="document.getElementById('import-excel-file').click()" class="w-full sm:w-auto bg-amber-500 hover:bg-amber-600 text-white px-5 py-2.5 rounded-xl font-bold text-sm flex items-center justify-center gap-2 shadow-sm transition-all active:scale-95">
                         <span class="material-symbols-outlined text-[20px]">upload_file</span> นำเข้าข้อมูล (Excel)
                     </button>
                 </div>
-
             </div>
 
-            <div class="bg-white border border-slate-200 rounded-b-[20px] flex-1 overflow-hidden flex flex-col shadow-sm">
-                <div id="loading-state" class="flex-1 flex flex-col items-center justify-center py-20 space-y-3">
+            <div class="bg-white border border-slate-200 rounded-b-[20px] shadow-sm w-full max-w-full">
+                <div id="loading-state" class="flex flex-col items-center justify-center py-20 space-y-3">
                     <div class="loader-small"></div><p class="text-sm text-slate-400 animate-pulse">กำลังโหลดฐานข้อมูล...</p>
                 </div>
                 
-                <div class="table-container flex-1 overflow-auto hidden" id="table-container">
+                <div class="table-container overflow-x-auto w-full hidden" id="table-container">
                     <table class="w-full text-left border-collapse whitespace-nowrap min-w-[800px]">
                         <thead class="bg-slate-50 sticky top-0 z-10 shadow-[0_1px_2px_rgba(0,0,0,0.05)]">
                             <tr>
@@ -107,17 +103,16 @@
                     </table>
                 </div>
 
-                <div id="empty-state" class="hidden flex-1 flex flex-col items-center justify-center py-20">
+                <div id="empty-state" class="hidden flex flex-col items-center justify-center py-20">
                     <span class="material-symbols-outlined text-5xl text-slate-300 mb-3">search_off</span>
                     <h3 class="text-slate-500 font-bold">ไม่พบข้อมูล</h3>
                 </div>
                 
-                <div class="bg-slate-50 px-6 py-3 border-t border-slate-200 text-xs text-slate-500 font-medium flex justify-between items-center">
+                <div class="bg-slate-50 px-6 py-3 border-t border-slate-200 text-xs text-slate-500 font-medium flex justify-between items-center rounded-b-[20px]">
                     <span>แสดงผลรวม: <strong id="total-rows" class="text-navy">0</strong> รายการ</span>
                 </div>
             </div>
         </div>
-    </main>
 
     <script>
       
