@@ -213,15 +213,19 @@
         const patientId = urlParams.get('id');
         let currentUserRole = 'VHV'; // ตัวแปรเก็บสิทธิ์ผู้ใช้งาน
 
-        // ฟังก์ชันกำหนดการย้อนกลับไปที่หน้ารายชื่อให้ถูกสิทธิ์
+        // ฟังก์ชันอัจฉริยะ: ย้อนกลับไปหน้าที่ถูกต้องตามสิทธิ์และที่มา
         function goBackToList() {
             if (currentUserRole === 'ADMIN') {
-                window.location.replace('admin_datacenter.html'); // แอดมินกลับไปศูนย์ข้อมูล
+                // เช็คว่าแอดมินมาจากหน้าไหน จะได้ส่งกลับไปหน้านั้นเป๊ะๆ
+                if (document.referrer.includes('admin_delegation.html')) {
+                    window.location.href = 'admin_delegation.html';
+                } else {
+                    window.location.href = 'admin_datacenter.html'; // ค่าเริ่มต้นของแอดมิน
+                }
             } else {
-                window.location.replace('dashboard.html'); // อสม. กลับไปหน้าจอหลัก
+                window.location.href = 'dashboard.html'; // ส่งกลับหน้าหลัก อสม.
             }
         }
-
         // โหลดข้อมูลสิทธิ์ทันทีที่เปิดหน้า
         document.addEventListener("DOMContentLoaded", () => {
             liff.init({ liffId: LIFF_ID }).then(() => {
