@@ -8,7 +8,12 @@
     <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700&display=swap" rel="stylesheet"/>
     <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
     <script charset="utf-8" src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+    
+    <!-- โหลดเครื่องมือ Firebase -->
+    <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore-compat.js"></script>
     <script src="config.js"></script>
+    
     <style>
         body { font-family: 'Sarabun', sans-serif; background-color: #f4f7fa; }
         .material-symbols-outlined { font-variation-settings: 'FILL' 1, 'wght' 400, 'GRAD' 0, 'opsz' 24; }
@@ -16,6 +21,8 @@
         .tab-btn { padding: 12px 24px; font-weight: bold; font-size: 14px; border-bottom: 3px solid transparent; color: #64748b; transition: all 0.2s; cursor: pointer; }
         .tab-btn.active { color: #d97706; border-bottom-color: #d97706; }
         .neo-card { background: #ffffff; border-radius: 20px; box-shadow: 4px 4px 12px #e2e8f0, -4px -4px 12px #ffffff; border: 1px solid rgba(255, 255, 255, 0.7); }
+        .loader-small { border: 2px solid #f3f3f3; border-bottom-color: #d97706; border-radius: 50%; width: 24px; height: 24px; animation: spin 1s linear infinite; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
     </style>
 </head>
 <body class="flex h-[100dvh] overflow-hidden text-slate-800 relative">
@@ -94,15 +101,24 @@
                 <button class="tab-btn" id="tab-approved" onclick="switchTab('approved')">อนุมัติแล้ว <span id="badge-approved" class="ml-2 bg-slate-100 text-slate-600 py-0.5 px-2 rounded-full text-[10px]">0</span></button>
             </div>
 
-            <div class="p-4 lg:p-6">
-                <div id="request-list" class="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6"></div>
+            <div class="p-4 lg:p-6 relative min-h-[300px]">
+                <div id="loading-state" class="absolute inset-0 flex flex-col items-center justify-center bg-slate-50 z-20">
+                    <div class="loader-small mb-3"></div><p class="text-sm text-slate-400 animate-pulse">กำลังโหลดข้อมูลทรัพยากร...</p>
+                </div>
+                
+                <div id="request-list" class="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6 hidden"></div>
                 <div id="empty-state" class="hidden text-center py-24"><h3 class="text-lg font-bold text-slate-500">ไม่มีรายการในหมวดหมู่นี้</h3></div>
             </div>
         </div>
     </main>
 
     <script>
-       
+        // ---------------------------------------------------
+        // ตั้งค่าและเชื่อมต่อ Firebase 
+        // ---------------------------------------------------
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.firestore();
+
         let allRequests = [];
         let activeApprovedPatients = [];
         let currentTab = 'pending';
@@ -111,7 +127,7 @@
 
         function toggleSidebar() { document.getElementById('sidebar').classList.toggle('-translate-x-full'); }
 
-        // ฟังก์ชันล้างข้อความ JSON ฟันหนูซ้อนที่กวาดขยะออกจากข้อมูลคอลัมน์ O ตัวปัญหา
+        // ฟังก์ชันล้างข้อความ JSON ฟันหนูซ้อน
         function cleanAndParseJSON(rawStr) {
             if (!rawStr || String(rawStr).trim() === '') return null;
             let cleanStr = String(rawStr).trim();
@@ -126,39 +142,71 @@
             });
         });
 
+        // [อัปเดต 1] เช็คสิทธิ์ด้วย Hybrid Auth (เหมือนหน้าอื่นๆ)
         async function verifyAdminAccess(uid) {
             try {
-                const response = await fetch(API_URL, { method: 'POST', body: JSON.stringify({ action: 'checkUserRegistration', uid: uid }) });
-                const data = await response.json();
-                if (data.status === 'registered' && data.role === 'ADMIN') {
-                    document.getElementById('sidebar-hospital-name').innerText = data.hospital_name || 'เทศบาลเมืองบางแก้ว';
-                    configDiaperPrice = parseFloat(data.diaper_price || 9.50);
-                    configUnderpadPrice = parseFloat(data.underpad_price || 6.00);
+                const userDoc = await db.collection('VHVs').doc(String(uid)).get();
+                let isAdmin = false;
+                let hospital = 'เทศบาลเมืองบางแก้ว';
+
+                if (userDoc.exists) {
+                    const userData = userDoc.data();
+                    if (String(userData.role || userData.Role || '').toUpperCase() === 'ADMIN') {
+                        isAdmin = true;
+                        hospital = userData.hospital_name || hospital;
+                        configDiaperPrice = parseFloat(userData.diaper_price || 9.50);
+                        configUnderpadPrice = parseFloat(userData.underpad_price || 6.00);
+                    }
+                }
+
+                if (!isAdmin) {
+                    const response = await fetch(API_URL, { method: 'POST', body: JSON.stringify({ action: 'checkUserRegistration', uid: uid }) });
+                    const data = await response.json();
+                    
+                    if (data.status === 'registered' && String(data.role).toUpperCase() === 'ADMIN') {
+                        isAdmin = true;
+                        hospital = data.hospital_name || hospital;
+                        configDiaperPrice = parseFloat(data.diaper_price || 9.50);
+                        configUnderpadPrice = parseFloat(data.underpad_price || 6.00);
+                        
+                        await db.collection('VHVs').doc(String(uid)).set({
+                            uid: String(uid), role: 'ADMIN', hospital_name: hospital,
+                            diaper_price: configDiaperPrice, underpad_price: configUnderpadPrice
+                        }, { merge: true });
+                    }
+                }
+
+                if (isAdmin) {
+                    document.getElementById('sidebar-hospital-name').innerText = hospital;
                     document.getElementById('label-price-diaper').innerText = configDiaperPrice.toFixed(2);
                     document.getElementById('label-price-underpad').innerText = configUnderpadPrice.toFixed(2);
                     loadResourceData();
-                } else window.location.href = 'dashboard.html';
-            } catch (error) { alert('ยืนยันสิทธิ์ล้มเหลว'); }
+                } else {
+                    window.location.href = 'dashboard.html';
+                }
+            } catch (error) { 
+                window.location.href = 'index.html'; 
+            }
         }
 
+        // [อัปเดต 2] โหลดข้อมูลทรัพยากรจาก Firebase (รวดเร็วปานสายฟ้า)
         async function loadResourceData() {
             try {
-                const response = await fetch(API_URL, { method: 'POST', body: JSON.stringify({ action: 'getAllPatients' }) });
-                const patients = await response.json();
-
+                const snapshot = await db.collection('Patients').get();
                 allRequests = [];
                 activeApprovedPatients = [];
 
-                patients.forEach(p => {
+                snapshot.forEach(doc => {
+                    const p = doc.data();
                     const isActive = String(p.status || 'Active').trim().toLowerCase() === 'active';
-                    const d = cleanAndParseJSON(p.diaper); // ล้างฟันหนูซ้อนก่อนอ่าน
+                    const d = cleanAndParseJSON(p.diaper); 
                     
                     if (d && (d.req_diaper || d.req_underpad)) {
                         allRequests.push({ patient: p, detail: d, isActive: isActive });
                         
                         if (isActive && d.approve_status === 'อนุมัติแล้ว') {
                             activeApprovedPatients.push({ 
-                                size: String(d.size || 'L').toUpperCase().trim(), // แก้ไขจาก diaper_size เป็น size
+                                size: String(d.size || 'L').toUpperCase().trim(),
                                 diaperQty: parseInt(d.approved_diaper) || 0,
                                 underpadQty: parseInt(d.approved_underpad) || 0
                             });
@@ -166,7 +214,10 @@
                     }
                 });
                 
-                calculateBudget(); updateBadges(); renderList();
+                document.getElementById('loading-state').classList.add('hidden');
+                calculateBudget(); 
+                updateBadges(); 
+                renderList();
             } catch (error) { alert("ดึงข้อมูลทรัพยากรล้มเหลว"); }
         }
 
@@ -232,7 +283,7 @@
                     <div class="mt-4 pt-4 border-t border-slate-100 space-y-3">
                         ${d.req_diaper ? `<div class="flex items-center justify-between"><label class="text-sm font-bold text-slate-600">ผ้าอ้อม (ชิ้น/เดือน)</label><input type="number" id="diaper_${p.id}" class="w-20 px-2 py-1 border border-slate-200 rounded text-center focus:ring-amber-500" placeholder="0"></div>` : ''}
                         ${d.req_underpad ? `<div class="flex items-center justify-between"><label class="text-sm font-bold text-slate-600">แผ่นรอง (ชิ้น/เดือน)</label><input type="number" id="underpad_${p.id}" class="w-20 px-2 py-1 border border-slate-200 rounded text-center focus:ring-amber-500" placeholder="0"></div>` : ''}
-                        <button onclick="approveRequest('${p.id}', ${d.req_diaper}, ${d.req_underpad})" id="btn_${p.id}" class="w-full mt-2 py-2.5 bg-navy text-white text-sm font-bold rounded-lg hover:bg-opacity-90">บันทึกอนุมัติ</button>
+                        <button onclick="approveRequest('${p.id}', ${d.req_diaper}, ${d.req_underpad})" id="btn_${p.id}" class="w-full mt-2 py-2.5 bg-navy text-white text-sm font-bold rounded-lg hover:bg-opacity-90 transition-all active:scale-95">บันทึกอนุมัติ</button>
                     </div>
                 ` : `
                     <div class="mt-4 pt-4 border-t border-slate-100 bg-slate-50 rounded-xl p-3">
@@ -256,6 +307,7 @@
             });
         }
 
+        // [อัปเดต 3] บันทึกการอนุมัติลง Firebase ทันที + แจ้งเตือนเงียบๆ เบื้องหลัง
         async function approveRequest(id, hasDiaper, hasUnderpad) {
             const diaperQty = hasDiaper ? document.getElementById(`diaper_${id}`).value : 0;
             const underpadQty = hasUnderpad ? document.getElementById(`underpad_${id}`).value : 0;
@@ -265,14 +317,46 @@
             btn.disabled = true; btn.innerHTML = 'กำลังบันทึก...';
 
             try {
-                const response = await fetch(API_URL, {
-                    method: 'POST',
-                    body: JSON.stringify({ action: 'updateResourceApproval', id: id, diaperQty: parseInt(diaperQty)||0, underpadQty: parseInt(underpadQty)||0 })
-                });
-                const result = await response.json();
-                if (result.success) await loadResourceData();
-                else { alert(result.message); btn.disabled = false; btn.innerHTML = 'บันทึกอนุมัติ'; }
-            } catch (error) { alert('การเชื่อมต่อล้มเหลว'); btn.disabled = false; }
+                // 1. ดึงข้อมูลคนไข้เดิมจาก Firebase ออกมาแก้
+                const docRef = db.collection('Patients').doc(String(id));
+                const docSnap = await docRef.get();
+                
+                if(docSnap.exists) {
+                    let p = docSnap.data();
+                    let diaperObj = cleanAndParseJSON(p.diaper) || {};
+                    
+                    diaperObj.approve_status = 'อนุมัติแล้ว';
+                    
+                    // สร้างวันที่รูปแบบไทย (dd/mm/yyyy)
+                    const now = new Date();
+                    const day = String(now.getDate()).padStart(2, '0');
+                    const month = String(now.getMonth() + 1).padStart(2, '0');
+                    const year = now.getFullYear() + 543;
+                    diaperObj.approve_date = `${day}/${month}/${year}`;
+                    
+                    diaperObj.approved_diaper = parseInt(diaperQty) || 0;
+                    diaperObj.approved_underpad = parseInt(underpadQty) || 0;
+
+                    // 2. อัปเดตลง Firebase ทันที (เร็วปรู๊ด)
+                    await docRef.update({ diaper: JSON.stringify(diaperObj) });
+                    
+                    // 3. ปล่อยให้ Google Apps Script ยิง LINE แจ้งเตือน อสม. ไปแบบเงียบๆ ไม่ต้องรอผลลัพธ์
+                    fetch(API_URL, {
+                        method: 'POST',
+                        body: JSON.stringify({ action: 'updateResourceApproval', id: id, diaperQty: parseInt(diaperQty)||0, underpadQty: parseInt(underpadQty)||0 })
+                    }).catch(e => console.log('แจ้งเตือนเบื้องหลังทำงานเสร็จสิ้น'));
+
+                    alert('อนุมัติรายการและอัปเดตงบประมาณสำเร็จ!');
+                    await loadResourceData(); // โหลดหน้าจอใหม่ให้ตัวเลขงบประมาณเด้งเปลี่ยนทันที
+                } else {
+                    alert('ไม่พบข้อมูลผู้ป่วยในระบบ');
+                    btn.disabled = false; btn.innerHTML = 'บันทึกอนุมัติ';
+                }
+            } catch (error) { 
+                console.error(error);
+                alert('การเชื่อมต่อขัดข้อง กรุณาลองใหม่'); 
+                btn.disabled = false; btn.innerHTML = 'บันทึกอนุมัติ'; 
+            }
         }
     </script>
 </body>
