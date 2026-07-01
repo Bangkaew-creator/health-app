@@ -45,7 +45,7 @@ function doPost(e) {
   }
 }
 
-// [F2] ฟังก์ชันดึงรายชื่อผู้ป่วยทั้งหมด (รองรับ 31 คอลัมน์)
+// [F2] ฟังก์ชันดึงรายชื่อผู้ป่วยทั้งหมด (รองรับ 31 คอลัมน์ และอัปเดตดึงพิกัด lat_long)
 function F_getAllPatients() {
   const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('Patients');
   if (!sheet) return [];
@@ -62,6 +62,7 @@ function F_getAllPatients() {
   const colAge = headers.indexOf('age');
   const colHouse = headers.indexOf('house_no');
   const colVillage = headers.indexOf('village_no');
+  const colLatLong = headers.indexOf('lat_long'); // [จุดที่แก้ไข 1] เพิ่มการค้นหาคอลัมน์พิกัด
   const colDisease = headers.indexOf('disease');
   const colMedication = headers.indexOf('medication');
   const colCaregiverName = headers.indexOf('caregiver_name');
@@ -93,6 +94,7 @@ function F_getAllPatients() {
       age: colAge > -1 ? String(row[colAge]) : '-',
       house_no: colHouse > -1 ? String(row[colHouse]) : '',
       village_no: colVillage > -1 ? String(row[colVillage]) : '',
+      lat_long: colLatLong > -1 ? String(row[colLatLong]) : '', // [จุดที่แก้ไข 2] ส่งค่าพิกัดแนบไปให้หน้าแอปแผนที่
       disease: colDisease > -1 ? String(row[colDisease]) : '-',
       medication: colMedication > -1 ? String(row[colMedication]) : '-',
       caregiver_name: colCaregiverName > -1 ? String(row[colCaregiverName]) : '-',
