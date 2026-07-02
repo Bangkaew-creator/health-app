@@ -7,20 +7,25 @@
     <script src="https://cdn.tailwindcss.com?plugins=forms"></script>
     <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700&display=swap" rel="stylesheet"/>
     <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+    
+    <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore-compat.js"></script>
+    <script src="config.js"></script>
+
     <style>
         body { font-family: 'Sarabun', sans-serif; background-color: #f9f9ff; }
-        .input-box { width: 100%; border: 1px solid #e2e8f0; border-radius: 12px; padding: 12px; text-align: center; font-size: 18px; font-weight: bold; color: #111c2d; outline: none; }
-        .input-box:focus { border-color: #0284c7; }
+        .input-box { width: 100%; border: 1px solid #e2e8f0; border-radius: 12px; padding: 12px; text-align: center; font-size: 18px; font-weight: bold; color: #111c2d; outline: none; transition: border-color 0.2s; }
+        .input-box:focus { border-color: #0284c7; box-shadow: 0 0 0 3px rgba(2, 132, 199, 0.1); }
         input[type="radio"] { display: none; }
         input[type="radio"]:checked + label { background-color: #0284c7; color: white; border-color: #0284c7; font-weight: bold; }
+        .loader-small { border: 2px solid #f3f3f3; border-bottom-color: transparent; border-radius: 50%; width: 16px; height: 16px; animation: spin 1s linear infinite; display: inline-block; vertical-align: middle; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
     </style>
-    <!-- วางต่อท้ายแท็กสคริปต์ของ LINE SDK เดิม -->
-<script src="config.js"></script>
 </head>
 <body class="pb-24">
 
     <header class="bg-white sticky top-0 z-50 shadow-sm flex items-center w-full px-4 h-16 border-b border-gray-200 gap-3">
-        <button onclick="window.history.back()" class="w-10 h-10 flex items-center justify-center rounded-full bg-gray-50 text-[#0284c7] hover:bg-gray-100">
+        <button onclick="window.history.back()" class="w-10 h-10 flex items-center justify-center rounded-full bg-gray-50 text-[#0284c7] hover:bg-gray-100 transition-colors">
             <span class="material-symbols-outlined">close</span>
         </button>
         <h1 class="text-base font-bold text-[#0284c7]">บันทึกสัญญาณชีพ & น้ำตาล</h1>
@@ -33,32 +38,32 @@
                 <h3 class="font-bold text-[#ba1a1a] flex items-center gap-2 mb-4"><span class="material-symbols-outlined">monitor_heart</span> ความดันโลหิตและชีพจร</h3>
                 <div class="grid grid-cols-2 gap-4">
                     <div>
-                        <label class="text-xs text-gray-500 mb-1 block text-center">ตัวบน (Systolic)</label>
-                        <input type="number" id="sys" class="input-box" placeholder="เช่น 120">
+                        <span class="text-xs text-gray-500 mb-1 block text-center">ตัวบน (Systolic)</span>
+                        <input type="number" id="sys" class="input-box" placeholder="เช่น 120" min="40" max="250">
                     </div>
                     <div>
-                        <label class="text-xs text-gray-500 mb-1 block text-center">ตัวล่าง (Diastolic)</label>
-                        <input type="number" id="dia" class="input-box" placeholder="เช่น 80">
+                        <span class="text-xs text-gray-500 mb-1 block text-center">ตัวล่าง (Diastolic)</span>
+                        <input type="number" id="dia" class="input-box" placeholder="เช่น 80" min="30" max="150">
                     </div>
                     <div class="col-span-2 mt-2">
-                        <label class="text-xs text-gray-500 mb-1 block text-center">อัตราการเต้นหัวใจ (Pulse/HR)</label>
-                        <input type="number" id="hr" class="input-box text-[#00694a]" placeholder="เช่น 75">
+                        <span class="text-xs text-gray-500 mb-1 block text-center">อัตราการเต้นหัวใจ (Pulse/HR)</span>
+                        <input type="number" id="hr" class="input-box text-[#00694a]" placeholder="เช่น 75" min="30" max="200">
                     </div>
                 </div>
             </div>
 
             <div class="bg-white rounded-2xl p-5 shadow-sm border border-gray-100">
                 <h3 class="font-bold text-[#0284c7] flex items-center gap-2 mb-4"><span class="material-symbols-outlined">water_drop</span> ระดับน้ำตาลในเลือด (ถ้ามี)</h3>
-                <input type="number" id="sugar" class="input-box mb-4" placeholder="เช่น 110 mg/dL">
+                <input type="number" id="sugar" class="input-box mb-4" placeholder="เช่น 110 mg/dL" min="20" max="600">
                 
                 <div class="grid grid-cols-2 gap-2">
                     <div>
                         <input type="radio" id="meal_before" name="meal_type" value="ก่อนอาหาร">
-                        <label for="meal_before" class="block text-center p-3 text-sm bg-white border border-gray-200 rounded-xl cursor-pointer">อดอาหาร / ก่อนอาหาร</label>
+                        <label for="meal_before" class="block text-center p-3 text-sm bg-white border border-gray-200 rounded-xl cursor-pointer transition-all">อดอาหาร / ก่อนอาหาร</label>
                     </div>
                     <div>
                         <input type="radio" id="meal_after" name="meal_type" value="หลังอาหาร">
-                        <label for="meal_after" class="block text-center p-3 text-sm bg-white border border-gray-200 rounded-xl cursor-pointer">หลังอาหาร</label>
+                        <label for="meal_after" class="block text-center p-3 text-sm bg-white border border-gray-200 rounded-xl cursor-pointer transition-all">หลังอาหาร</label>
                     </div>
                 </div>
             </div>
@@ -67,13 +72,17 @@
     </main>
 
     <div class="fixed bottom-0 left-0 w-full bg-white border-t p-4 z-50">
-        <button type="submit" form="vitalsForm" id="btn-save" class="w-full bg-[#0284c7] text-white py-3.5 rounded-xl font-bold shadow-md flex items-center justify-center gap-2">
+        <button type="submit" form="vitalsForm" id="btn-save" class="w-full bg-[#0284c7] text-white py-3.5 rounded-xl font-bold shadow-md hover:bg-[#0274a5] transition-all flex items-center justify-center gap-2">
             บันทึกข้อมูล
             <span class="material-symbols-outlined text-sm">save</span>
         </button>
     </div>
 
     <script>
+        // เริ่มต้นการใช้งาน Firebase
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.firestore();
+
         const urlParams = new URLSearchParams(window.location.search);
         const patientId = urlParams.get('id');
 
@@ -81,40 +90,69 @@
             e.preventDefault();
             const btn = document.getElementById('btn-save');
             
-            const sys = document.getElementById('sys').value;
-            const dia = document.getElementById('dia').value;
-            const hr = document.getElementById('hr').value;
-            const sugar = document.getElementById('sugar').value;
+            const sys = document.getElementById('sys').value.trim();
+            const dia = document.getElementById('dia').value.trim();
+            const hr = document.getElementById('hr').value.trim();
+            const sugar = document.getElementById('sugar').value.trim();
             const mealSelected = document.querySelector('input[name="meal_type"]:checked');
             
             if (!sys && !dia && !hr && !sugar) {
-                return alert("กรุณากรอกข้อมูลอย่างน้อย 1 อย่าง");
+                return alert("กรุณากรอกข้อมูลอย่างน้อย 1 อย่างเพื่อบันทึกครับ");
             }
             if (sugar && !mealSelected) {
-                return alert("กรุณาเลือกช่วงเวลา (ก่อน/หลังอาหาร) สำหรับค่าน้ำตาล");
+                return alert("กรุณาเลือกช่วงเวลา (ก่อน/หลังอาหาร) สำหรับค่าน้ำตาลด้วยครับ");
             }
 
-            btn.innerHTML = 'กำลังบันทึก...'; btn.disabled = true;
-
-            const data = {
-                patient_id: patientId, sys: sys, dia: dia, hr: hr,
-                sugar: sugar, meal_type: mealSelected ? mealSelected.value : ''
-            };
+            btn.innerHTML = '<div class="loader-small mr-2"></div> กำลังบันทึก...'; 
+            btn.disabled = true;
 
             try {
-                const response = await fetch(API_URL, {
-                    method: 'POST', body: JSON.stringify({ action: 'saveVitals', data: data })
-                });
-                const result = await response.json();
-                if (result.success) {
-                    alert('บันทึกสัญญาณชีพเรียบร้อย!');
-                    window.location.href = `patient_profile.html?id=${patientId}`;
-                } else {
-                    alert('เกิดข้อผิดพลาด');
-                }
-            } catch (err) { alert('การเชื่อมต่อล้มเหลว'); }
-            
-            btn.innerHTML = 'บันทึกข้อมูล <span class="material-symbols-outlined text-sm">save</span>'; btn.disabled = false;
+                // สร้างรูปแบบวันที่ไทย (dd/mm/yyyy) สำหรับนำไปพล็อตลงตารางและกราฟ
+                const now = new Date();
+                const dd = String(now.getDate()).padStart(2, '0');
+                const mm = String(now.getMonth() + 1).padStart(2, '0');
+                const yyyy = now.getFullYear() + 543;
+                const formattedDate = `${dd}/${mm}/${yyyy}`;
+
+                const vitalsData = {
+                    patient_id: String(patientId),
+                    sys: sys || '',
+                    dia: dia || '',
+                    hr: hr || '',
+                    sugar: sugar || '',
+                    meal: mealSelected ? mealSelected.value : '', // ตั้งค่าคีย์เป็น meal เพื่อให้ตรงกับโครงสร้างดึงกราฟหลัก
+                    date: formattedDate,
+                    timestamp: firebase.firestore.FieldValue.serverTimestamp()
+                };
+
+                // 1. ส่งข้อมูลสัญญาณชีพตรงไปบันทึกที่ Firebase Firestore
+                await db.collection('Vitals').add(vitalsData);
+
+                // 2. แอบสั่งรันคำสั่งยิงเก็บประวัติเข้า Google Sheets ตัวเก่าไว้เบื้องหลัง (Silent Sync)
+                fetch(API_URL, {
+                    method: 'POST',
+                    body: JSON.stringify({
+                        action: 'saveVitals',
+                        data: {
+                            patient_id: patientId,
+                            sys: vitalsData.sys,
+                            dia: vitalsData.dia,
+                            hr: vitalsData.hr,
+                            sugar: vitalsData.sugar,
+                            meal_type: vitalsData.meal // แปลงกลับเป็นคีย์โครงสร้างเดิมตอนส่งหาคลังชีต
+                        }
+                    })
+                }).catch(err => console.log('Silent background sync finished.'));
+
+                alert('บันทึกสัญญาณชีพเรียบร้อยและอัปเดตกราฟทันที!');
+                window.location.href = `patient_profile.html?id=${patientId}`;
+
+            } catch (err) {
+                console.error(err);
+                alert('ระบบฐานข้อมูลขัดข้อง กรุณาลองใหม่อีกครั้งครับ');
+                btn.innerHTML = 'บันทึกข้อมูล <span class="material-symbols-outlined text-sm">save</span>'; 
+                btn.disabled = false;
+            }
         }
     </script>
 </body>
