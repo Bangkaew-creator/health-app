@@ -18,7 +18,6 @@
         .material-symbols-outlined { font-variation-settings: 'FILL' 1, 'wght' 400, 'GRAD' 0, 'opsz' 24; }
         .bg-navy { background-color: #0f172a; }
         
-        /* [แก้ไขใหม่] ปรับแต่งปุ่มเป็นแบบ Card Grid 2x2 */
         .tab-btn { 
             padding: 12px 8px; 
             font-weight: bold; 
@@ -205,12 +204,29 @@
         function calculateDaysSince(dateStr) {
             if (!dateStr || dateStr.trim() === '' || dateStr === '-') return -1;
             let targetDate;
+            
             if (dateStr.includes('/')) {
+                // สมมติว่า format คือ dd/mm/yyyy
                 const parts = dateStr.split(' ')[0].split('/');
-                targetDate = new Date(parts[2], parts[1] - 1, parts[0]);
-            } else { targetDate = new Date(dateStr); }
+                let year = parseInt(parts[2]);
+                
+                // ตรวจสอบและแปลงปี พ.ศ. ให้เป็น ค.ศ.
+                if (year > 2400) {
+                    year -= 543;
+                }
+                
+                targetDate = new Date(year, parseInt(parts[1]) - 1, parseInt(parts[0]));
+            } else {
+                targetDate = new Date(dateStr);
+            }
+
             if (isNaN(targetDate)) return -1;
-            return Math.floor(Math.abs(new Date() - targetDate) / (1000 * 60 * 60 * 24));
+            
+            // คำนวณความต่างของเวลาเป็นวัน
+            const diffTime = Math.abs(new Date() - targetDate);
+            const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+            
+            return diffDays;
         }
 
         async function loadDataChannels() {
