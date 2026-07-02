@@ -7,6 +7,12 @@
     <script src="https://cdn.tailwindcss.com?plugins=forms"></script>
     <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700&display=swap" rel="stylesheet"/>
     <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+    
+    <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore-compat.js"></script>
+    <script charset="utf-8" src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+    <script src="config.js"></script>
+    
     <style>
         body { font-family: 'Sarabun', sans-serif; background-color: #f8fafc; padding-bottom: 90px; -webkit-tap-highlight-color: transparent;}
         .material-symbols-outlined { font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24; }
@@ -15,8 +21,6 @@
         .loader { border: 3px solid #d8e3fb; border-bottom-color: #00694a; border-radius: 50%; width: 36px; height: 36px; animation: spin 1s linear infinite; }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
     </style>
-    <script charset="utf-8" src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
-    <script src="config.js"></script>
 </head>
 <body class="text-[#111c2d]">
 
@@ -38,7 +42,7 @@
 
         <div id="loading-state" class="flex flex-col items-center justify-center py-10 space-y-3">
             <div class="loader"></div>
-            <p class="text-xs text-gray-400 animate-pulse">กำลังโหลดงานที่ได้รับมอบหมาย...</p>
+            <p class="text-xs text-gray-400 animate-pulse">กำลังโหลดข้อมูลจาก Firebase...</p>
         </div>
 
         <div id="assignment-list" class="space-y-4 px-4 hidden mb-6"></div>
@@ -73,11 +77,13 @@
     </nav>
 
     <script>
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.firestore();
+
         let assignments = []; 
         let currentTab = 'pending';
-        let currentUserUid = ""; // เก็บ UID ตัวเองเพื่อไว้กรองงาน
+        let currentUserUid = ""; 
 
-        // 1. โหลด LIFF ก่อน
         document.addEventListener("DOMContentLoaded", () => {
             liff.init({ liffId: LIFF_ID }).then(() => {
                 if (liff.isLoggedIn()) {
@@ -91,25 +97,27 @@
             });
         });
 
-        // 2. ดึงข้อมูลและกรองงาน
+        // [อัปเดต] เปลี่ยนมาเชื่อมต่อดึงข้อมูลผู้ป่วยตรงจาก Firebase Firestore
         async function fetchAssignments() {
             try {
-                const response = await fetch(API_URL, { method: 'POST', body: JSON.stringify({ action: 'getAllPatients' }) });
-                const allPatients = await response.json();
+                const snapshot = await db.collection('Patients').get();
+                const allPatients = [];
+                snapshot.forEach(doc => allPatients.push(doc.data()));
                 
-                // [ปิดบั๊ก] กรองเอาเฉพาะเคสที่ Assigned_VHV_ID ตรงกับ UID ของตัวเอง
+                // กรองเคสที่ถูกมอบหมายงานให้ อสม. รายนี้โดยตรง และเคสต้องมีสถานะ Active
                 const myAssignedPatients = allPatients.filter(p => {
                     const isActive = String(p.status || 'Active').trim().toLowerCase() === 'active';
-                    const isMyAssignedCase = String(p.assigned_vhv_id).trim() === currentUserUid;
+                    const isMyAssignedCase = String(p.assigned_vhv_id || "").trim() === currentUserUid;
                     
                     return isActive && isMyAssignedCase && currentUserUid !== "";
                 });
                 
-                // นำเคสของตัวเองมาแยกสถานะ รอประเมิน/ประเมินแล้ว
+                // แยกสถานะกลุ่ม รอประเมิน (pending) หรือ ประเมินเสร็จแล้ว (completed)
                 assignments = myAssignedPatients.map(p => {
+                    const isPending = (!p.adl || p.adl === '-' || p.group === 'ยังไม่ประเมิน' || p.group === '-');
                     return {
                         ...p,
-                        status: (p.adl === '-' || p.group === 'ยังไม่ประเมิน') ? 'pending' : 'completed'
+                        tabStatus: isPending ? 'pending' : 'completed'
                     };
                 });
                 
@@ -117,6 +125,7 @@
                 document.getElementById('loading-state').classList.add('hidden');
                 document.getElementById('assignment-list').classList.remove('hidden');
             } catch (error) {
+                console.error(error);
                 alert("ไม่สามารถดึงข้อมูลงานประเมินได้");
             }
         }
@@ -134,7 +143,7 @@
             const emptyState = document.getElementById('empty-state');
             container.innerHTML = '';
             
-            const filteredData = assignments.filter(p => p.status === currentTab);
+            const filteredData = assignments.filter(p => p.tabStatus === currentTab);
 
             if (filteredData.length === 0) {
                 emptyState.classList.remove('hidden');
@@ -145,8 +154,7 @@
                     let avatarHtml = `<div class="w-12 h-12 rounded-full bg-gray-100 text-gray-500 font-bold text-lg flex items-center justify-center flex-shrink-0 border">${p.name ? p.name.substring(0,1) : '?'}</div>`;
                     
                     if(p.profile_pic && p.profile_pic.startsWith('http')) {
-                        const match = p.profile_pic.match(/d\/([a-zA-Z0-9_-]+)/) || p.profile_pic.match(/id=([a-zA-Z0-9_-]+)/);
-                        if(match) avatarHtml = `<img src="https://drive.google.com/thumbnail?id=${match[1]}&sz=150" class="w-12 h-12 rounded-full object-cover flex-shrink-0 shadow-sm">`;
+                        avatarHtml = `<img src="${p.profile_pic}" class="w-12 h-12 rounded-full object-cover flex-shrink-0 shadow-sm">`;
                     }
 
                     const statusBadge = currentTab === 'pending' 
