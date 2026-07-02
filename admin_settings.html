@@ -228,9 +228,9 @@
 
             try {
                 // 1. อัปเดตลงตรงคลัง Firebase
-                await db.collection('VHVs').doc(String(currentUserUid)).update({
-                    name: name, phone: phone, profile_pic: pic
-                });
+                await db.collection('VHVs').doc(String(currentUserUid)).set({
+    name: name, phone: phone, profile_pic: pic
+}, { merge: true });
 
                 // 2. ปล่อยซิงค์คลัง Google Sheets ทำงานเบื้องหลังเงียบๆ
                 fetch(API_URL, { 
