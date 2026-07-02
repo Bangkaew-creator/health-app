@@ -7,13 +7,18 @@
     <script src="https://cdn.tailwindcss.com?plugins=forms"></script>
     <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700&display=swap" rel="stylesheet"/>
     <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+    
+    <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore-compat.js"></script>
+    <script src="config.js"></script>
+
     <style>
         body { font-family: 'Sarabun', sans-serif; background-color: #f9f9ff; -webkit-tap-highlight-color: transparent; }
         .material-symbols-outlined { font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24; }
-        .upload-card { position: relative; border: 2px dashed #cbd5e1; border-radius: 16px; overflow: hidden; background-color: #ffffff; aspect-ratio: 4/3; display: flex; flex-col: column; align-items: center; justify-content: center; transition: all 0.2s; cursor: pointer; }
+        .upload-card { position: relative; border: 2px dashed #cbd5e1; border-radius: 16px; overflow: hidden; background-color: #ffffff; aspect-ratio: 4/3; display: flex; flex-direction: column; align-items: center; justify-content: center; transition: all 0.2s; cursor: pointer; }
         .upload-card:active { transform: scale(0.98); border-color: #0284c7; }
         .preview-img { width: 100%; height: 100%; object-fit: cover; }
-        .loading-overlay { position: absolute; inset: 0; background-color: rgba(255,255,255,0.8); display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 10; }
+        .loading-overlay { position: absolute; inset: 0; background-color: rgba(255,255,255,0.85); display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 10; }
         .spinner { border: 3px solid #f3f3f3; border-top: 3px solid #0284c7; border-radius: 50%; width: 24px; height: 24px; animation: spin 1s linear infinite; }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
     </style>
@@ -40,7 +45,7 @@
             </h3>
             
             <div onclick="triggerUpload('Profile_Pic')" class="relative w-32 h-32 rounded-full border-2 dashed border-gray-300 overflow-hidden bg-gray-50 flex flex-col items-center justify-center cursor-pointer shadow-inner" id="card-Profile_Pic">
-                <div class="loading-overlay hidden" id="loading-Profile_Pic"><div class="spinner"></div></div>
+                <div class="loading-overlay hidden" id="loading-Profile_Pic"><div class="spinner"></div><p class="text-[10px] text-[#0284c7] mt-1 font-bold">กำลังอัปโหลด</p></div>
                 <div class="text-center text-gray-400" id="placeholder-Profile_Pic">
                     <span class="material-symbols-outlined text-3xl">add_a_photo</span>
                     <p class="text-[10px] mt-1">เพิ่มรูปภาพ</p>
@@ -111,7 +116,10 @@
     <input type="file" id="file-hidden-input" accept="image/*" class="hidden" onchange="handleFileSelect(event)">
 
     <script>
-        const API_URL = "https://script.google.com/macros/s/AKfycbyzPy7sklwURcJiqFDzlK4OEQ8616CJLuNyAjb8euQNzYJLXz_dj4UJM63w8-nI1L3r/exec";
+        // เริ่มต้น Firebase
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.firestore();
+
         const urlParams = new URLSearchParams(window.location.search);
         const patientId = urlParams.get('id');
         
@@ -119,41 +127,48 @@
         
         let currentTargetType = ''; // เก็บประเภทรูปภาพที่กำลังดำเนินการอยู่ตอนนี้
 
+        // Mapping ชื่อฟิลด์ให้ตรงกับในฐานข้อมูล Firebase
+        const fieldMap = {
+            'Profile_Pic': 'profile_pic',
+            'Pic_Bed': 'pic_bed',
+            'Pic_Bath': 'pic_bath',
+            'Pic_Entrance': 'pic_entrance',
+            'Pic_Walkway': 'pic_walkway'
+        };
+
         // ฟังก์ชันสั่งคลิกช่อง Input ไฟล์ที่ซ่อนไว้
         function triggerUpload(type) {
             currentTargetType = type;
             document.getElementById('file-hidden-input').click();
         }
 
-        // โหลดรูปภาพเดิมที่มีอยู่แล้วขึ้นมาแสดงผล (ถ้ามี)
+        // โหลดรูปภาพเดิมที่มีอยู่แล้วขึ้นมาแสดงผลจาก Firebase ทันที
         async function loadExistingImages() {
             if (!patientId) return;
             try {
-                const response = await fetch(API_URL, {
-                    method: 'POST', body: JSON.stringify({ action: 'getPatientById', id: patientId })
-                });
-                const data = await response.json();
-                
-                // ตรวจเช็คข้อมูลลิงก์ภาพรายตัว
-                displaySavedImage('Profile_Pic', data.profile_pic);
-                displaySavedImage('Pic_Bed', data.pic_bed);
-                displaySavedImage('Pic_Bath', data.pic_bath);
-                displaySavedImage('Pic_Entrance', data.pic_entrance);
-                displaySavedImage('Pic_Walkway', data.pic_walkway);
+                const docSnap = await db.collection('Patients').doc(String(patientId)).get();
+                if (docSnap.exists) {
+                    const data = docSnap.data();
+                    displaySavedImage('Profile_Pic', data.profile_pic);
+                    displaySavedImage('Pic_Bed', data.pic_bed);
+                    displaySavedImage('Pic_Bath', data.pic_bath);
+                    displaySavedImage('Pic_Entrance', data.pic_entrance);
+                    displaySavedImage('Pic_Walkway', data.pic_walkway);
+                }
             } catch (e) { console.log("โหลดภาพเดิมไม่สำเร็จ", e); }
         }
 
-            function displaySavedImage(type, url) {
-            if (url && url.startsWith('http')) {
+        function displaySavedImage(type, url) {
+            // ถ้ารูปเป็น Base64 หรือลิงก์เว็บ ให้แสดงได้เลย
+            if (url && (url.startsWith('http') || url.startsWith('data:image'))) {
                 const img = document.getElementById(`img-${type}`);
                 const placeholder = document.getElementById(`placeholder-${type}`);
                 
-                // ดึง ID รูปภาพออกมาจากลิงก์ Google Drive
                 let directUrl = url;
+                // หากเป็นลิงก์ Google Drive ให้แปลงเป็น Thumbnail ก่อน
                 const match = url.match(/d\/([a-zA-Z0-9_-]+)/) || url.match(/id=([a-zA-Z0-9_-]+)/);
                 if (match && match[1]) {
-                    // แปลงเป็นลิงก์ Thumbnail API ของ Google
-                    directUrl = `https://drive.google.com/thumbnail?id=${match[1]}&sz=w1000`;
+                    directUrl = `https://drive.google.com/thumbnail?id=${match[1]}&sz=w800`;
                 }
                 
                 img.src = directUrl;
@@ -162,52 +177,90 @@
             }
         }
 
+        // ฟังก์ชันบีบอัดรูปภาพอัจฉริยะ (ประหยัดเน็ตมือถือ)
+        function compressImage(file, callback) {
+            const reader = new FileReader();
+            reader.onload = function(event) {
+                const img = new Image();
+                img.onload = function() {
+                    const MAX_WIDTH = 800; // ลดความกว้างสูงสุดเหลือ 800px 
+                    const MAX_HEIGHT = 800;
+                    let width = img.width;
+                    let height = img.height;
+
+                    if (width > height) {
+                        if (width > MAX_WIDTH) { height = Math.round(height * (MAX_WIDTH / width)); width = MAX_WIDTH; }
+                    } else {
+                        if (height > MAX_HEIGHT) { width = Math.round(width * (MAX_HEIGHT / height)); height = MAX_HEIGHT; }
+                    }
+
+                    const canvas = document.createElement('canvas');
+                    canvas.width = width;
+                    canvas.height = height;
+                    const ctx = canvas.getContext('2d');
+                    ctx.drawImage(img, 0, 0, width, height);
+                    
+                    // บีบอัดเป็น JPEG คุณภาพ 70% (ได้ภาพชัดแต่ไฟล์เล็กมาก)
+                    const dataUrl = canvas.toDataURL('image/jpeg', 0.7);
+                    callback(dataUrl.split(',')[1], dataUrl); 
+                };
+                img.src = event.target.result;
+            };
+            reader.readAsDataURL(file);
+        }
+
         // จัดการเมื่อคุณป้า อสม. เลือกรูปภาพหรือถ่ายเสร็จแล้ว
         function handleFileSelect(event) {
             const file = event.target.files[0];
             if (!file) return;
 
             const loading = document.getElementById(`loading-${currentTargetType}`);
-            loading.classList.remove('hidden'); // แสดง Spinner โหลดตัวหมุน
+            loading.classList.remove('hidden'); 
 
-            const reader = new FileReader();
-            reader.onload = async function(e) {
-                const base64Data = e.target.result;
+            // เรียกใช้ฟังก์ชันบีบอัดรูปก่อนส่ง
+            compressImage(file, async function(base64DataPayload, fullDataUrl) {
                 const filename = `${patientId}_${currentTargetType}_${Date.now()}.jpg`;
 
                 try {
-                    const res = await fetch(API_URL, {
+                    // 1. อัปเดตให้รูปแสดงบนหน้าจอมือถือทันที (ให้ อสม. เห็นว่าเสร็จแล้ว)
+                    const img = document.getElementById(`img-${currentTargetType}`);
+                    const placeholder = document.getElementById(`placeholder-${currentTargetType}`);
+                    img.src = fullDataUrl;
+                    img.classList.remove('hidden');
+                    placeholder.classList.add('hidden');
+
+                    // 2. เซฟรูปแบบ Base64 (ที่ถูกบีบอัดแล้วไฟล์เล็กนิดเดียว) ลง Firebase ทันที เพื่อความเร็วในการเปิดดูครั้งหน้า
+                    const targetField = fieldMap[currentTargetType];
+                    await db.collection('Patients').doc(String(patientId)).update({
+                        [targetField]: fullDataUrl
+                    });
+
+                    // 3. ปล่อยให้ระบบแอบส่งรูปไปเก็บที่ Google Drive ของหน่วยงานหลังบ้านแบบเงียบๆ
+                    fetch(API_URL, {
                         method: 'POST',
                         body: JSON.stringify({
                             action: 'uploadImage',
                             id: patientId,
                             imageType: currentTargetType,
-                            base64: base64Data,
+                            base64: base64DataPayload,
                             filename: filename
                         })
-                    });
-                    const result = await res.json();
-                    
-                    if (result.success) {
-                        // อัปโหลดสำเร็จ -> แสดงพรีวิวรูปบนหน้าเว็บทันที
-                        const img = document.getElementById(`img-${currentTargetType}`);
-                        const placeholder = document.getElementById(`placeholder-${currentTargetType}`);
-                        
-                        img.src = base64Data;
-                        img.classList.remove('hidden');
-                        placeholder.classList.add('hidden');
-                        alert('อัปโหลดรูปภาพสำเร็จ!');
-                    } else {
-                        alert('อัปโหลดล้มเหลว: ' + result.error);
-                    }
+                    }).then(res => res.json()).then(async result => {
+                        // ถ้าระบบหลังบ้านคืนลิงก์ Google Drive กลับมา ให้เอาไปอัปเดตทับใน Firebase อีกที
+                        if (result.success && result.url) {
+                            await db.collection('Patients').doc(String(patientId)).update({
+                                [targetField]: result.url
+                            });
+                        }
+                    }).catch(e => console.log('Silent Drive Upload Failed, but Firebase has a copy.'));
+
                 } catch (err) {
-                    alert('เกิดข้อผิดพลาดในการเชื่อมต่อเซิร์ฟเวอร์');
+                    alert('เกิดข้อผิดพลาดในการบันทึกรูปภาพ กรุณาลองใหม่ครับ');
                 } finally {
                     loading.classList.add('hidden'); // ปิดหน้าจอโหลดหมุนๆ
                     event.target.value = ''; // เคลียร์อินพุต
                 }
-            };
-            reader.readAsDataURL(file); // แปลงไฟล์ภาพเป็นก้อน Base64 สำหรับจัดส่ง
+            });
         }
 
         // โหลดข้อมูลภาพประวัติตั้งต้น
