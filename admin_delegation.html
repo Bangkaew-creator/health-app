@@ -1,458 +1,459 @@
 <!DOCTYPE html>
 <html lang="th">
 <head>
-    <meta charset="utf-8"/>
-    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-    <title>มอบหมายงาน - อสม.สามารถ (Orsomo Smart)</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700&display=swap" rel="stylesheet"/>
-    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
-    <script charset="utf-8" src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
-    
-    <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore-compat.js"></script>
-    <script src="config.js"></script>
-    
-    <style>
-        body { font-family: 'Sarabun', sans-serif; background-color: #f4f7fa; }
-        .material-symbols-outlined { font-variation-settings: 'FILL' 1, 'wght' 400, 'GRAD' 0, 'opsz' 24; }
-        .bg-navy { background-color: #0f172a; }
-        
-        .tab-btn { 
-            padding: 12px 8px; 
-            font-weight: bold; 
-            font-size: 13px; 
-            border-radius: 16px; 
-            color: #64748b; 
-            background-color: #f8fafc;
-            border: 1px solid #e2e8f0;
-            transition: all 0.2s ease-in-out; 
-            cursor: pointer; 
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            gap: 2px;
-            box-shadow: 0 1px 2px rgba(0,0,0,0.02);
-        }
-        .tab-btn:hover {
-            background-color: #f1f5f9;
-        }
-        .tab-btn.active { 
-            color: #00694a; 
-            background-color: #f0fdf4;
-            border-color: #bbf7d0;
-            box-shadow: 0 4px 12px rgba(0, 105, 74, 0.06);
-        }
-        #tab-approve {
-            color: #d97706;
-            border-color: #fed7aa;
-        }
-        #tab-approve.active {
-            color: #b45309;
-            background-color: #fffbeb;
-            border-color: #fde68a;
-            box-shadow: 0 4px 12px rgba(217, 119, 6, 0.06);
-        }
-        
-        .loader-small { border: 2px solid #f3f3f3; border-bottom-color: #00694a; border-radius: 50%; width: 24px; height: 24px; animation: spin 1s linear infinite; }
-        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
-    </style>
+    <meta charset="utf-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title>มอบหมายงาน - อสม.สามารถ (Orsomo Smart)</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700&display=swap" rel="stylesheet"/>
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+    <script charset="utf-8" src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+    
+    <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore-compat.js"></script>
+    <script src="config.js"></script>
+    
+    <style>
+        body { font-family: 'Sarabun', sans-serif; background-color: #f4f7fa; }
+        .material-symbols-outlined { font-variation-settings: 'FILL' 1, 'wght' 400, 'GRAD' 0, 'opsz' 24; }
+        .bg-navy { background-color: #0f172a; }
+        
+        .tab-btn { 
+            padding: 12px 8px; 
+            font-weight: bold; 
+            font-size: 13px; 
+            border-radius: 16px; 
+            color: #64748b; 
+            background-color: #f8fafc;
+            border: 1px solid #e2e8f0;
+            transition: all 0.2s ease-in-out; 
+            cursor: pointer; 
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 2px;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.02);
+        }
+        .tab-btn:hover { background-color: #f1f5f9; }
+        .tab-btn.active { 
+            color: #00694a; 
+            background-color: #f0fdf4;
+            border-color: #bbf7d0;
+            box-shadow: 0 4px 12px rgba(0, 105, 74, 0.06);
+        }
+        #tab-approve { color: #d97706; border-color: #fed7aa; }
+        #tab-approve.active {
+            color: #b45309; background-color: #fffbeb;
+            border-color: #fde68a; box-shadow: 0 4px 12px rgba(217, 119, 6, 0.06);
+        }
+        
+        .loader-small { border: 2px solid #f3f3f3; border-bottom-color: #00694a; border-radius: 50%; width: 24px; height: 24px; animation: spin 1s linear infinite; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+    </style>
 </head>
 <body class="flex h-[100dvh] overflow-hidden text-slate-800 relative">
 
-    <div id="sidebar-overlay" class="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-40 hidden lg:hidden" onclick="toggleSidebar()"></div>
-    <aside id="sidebar" class="fixed inset-y-0 left-0 w-72 bg-navy text-white flex flex-col z-50 transform -translate-x-full lg:translate-x-0 lg:static transition-transform duration-300 ease-in-out">
-        <div class="p-6 flex items-center justify-between border-b border-slate-700/40">
-            <div class="flex items-center gap-3">
-                <div class="w-11 h-11 rounded-xl bg-white/10 flex items-center justify-center border border-amber-400/30"><span class="material-symbols-outlined text-amber-400 text-[26px]">local_hospital</span></div>
-                <div><h1 id="sidebar-hospital-name" class="font-bold text-[15px] tracking-wide text-white">กำลังโหลด...</h1><p class="text-[10px] text-amber-400 font-medium">อสม.สามารถ (Orsomo Smart)</p></div>
-            </div>
-            <button onclick="toggleSidebar()" class="lg:hidden text-slate-400 p-1"><span class="material-symbols-outlined">close</span></button>
-        </div>
-        <nav class="flex-1 px-4 py-6 space-y-2 overflow-y-auto">
-            <a href="admin_dashboard.html" class="flex items-center gap-3 px-4 py-3.5 text-slate-400 hover:bg-white/5 hover:text-white rounded-xl font-medium transition-all"><span class="material-symbols-outlined">dashboard</span> ภาพรวมระบบ</a>
-            <a href="admin_resources.html" class="flex items-center gap-3 px-4 py-3.5 text-slate-400 hover:bg-white/5 hover:text-white rounded-xl font-medium transition-all"><span class="material-symbols-outlined">inventory_2</span> บริหารทรัพยากร</a>
-            <a href="admin_datacenter.html" class="flex items-center gap-3 px-4 py-3.5 text-slate-400 hover:bg-white/5 hover:text-white rounded-xl font-medium transition-all"><span class="material-symbols-outlined">folder_shared</span> ศูนย์ข้อมูลผู้ป่วย</a>
-            <a href="admin_delegation.html" class="flex items-center justify-between px-4 py-3.5 bg-white/10 text-amber-400 rounded-xl font-bold transition-all"><span class="flex items-center gap-3"><span class="material-symbols-outlined">assignment_ind</span> มอบหมายงาน อสม.</span><span class="w-1.5 h-1.5 rounded-full bg-amber-400"></span></a>
-            <a href="admin_reports.html" class="flex items-center gap-3 px-4 py-3.5 text-slate-400 hover:bg-white/5 hover:text-white rounded-xl font-medium transition-all"><span class="material-symbols-outlined">summarize</span> รายงาน (Export)</a>
-            <a href="admin_settings.html" class="flex items-center gap-3 px-4 py-3.5 text-slate-400 hover:bg-white/5 hover:text-white rounded-xl font-medium transition-all"><span class="material-symbols-outlined">settings</span> ตั้งค่าระบบ</a>
-        </nav>
-    </aside>
+    <div id="sidebar-overlay" class="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-40 hidden lg:hidden" onclick="toggleSidebar()"></div>
+    <aside id="sidebar" class="fixed inset-y-0 left-0 w-72 bg-navy text-white flex flex-col z-50 transform -translate-x-full lg:translate-x-0 lg:static transition-transform duration-300 ease-in-out">
+        <div class="p-6 flex items-center justify-between border-b border-slate-700/40">
+            <div class="flex items-center gap-3">
+                <div class="w-11 h-11 rounded-xl bg-white/10 flex items-center justify-center border border-amber-400/30"><span class="material-symbols-outlined text-amber-400 text-[26px]">local_hospital</span></div>
+                <div><h1 id="sidebar-hospital-name" class="font-bold text-[15px] tracking-wide text-white">กำลังโหลด...</h1><p class="text-[10px] text-amber-400 font-medium">อสม.สามารถ (Orsomo Smart)</p></div>
+            </div>
+            <button onclick="toggleSidebar()" class="lg:hidden text-slate-400 p-1"><span class="material-symbols-outlined">close</span></button>
+        </div>
+        <nav class="flex-1 px-4 py-6 space-y-2 overflow-y-auto">
+            <a href="admin_dashboard.html" class="flex items-center gap-3 px-4 py-3.5 text-slate-400 hover:bg-white/5 hover:text-white rounded-xl font-medium transition-all"><span class="material-symbols-outlined">dashboard</span> ภาพรวมระบบ</a>
+            <a href="admin_resources.html" class="flex items-center gap-3 px-4 py-3.5 text-slate-400 hover:bg-white/5 hover:text-white rounded-xl font-medium transition-all"><span class="material-symbols-outlined">inventory_2</span> บริหารทรัพยากร</a>
+            <a href="admin_datacenter.html" class="flex items-center gap-3 px-4 py-3.5 text-slate-400 hover:bg-white/5 hover:text-white rounded-xl font-medium transition-all"><span class="material-symbols-outlined">folder_shared</span> ศูนย์ข้อมูลผู้ป่วย</a>
+            <a href="admin_delegation.html" class="flex items-center justify-between px-4 py-3.5 bg-white/10 text-amber-400 rounded-xl font-bold transition-all"><span class="flex items-center gap-3"><span class="material-symbols-outlined">assignment_ind</span> มอบหมายงาน อสม.</span><span class="w-1.5 h-1.5 rounded-full bg-amber-400"></span></a>
+            <a href="admin_reports.html" class="flex items-center gap-3 px-4 py-3.5 text-slate-400 hover:bg-white/5 hover:text-white rounded-xl font-medium transition-all"><span class="material-symbols-outlined">summarize</span> รายงาน (Export)</a>
+            <a href="admin_settings.html" class="flex items-center gap-3 px-4 py-3.5 text-slate-400 hover:bg-white/5 hover:text-white rounded-xl font-medium transition-all"><span class="material-symbols-outlined">settings</span> ตั้งค่าระบบ</a>
+        </nav>
+    </aside>
 
-    <main class="flex-1 flex flex-col min-h-0 bg-slate-50 overflow-y-auto">
-        <header class="h-20 min-h-[80px] bg-white shadow-sm flex items-center justify-between px-6 lg:px-8 z-10 flex-shrink-0 border-b border-slate-100">
-            <div class="flex items-center">
-                <button onclick="toggleSidebar()" class="lg:hidden p-2.5 -ml-2 mr-3 text-slate-600 hover:bg-slate-100 rounded-xl transition-colors"><span class="material-symbols-outlined text-[26px]">menu</span></button>
-                <div>
-                    <h2 class="text-base lg:text-lg font-bold text-slate-900 leading-tight">มอบหมายงาน อสม.</h2>
-                    <p id="header-hospital-name" class="text-[11px] lg:text-xs text-slate-400 font-medium mt-0.5">จัดการผู้รับผิดชอบเคสและการติดตามสิทธิ์</p>
-                </div>
-            </div>
-        </header>
+    <main class="flex-1 flex flex-col min-h-0 bg-slate-50 overflow-y-auto">
+        <header class="h-20 min-h-[80px] bg-white shadow-sm flex items-center justify-between px-6 lg:px-8 z-10 flex-shrink-0 border-b border-slate-100">
+            <div class="flex items-center">
+                <button onclick="toggleSidebar()" class="lg:hidden p-2.5 -ml-2 mr-3 text-slate-600 hover:bg-slate-100 rounded-xl transition-colors"><span class="material-symbols-outlined text-[26px]">menu</span></button>
+                <div>
+                    <h2 class="text-base lg:text-lg font-bold text-slate-900 leading-tight">มอบหมายงาน อสม.</h2>
+                    <p id="header-hospital-name" class="text-[11px] lg:text-xs text-slate-400 font-medium mt-0.5">จัดการผู้รับผิดชอบเคสและการติดตามสิทธิ์</p>
+                </div>
+            </div>
+        </header>
 
-        <div class="bg-white p-4 border-b border-slate-200 grid grid-cols-2 gap-3 shadow-sm z-10 sticky top-0 flex-shrink-0 w-full">
-            <button class="tab-btn active" id="tab-new" onclick="switchTab('new')">
-                <span class="text-sm">📋 เคสใหม่รอประเมิน</span>
-                <span class="text-xs font-normal text-slate-400 group-[.active]:text-emerald-600">(<span id="badge-new" class="font-bold">0</span> เคส)</span>
-            </button>
-            <button class="tab-btn" id="tab-reassess" onclick="switchTab('reassess')">
-                <span class="text-sm">🔄 เคสค้างติดตาม</span>
-                <span class="text-xs font-normal text-slate-400 group-[.active]:text-emerald-600">(<span id="badge-reassess" class="font-bold">0</span> เคส)</span>
-            </button>
-            <button class="tab-btn" id="tab-vhv" onclick="switchTab('vhv')">
-                <span class="text-sm">👥 ทำเนียบ อสม.</span>
-                <span class="text-xs font-normal text-slate-400 group-[.active]:text-emerald-600">(<span id="badge-vhv-count" class="font-bold">0</span> คน)</span>
-            </button>
-            <button class="tab-btn" id="tab-approve" onclick="switchTab('approve')">
-                <span class="text-sm">🔐 รออนุมัติ อสม.</span>
-                <span class="text-xs font-normal text-amber-500/70">(<span id="badge-pending-vhv" class="font-bold">0</span> คำขอ)</span>
-            </button>           
-        </div>
+        <div class="bg-white p-4 border-b border-slate-200 grid grid-cols-2 gap-3 shadow-sm z-10 sticky top-0 flex-shrink-0 w-full">
+            <button class="tab-btn active" id="tab-new" onclick="switchTab('new')">
+                <span class="text-sm">📋 เคสใหม่รอประเมิน</span>
+                <span class="text-xs font-normal text-slate-400 group-[.active]:text-emerald-600">(<span id="badge-new" class="font-bold">0</span> เคส)</span>
+            </button>
+            <button class="tab-btn" id="tab-reassess" onclick="switchTab('reassess')">
+                <span class="text-sm">🔄 เคสค้างติดตาม</span>
+                <span class="text-xs font-normal text-slate-400 group-[.active]:text-emerald-600">(<span id="badge-reassess" class="font-bold">0</span> เคส)</span>
+            </button>
+            <button class="tab-btn" id="tab-vhv" onclick="switchTab('vhv')">
+                <span class="text-sm">👥 ทำเนียบ อสม.</span>
+                <span class="text-xs font-normal text-slate-400 group-[.active]:text-emerald-600">(<span id="badge-vhv-count" class="font-bold">0</span> คน)</span>
+            </button>
+            <button class="tab-btn" id="tab-approve" onclick="switchTab('approve')">
+                <span class="text-sm">🔐 รออนุมัติ อสม.</span>
+                <span class="text-xs font-normal text-amber-500/70">(<span id="badge-pending-vhv" class="font-bold">0</span> คำขอ)</span>
+            </button>           
+        </div>
 
-        <div class="p-4 lg:p-6">
-            <div id="loading-state" class="flex flex-col items-center justify-center py-20 space-y-3">
-                <div class="loader-small"></div><p class="text-sm text-slate-400 animate-pulse">กำลังตรวจสอบข้อมูลจาก Firebase...</p>
-            </div>
+        <div class="p-4 lg:p-6">
+            <div id="loading-state" class="flex flex-col items-center justify-center py-20 space-y-3">
+                <div class="loader-small"></div><p class="text-sm text-slate-400 animate-pulse">กำลังตรวจสอบข้อมูลจาก Firebase...</p>
+            </div>
 
-            <div id="filter-wrapper" class="hidden flex justify-end mb-4">
-                <div class="relative w-full md:w-48">
-                    <select id="village-filter" onchange="filterDataDisplay()" class="w-full pl-4 pr-8 py-2 bg-white border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-emerald-500 appearance-none">
-                        <option value="">ดูทุกหมู่ (ทั้งหมด)</option>
-                    </select>
-                    <span class="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none">expand_more</span>
-                </div>
-            </div>
+            <div id="filter-wrapper" class="hidden flex justify-end mb-4">
+                <div class="relative w-full md:w-48">
+                    <select id="village-filter" onchange="filterDataDisplay()" class="w-full pl-4 pr-8 py-2 bg-white border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-emerald-500 appearance-none">
+                        <option value="">ดูทุกหมู่ (ทั้งหมด)</option>
+                    </select>
+                    <span class="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none">expand_more</span>
+                </div>
+            </div>
 
-            <div id="content-new" class="hidden space-y-4">
-                <div id="new-list" class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5"></div>
-                <div id="empty-new" class="hidden text-center py-16 text-slate-400"><p class="text-sm">ไม่มีเคสใหม่ที่ค้างประเมินแรกเข้า</p></div>
-            </div>
+            <div id="content-new" class="hidden space-y-4">
+                <div id="new-list" class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5"></div>
+                <div id="empty-new" class="hidden text-center py-16 text-slate-400"><p class="text-sm">ไม่มีเคสใหม่ที่ค้างประเมินแรกเข้า</p></div>
+            </div>
 
-            <div id="content-reassess" class="hidden space-y-4">
-                <div id="reassess-list" class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5"></div>
-                <div id="empty-reassess" class="hidden text-center py-16 text-slate-400"><p class="text-sm">ไม่มีเคสค้างติดตามประเมินซ้ำ</p></div>
-            </div>
+            <div id="content-reassess" class="hidden space-y-4">
+                <div id="reassess-list" class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5"></div>
+                <div id="empty-reassess" class="hidden text-center py-16 text-slate-400"><p class="text-sm">ไม่มีเคสค้างติดตามประเมินซ้ำ</p></div>
+            </div>
 
-            <div id="content-vhv" class="hidden space-y-4">
-                <div id="vhv-list" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5"></div>
-            </div> 
+            <div id="content-vhv" class="hidden space-y-4">
+                <div id="vhv-list" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5"></div>
+            </div> 
 
-            <div id="content-approve" class="hidden space-y-4">
-                <div class="bg-amber-50 border border-amber-200 p-4 rounded-xl mb-4">
-                    <h3 class="text-sm font-bold text-amber-800">ระบบคัดกรองความปลอดภัย (Security Check)</h3>
-                    <p class="text-[11px] text-amber-700 mt-1">ผู้ที่ลงทะเบียนเข้ามาใหม่จะไม่สามารถเห็นข้อมูลชุมชนได้ จนกว่าแอดมินจะกดยืนยันสถานะ "อนุมัติ" ให้บุคคลนี้</p>
-                </div>
-                <div id="pending-vhv-list" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5"></div>
-                <div id="empty-pending" class="hidden text-center py-16 text-slate-400"><p class="text-sm">ไม่มีคำขอลงทะเบียนใหม่ค้างอยู่</p></div>
-            </div>
-        </div>
-    </main>
+            <div id="content-approve" class="hidden space-y-4">
+                <div class="bg-amber-50 border border-amber-200 p-4 rounded-xl mb-4">
+                    <h3 class="text-sm font-bold text-amber-800">ระบบคัดกรองความปลอดภัย (Security Check)</h3>
+                    <p class="text-[11px] text-amber-700 mt-1">ผู้ที่ลงทะเบียนเข้ามาใหม่จะไม่สามารถเห็นข้อมูลชุมชนได้ จนกว่าแอดมินจะกดยืนยันสถานะ "อนุมัติ" ให้บุคคลนี้</p>
+                </div>
+                <div id="pending-vhv-list" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5"></div>
+                <div id="empty-pending" class="hidden text-center py-16 text-slate-400"><p class="text-sm">ไม่มีคำขอลงทะเบียนใหม่ค้างอยู่</p></div>
+            </div>
+        </div>
+    </main>
 
-    <script>
-        // เชื่อมต่อ Firebase
-        firebase.initializeApp(firebaseConfig);
-        const db = firebase.firestore();
+    <script>
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.firestore();
 
-        let allPatients = []; let allVHVs = []; let newCases = []; let reassessCases = []; let currentTab = 'new';
-        let pendingVHVs = [];
+        let allPatients = []; let allVHVs = []; let newCases = []; let reassessCases = []; let currentTab = 'new';
+        let pendingVHVs = [];
 
-        function toggleSidebar() { document.getElementById('sidebar').classList.toggle('-translate-x-full'); }
+        function toggleSidebar() { document.getElementById('sidebar').classList.toggle('-translate-x-full'); }
 
-        document.addEventListener("DOMContentLoaded", () => {
-            liff.init({ liffId: LIFF_ID }).then(() => {
-                if (liff.isLoggedIn()) { liff.getProfile().then(p => verifyAdminAccess(p.userId)); }
-            });
-        });
+        document.addEventListener("DOMContentLoaded", () => {
+            liff.init({ liffId: LIFF_ID }).then(() => {
+                if (liff.isLoggedIn()) { liff.getProfile().then(p => verifyAdminAccess(p.userId)); }
+            });
+        });
 
-        async function verifyAdminAccess(uid) {
-            try {
-                const userDoc = await db.collection('VHVs').doc(String(uid)).get();
-                let isAdmin = false;
-                let hospital = 'เทศบาลเมืองบางแก้ว';
-                let vCount = 15;
+        async function verifyAdminAccess(uid) {
+            try {
+                const userDoc = await db.collection('VHVs').doc(String(uid)).get();
+                let isAdmin = false;
+                let hospital = 'เทศบาลเมืองบางแก้ว';
+                let vCount = 15;
 
-                if (userDoc.exists && String(userDoc.data().role).toUpperCase() === 'ADMIN') {
-                    isAdmin = true;
-                    hospital = userDoc.data().hospital_name || hospital;
-                    vCount = parseInt(userDoc.data().village_count) || vCount;
-                }
+                if (userDoc.exists && String(userDoc.data().role).toUpperCase() === 'ADMIN') {
+                    isAdmin = true;
+                    hospital = userDoc.data().hospital_name || hospital;
+                    vCount = parseInt(userDoc.data().village_count) || vCount;
+                }
 
-                if (!isAdmin) {
-                    const response = await fetch(API_URL, { method: 'POST', body: JSON.stringify({ action: 'checkUserRegistration', uid: uid }) });
-                    const data = await response.json();
-                    if (data.status === 'registered' && String(data.role).toUpperCase() === 'ADMIN') {
-                        isAdmin = true;
-                        hospital = data.hospital_name || hospital;
-                        vCount = parseInt(data.village_count) || vCount;
-                        await db.collection('VHVs').doc(String(uid)).set({
-                            uid: String(uid), role: 'ADMIN', hospital_name: hospital,
-                            village_count: vCount, name: data.name || 'Admin', phone: data.phone || ''
-                        }, { merge: true });
-                    }
-                }
+                if (!isAdmin) {
+                    const response = await fetch(API_URL, { method: 'POST', body: JSON.stringify({ action: 'checkUserRegistration', uid: uid }) });
+                    const data = await response.json();
+                    if (data.status === 'registered' && String(data.role).toUpperCase() === 'ADMIN') {
+                        isAdmin = true;
+                        hospital = data.hospital_name || hospital;
+                        vCount = parseInt(data.village_count) || vCount;
+                        await db.collection('VHVs').doc(String(uid)).set({
+                            uid: String(uid), role: 'ADMIN', hospital_name: hospital,
+                            village_count: vCount, name: data.name || 'Admin', phone: data.phone || ''
+                        }, { merge: true });
+                    }
+                }
 
-                if (isAdmin) {
-                    document.getElementById('sidebar-hospital-name').innerText = hospital;
-                    const villageSelect = document.getElementById('village-filter');
-                    for(let i=1; i<=vCount; i++){ villageSelect.insertAdjacentHTML('beforeend', `<option value="${i}">หมู่ที่ ${i}</option>`); }
-                    loadDataChannels();
-                } else window.location.href = 'dashboard.html';
-            } catch (error) { window.location.href = 'index.html'; }
-        }
+                if (isAdmin) {
+                    document.getElementById('sidebar-hospital-name').innerText = hospital;
+                    const villageSelect = document.getElementById('village-filter');
+                    for(let i=1; i<=vCount; i++){ villageSelect.insertAdjacentHTML('beforeend', `<option value="${i}">หมู่ที่ ${i}</option>`); }
+                    loadDataChannels();
+                } else window.location.href = 'dashboard.html';
+            } catch (error) { window.location.href = 'index.html'; }
+        }
 
-        function calculateDaysSince(dateStr) {
-            if (!dateStr || dateStr.trim() === '' || dateStr === '-') return -1;
-            let targetDate;
-            
-            if (dateStr.includes('/')) {
-                // สมมติว่า format คือ dd/mm/yyyy
-                const parts = dateStr.split(' ')[0].split('/');
-                let year = parseInt(parts[2]);
-                
-                // ตรวจสอบและแปลงปี พ.ศ. ให้เป็น ค.ศ.
-                if (year > 2400) {
-                    year -= 543;
-                }
-                
-                targetDate = new Date(year, parseInt(parts[1]) - 1, parseInt(parts[0]));
-            } else {
-                targetDate = new Date(dateStr);
-            }
+        function calculateDaysSince(dateStr) {
+            if (!dateStr || dateStr.trim() === '' || dateStr === '-') return -1;
+            let targetDate;
+            if (dateStr.includes('/')) {
+                const parts = dateStr.split(' ')[0].split('/');
+                let year = parseInt(parts[2]);
+                if (year > 2400) year -= 543;
+                targetDate = new Date(year, parseInt(parts[1]) - 1, parseInt(parts[0]));
+            } else targetDate = new Date(dateStr);
 
-            if (isNaN(targetDate)) return -1;
-            
-            // คำนวณความต่างของเวลาเป็นวัน
-            const diffTime = Math.abs(new Date() - targetDate);
-            const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
-            
-            return diffDays;
-        }
+            if (isNaN(targetDate)) return -1;
+            const diffTime = Math.abs(new Date() - targetDate);
+            return Math.floor(diffTime / (1000 * 60 * 60 * 24));
+        }
 
-        async function loadDataChannels() {
-            try {
-                const [pSnap, vSnap] = await Promise.all([
-                    db.collection('Patients').get(),
-                    db.collection('VHVs').get()
-                ]);
-                
-                allPatients = [];
-                pSnap.forEach(doc => allPatients.push(doc.data()));
-                
-                allVHVs = [];
-                vSnap.forEach(doc => {
-                    const v = doc.data();
-                    if(String(v.role).toUpperCase() !== 'ADMIN') allVHVs.push(v);
-                });
+        async function loadDataChannels() {
+            try {
+                const [pSnap, vSnap] = await Promise.all([
+                    db.collection('Patients').get(),
+                    db.collection('VHVs').get()
+                ]);
+                
+                allPatients = [];
+                pSnap.forEach(doc => allPatients.push(doc.data()));
+                
+                allVHVs = [];
+                vSnap.forEach(doc => {
+                    const v = doc.data();
+                    if(String(v.role).toUpperCase() !== 'ADMIN') allVHVs.push(v);
+                });
 
-                const pendingRes = await fetch(API_URL, { method: 'POST', body: JSON.stringify({ action: 'getPendingVHVs' }) });
-                pendingVHVs = await pendingRes.json();
-                
-                distributePatients();
-                renderPendingVHVs(); 
-                document.getElementById('loading-state').classList.add('hidden');
-                document.getElementById('filter-wrapper').classList.remove('hidden');
-                switchTab(currentTab);
-            } catch (e) { alert("ดึงฐานข้อมูลล้มเหลว"); }
-        }
+                const pendingRes = await fetch(API_URL, { method: 'POST', body: JSON.stringify({ action: 'getPendingVHVs' }) });
+                pendingVHVs = await pendingRes.json();
+                
+                distributePatients();
+                renderPendingVHVs(); 
+                document.getElementById('loading-state').classList.add('hidden');
+                document.getElementById('filter-wrapper').classList.remove('hidden');
+                switchTab(currentTab);
+            } catch (e) { alert("ดึงฐานข้อมูลล้มเหลว"); }
+        }
 
-        function switchTab(tab) {
-            currentTab = tab;
-            ['new', 'reassess', 'vhv', 'approve'].forEach(t => {
-                const btn = document.getElementById(`tab-${t}`);
-                const content = document.getElementById(`content-${t}`);
-                if(btn) btn.classList.remove('active');
-                if(content) content.classList.add('hidden');
-            });
-            document.getElementById(`tab-${tab}`).classList.add('active');
-            document.getElementById(`content-${tab}`).classList.remove('hidden');
-            
-            const filterWrap = document.getElementById('filter-wrapper');
-            if(tab === 'approve') filterWrap.classList.add('hidden'); 
-            else { filterWrap.classList.remove('hidden'); filterDataDisplay(); }
-        }
+        function switchTab(tab) {
+            currentTab = tab;
+            ['new', 'reassess', 'vhv', 'approve'].forEach(t => {
+                const btn = document.getElementById(`tab-${t}`);
+                const content = document.getElementById(`content-${t}`);
+                if(btn) btn.classList.remove('active');
+                if(content) content.classList.add('hidden');
+            });
+            document.getElementById(`tab-${tab}`).classList.add('active');
+            document.getElementById(`content-${tab}`).classList.remove('hidden');
+            
+            const filterWrap = document.getElementById('filter-wrapper');
+            if(tab === 'approve') filterWrap.classList.add('hidden'); 
+            else { filterWrap.classList.remove('hidden'); filterDataDisplay(); }
+        }
 
-        function renderPendingVHVs() {
-            const container = document.getElementById('pending-vhv-list');
-            container.innerHTML = '';
-            document.getElementById('badge-pending-vhv').innerText = pendingVHVs.length;
+        function renderPendingVHVs() {
+            const container = document.getElementById('pending-vhv-list');
+            container.innerHTML = '';
+            document.getElementById('badge-pending-vhv').innerText = pendingVHVs.length;
 
-            if(pendingVHVs.length === 0) { document.getElementById('empty-pending').classList.remove('hidden'); return; }
-            document.getElementById('empty-pending').classList.add('hidden');
+            if(pendingVHVs.length === 0) { document.getElementById('empty-pending').classList.remove('hidden'); return; }
+            document.getElementById('empty-pending').classList.add('hidden');
 
-            pendingVHVs.forEach(v => {
-                container.insertAdjacentHTML('beforeend', `
-                    <div class="bg-white rounded-[20px] p-5 shadow-lg border border-amber-300 relative overflow-hidden">
-                        <div class="absolute top-0 right-0 bg-amber-500 text-white text-[10px] font-bold px-3 py-1 rounded-bl-xl rounded-tr-[20px]">รอตรวจสอบ</div>
-                        <h3 class="font-bold text-slate-800 text-sm mt-2">${v.name}</h3>
-                        <p class="text-[11px] text-amber-700 bg-amber-50 font-bold px-2 py-0.5 rounded inline-block mt-1">ขอรับสิทธิ์ หมู่ที่ ${v.village_no}</p>
-                        <p class="text-[11px] text-slate-500 mt-2 flex items-center gap-1"><span class="material-symbols-outlined text-[14px]">call</span> ${v.phone}</p>
-                        
-                        <div class="flex gap-2 mt-4 pt-3 border-t border-slate-100">
-                            <button onclick="manageVHVStatus('${v.uid}', 'Rejected')" class="flex-1 py-2 bg-red-50 text-red-600 font-bold text-xs rounded-xl hover:bg-red-100">ปฏิเสธ</button>
-                            <button onclick="manageVHVStatus('${v.uid}', 'Active')" class="flex-[2] py-2 bg-[#00694a] text-white font-bold text-xs rounded-xl hover:bg-[#005239]">✅ อนุมัติสิทธิ์</button>
-                        </div>
-                    </div>
-                `);
-            });
-        }
+            pendingVHVs.forEach(v => {
+                container.insertAdjacentHTML('beforeend', `
+                    <div class="bg-white rounded-[20px] p-5 shadow-lg border border-amber-300 relative overflow-hidden">
+                        <div class="absolute top-0 right-0 bg-amber-500 text-white text-[10px] font-bold px-3 py-1 rounded-bl-xl rounded-tr-[20px]">รอตรวจสอบ</div>
+                        <h3 class="font-bold text-slate-800 text-sm mt-2">${v.name}</h3>
+                        <p class="text-[11px] text-amber-700 bg-amber-50 font-bold px-2 py-0.5 rounded inline-block mt-1">ขอรับสิทธิ์ หมู่ที่ ${v.village_no}</p>
+                        <p class="text-[11px] text-slate-500 mt-2 flex items-center gap-1"><span class="material-symbols-outlined text-[14px]">call</span> ${v.phone}</p>
+                        <div class="flex gap-2 mt-4 pt-3 border-t border-slate-100">
+                            <button onclick="manageVHVStatus('${v.uid}', 'Rejected')" class="flex-1 py-2 bg-red-50 text-red-600 font-bold text-xs rounded-xl hover:bg-red-100">ปฏิเสธ</button>
+                            <button onclick="manageVHVStatus('${v.uid}', 'Active')" class="flex-[2] py-2 bg-[#00694a] text-white font-bold text-xs rounded-xl hover:bg-[#005239]">✅ อนุมัติสิทธิ์</button>
+                        </div>
+                    </div>
+                `);
+            });
+        }
 
-        async function manageVHVStatus(uid, actionType) {
-            if(!confirm(actionType === 'Active' ? 'ยืนยันการอนุมัติสิทธิ์ให้บุคคลนี้ใช่หรือไม่?' : 'ยืนยันการปฏิเสธสิทธิ์ใช่หรือไม่?')) return;
-            
-            try {
-                const response = await fetch(API_URL, { method: 'POST', body: JSON.stringify({ action: 'manageVHVStatus', targetUid: uid, actionType: actionType }) });
-                const result = await response.json();
-                
-                if(result.success) {
-                    if (actionType === 'Active') {
-                        const targetVHV = pendingVHVs.find(v => String(v.uid) === String(uid));
-                        if(targetVHV) {
-                            targetVHV.status = 'Active';
-                            targetVHV.role = 'VHV';
-                            await db.collection('VHVs').doc(String(uid)).set(targetVHV, { merge: true });
-                        }
-                    }
-                    alert('ดำเนินการเรียบร้อยแล้ว');
-                    loadDataChannels(); 
-                } else alert(result.message);
-            } catch(e) { alert("เชื่อมต่อล้มเหลว"); }
-        }
+        async function manageVHVStatus(uid, actionType) {
+            if(!confirm(actionType === 'Active' ? 'ยืนยันการอนุมัติสิทธิ์ให้บุคคลนี้ใช่หรือไม่?' : 'ยืนยันการปฏิเสธสิทธิ์ใช่หรือไม่?')) return;
+            try {
+                const response = await fetch(API_URL, { method: 'POST', body: JSON.stringify({ action: 'manageVHVStatus', targetUid: uid, actionType: actionType }) });
+                const result = await response.json();
+                if(result.success) {
+                    if (actionType === 'Active') {
+                        const targetVHV = pendingVHVs.find(v => String(v.uid) === String(uid));
+                        if(targetVHV) {
+                            targetVHV.status = 'Active';
+                            targetVHV.role = 'VHV';
+                            await db.collection('VHVs').doc(String(uid)).set(targetVHV, { merge: true });
+                        }
+                    }
+                    alert('ดำเนินการเรียบร้อยแล้ว');
+                    loadDataChannels(); 
+                } else alert(result.message);
+            } catch(e) { alert("เชื่อมต่อล้มเหลว"); }
+        }
 
-        function distributePatients() {
-            newCases = []; reassessCases = [];
-            allPatients.forEach(p => {
-                if (String(p.status || 'Active').trim().toLowerCase() !== 'active') return;
-                const lastAssess = String(p.last_assess || '').trim();
-                if (lastAssess === '' || lastAssess === '-') { newCases.push(p); } 
-                else { p.days_passed = calculateDaysSince(p.last_assess); if (p.days_passed >= 0) reassessCases.push(p); }
-            });
-            reassessCases.sort((a, b) => b.days_passed - a.days_passed);
-            document.getElementById('badge-new').innerText = newCases.length;
-            document.getElementById('badge-reassess').innerText = reassessCases.length;
-            document.getElementById('badge-vhv-count').innerText = allVHVs.length;
-            document.getElementById('badge-pending-vhv').innerText = pendingVHVs.length;
-        }
+        function distributePatients() {
+            newCases = []; reassessCases = [];
+            allPatients.forEach(p => {
+                if (String(p.status || 'Active').trim().toLowerCase() !== 'active') return;
+                const lastAssess = String(p.last_assess || '').trim();
+                if (lastAssess === '' || lastAssess === '-') { newCases.push(p); } 
+                else { p.days_passed = calculateDaysSince(p.last_assess); if (p.days_passed >= 0) reassessCases.push(p); }
+            });
+            reassessCases.sort((a, b) => b.days_passed - a.days_passed);
+            document.getElementById('badge-new').innerText = newCases.length;
+            document.getElementById('badge-reassess').innerText = reassessCases.length;
+            document.getElementById('badge-vhv-count').innerText = allVHVs.length;
+            document.getElementById('badge-pending-vhv').innerText = pendingVHVs.length;
+        }
 
-        function filterDataDisplay() {
-            const vFilter = document.getElementById('village-filter').value;
-            if (currentTab === 'new') renderNewList(vFilter);
-            else if (currentTab === 'reassess') renderReassessList(vFilter);
-            else if (currentTab === 'vhv') renderVHVList(vFilter);
-        }
+        function filterDataDisplay() {
+            const vFilter = document.getElementById('village-filter').value;
+            if (currentTab === 'new') renderNewList(vFilter);
+            else if (currentTab === 'reassess') renderReassessList(vFilter);
+            else if (currentTab === 'vhv') renderVHVList(vFilter);
+        }
 
-        function generateVHVOptionsStrict(patientVillage, assignedVhvId) {
-            let html = `<option value="">-- เลือก อสม. ประจำหมู่ ${patientVillage} --</option>`;
-            const filtered = allVHVs.filter(v => String(v.village_no) === String(patientVillage));
-            filtered.forEach(v => {
-                const isSelected = String(v.uid) === String(assignedVhvId) ? 'selected' : '';
-                html += `<option value="${v.uid}" ${isSelected}>${v.name}</option>`;
-            });
-            return html;
-        }
+        function generateVHVOptionsStrict(patientVillage, assignedVhvId) {
+            let html = `<option value="">-- เลือก อสม. ประจำหมู่ ${patientVillage} --</option>`;
+            const filtered = allVHVs.filter(v => String(v.village_no) === String(patientVillage));
+            filtered.forEach(v => {
+                const isSelected = String(v.uid) === String(assignedVhvId) ? 'selected' : '';
+                html += `<option value="${v.uid}" ${isSelected}>${v.name}</option>`;
+            });
+            return html;
+        }
 
-        function renderNewList(vFilter) {
-            const container = document.getElementById('new-list'); container.innerHTML = '';
-            const data = newCases.filter(p => vFilter === '' || String(p.village_no) === vFilter);
-            if(data.length === 0) { document.getElementById('empty-new').classList.remove('hidden'); return; }
-            document.getElementById('empty-new').classList.add('hidden');
+        // [แก้ไข] เปลี่ยนจาก Select เป็น Checkbox เลือกงาน
+        function renderNewList(vFilter) {
+            const container = document.getElementById('new-list'); container.innerHTML = '';
+            const data = newCases.filter(p => vFilter === '' || String(p.village_no) === vFilter);
+            if(data.length === 0) { document.getElementById('empty-new').classList.remove('hidden'); return; }
+            document.getElementById('empty-new').classList.add('hidden');
 
-            data.forEach(p => {
-                container.insertAdjacentHTML('beforeend', `
-                    <div class="bg-white rounded-[20px] p-5 shadow-sm border border-amber-200 flex flex-col justify-between">
-                        <div>
-                            <h3 class="font-bold text-slate-800 text-sm mb-1">${p.name}</h3>
-                            <p class="text-[11px] text-slate-500">หมู่ที่ ${p.village_no} • บ้านเลขที่ ${p.house_no}</p>
-                            <div class="mt-4"><label class="text-[11px] font-bold text-slate-500 block mb-1">ระบุ อสม. มอบหมาย:</label><select id="select_${p.id}" class="w-full text-xs rounded-lg border-slate-200 focus:ring-emerald-500">${generateVHVOptionsStrict(p.village_no, p.assigned_vhv_id)}</select></div>
-                        </div>
-                        <button onclick="saveAssignment('${p.id}')" id="btn_${p.id}" class="w-full mt-4 py-2 bg-navy text-white font-bold text-xs rounded-xl hover:bg-opacity-90">บันทึกและส่งแจ้งเตือน LINE อส.</button>
-                    </div>
-                `);
-            });
-        }
+            data.forEach(p => {
+                container.insertAdjacentHTML('beforeend', `
+                    <div class="bg-white rounded-[20px] p-5 shadow-sm border border-amber-200 flex flex-col justify-between">
+                        <div>
+                            <h3 class="font-bold text-slate-800 text-sm mb-1">${p.name}</h3>
+                            <p class="text-[11px] text-slate-500">หมู่ที่ ${p.village_no} • บ้านเลขที่ ${p.house_no}</p>
+                            <div class="mt-3 border-t border-gray-100 pt-3">
+                                <label class="text-[11px] font-bold text-slate-500 block mb-2">เลือกงานที่มอบหมาย (เลือกได้หลายอย่าง):</label>
+                                <div class="grid grid-cols-1 gap-1.5 text-[11px] text-gray-700 mb-3" id="task-container_${p.id}">
+                                    <label class="flex items-center gap-2"><input type="checkbox" value="ประเมิน ADL" class="task-check-${p.id} rounded border-gray-300 text-emerald-600 focus:ring-emerald-500" checked> ประเมิน ADL</label>
+                                    <label class="flex items-center gap-2"><input type="checkbox" value="ประเมิน 2Q/9Q" class="task-check-${p.id} rounded border-gray-300 text-emerald-600 focus:ring-emerald-500"> ประเมิน 2Q/9Q</label>
+                                    <label class="flex items-center gap-2"><input type="checkbox" value="วัดความดัน/เบาหวาน" class="task-check-${p.id} rounded border-gray-300 text-emerald-600 focus:ring-emerald-500"> วัดความดัน/เบาหวาน</label>
+                                </div>
+                                <label class="text-[11px] font-bold text-slate-500 block mb-1">ระบุ อสม. มอบหมาย:</label>
+                                <select id="select_${p.id}" class="w-full text-xs rounded-lg border-slate-200 focus:ring-emerald-500">${generateVHVOptionsStrict(p.village_no, p.assigned_vhv_id)}</select>
+                            </div>
+                        </div>
+                        <button onclick="saveAssignment('${p.id}')" id="btn_${p.id}" class="w-full mt-4 py-2 bg-navy text-white font-bold text-xs rounded-xl hover:bg-opacity-90">บันทึกและส่งแจ้งเตือน LINE อส.</button>
+                    </div>
+                `);
+            });
+        }
 
-        function renderReassessList(vFilter) {
-            const container = document.getElementById('reassess-list'); container.innerHTML = '';
-            const data = reassessCases.filter(p => vFilter === '' || String(p.village_no) === vFilter);
-            if(data.length === 0) { document.getElementById('empty-reassess').classList.remove('hidden'); return; }
-            document.getElementById('empty-reassess').classList.add('hidden');
+        // [แก้ไข] เปลี่ยนจาก Select เป็น Checkbox เลือกงาน
+        function renderReassessList(vFilter) {
+            const container = document.getElementById('reassess-list'); container.innerHTML = '';
+            const data = reassessCases.filter(p => vFilter === '' || String(p.village_no) === vFilter);
+            if(data.length === 0) { document.getElementById('empty-reassess').classList.remove('hidden'); return; }
+            document.getElementById('empty-reassess').classList.add('hidden');
 
-            data.forEach(p => {
-                container.insertAdjacentHTML('beforeend', `
-                    <div class="bg-white rounded-[20px] p-5 shadow-sm border border-red-100 flex flex-col justify-between">
-                        <div>
-                            <div class="flex items-start justify-between mb-1">
-                                <h3 class="font-bold text-slate-800 text-sm">${p.name}</h3>
-                                <span class="bg-red-50 text-red-600 text-[10px] px-2 py-0.5 rounded font-bold border border-red-200">ค้างเยี่ยม ${p.days_passed} วัน</span>
-                            </div>
-                            <p class="text-[11px] text-slate-500">หมู่ที่ ${p.village_no} • บ้านเลขที่ ${p.house_no}<br>เยี่ยมล่าสุด: ${p.last_assess}</p>
-                            <div class="mt-4"><label class="text-[11px] font-bold text-slate-500 block mb-1">ระบุ อสม. มอบหมาย:</label><select id="select_${p.id}" class="w-full text-xs rounded-lg border-slate-200 focus:ring-emerald-500">${generateVHVOptionsStrict(p.village_no, p.assigned_vhv_id)}</select></div>
-                        </div>
-                        <button onclick="saveAssignment('${p.id}')" id="btn_${p.id}" class="w-full mt-4 py-2 bg-[#00694a] text-white font-bold text-xs rounded-xl hover:bg-opacity-90">บันทึกและส่งแจ้งเตือน LINE อส.</button>
-                    </div>
-                `);
-            });
-        }
+            data.forEach(p => {
+                container.insertAdjacentHTML('beforeend', `
+                    <div class="bg-white rounded-[20px] p-5 shadow-sm border border-red-100 flex flex-col justify-between">
+                        <div>
+                            <div class="flex items-start justify-between mb-1">
+                                <h3 class="font-bold text-slate-800 text-sm">${p.name}</h3>
+                                <span class="bg-red-50 text-red-600 text-[10px] px-2 py-0.5 rounded font-bold border border-red-200">ค้างเยี่ยม ${p.days_passed} วัน</span>
+                            </div>
+                            <p class="text-[11px] text-slate-500">หมู่ที่ ${p.village_no} • บ้านเลขที่ ${p.house_no}<br>เยี่ยมล่าสุด: ${p.last_assess}</p>
+                            <div class="mt-3 border-t border-gray-100 pt-3">
+                                <label class="text-[11px] font-bold text-slate-500 block mb-2">เลือกงานที่มอบหมาย (เลือกได้หลายอย่าง):</label>
+                                <div class="grid grid-cols-1 gap-1.5 text-[11px] text-gray-700 mb-3" id="task-container_${p.id}">
+                                    <label class="flex items-center gap-2"><input type="checkbox" value="ประเมิน ADL" class="task-check-${p.id} rounded border-gray-300 text-emerald-600 focus:ring-emerald-500" checked> ประเมิน ADL</label>
+                                    <label class="flex items-center gap-2"><input type="checkbox" value="ประเมิน 2Q/9Q" class="task-check-${p.id} rounded border-gray-300 text-emerald-600 focus:ring-emerald-500"> ประเมิน 2Q/9Q</label>
+                                    <label class="flex items-center gap-2"><input type="checkbox" value="วัดความดัน/เบาหวาน" class="task-check-${p.id} rounded border-gray-300 text-emerald-600 focus:ring-emerald-500"> วัดความดัน/เบาหวาน</label>
+                                </div>
+                                <label class="text-[11px] font-bold text-slate-500 block mb-1">ระบุ อสม. มอบหมาย:</label>
+                                <select id="select_${p.id}" class="w-full text-xs rounded-lg border-slate-200 focus:ring-emerald-500">${generateVHVOptionsStrict(p.village_no, p.assigned_vhv_id)}</select>
+                            </div>
+                        </div>
+                        <button onclick="saveAssignment('${p.id}')" id="btn_${p.id}" class="w-full mt-4 py-2 bg-[#00694a] text-white font-bold text-xs rounded-xl hover:bg-opacity-90">บันทึกและส่งแจ้งเตือน LINE อส.</button>
+                    </div>
+                `);
+            });
+        }
 
-        function renderVHVList(vFilter) {
-            const container = document.getElementById('vhv-list'); container.innerHTML = '';
-            const data = allVHVs.filter(v => vFilter === '' || String(v.village_no) === vFilter);
+        function renderVHVList(vFilter) {
+            const container = document.getElementById('vhv-list'); container.innerHTML = '';
+            const data = allVHVs.filter(v => vFilter === '' || String(v.village_no) === vFilter);
 
-            const vhvWorkloads = {};
-            allPatients.forEach(p => {
-                if (String(p.status || 'Active').trim().toLowerCase() === 'active' && p.assigned_vhv_id) {
-                    vhvWorkloads[String(p.assigned_vhv_id).trim()] = (vhvWorkloads[String(p.assigned_vhv_id).trim()] || 0) + 1;
-                }
-            });
+            const vhvWorkloads = {};
+            allPatients.forEach(p => {
+                if (String(p.status || 'Active').trim().toLowerCase() === 'active' && p.assigned_vhv_id) {
+                    vhvWorkloads[String(p.assigned_vhv_id).trim()] = (vhvWorkloads[String(p.assigned_vhv_id).trim()] || 0) + 1;
+                }
+            });
 
-            data.forEach(v => {
-                const count = vhvWorkloads[v.uid] || 0;
-                container.insertAdjacentHTML('beforeend', `
-                    <div class="bg-white rounded-[20px] p-5 shadow-sm border border-slate-200 flex flex-col justify-between">
-                        <div>
-                            <h3 class="font-bold text-slate-800 text-sm">${v.name}</h3>
-                            <p class="text-[10px] text-emerald-700 bg-emerald-50 font-bold px-2 py-0.5 rounded inline-block mt-1">หมู่ที่ ${v.village_no}</p>
-                        </div>
-                        <div class="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between text-[11px]">
-                            <a href="tel:${v.phone}" class="text-blue-600 hover:underline flex items-center gap-0.5 font-bold">
-                                <span class="material-symbols-outlined text-[13px]">call</span> ${v.phone}
-                            </a>
-                            <span class="font-bold text-navy bg-slate-100 px-2 py-1 rounded-lg">ดูแลตรงรหัส: ${count} ราย</span>
-                        </div>
-                    </div>
-                `);
-            });
-        }
+            data.forEach(v => {
+                const count = vhvWorkloads[v.uid] || 0;
+                container.insertAdjacentHTML('beforeend', `
+                    <div class="bg-white rounded-[20px] p-5 shadow-sm border border-slate-200 flex flex-col justify-between">
+                        <div>
+                            <h3 class="font-bold text-slate-800 text-sm">${v.name}</h3>
+                            <p class="text-[10px] text-emerald-700 bg-emerald-50 font-bold px-2 py-0.5 rounded inline-block mt-1">หมู่ที่ ${v.village_no}</p>
+                        </div>
+                        <div class="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between text-[11px]">
+                            <a href="tel:${v.phone}" class="text-blue-600 hover:underline flex items-center gap-0.5 font-bold">
+                                <span class="material-symbols-outlined text-[13px]">call</span> ${v.phone}
+                            </a>
+                            <span class="font-bold text-navy bg-slate-100 px-2 py-1 rounded-lg">ดูแลตรงรหัส: ${count} ราย</span>
+                        </div>
+                    </div>
+                `);
+            });
+        }
 
-        async function saveAssignment(patientId) {
-            const vhvId = document.getElementById(`select_${patientId}`).value;
-            if(!vhvId) return alert('กรุณาเลือก อสม. ผู้รับผิดชอบก่อนบันทึกครับ');
+        // [แก้ไข] รวบรวมงานที่เช็ค และส่งไป Firebase + LINE
+        async function saveAssignment(patientId) {
+            const vhvId = document.getElementById(`select_${patientId}`).value;
+            const checkedTasks = Array.from(document.querySelectorAll(`.task-check-${patientId}:checked`)).map(cb => cb.value);
 
-            const btn = document.getElementById(`btn_${patientId}`);
-            btn.disabled = true; btn.innerText = 'กำลังประมวลผล...';
+            if(!vhvId) return alert('กรุณาเลือก อสม. ผู้รับผิดชอบก่อนบันทึกครับ');
+            if(checkedTasks.length === 0) return alert('กรุณาเลือกงานที่ต้องการมอบหมายอย่างน้อย 1 อย่างครับ');
 
-            try {
-                await db.collection('Patients').doc(String(patientId)).update({ 
-                    assigned_vhv_id: String(vhvId),
-                    needs_assessment: true  // <--- เพิ่มบรรทัดนี้ เพื่อจุดพลุเตือนให้ประเมินใหม่
-                });
-                
-                alert('มอบหมายงานสำเร็จ! (ระบบกำลังส่งแจ้งเตือน LINE ให้ อสม. เบื้องหลัง)');
-                loadDataChannels();
-                
-                fetch(API_URL, { 
-                    method: 'POST', 
-                    body: JSON.stringify({ action: 'updatePatientVHV', id: patientId, vhvId: vhvId }) 
-                }).catch(e => console.log("แจ้งเตือน LINE ล้มเหลว แต่บันทึกข้อมูลแล้ว"));
+            const btn = document.getElementById(`btn_${patientId}`);
+            btn.disabled = true; btn.innerText = 'กำลังประมวลผล...';
 
-            } catch(e) { 
-                alert("เชื่อมต่อขัดข้อง กรุณาลองใหม่"); 
-                btn.disabled = false; 
-                btn.innerText = 'บันทึกและส่งแจ้งเตือน LINE อส.'; 
-            }
-        }
-    </script>
+            try {
+                const taskDesc = checkedTasks.join(', ');
+                await db.collection('Patients').doc(String(patientId)).update({ 
+                    assigned_vhv_id: String(vhvId),
+                    needs_assessment: true,
+                    task_desc: taskDesc,
+                    tasks_required: checkedTasks // บันทึกเป็น Array เพื่อไปเช็คในหน้าจบงาน
+                });
+                
+                alert('มอบหมายงานสำเร็จ! (ระบบกำลังส่งแจ้งเตือน LINE ให้ อสม. เบื้องหลัง)');
+                loadDataChannels();
+                
+                fetch(API_URL, { 
+                    method: 'POST', 
+                    body: JSON.stringify({ action: 'updatePatientVHV', id: patientId, vhvId: vhvId, taskDesc: taskDesc }) 
+                }).catch(e => console.log("แจ้งเตือน LINE ล้มเหลว แต่บันทึกข้อมูลแล้ว"));
+
+            } catch(e) { 
+                alert("เชื่อมต่อขัดข้อง กรุณาลองใหม่"); 
+                btn.disabled = false; 
+                btn.innerText = 'บันทึกและส่งแจ้งเตือน LINE อส.'; 
+            }
+        }
+    </script>
 </body>
 </html>
-
-ปรับแก้แล้วส่งกลับมาหน่อย ตาลายไปหมดแล้ว
