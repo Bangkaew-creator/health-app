@@ -160,9 +160,7 @@
         async function verifyAdminAccess(uid) {
             try {
                 const userDoc = await db.collection('VHVs').doc(String(uid)).get();
-                let isAdmin = false;
-                let hospital = 'เทศบาลเมืองบางแก้ว';
-                let vCount = 15;
+                let isAdmin = false; let hospital = 'เทศบาลเมืองบางแก้ว'; let vCount = 15;
 
                 if (userDoc.exists && String(userDoc.data().role).toUpperCase() === 'ADMIN') {
                     isAdmin = true;
@@ -201,8 +199,7 @@
                 let year = parseInt(parts[2]);
                 if (year > 2400) year -= 543;
                 targetDate = new Date(year, parseInt(parts[1]) - 1, parseInt(parts[0]));
-            } else targetDate = new Date(dateStr);
-
+            } else { targetDate = new Date(dateStr); }
             if (isNaN(targetDate)) return -1;
             const diffTime = Math.abs(new Date() - targetDate);
             return Math.floor(diffTime / (1000 * 60 * 60 * 24));
@@ -215,9 +212,7 @@
                     db.collection('VHVs').get()
                 ]);
                 
-                allPatients = [];
-                pSnap.forEach(doc => allPatients.push(doc.data()));
-                
+                allPatients = []; pSnap.forEach(doc => allPatients.push(doc.data()));
                 allVHVs = [];
                 vSnap.forEach(doc => {
                     const v = doc.data();
@@ -227,8 +222,7 @@
                 const pendingRes = await fetch(API_URL, { method: 'POST', body: JSON.stringify({ action: 'getPendingVHVs' }) });
                 pendingVHVs = await pendingRes.json();
                 
-                distributePatients();
-                renderPendingVHVs(); 
+                distributePatients(); renderPendingVHVs(); 
                 document.getElementById('loading-state').classList.add('hidden');
                 document.getElementById('filter-wrapper').classList.remove('hidden');
                 switchTab(currentTab);
@@ -327,7 +321,6 @@
             return html;
         }
 
-        // [แก้ไข] เปลี่ยนจาก Select เป็น Checkbox เลือกงาน
         function renderNewList(vFilter) {
             const container = document.getElementById('new-list'); container.innerHTML = '';
             const data = newCases.filter(p => vFilter === '' || String(p.village_no) === vFilter);
@@ -357,7 +350,6 @@
             });
         }
 
-        // [แก้ไข] เปลี่ยนจาก Select เป็น Checkbox เลือกงาน
         function renderReassessList(vFilter) {
             const container = document.getElementById('reassess-list'); container.innerHTML = '';
             const data = reassessCases.filter(p => vFilter === '' || String(p.village_no) === vFilter);
@@ -420,7 +412,14 @@
             });
         }
 
-        // [แก้ไข] รวบรวมงานที่เช็ค และส่งไป Firebase + LINE
+        function getTodayString() {
+            const today = new Date();
+            const dd = String(today.getDate()).padStart(2, '0');
+            const mm = String(today.getMonth() + 1).padStart(2, '0');
+            const yyyy = today.getFullYear() + 543;
+            return `${dd}/${mm}/${yyyy}`;
+        }
+
         async function saveAssignment(patientId) {
             const vhvId = document.getElementById(`select_${patientId}`).value;
             const checkedTasks = Array.from(document.querySelectorAll(`.task-check-${patientId}:checked`)).map(cb => cb.value);
@@ -433,11 +432,14 @@
 
             try {
                 const taskDesc = checkedTasks.join(', ');
+                const todayStr = getTodayString(); // สร้างวันเวลาที่สั่งงาน
+
                 await db.collection('Patients').doc(String(patientId)).update({ 
                     assigned_vhv_id: String(vhvId),
                     needs_assessment: true,
                     task_desc: taskDesc,
-                    tasks_required: checkedTasks // บันทึกเป็น Array เพื่อไปเช็คในหน้าจบงาน
+                    tasks_required: checkedTasks,
+                    task_date: todayStr // บันทึกวันที่สั่งงานลงไปเพื่อใช้เช็คความคืบหน้า
                 });
                 
                 alert('มอบหมายงานสำเร็จ! (ระบบกำลังส่งแจ้งเตือน LINE ให้ อสม. เบื้องหลัง)');
