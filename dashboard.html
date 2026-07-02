@@ -311,7 +311,10 @@
 
             allPatients.forEach(p => {
                 if (currentFilter === 'visited' && String(p.last_assess) !== String(todayStr)) return;
-                if (currentFilter === 'pending' && p.group !== 'ยังไม่ประเมิน' && p.adl !== '-') return;
+                if (currentFilter === 'pending') {
+                const isPending = (p.needs_assessment === true || p.group === 'ยังไม่ประเมิน' || p.adl === '-' || !p.adl);
+                if (!isPending) return;
+                }
                 if (currentFilter === 'new' && p.last_assess !== '' && p.last_assess !== '-') return;
 
                 const nameMatch = p.name ? String(p.name).toLowerCase().includes(searchKeyword) : false;
