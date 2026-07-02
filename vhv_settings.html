@@ -7,8 +7,11 @@
     <script src="https://cdn.tailwindcss.com?plugins=forms"></script>
     <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700&display=swap" rel="stylesheet"/>
     <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
-    <!-- เพิ่ม LINE LIFF SDK -->
+    
     <script charset="utf-8" src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore-compat.js"></script>
+    <script src="config.js"></script>
 
     <style>
         body { font-family: 'Sarabun', sans-serif; background-color: #f8fafc; padding-bottom: 100px; -webkit-tap-highlight-color: transparent;}
@@ -18,7 +21,6 @@
         .loader-small { border: 2px solid #d8e3fb; border-bottom-color: #00694a; border-radius: 50%; width: 20px; height: 20px; animation: spin 1s linear infinite; }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
     </style>
-    <script src="config.js"></script>
 </head>
 <body class="text-[#111c2d]">
 
@@ -31,31 +33,28 @@
 
     <main class="max-w-2xl mx-auto p-4 pt-6 space-y-6">
         
-        <!-- โซนแจ้งสถานะการโหลด -->
         <div id="loading-overlay" class="bg-[#f0fdf4] border border-[#bbf7d0] p-3 rounded-xl flex items-center justify-center gap-2 mb-2 text-[#15803d] text-sm font-bold">
-            <div class="loader-small" style="width:16px; height:16px; border-width:2px; border-bottom-color:#15803d;"></div> กำลังดึงข้อมูล อสม. ...
+            <div class="loader-small" style="width:16px; height:16px; border-width:2px; border-bottom-color:#15803d;"></div> กำลังดึงข้อมูลจากฐานข้อมูล...
         </div>
 
         <form id="profile-form" class="space-y-6 hidden">
-            <!-- เก็บ UID ซ่อนไว้ -->
             <input type="hidden" id="vhv_uid">
+            <input type="hidden" id="pic_url" value="">
 
-            <!-- ส่วนที่ 1: จัดการรูปโปรไฟล์ -->
             <div class="bg-white rounded-[22px] p-6 shadow-sm border border-gray-100 flex flex-col items-center justify-center relative">
                 <div class="relative w-28 h-28 mb-3">
                     <div id="profile-preview" class="w-full h-full rounded-full bg-[#eef2ff] border-4 border-white shadow-md flex items-center justify-center text-[#00694a] font-bold text-3xl overflow-hidden">
                         อส
                     </div>
-                    <label for="profile-upload" class="absolute bottom-0 right-0 w-9 h-9 bg-[#00694a] text-white rounded-full flex items-center justify-center border-2 border-white cursor-pointer shadow-sm hover:bg-[#005239] active:scale-95 transition-transform">
-                        <span class="material-symbols-outlined text-[18px]">photo_camera</span>
-                    </label>
-                    <input type="file" id="profile-upload" accept="image/*" class="hidden" onchange="previewImage(event)">
                 </div>
                 <h2 class="font-bold text-[16px] text-[#111c2d]" id="display-name">...</h2>
-                <p class="text-xs text-[#00694a] mt-0.5 bg-[#f0fdf4] px-2 py-0.5 rounded-md font-bold" id="display-village">พื้นที่: ...</p>
+                <p class="text-xs text-[#00694a] mt-0.5 bg-[#f0fdf4] px-2 py-0.5 rounded-md font-bold mb-4" id="display-village">พื้นที่: ...</p>
+                
+                <button type="button" onclick="syncLineProfile()" class="text-xs font-bold text-[#00b900] bg-[#00b900]/10 px-4 py-2 rounded-xl hover:bg-[#00b900]/20 transition-colors flex items-center justify-center gap-1.5 active:scale-95">
+                    <span class="material-symbols-outlined text-[16px]">sync</span> อัปเดตรูปจากแอป LINE
+                </button>
             </div>
 
-            <!-- ส่วนที่ 2: ข้อมูลส่วนบุคคล -->
             <div class="bg-white rounded-[22px] p-6 shadow-sm border border-gray-100 space-y-4">
                 <h3 class="font-bold text-[#00694a] flex items-center gap-2 border-b pb-3 mb-2">
                     <span class="material-symbols-outlined text-[20px]">manage_accounts</span> ข้อมูลส่วนบุคคล
@@ -74,22 +73,7 @@
                 <div class="space-y-1.5">
                     <label class="text-xs font-bold text-[#526069]">พื้นที่รับผิดชอบ (หมู่ที่)</label>
                     <select id="vhv_village" class="input-field bg-white" required>
-                        <option value="1">หมู่ที่ 1</option>
-                        <option value="2">หมู่ที่ 2</option>
-                        <option value="3">หมู่ที่ 3</option>
-                        <option value="4">หมู่ที่ 4</option>
-                        <option value="5">หมู่ที่ 5</option>
-                        <option value="6">หมู่ที่ 6</option>
-                        <option value="7">หมู่ที่ 7</option>
-                        <option value="8">หมู่ที่ 8</option>
-                        <option value="9">หมู่ที่ 9</option>
-                        <option value="10">หมู่ที่ 10</option>
-                        <option value="11">หมู่ที่ 11</option>
-                        <option value="12">หมู่ที่ 12</option>
-                        <option value="13">หมู่ที่ 13</option>
-                        <option value="14">หมู่ที่ 14</option>
-                        <option value="15">หมู่ที่ 15</option>
-                        <option value="16">หมู่ที่ 16</option>
+                        <option value="" disabled selected>โหลดข้อมูล...</option>
                     </select>
                 </div>
             </div>
@@ -105,7 +89,6 @@
         </form>
     </main>
 
-    <!-- แถบเมนูด้านล่าง -->
     <nav class="fixed bottom-0 left-0 w-full bg-white border-t border-gray-100 shadow-[0_-4px_20px_rgba(0,0,0,0.03)] grid grid-cols-4 h-[75px] z-50 px-2 pb-2">
         <button onclick="window.location.href='dashboard.html'" class="flex flex-col items-center justify-center text-gray-400 hover:text-gray-600 transition-colors">
             <span class="material-symbols-outlined mb-0.5 text-[24px]">home</span>
@@ -126,69 +109,65 @@
     </nav>
 
     <script>
-        
-        let base64Image = "";
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.firestore();
 
         document.addEventListener("DOMContentLoaded", () => {
             liff.init({ liffId: LIFF_ID }).then(() => {
                 if (liff.isLoggedIn()) {
                     liff.getProfile().then(profile => {
                         document.getElementById('vhv_uid').value = profile.userId;
-                        fetchVHVData(profile.userId); // โหลดข้อมูลจาก Google Sheets ทันที
+                        fetchVHVData(profile.userId); 
                     });
-                } else {
-                    liff.login();
-                }
+                } else { liff.login(); }
             });
         });
 
-                        // ดึงข้อมูลผู้ใช้งานมาแสดงผล
-                async function fetchVHVData(uid) {
+        // ดึงข้อมูลผู้ใช้งานตรงจาก Firebase
+        async function fetchVHVData(uid) {
             try {
-                const response = await fetch(API_URL, {
-                    method: 'POST',
-                    body: JSON.stringify({ action: 'checkUserRegistration', uid: uid })
-                });
-                const data = await response.json();
-                
-                if (data.status === 'registered') {
-                    // [เพิ่มส่วนนี้] สร้าง Dropdown หมู่ตาม Config ก่อนเซ็ตค่า
-                    const vCount = parseInt(data.village_count) || 15;
+                const docSnap = await db.collection('VHVs').doc(String(uid)).get();
+                let vCount = 15;
+                let data = null;
+
+                if (docSnap.exists) {
+                    data = docSnap.data();
+                    vCount = parseInt(data.village_count) || 15;
+                } else {
+                    // ถ้าใน Firebase ยังไม่มี ให้ดึงจาก GAS แล้วเซ็ตค่าพื้นฐาน
+                    const response = await fetch(API_URL, { method: 'POST', body: JSON.stringify({ action: 'checkUserRegistration', uid: uid }) });
+                    data = await response.json();
+                    vCount = parseInt(data.village_count) || 15;
+                }
+
+                if (data && (data.status === 'registered' || data.status === 'Active')) {
+                    // สร้าง Dropdown หมู่บ้าน
                     const villageSelect = document.getElementById('vhv_village');
-                    if (villageSelect) {
-                        villageSelect.innerHTML = '<option value="" disabled selected>เลือกหมู่ที่ดูแล...</option>';
-                        for (let i = 1; i <= vCount; i++) {
-                            villageSelect.insertAdjacentHTML('beforeend', `<option value="${i}">หมู่ที่ ${i}</option>`);
-                        }
+                    villageSelect.innerHTML = '<option value="" disabled selected>เลือกหมู่ที่ดูแล...</option>';
+                    for (let i = 1; i <= vCount; i++) {
+                        villageSelect.insertAdjacentHTML('beforeend', `<option value="${i}">หมู่ที่ ${i}</option>`);
                     }
 
                     document.getElementById('vhv_name').value = data.name;
                     document.getElementById('vhv_phone').value = data.phone || '';
                     document.getElementById('display-name').innerText = data.name;
                     
-                    // [แก้ไขใหม่] ดักจับว่าหากล็อกอินมาด้วยสิทธิ์แอดมิน
-                    if (data.role === 'ADMIN') {
-                        document.getElementById('display-village').innerText = 'สิทธิ์ใช้งาน: เจ้าหน้าที่สาธารณสุข (ADMIN)';
-                        
-                        // สร้างตัวเลือกหน่วยงานส่วนกลาง (ADMIN) แทรกเข้าไปในกล่อง Dropdown หมู่ชั่วครู่เพื่อให้ระบบบันทึกค่าต่อได้
-                        const villageSelect = document.getElementById('vhv_village');
+                    if (String(data.role).toUpperCase() === 'ADMIN') {
+                        document.getElementById('display-village').innerText = 'สิทธิ์ใช้งาน: แอดมิน (ADMIN)';
                         const adminOption = document.createElement('option');
-                        adminOption.value = 'ADMIN';
-                        adminOption.innerText = 'เจ้าหน้าที่สาธารณสุข (ADMIN)';
+                        adminOption.value = 'ADMIN'; adminOption.innerText = 'เจ้าหน้าที่สาธารณสุข (ADMIN)';
                         villageSelect.appendChild(adminOption);
                         villageSelect.value = 'ADMIN';
                     } else {
-                        // หากเป็น อสม. ทั่วไป ให้ดึงเลขหมู่ปกติ
-                        document.getElementById('vhv_village').value = data.village;
-                        document.getElementById('display-village').innerText = 'พื้นที่: หมู่ ' + data.village;
+                        const vNum = data.village_no || data.village;
+                        document.getElementById('vhv_village').value = vNum;
+                        document.getElementById('display-village').innerText = 'พื้นที่: หมู่ ' + vNum;
                     }
                     
-                    // แสดงผลรูปภาพโปรไฟล์
-                    if (data.pic_url) {
-                        const match = data.pic_url.match(/d\/([a-zA-Z0-9_-]+)/) || data.pic_url.match(/id=([a-zA-Z0-9_-]+)/);
-                        if (match) {
-                            document.getElementById('profile-preview').innerHTML = `<img src="https://drive.google.com/thumbnail?id=${match[1]}&sz=150" class="w-full h-full object-cover">`;
-                        }
+                    const actualPicUrl = data.profile_pic || data.pic_url;
+                    if (actualPicUrl) {
+                        document.getElementById('pic_url').value = actualPicUrl;
+                        document.getElementById('profile-preview').innerHTML = `<img src="${actualPicUrl}" class="w-full h-full object-cover">`;
                     }
                 }
                 
@@ -196,65 +175,68 @@
                 document.getElementById('profile-form').classList.remove('hidden');
 
             } catch (error) {
-                alert("โหลดข้อมูลโปรไฟล์ผิดพลาด");
+                document.getElementById('loading-overlay').innerHTML = "โหลดข้อมูลโปรไฟล์ผิดพลาด";
             }
         }
 
-        // แปลงภาพถ่าย
-        function previewImage(event) {
-            const file = event.target.files[0];
-            if (file) {
-                const reader = new FileReader();
-                reader.onload = function(e) {
-                    base64Image = e.target.result.split(',')[1];
-                    document.getElementById('profile-preview').innerHTML = `<img src="${e.target.result}" class="w-full h-full object-cover">`;
-                }
-                reader.readAsDataURL(file);
-            }
+        async function syncLineProfile() {
+            try {
+                const profile = await liff.getProfile();
+                const picUrl = profile.pictureUrl;
+                if(picUrl) {
+                    document.getElementById('pic_url').value = picUrl;
+                    document.getElementById('profile-preview').innerHTML = `<img src="${picUrl}" class="w-full h-full object-cover">`;
+                    alert('ดึงรูปโปรไฟล์จากแอป LINE เรียบร้อยแล้ว (อย่าลืมกดปุ่มบันทึกด้านล่างนะครับ)');
+                } else alert('บัญชี LINE ของคุณไม่มีรูปโปรไฟล์ครับ');
+            } catch (error) { alert('ไม่สามารถดึงรูปจาก LINE ได้'); }
         }
 
-        // บันทึกการแก้ไข
+        // บันทึกการแก้ไขเข้า Firebase
         document.getElementById('profile-form').addEventListener('submit', async function(e) {
             e.preventDefault();
             const btn = document.getElementById('btn-save-profile');
             btn.innerHTML = `<div class="loader-small" style="border-bottom-color:#fff;"></div> กำลังบันทึก...`;
             btn.disabled = true;
 
-            const payload = {
-                action: 'updateVHVProfile',
-                data: {
-                    uid: document.getElementById('vhv_uid').value,
-                    name: document.getElementById('vhv_name').value,
-                    phone: document.getElementById('vhv_phone').value,
-                    village: document.getElementById('vhv_village').value,
-                    pic: base64Image
-                }
-            };
+            const uid = document.getElementById('vhv_uid').value;
+            const name = document.getElementById('vhv_name').value.trim();
+            const phone = document.getElementById('vhv_phone').value.trim();
+            const village = document.getElementById('vhv_village').value;
+            const picUrl = document.getElementById('pic_url').value;
 
             try {
-                const response = await fetch(API_URL, { method: 'POST', body: JSON.stringify(payload) });
-                const result = await response.json();
+                // 1. บันทึกเข้า Firebase ทันที
+                await db.collection('VHVs').doc(String(uid)).update({
+                    name: name,
+                    phone: phone,
+                    village_no: village,
+                    profile_pic: picUrl
+                });
 
-                if (result.success) {
-                    document.getElementById('display-name').innerText = document.getElementById('vhv_name').value;
-                    document.getElementById('display-village').innerText = 'พื้นที่: หมู่ ' + document.getElementById('vhv_village').value;
-                    
-                    btn.innerHTML = `<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">check_circle</span> บันทึกสำเร็จ`;
-                    btn.classList.replace('bg-[#00694a]', 'bg-[#22c55e]');
-                    
-                    setTimeout(() => {
-                        btn.innerHTML = `<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">save</span> บันทึกการอัปเดต`;
-                        btn.classList.replace('bg-[#22c55e]', 'bg-[#00694a]');
-                        btn.disabled = false;
-                        base64Image = ""; 
-                    }, 2000);
-                } else {
-                    alert("บันทึกไม่สำเร็จ: " + result.message);
+                // 2. แอบซิงค์ลงชีต
+                fetch(API_URL, { 
+                    method: 'POST', 
+                    body: JSON.stringify({ 
+                        action: 'updateVHVProfile', 
+                        data: { uid: uid, name: name, phone: phone, village: village, pic: picUrl } 
+                    }) 
+                }).catch(err => console.log('Silent sync profile completed.'));
+
+                document.getElementById('display-name').innerText = name;
+                document.getElementById('display-village').innerText = 'พื้นที่: หมู่ ' + village;
+                
+                btn.innerHTML = `<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">check_circle</span> บันทึกสำเร็จ`;
+                btn.classList.replace('bg-[#00694a]', 'bg-[#22c55e]');
+                
+                setTimeout(() => {
                     btn.innerHTML = `<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">save</span> บันทึกการอัปเดต`;
+                    btn.classList.replace('bg-[#22c55e]', 'bg-[#00694a]');
                     btn.disabled = false;
-                }
+                }, 2000);
+
             } catch (error) {
-                alert("เชื่อมต่อฐานข้อมูลล้มเหลว");
+                alert("เชื่อมต่อฐานข้อมูลล้มเหลว กรุณาลองใหม่");
+                btn.innerHTML = `<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">save</span> บันทึกการอัปเดต`;
                 btn.disabled = false;
             }
         });
