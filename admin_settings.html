@@ -111,8 +111,52 @@
                             <p class="text-[11px] text-blue-700 leading-relaxed">การเปลี่ยนแปลงข้อมูลในส่วนนี้จะส่งผลต่อการทำงานของระบบทั้งหมด (เช่น จำนวนหมู่บ้านที่แสดงใน Dropdown หรือเกณฑ์ราคาทรัพยากรเบิกจ่าย)</p>
                         </div>
 
-                        <div id="config-container" class="space-y-4 mb-6 max-h-[350px] overflow-y-auto pr-2">
+                        <div id="config-container" class="space-y-4 mb-6 pr-2">
+                            
+                            <!-- ลำดับที่ 1: รหัสผ่านสำหรับนักวิชาการ -->
+                            <div>
+                                <label class="block text-[12px] font-bold text-slate-700 mb-1 flex items-center gap-1.5"><span class="material-symbols-outlined text-[14px] text-slate-400">tune</span> รหัสผ่านสำหรับนักวิชาการเข้าดูแดชบอร์ด</label>
+                                <input type="text" id="config-ADMIN_SECRET_CODE" class="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-amber-500">
+                                <p class="text-[10px] text-slate-400 mt-1 font-mono bg-white inline-block px-1 py-0.5 rounded border border-slate-100">Key: ADMIN_SECRET_CODE</p>
                             </div>
+                            <!-- ลำดับที่ 2: ชื่อหน่วยงาน -->
+                            <div>
+                                <label class="block text-[12px] font-bold text-slate-700 mb-1 flex items-center gap-1.5"><span class="material-symbols-outlined text-[14px] text-slate-400">tune</span> ชื่อหน่วยงาน</label>
+                                <input type="text" id="config-HOSPITAL_NAME" class="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-amber-500">
+                                <p class="text-[10px] text-slate-400 mt-1 font-mono bg-white inline-block px-1 py-0.5 rounded border border-slate-100">Key: HOSPITAL_NAME</p>
+                            </div>
+                            <!-- ลำดับที่ 3: จำนวนหมู่ -->
+                            <div>
+                                <label class="block text-[12px] font-bold text-slate-700 mb-1 flex items-center gap-1.5"><span class="material-symbols-outlined text-[14px] text-slate-400">tune</span> จำนวนหมู่</label>
+                                <input type="number" id="config-VILLAGE_COUNT" class="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-amber-500">
+                                <p class="text-[10px] text-slate-400 mt-1 font-mono bg-white inline-block px-1 py-0.5 rounded border border-slate-100">Key: VILLAGE_COUNT</p>
+                            </div>
+                            <!-- ลำดับที่ 4: ราคาผ้าอ้อมผู้ใหญ่ -->
+                            <div>
+                                <label class="block text-[12px] font-bold text-slate-700 mb-1 flex items-center gap-1.5"><span class="material-symbols-outlined text-[14px] text-slate-400">tune</span> ราคาผ้าอ้อมผู้ใหญ่ / ชิ้น</label>
+                                <input type="number" id="config-DIAPER_PRICE" class="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-amber-500" step="0.01">
+                                <p class="text-[10px] text-slate-400 mt-1 font-mono bg-white inline-block px-1 py-0.5 rounded border border-slate-100">Key: DIAPER_PRICE</p>
+                            </div>
+                            <!-- ลำดับที่ 5: ราคาแผ่นรองซับ -->
+                            <div>
+                                <label class="block text-[12px] font-bold text-slate-700 mb-1 flex items-center gap-1.5"><span class="material-symbols-outlined text-[14px] text-slate-400">tune</span> ราคาแผ่นรองซับ / ชิ้น</label>
+                                <input type="number" id="config-UNDERPAD_PRICE" class="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-amber-500" step="0.01">
+                                <p class="text-[10px] text-slate-400 mt-1 font-mono bg-white inline-block px-1 py-0.5 rounded border border-slate-100">Key: UNDERPAD_PRICE</p>
+                            </div>
+                            <!-- ลำดับที่ 6: ID ของ LINE LIFF -->
+                            <div>
+                                <label class="block text-[12px] font-bold text-slate-700 mb-1 flex items-center gap-1.5"><span class="material-symbols-outlined text-[14px] text-slate-400">tune</span> ID ของ LINE LIFF สำหรับให้ อสม. ล็อกอิน</label>
+                                <input type="text" id="config-LINE_LIFF_ID" class="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-amber-500">
+                                <p class="text-[10px] text-slate-400 mt-1 font-mono bg-white inline-block px-1 py-0.5 rounded border border-slate-100">Key: LINE_LIFF_ID</p>
+                            </div>
+                            <!-- ลำดับที่ 7: Token LINE Dev -->
+                            <div>
+                                <label class="block text-[12px] font-bold text-slate-700 mb-1 flex items-center gap-1.5"><span class="material-symbols-outlined text-[14px] text-slate-400">tune</span> token line dev. สำหรับส่งไลน์อัตโนมัติ</label>
+                                <input type="text" id="config-LINE_CHANNEL_ACCESS_TOKEN" class="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-amber-500">
+                                <p class="text-[10px] text-slate-400 mt-1 font-mono bg-white inline-block px-1 py-0.5 rounded border border-slate-100">Key: LINE_CHANNEL_ACCESS_TOKEN</p>
+                            </div>
+
+                        </div>
 
                         <button onclick="saveSystemConfigs()" id="btn-save-config" class="w-full bg-[#00694a] hover:bg-[#005239] text-white font-bold py-3 rounded-xl shadow-lg transition-all flex justify-center items-center gap-2">
                             บันทึกการตั้งค่าระบบ
@@ -188,7 +232,6 @@
                     document.getElementById('input-prof-url').value = picUrl;
                     document.getElementById('prof-img').src = picUrl;
                 } else {
-                    // แอดมินใหม่ดึงผ่าน GAS นำทางปูพื้นฐาน
                     const response = await fetch(API_URL, { method: 'POST', body: JSON.stringify({ action: 'getUserProfile', uid: currentUserUid }) });
                     const data = await response.json();
                     if (data.success) {
@@ -227,12 +270,10 @@
             btn.disabled = true; btn.innerHTML = '<div class="loader-small border-t-white"></div> กำลังบันทึก...';
 
             try {
-                // 1. อัปเดตลงตรงคลัง Firebase
                 await db.collection('VHVs').doc(String(currentUserUid)).set({
-    name: name, phone: phone, profile_pic: pic
-}, { merge: true });
+                    name: name, phone: phone, profile_pic: pic
+                }, { merge: true });
 
-                // 2. ปล่อยซิงค์คลัง Google Sheets ทำงานเบื้องหลังเงียบๆ
                 fetch(API_URL, { 
                     method: 'POST', 
                     body: JSON.stringify({ action: 'updateUserProfile', uid: currentUserUid, name: name, phone: phone, pic: pic }) 
@@ -247,16 +288,14 @@
         // --- ส่วนที่ 2: จัดการ Config ระบบส่วนกลาง ---
         async function loadSystemConfigs() {
             try {
-                // ดึงข้อมูลการตั้งค่าจากคอลเลกชัน SystemConfig ใน Firebase
                 const snapshot = await db.collection('SystemConfig').get();
                 originalConfigs = [];
                 
                 snapshot.forEach(doc => {
                     const d = doc.data();
-                    originalConfigs.push({ key: doc.id, value: d.value, description: d.description || '' });
+                    originalConfigs.push({ key: doc.id, value: d.value });
                 });
 
-                // ถ้าในคอลเลกชัน Firebase ยังว่างเปล่า (กรณีรันครั้งแรก) ให้ดึงข้อมูลปูพื้นฐานจาก GAS ทันที
                 if (originalConfigs.length === 0) {
                     const response = await fetch(API_URL, { method: 'POST', body: JSON.stringify({ action: 'getAllSystemConfigs' }) });
                     const items = await response.json();
@@ -264,65 +303,50 @@
                     const batch = db.batch();
                     items.forEach(c => {
                         const ref = db.collection('SystemConfig').doc(String(c.key));
-                        batch.set(ref, { value: String(c.value), description: String(c.description || '') });
-                        originalConfigs.push({ key: c.key, value: String(c.value), description: String(c.description || '') });
+                        batch.set(ref, { value: String(c.value) });
+                        originalConfigs.push({ key: c.key, value: String(c.value) });
                     });
                     await batch.commit();
                 }
 
-                // เรียงลำดับเพื่อให้ลำดับการแสดงผลของกล่องข้อความเหมือนตารางเดิม
-                originalConfigs.sort((a,b) => a.key.localeCompare(b.key));
-
-                const container = document.getElementById('config-container');
-                container.innerHTML = '';
-
+                // นำค่าไปใส่ใน input ที่เรียงลำดับไว้แล้ว
                 originalConfigs.forEach(c => {
-                    const labelTitle = c.description && c.description.trim() !== '' ? c.description : c.key;
-                    container.insertAdjacentHTML('beforeend', `
-                        <div class="bg-slate-50 border border-slate-200 p-3.5 rounded-xl">
-                            <label class="block text-[12px] font-bold text-slate-700 mb-1 flex items-center gap-1.5">
-                                <span class="material-symbols-outlined text-[14px] text-slate-400">tune</span> ${labelTitle}
-                            </label>
-                            <input type="text" id="config-${c.key}" value="${c.value}" class="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg text-sm text-navy font-medium focus:ring-2 focus:ring-amber-500">
-                            <p class="text-[10px] text-slate-400 mt-1.5 font-mono bg-white inline-block px-1.5 py-0.5 rounded border border-slate-100">Key: ${c.key}</p>
-                        </div>
-                    `);
+                    const el = document.getElementById(`config-${c.key}`);
+                    if(el) el.value = c.value;
                 });
+                
                 document.getElementById('config-loading').classList.add('hidden');
             } catch (error) { alert("โหลดข้อมูลตั้งค่าล้มเหลว"); }
         }
 
         async function saveSystemConfigs() {
+            // จับคู่ Key ให้ตรงกับฐานข้อมูลเป๊ะๆ ตามที่ต้องการเรียง
+            const targetKeys = ['ADMIN_SECRET_CODE', 'HOSPITAL_NAME', 'VILLAGE_COUNT', 'DIAPER_PRICE', 'UNDERPAD_PRICE', 'LINE_LIFF_ID', 'LINE_CHANNEL_ACCESS_TOKEN'];
+            
             const configsToUpdate = [];
             const batch = db.batch();
             let hasChanges = false;
             
-            // ข้อมูลอัปเดตแบบคู่ขนานเพื่อแชร์เข้าโปรไฟล์แอดมินสำหรับหน้าประมวลผลอื่น
-            let updatedDiaperPrice = null;
-            let updatedUnderpadPrice = null;
-            let updatedVillageCount = null;
-            let updatedHospitalName = null;
+            let updatedDiaperPrice = null, updatedUnderpadPrice = null, updatedVillageCount = null, updatedHospitalName = null;
 
-            originalConfigs.forEach(c => {
-                const el = document.getElementById(`config-${c.key}`);
+            targetKeys.forEach(key => {
+                const el = document.getElementById(`config-${key}`);
                 if(el) {
                     const newVal = el.value.trim();
-                    configsToUpdate.push({ key: c.key, value: newVal });
+                    configsToUpdate.push({ key: key, value: newVal });
                     
-                    const ref = db.collection('SystemConfig').doc(String(c.key));
-                    batch.update(ref, { value: newVal });
+                    const ref = db.collection('SystemConfig').doc(String(key));
+                    batch.set(ref, { value: newVal }, { merge: true });
                     hasChanges = true;
 
-                    // ตรวจจับคีย์สำคัญเพื่อนำไปซิงค์ใส่โปรไฟล์แอดมินสำหรับหน้าจออื่นๆ
-                    if (c.key === 'diaper_price') updatedDiaperPrice = parseFloat(newVal);
-                    if (c.key === 'underpad_price') updatedUnderpadPrice = parseFloat(newVal);
-                    if (c.key === 'village_count') updatedVillageCount = parseInt(newVal);
-                    if (c.key === 'hospital_name') updatedHospitalName = newVal;
+                    if (key === 'DIAPER_PRICE') updatedDiaperPrice = parseFloat(newVal);
+                    if (key === 'UNDERPAD_PRICE') updatedUnderpadPrice = parseFloat(newVal);
+                    if (key === 'VILLAGE_COUNT') updatedVillageCount = parseInt(newVal);
+                    if (key === 'HOSPITAL_NAME') updatedHospitalName = newVal;
                 }
             });
 
             if(!hasChanges) return;
-
             const btn = document.getElementById('btn-save-config');
             btn.disabled = true; btn.innerHTML = '<div class="loader-small border-t-white"></div> กำลังบันทึก...';
 
@@ -332,27 +356,25 @@
 
                 // 2. อัปเดตคีย์สำคัญแชร์ใส่โปรไฟล์แอดมินโดยตรง เพื่อความเข้ากันได้ของระบบคำนวณงบประมาณ
                 let profileUpdateObj = {};
-                if(updatedDiaperPrice !== null) profileUpdateObj.diaper_price = updatedDiaperPrice;
-                if(updatedUnderpadPrice !== null) profileUpdateObj.underpad_price = updatedUnderpadPrice;
-                if(updatedVillageCount !== null) profileUpdateObj.village_count = updatedVillageCount;
+                if(updatedDiaperPrice !== null && !isNaN(updatedDiaperPrice)) profileUpdateObj.diaper_price = updatedDiaperPrice;
+                if(updatedUnderpadPrice !== null && !isNaN(updatedUnderpadPrice)) profileUpdateObj.underpad_price = updatedUnderpadPrice;
+                if(updatedVillageCount !== null && !isNaN(updatedVillageCount)) profileUpdateObj.village_count = updatedVillageCount;
                 if(updatedHospitalName !== null) {
                     profileUpdateObj.hospital_name = updatedHospitalName;
                     document.getElementById('sidebar-hospital-name').innerText = updatedHospitalName;
                 }
 
                 if(Object.keys(profileUpdateObj).length > 0) {
-                    await db.collection('VHVs').doc(String(currentUserUid)).update(profileUpdateObj);
+                    await db.collection('VHVs').doc(String(currentUserUid)).set(profileUpdateObj, { merge: true });
                 }
 
-                // 3. แอบส่งค่าซิงค์ลง Google Sheets หลังบ้านแบบเงียบๆ (Silent Background Sync)
+                // 3. ซิงค์ลง Google Sheets
                 fetch(API_URL, { 
-                    method: 'POST', 
-                    body: JSON.stringify({ action: 'updateSystemConfigs', configs: configsToUpdate }) 
-                }).catch(e => console.log('Config silent sync triggered.'));
+                    method: 'POST', body: JSON.stringify({ action: 'updateSystemConfigs', configs: configsToUpdate }) 
+                }).catch(e => console.log('Silent sync completed.'));
 
-                alert('บันทึกการตั้งค่าระบบส่วนกลางเข้า Firebase เรียบร้อยแล้ว!');
-                await loadSystemConfigs(); // รีโหลดเพื่อล้างค่าตัวแปรอาร์เรย์เดิมในแรม
-            } catch (error) { alert('เกิดข้อผิดพลาดในการบันทึกข้อมูล'); }
+                alert('บันทึกการตั้งค่าระบบเรียบร้อยแล้ว!');
+            } catch (error) { alert('เกิดข้อผิดพลาดในการบันทึกข้อมูล: ' + error.message); }
             
             btn.disabled = false; btn.innerHTML = 'บันทึกการตั้งค่าระบบ';
         }
