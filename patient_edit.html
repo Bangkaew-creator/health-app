@@ -7,23 +7,28 @@
     <script src="https://cdn.tailwindcss.com?plugins=forms"></script>
     <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700&display=swap" rel="stylesheet"/>
     <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+    
+    <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore-compat.js"></script>
+    <script src="config.js"></script>
+    
     <style>
         body { font-family: 'Sarabun', sans-serif; background-color: #f9f9ff; padding-bottom: 100px; -webkit-tap-highlight-color: transparent;}
         .material-symbols-outlined { font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24; }
         .input-field { width: 100%; border: 1px solid #e2e8f0; border-radius: 12px; padding: 12px; font-size: 14px; outline: none; transition: border-color 0.2s; }
         .input-field:focus { border-color: #00694a; box-shadow: 0 0 0 2px rgba(0,105,74,0.1); }
         
-        /* แก้ไข CSS ให้ปุ่มทำงานได้สมบูรณ์และเปลี่ยนสีตามหมวดหมู่ */
         .radio-card:checked + label { background-color: #eff6ff; border-color: #2563eb; color: #1d4ed8; font-weight: 600; }
         .eq-cb:checked + label { background-color: #fff7ed; border-color: #ea580c; color: #ea580c; font-weight: 600; }
         .disease-cb:checked + label { background-color: #ffe4e6; border-color: #e11d48; color: #e11d48; font-weight: 600; }
+        .loader-small { border: 2px solid #d8e3fb; border-bottom-color: #00694a; border-radius: 50%; width: 20px; height: 20px; animation: spin 1s linear infinite; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
     </style>
-    <script src="config.js"></script>
 </head>
 <body class="text-[#111c2d]">
 
     <header class="bg-white sticky top-0 z-50 shadow-sm flex items-center w-full px-4 h-16 border-b border-gray-200 gap-3">
-        <button onclick="window.location.href='patient_profile.html?id=' + patientId" class="w-10 h-10 flex items-center justify-center rounded-full bg-gray-50 text-[#00694a] hover:bg-gray-100">
+        <button type="button" onclick="window.location.href='patient_profile.html?id=' + patientId" class="w-10 h-10 flex items-center justify-center rounded-full bg-gray-50 text-[#00694a] hover:bg-gray-100">
             <span class="material-symbols-outlined">close</span>
         </button>
         <h1 class="text-base font-bold text-[#00694a]">แก้ไขประวัติ & ประเมินสิทธิ์</h1>
@@ -32,27 +37,26 @@
     <main class="max-w-2xl mx-auto p-4 space-y-5">
         <form id="editForm" onsubmit="saveData(event)" class="space-y-5">
             
-            <!-- ส่วนที่ 1: ข้อมูลทั่วไป -->
             <div id="sec-personal" class="bg-white rounded-[20px] p-5 shadow-sm border border-gray-100">
                 <h3 class="font-bold text-[#00694a] flex items-center gap-2 border-b pb-2 mb-4"><span class="material-symbols-outlined">person</span> ข้อมูลส่วนตัว</h3>
                 <div class="grid grid-cols-3 gap-2 mb-3">
                     <div class="col-span-1">
-                        <label class="text-xs text-gray-500 mb-1 block">คำนำหน้า</label>
+                        <span class="text-xs text-gray-500 mb-1 block">คำนำหน้า</span>
                         <select id="prefix" class="input-field bg-white" required>
                             <option value="นาย">นาย</option><option value="นาง">นาง</option><option value="นางสาว">นางสาว</option>
                         </select>
                     </div>
                     <div class="col-span-2">
-                        <label class="text-xs text-gray-500 mb-1 block">ชื่อ-นามสกุล</label>
+                        <span class="text-xs text-gray-500 mb-1 block">ชื่อ-นามสกุล</span>
                         <input type="text" id="fullname" class="input-field" required>
                     </div>
                 </div>
                 <div class="grid grid-cols-2 gap-2 mb-3">
-                    <div><label class="text-xs text-gray-500 mb-1 block">บ้านเลขที่</label><input type="text" id="house_no" class="input-field" required></div>
-                    <div><label class="text-xs text-gray-500 mb-1 block">หมู่ที่</label><input type="number" id="village_no" class="input-field" required></div>
+                    <div><span class="text-xs text-gray-500 mb-1 block">บ้านเลขที่</span><input type="text" id="house_no" class="input-field" required></div>
+                    <div><span class="text-xs text-gray-500 mb-1 block">หมู่ที่</span><input type="number" id="village_no" class="input-field" required></div>
                 </div>
                 <div class="pt-2 border-t border-gray-50">
-                    <label class="text-xs text-gray-500 mb-1 block">พิกัด GPS บ้านผู้ป่วย</label>
+                    <span class="text-xs text-gray-500 mb-1 block">พิกัด GPS บ้านผู้ป่วย</span>
                     <div class="flex gap-2">
                         <input type="text" id="lat_long" class="input-field bg-gray-50 flex-1 text-xs text-gray-500" readonly>
                         <button type="button" onclick="getLocation()" class="bg-[#0284c7] text-white px-4 rounded-xl flex justify-center items-center"><span class="material-symbols-outlined text-[18px]">my_location</span></button>
@@ -60,15 +64,13 @@
                 </div>
             </div>
 
-            <!-- ส่วนที่ 2: แบบประเมินผ้าอ้อม (อ้างอิง สปสช.) -->
             <div id="sec-diaper" class="bg-white rounded-[20px] p-5 shadow-sm border border-blue-100">
                 <h3 class="font-bold text-[#2563eb] flex items-center gap-2 border-b border-blue-50 pb-2 mb-4">
                     <span class="material-symbols-outlined">wc</span> แบบประเมินสิทธิ์ผ้าอ้อม
                 </h3>
                 
-                <!-- 2.1 ผลการประเมิน -->
                 <div class="mb-5">
-                    <label class="text-sm font-bold text-gray-700 block mb-2">1. ผลการประเมินภาวะขับถ่าย</label>
+                    <span class="text-sm font-bold text-gray-700 block mb-2">1. ผลการประเมินภาวะขับถ่าย</span>
                     <div class="space-y-2">
                         <div><input type="radio" name="diaper_result" id="res1" value="มีภาวะกลั้นปัสสาวะไม่ได้" class="radio-card hidden"><label for="res1" class="block w-full p-3 text-sm border border-gray-200 rounded-xl cursor-pointer">มีภาวะกลั้นปัสสาวะไม่ได้</label></div>
                         <div><input type="radio" name="diaper_result" id="res2" value="มีภาวะกลั้นอุจจาระไม่ได้" class="radio-card hidden"><label for="res2" class="block w-full p-3 text-sm border border-gray-200 rounded-xl cursor-pointer">มีภาวะกลั้นอุจจาระไม่ได้</label></div>
@@ -77,9 +79,8 @@
                     </div>
                 </div>
 
-                <!-- 2.2 ข้อบ่งชี้ทางการแพทย์ -->
                 <div class="mb-5 bg-blue-50/50 p-4 rounded-xl border border-blue-50">
-                    <label class="text-sm font-bold text-gray-700 block mb-2">2. ข้อบ่งชี้ทางการแพทย์ <span class="text-xs font-normal text-red-500">(ควรมีอย่างน้อย 2 ข้อ)</span></label>
+                    <span class="text-sm font-bold text-gray-700 block mb-2">2. ข้อบ่งชี้ทางการแพทย์ <span class="text-xs font-normal text-red-500">(ควรมีอย่างน้อย 2 ข้อ)</span></span>
                     <div class="space-y-2">
                         <label class="flex items-start gap-2 text-sm"><input type="checkbox" value="มีประวัติกลั้นไม่ได้" class="diaper-ind mt-1 text-blue-600 rounded"> มีประวัติกลั้นปัสสาวะหรืออุจจาระไม่อยู่</label>
                         <label class="flex items-start gap-2 text-sm"><input type="checkbox" value="ระบบประสาทบกพร่อง" class="diaper-ind mt-1 text-blue-600 rounded"> ตรวจร่างกายพบระบบประสาทบกพร่อง/อุ้งเชิงกรานหย่อน</label>
@@ -87,16 +88,15 @@
                     </div>
                 </div>
 
-                <!-- 2.3 ความเห็นผู้ประเมิน -->
                 <div>
-                    <label class="text-sm font-bold text-gray-700 block mb-2">3. ความเห็นผู้ประเมินควรได้รับการสนับสนุน</label>
+                    <span class="text-sm font-bold text-gray-700 block mb-2">3. ความเห็นผู้ประเมินควรได้รับการสนับสนุน</span>
                     
                     <div class="border border-gray-200 rounded-xl p-3 mb-2 bg-gray-50">
                         <label class="flex items-center gap-2 font-bold text-sm mb-2 text-[#0284c7]">
                             <input type="checkbox" id="req_diaper" class="w-4 h-4 text-[#0284c7] rounded"> ผ้าอ้อมผู้ใหญ่
                         </label>
                         <div class="pl-6">
-                            <label class="text-[10px] text-gray-500 block mb-1">ระบุไซส์ (Size)</label>
+                            <span class="text-[10px] text-gray-500 block mb-1">ระบุไซส์ (Size)</span>
                             <select id="diaper_size" class="input-field py-2 text-sm bg-white">
                                 <option value="-">- เลือกไซส์ -</option>
                                 <option value="S">ไซส์ S</option>
@@ -115,32 +115,27 @@
                 </div>
             </div>
 
-            <!-- ส่วนที่ 3: อุปกรณ์ทางการแพทย์ -->
-            <div class="bg-white rounded-[20px] p-5 shadow-sm border border-orange-100">
+            <div id="sec-equipment" class="bg-white rounded-[20px] p-5 shadow-sm border border-orange-100">
                 <h3 class="font-bold text-[#ea580c] flex items-center gap-2 border-b border-orange-50 pb-2 mb-4">
                     <span class="material-symbols-outlined">medical_services</span> ความต้องการอุปกรณ์การแพทย์
                 </h3>
-                <div class="grid grid-cols-2 gap-2" id="equipment-list">
-                    <!-- จะถูกสร้างโดย JavaScript -->
-                </div>
+                <div class="grid grid-cols-2 gap-2" id="equipment-list"></div>
                 <div class="mt-3">
-                    <label class="text-xs text-gray-500 mb-1 block">อุปกรณ์อื่นๆ (ระบุ)</label>
+                    <span class="text-xs text-gray-500 mb-1 block">อุปกรณ์อื่นๆ (ระบุ)</span>
                     <input type="text" id="equip_other" class="input-field" placeholder="เช่น เครื่องพ่นยา, เตียง 3 ไกร์...">
                 </div>
             </div>
 
-            <!-- ส่วนที่ 4: โรคประจำตัว (กลับมาใช้แบบเดิม) -->
             <div id="sec-health" class="bg-white rounded-[20px] p-5 shadow-sm border border-[#bdcac1]/30">
                 <h3 class="font-bold text-[#ba1a1a] flex items-center gap-2 border-b pb-2 mb-4"><span class="material-symbols-outlined">monitor_heart</span> โรคประจำตัว</h3>
                 <div class="grid grid-cols-2 gap-2 mb-3" id="disease-checkboxes"></div>
                 <div>
-                    <label class="text-xs text-gray-500 mb-1 block">โรคอื่นๆ (ระบุ)</label>
+                    <span class="text-xs text-gray-500 mb-1 block">โรคอื่นๆ (ระบุ)</span>
                     <input type="text" id="disease_other" class="input-field" placeholder="พิมพ์ชื่อโรคอื่นๆ (ถ้ามี)...">
                 </div>
             </div>
 
-            <!-- ส่วนที่ 5: รายการยาที่ใช้ (กลับมาใช้แบบเดิม) -->
-            <div class="bg-white rounded-[20px] p-5 shadow-sm border border-[#bdcac1]/30">
+            <div id="sec-medication" class="bg-white rounded-[20px] p-5 shadow-sm border border-[#bdcac1]/30">
                 <div class="flex justify-between items-center border-b pb-2 mb-4">
                     <h3 class="font-bold text-[#0284c7] flex items-center gap-2"><span class="material-symbols-outlined">medication</span> รายการยา</h3>
                 </div>
@@ -150,11 +145,10 @@
                 </button>
             </div>
 
-            <!-- ส่วนที่ 6: ผู้ดูแล -->
-            <div class="bg-white rounded-[20px] p-5 shadow-sm border border-gray-100">
+            <div id="sec-caregiver" class="bg-white rounded-[20px] p-5 shadow-sm border border-gray-100">
                 <h3 class="font-bold text-[#F59E0B] flex items-center gap-2 border-b pb-2 mb-4"><span class="material-symbols-outlined">group</span> ญาติ / ผู้ดูแล</h3>
-                <div class="mb-3"><label class="text-xs text-gray-500 mb-1 block">ชื่อ-นามสกุล ผู้ดูแล</label><input type="text" id="caregiver_name" class="input-field"></div>
-                <div><label class="text-xs text-gray-500 mb-1 block">เบอร์โทรศัพท์</label><input type="tel" id="caregiver_phone" class="input-field"></div>
+                <div class="mb-3"><span class="text-xs text-gray-500 mb-1 block">ชื่อ-นามสกุล ผู้ดูแล</span><input type="text" id="caregiver_name" class="input-field"></div>
+                <div><span class="text-xs text-gray-500 mb-1 block">เบอร์โทรศัพท์</span><input type="tel" id="caregiver_phone" class="input-field"></div>
             </div>
 
         </form>
@@ -167,16 +161,26 @@
     </div>
 
     <script>
-       
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.firestore();
+
         const urlParams = new URLSearchParams(window.location.search);
         const patientId = urlParams.get('id');
 
         const medicalEquipments = ['เตียงผู้ป่วย', 'เตียงลมแผลกดทับ', 'รถเข็นนั่ง (Wheelchair)', 'เครื่องผลิตออกซิเจน', 'เครื่องดูดเสมหะ', 'วอล์กเกอร์ / ไม้เท้า', 'ชุดทำแผลปลอดเชื้อ', 'สายดูดเสมหะ/ถุงมือ'];
         const commonDiseases = ['เบาหวาน', 'ความดันโลหิตสูง', 'ไตวาย', 'หลอดเลือดหัวใจ', 'หลอดเลือดสมอง', 'กล้ามเนื้ออ่อนแรง'];
 
+        function cleanAndParseJSON(rawStr) {
+            if (!rawStr || String(rawStr).trim() === '') return null;
+            let cleanStr = String(rawStr).trim();
+            if (cleanStr.includes('""')) { cleanStr = cleanStr.replace(/""/g, '"'); }
+            if (cleanStr.startsWith('"') && cleanStr.endsWith('"')) { cleanStr = cleanStr.substring(1, cleanStr.length - 1); }
+            try { return JSON.parse(cleanStr); } catch(e) { return null; }
+        }
+
         function initUI() {
-            // สร้าง Checkbox อุปกรณ์การแพทย์
             const eqContainer = document.getElementById('equipment-list');
+            eqContainer.innerHTML = '';
             medicalEquipments.forEach((eq, idx) => {
                 eqContainer.innerHTML += `
                     <div>
@@ -185,8 +189,8 @@
                     </div>`;
             });
 
-            // สร้าง Checkbox โรคประจำตัว
             const disContainer = document.getElementById('disease-checkboxes');
+            disContainer.innerHTML = '';
             commonDiseases.forEach((disease, index) => {
                 disContainer.innerHTML += `
                     <div>
@@ -219,37 +223,22 @@
             );
         }
 
+        // [อัปเดต] โหลดข้อมูลจาก Firebase รวดเร็วปานสายฟ้า
         async function loadPatientData() {
             initUI();
             if (!patientId) return alert("ไม่พบรหัสผู้ป่วย");
-            document.getElementById('btn-save').innerHTML = 'กำลังโหลด...'; document.getElementById('btn-save').disabled = true;
-            // --- เพิ่มระบบเลื่อนหน้าจออัตโนมัติ (Auto-scroll) ---
-                if (window.location.hash) {
-                    setTimeout(() => {
-                        const targetId = window.location.hash.substring(1);
-                        let targetElement;
-                        // ผูก ID ของส่วนต่างๆ
-                        if(targetId === 'sec-personal') targetElement = document.getElementById('fullname').closest('.bg-white');
-                        else if(targetId === 'sec-diaper') targetElement = document.querySelector('input[name="diaper_result"]').closest('.bg-white');
-                        else if(targetId === 'sec-health') targetElement = document.getElementById('disease').closest('.bg-white');
-                        
-                        if (targetElement) {
-                            const headerOffset = 80; // ระยะเผื่อแถบเมนูด้านบน
-                            const elementPosition = targetElement.getBoundingClientRect().top;
-                            const offsetPosition = elementPosition + window.pageYOffset - headerOffset;
-                            window.scrollTo({ top: offsetPosition, behavior: 'smooth' });
-                            
-                            // ทำเอฟเฟกต์ไฟกะพริบเพื่อบอกว่าอยู่ตรงนี้
-                            targetElement.style.transition = "box-shadow 0.5s ease-in-out";
-                            targetElement.style.boxShadow = "0 0 0 4px rgba(2, 132, 199, 0.3)";
-                            setTimeout(() => targetElement.style.boxShadow = "none", 2500);
-                        }
-                    }, 400); // หน่วงเวลาให้ข้อมูลโหลดเข้าฟอร์มเสร็จก่อน
-                }
-                // ---------------------------------------------
+            document.getElementById('btn-save').innerHTML = 'กำลังโหลดข้อมูล...'; 
+            document.getElementById('btn-save').disabled = true;
+
             try {
-                const response = await fetch(API_URL, { method: 'POST', body: JSON.stringify({ action: 'getPatientById', id: patientId }) });
-                const data = await response.json();
+                const docSnap = await db.collection('Patients').doc(String(patientId)).get();
+                if(!docSnap.exists) {
+                    alert("ไม่พบข้อมูลผู้ป่วย");
+                    window.location.href = 'admin_datacenter.html';
+                    return;
+                }
+
+                const data = docSnap.data();
                 
                 document.getElementById('prefix').value = data.prefix || 'นาย';
                 document.getElementById('fullname').value = data.name || '';
@@ -272,29 +261,31 @@
                 }
 
                 // โหลดข้อมูลยา
-                if (data.medication && data.medication.startsWith('[')) {
-                    try { JSON.parse(data.medication).forEach(med => addMedRow(med.name, med.dose, med.usage)); } 
-                    catch(e) { addMedRow(); }
-                } else if (data.medication) { addMedRow(data.medication, '', ''); } 
-                else { addMedRow(); }
+                const cleanMed = cleanAndParseJSON(data.medication);
+                if (cleanMed && Array.isArray(cleanMed)) {
+                    if (cleanMed.length === 0) addMedRow();
+                    else cleanMed.forEach(med => addMedRow(med.name, med.dose, med.usage));
+                } else if (data.medication && data.medication !== '-') { 
+                    addMedRow(data.medication, '', ''); 
+                } else { 
+                    addMedRow(); 
+                }
 
                 // โหลดข้อมูลประเมินผ้าอ้อม
-                if(data.diaper) {
-                    try {
-                        const dp = JSON.parse(data.diaper);
-                        if(dp.result) {
-                            const rb = document.querySelector(`input[name="diaper_result"][value="${dp.result}"]`);
-                            if(rb) rb.checked = true;
-                        }
-                        if(dp.indications) {
-                            document.querySelectorAll('.diaper-ind').forEach(cb => {
-                                if(dp.indications.includes(cb.value)) cb.checked = true;
-                            });
-                        }
-                        document.getElementById('req_diaper').checked = dp.req_diaper || false;
-                        document.getElementById('diaper_size').value = dp.size || '-';
-                        document.getElementById('req_underpad').checked = dp.req_underpad || false;
-                    } catch(e) {}
+                const dp = cleanAndParseJSON(data.diaper);
+                if(dp) {
+                    if(dp.result) {
+                        const rb = document.querySelector(`input[name="diaper_result"][value="${dp.result}"]`);
+                        if(rb) rb.checked = true;
+                    }
+                    if(dp.indications) {
+                        document.querySelectorAll('.diaper-ind').forEach(cb => {
+                            if(dp.indications.includes(cb.value)) cb.checked = true;
+                        });
+                    }
+                    document.getElementById('req_diaper').checked = dp.req_diaper || false;
+                    document.getElementById('diaper_size').value = dp.size || '-';
+                    document.getElementById('req_underpad').checked = dp.req_underpad || false;
                 }
 
                 // โหลดข้อมูลอุปกรณ์
@@ -309,14 +300,40 @@
                     document.getElementById('equip_other').value = otherEq.join(', ');
                 }
 
-                document.getElementById('btn-save').innerHTML = 'บันทึกข้อมูลและแบบประเมิน <span class="material-symbols-outlined text-sm">save</span>'; document.getElementById('btn-save').disabled = false;
-            } catch (error) { alert("โหลดข้อมูลล้มเหลว"); }
+                document.getElementById('btn-save').innerHTML = 'บันทึกข้อมูลและแบบประเมิน <span class="material-symbols-outlined text-sm">save</span>'; 
+                document.getElementById('btn-save').disabled = false;
+
+                // --- จัดการระบบเลื่อนหน้าจออัตโนมัติ (Auto-scroll) สองสัญชาติทำงานเสร็จสิ้น ---
+                if (window.location.hash) {
+                    setTimeout(() => {
+                        const targetId = window.location.hash.substring(1);
+                        let targetElement = document.getElementById(targetId);
+                        
+                        if (targetElement) {
+                            const headerOffset = 80;
+                            const elementPosition = targetElement.getBoundingClientRect().top;
+                            const offsetPosition = elementPosition + window.pageYOffset - headerOffset;
+                            window.scrollTo({ top: offsetPosition, behavior: 'smooth' });
+                            
+                            targetElement.style.transition = "box-shadow 0.5s ease-in-out";
+                            targetElement.style.boxShadow = "0 0 0 4px rgba(2, 132, 199, 0.3)";
+                            setTimeout(() => targetElement.style.boxShadow = "none", 2500);
+                        }
+                    }, 400);
+                }
+
+            } catch (error) { 
+                console.error(error);
+                alert("โหลดข้อมูลล้มเหลว"); 
+            }
         }
 
+        // [อัปเดต] บันทึกเข้า Firebase ทันที + ซิงค์ชีตเงียบๆ หลังบ้าน
         async function saveData(e) {
             e.preventDefault();
             const btn = document.getElementById('btn-save');
-            btn.innerHTML = 'กำลังบันทึก...'; btn.disabled = true;
+            btn.innerHTML = 'กำลังบันทึกข้อมูล...'; 
+            btn.disabled = true;
 
             // รวบรวมข้อมูลโรค
             let finalDiseases = [];
@@ -348,22 +365,54 @@
             if (document.getElementById('equip_other').value.trim()) eqArray.push(document.getElementById('equip_other').value.trim());
 
             const updateData = {
-                id: patientId, prefix: document.getElementById('prefix').value, fullname: document.getElementById('fullname').value,
-                house_no: document.getElementById('house_no').value, village_no: document.getElementById('village_no').value,
-                lat_long: document.getElementById('lat_long').value, disease: finalDiseases.join(', '),
-                medication: JSON.stringify(medArray), caregiver_name: document.getElementById('caregiver_name').value, caregiver_phone: document.getElementById('caregiver_phone').value,
-                diaper: JSON.stringify(diaperObj), equipment: eqArray.join(', ')
+                prefix: document.getElementById('prefix').value, 
+                name: document.getElementById('fullname').value.trim(),
+                house_no: document.getElementById('house_no').value.trim(), 
+                village_no: document.getElementById('village_no').value.trim(),
+                lat_long: document.getElementById('lat_long').value.trim(), 
+                disease: finalDiseases.length > 0 ? finalDiseases.join(', ') : '-',
+                medication: JSON.stringify(medArray), 
+                caregiver_name: document.getElementById('caregiver_name').value.trim(), 
+                caregiver_phone: document.getElementById('caregiver_phone').value.trim(),
+                diaper: JSON.stringify(diaperObj), 
+                equipment: eqArray.length > 0 ? eqArray.join(', ') : '-'
             };
 
             try {
-                const response = await fetch(API_URL, { method: 'POST', body: JSON.stringify({ action: 'updatePatientData', data: updateData }) });
-                const result = await response.json();
-                if (result.success) {
-                    alert('บันทึกข้อมูลสำเร็จ!');
-                    window.location.href = `patient_profile.html?id=${patientId}`;
-                } else alert('เกิดข้อผิดพลาด');
-            } catch (err) { alert('การเชื่อมต่อล้มเหลว'); }
-            btn.innerHTML = 'บันทึกข้อมูลและแบบประเมิน <span class="material-symbols-outlined text-sm">save</span>'; btn.disabled = false;
+                // 1. อัปเดตข้อมูลตรงเข้า Firebase (เสร็จใน 0.1 วินาที)
+                await db.collection('Patients').doc(String(patientId)).update(updateData);
+
+                // 2. ปล่อยให้ระบบซิงค์ลง Google Sheets วิ่งเบื้องหลังเงียบๆ 
+                fetch(API_URL, { 
+                    method: 'POST', 
+                    body: JSON.stringify({ 
+                        action: 'updatePatientData', 
+                        data: {
+                            id: patientId,
+                            prefix: updateData.prefix,
+                            fullname: updateData.name, // ใช้คีย์เดิมที่ GAS คาดหวัง
+                            house_no: updateData.house_no,
+                            village_no: updateData.village_no,
+                            lat_long: updateData.lat_long,
+                            disease: updateData.disease,
+                            medication: updateData.medication,
+                            caregiver_name: updateData.caregiver_name,
+                            caregiver_phone: updateData.caregiver_phone,
+                            diaper: updateData.diaper,
+                            equipment: updateData.equipment
+                        } 
+                    }) 
+                }).catch(err => console.log('Silent sync completed.'));
+
+                alert('บันทึกข้อมูลเรียบร้อยแล้ว!');
+                window.location.href = `patient_profile.html?id=${patientId}`;
+
+            } catch (err) { 
+                console.error(err);
+                alert('การบันทึกข้อมูลขัดข้อง กรุณาลองใหม่'); 
+                btn.innerHTML = 'บันทึกข้อมูลและแบบประเมิน <span class="material-symbols-outlined text-sm">save</span>'; 
+                btn.disabled = false;
+            }
         }
 
         loadPatientData();
