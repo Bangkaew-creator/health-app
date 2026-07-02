@@ -123,34 +123,39 @@
             });
         });
 
-        // ดึงข้อมูลผู้ใช้งานตรงจาก Firebase
+        // ดึงข้อมูลผู้ใช้งานตรงจาก Firebase และดึงจำนวนหมู่จาก Config
         async function fetchVHVData(uid) {
             try {
                 const docSnap = await db.collection('VHVs').doc(String(uid)).get();
                 let vCount = 15;
                 let data = null;
 
+                // 1. ดึงจำนวนหมู่บ้าน (VILLAGE_COUNT) จากตารางตั้งค่าส่วนกลาง
+                try {
+                    const sysSnap = await db.collection('SystemConfig').doc('VILLAGE_COUNT').get();
+                    if(sysSnap.exists) vCount = parseInt(sysSnap.data().value) || 15;
+                } catch(e) { console.log("โหลด Config หมู่บ้านไม่สำเร็จ ใช้ค่า 15 แทน"); }
+
+                // 2. ดึงข้อมูลส่วนตัวของ อสม.
                 if (docSnap.exists) {
                     data = docSnap.data();
-                    vCount = parseInt(data.village_count) || 15;
                 } else {
-                    // ถ้าใน Firebase ยังไม่มี ให้ดึงจาก GAS แล้วเซ็ตค่าพื้นฐาน
+                    // ถ้าใน Firebase ยังไม่มี ให้ดึงจาก GAS
                     const response = await fetch(API_URL, { method: 'POST', body: JSON.stringify({ action: 'checkUserRegistration', uid: uid }) });
                     data = await response.json();
-                    vCount = parseInt(data.village_count) || 15;
                 }
 
-                if (data && (data.status === 'registered' || data.status === 'Active')) {
-                    // สร้าง Dropdown หมู่บ้าน
+                if (data && (data.status === 'registered' || data.status === 'Active' || docSnap.exists)) {
+                    // 3. สร้าง Dropdown หมู่บ้านตามจำนวนจริงที่ดึงได้จากข้อ 1
                     const villageSelect = document.getElementById('vhv_village');
                     villageSelect.innerHTML = '<option value="" disabled selected>เลือกหมู่ที่ดูแล...</option>';
                     for (let i = 1; i <= vCount; i++) {
                         villageSelect.insertAdjacentHTML('beforeend', `<option value="${i}">หมู่ที่ ${i}</option>`);
                     }
 
-                    document.getElementById('vhv_name').value = data.name;
+                    document.getElementById('vhv_name').value = data.name || '';
                     document.getElementById('vhv_phone').value = data.phone || '';
-                    document.getElementById('display-name').innerText = data.name;
+                    document.getElementById('display-name').innerText = data.name || 'ไม่ระบุชื่อ';
                     
                     if (String(data.role).toUpperCase() === 'ADMIN') {
                         document.getElementById('display-village').innerText = 'สิทธิ์ใช้งาน: แอดมิน (ADMIN)';
@@ -160,8 +165,8 @@
                         villageSelect.value = 'ADMIN';
                     } else {
                         const vNum = data.village_no || data.village;
-                        document.getElementById('vhv_village').value = vNum;
-                        document.getElementById('display-village').innerText = 'พื้นที่: หมู่ ' + vNum;
+                        document.getElementById('vhv_village').value = vNum || '';
+                        document.getElementById('display-village').innerText = 'พื้นที่: หมู่ ' + (vNum || '-');
                     }
                     
                     const actualPicUrl = data.profile_pic || data.pic_url;
@@ -175,6 +180,7 @@
                 document.getElementById('profile-form').classList.remove('hidden');
 
             } catch (error) {
+                console.error(error);
                 document.getElementById('loading-overlay').innerHTML = "โหลดข้อมูลโปรไฟล์ผิดพลาด";
             }
         }
