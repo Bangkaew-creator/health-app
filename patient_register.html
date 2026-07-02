@@ -174,14 +174,6 @@
         }
     });
 
-    document.getElementById('camera-input').addEventListener('change', function(e) {
-        if(e.target.files.length > 0) {
-            const statusText = document.getElementById('ocr-status');
-            statusText.classList.remove('hidden');
-            statusText.innerText = "รูปถ่ายพร้อมแล้ว! (เตรียมส่งทำ OCR ในเฟสถัดไป)";
-        }
-    });
-
     document.getElementById('btn-gps').addEventListener('click', function() {
         const btn = this;
         btn.innerHTML = `<div class="loader-small border-b-[#526069]"></div> กำลังค้นหาตำแหน่ง...`;
