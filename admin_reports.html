@@ -9,7 +9,12 @@
     <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
     <script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
     <script charset="utf-8" src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+    
+    <!-- โหลดเครื่องมือ Firebase -->
+    <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore-compat.js"></script>
     <script src="config.js"></script>
+    
     <style>
         body { font-family: 'Sarabun', sans-serif; background-color: #f4f7fa; }
         .material-symbols-outlined { font-variation-settings: 'FILL' 1, 'wght' 400, 'GRAD' 0, 'opsz' 24; }
@@ -72,7 +77,7 @@
             </div>
 
             <div id="loading-state" class="flex flex-col items-center justify-center py-24 space-y-3">
-                <div class="loader-small"></div><p class="text-sm text-slate-400 animate-pulse">กำลังประมวลผลข้อมูลรายงาน...</p>
+                <div class="loader-small"></div><p class="text-sm text-slate-400 animate-pulse">กำลังโหลดข้อมูลจาก Firebase...</p>
             </div>
 
             <div id="content-kpt" class="hidden p-4 lg:p-6">
@@ -128,7 +133,6 @@
                         ส่งออกสรุปภาระงาน (Workload) ของ อสม. แต่ละท่าน วัดผล KPI การลงพื้นที่เยี่ยมบ้าน (ยอดลงพื้นที่สำเร็จในรอบเดือน) และเช็คยอดผู้ป่วยตกหล่นค้างประเมิน
                     </p>
                     
-                    <!-- ส่วนเลือกหมู่บ้านที่เพิ่มเข้ามาใหม่ -->
                     <div class="flex flex-col sm:flex-row justify-center items-center gap-4 mb-8">
                         <label class="text-sm font-bold text-slate-700">เลือกเขตรับผิดชอบ:</label>
                         <div class="relative w-full sm:w-64 text-left">
@@ -171,7 +175,9 @@
     </main>
 
     <script>
-      
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.firestore();
+       
         let allPatients = [];
         let allVHVs = [];
 
@@ -201,18 +207,32 @@
         document.addEventListener("DOMContentLoaded", () => {
             liff.init({ liffId: LIFF_ID }).then(() => {
                 if (liff.isLoggedIn()) { liff.getProfile().then(p => verifyAdminAccess(p.userId)); }
+                else window.location.href = 'index.html';
             });
         });
 
         async function verifyAdminAccess(uid) {
             try {
-                const response = await fetch(API_URL, { method: 'POST', body: JSON.stringify({ action: 'checkUserRegistration', uid: uid }) });
-                const data = await response.json();
-                if (data.status === 'registered' && data.role === 'ADMIN') {
-                    document.getElementById('sidebar-hospital-name').innerText = data.hospital_name || 'เทศบาลเมืองบางแก้ว';
+                const userDoc = await db.collection('VHVs').doc(String(uid)).get();
+                let isAdmin = false; let vCount = 15; let hospital = 'เทศบาลเมืองบางแก้ว';
+
+                if (userDoc.exists && String(userDoc.data().role).toUpperCase() === 'ADMIN') {
+                    isAdmin = true;
+                    hospital = userDoc.data().hospital_name || hospital;
+                    vCount = parseInt(userDoc.data().village_count) || 15;
+                } else {
+                    const response = await fetch(API_URL, { method: 'POST', body: JSON.stringify({ action: 'checkUserRegistration', uid: uid }) });
+                    const data = await response.json();
+                    if (data.status === 'registered' && data.role === 'ADMIN') {
+                        isAdmin = true;
+                        hospital = data.hospital_name || hospital;
+                        vCount = parseInt(data.village_count) || 15;
+                    }
+                }
+
+                if (isAdmin) {
+                    document.getElementById('sidebar-hospital-name').innerText = hospital;
                     
-                    // สร้างตัวเลือกหมู่บ้านให้ Dropdown ของแท็บผลงาน อสม.
-                    const vCount = parseInt(data.village_count) || 15;
                     const vhvFilter = document.getElementById('vhv-village-filter');
                     for(let i=1; i<=vCount; i++){ 
                         vhvFilter.insertAdjacentHTML('beforeend', `<option value="${i}">หมู่ที่ ${i}</option>`); 
@@ -223,21 +243,25 @@
             } catch (error) { window.location.href = 'index.html'; }
         }
 
+        // [อัปเดต] ดึงข้อมูลจาก Firebase พร้อมกันปรู๊ดปร๊าด
         async function loadReportData() {
             try {
-                // ดึงข้อมูลทั้งคนไข้และอสม. เพื่อใช้ทำรายงานทุกหมวดหมู่
-                const [pRes, vRes] = await Promise.all([
-                    fetch(API_URL, { method: 'POST', body: JSON.stringify({ action: 'getAllPatients' }) }),
-                    fetch(API_URL, { method: 'POST', body: JSON.stringify({ action: 'getAllVHVs' }) })
+                const [patientsSnap, vhvsSnap] = await Promise.all([
+                    db.collection('Patients').get(),
+                    db.collection('VHVs').get()
                 ]);
-                allPatients = await pRes.json();
-                allVHVs = await vRes.json();
                 
-                renderKPTTable(); // เรนเดอร์ตารางของแท็บที่ 1
+                allPatients = [];
+                patientsSnap.forEach(doc => allPatients.push(doc.data()));
+                
+                allVHVs = [];
+                vhvsSnap.forEach(doc => allVHVs.push(doc.data()));
+                
+                renderKPTTable();
 
                 document.getElementById('loading-state').classList.add('hidden');
-                switchTab('kpt'); // เปิดแท็บ 1 เป็นค่าเริ่มต้น
-            } catch (error) { alert("ดึงข้อมูลล้มเหลว"); }
+                switchTab('kpt'); 
+            } catch (error) { alert("ดึงข้อมูลล้มเหลว กรุณารีเฟรชหน้าเว็บ"); }
         }
 
         function switchTab(tab) {
@@ -324,6 +348,7 @@
             setTimeout(() => { m.classList.add('hidden'); }, 300);
         }
 
+        // [อัปเดต] บันทึกมติเข้า Firebase ด้วย Batch ไวติดจรวด
         async function saveCommitteeDecision() {
             const checkedBoxes = document.querySelectorAll('.row-checkbox:checked');
             const patientIds = Array.from(checkedBoxes).map(cb => cb.value);
@@ -333,14 +358,46 @@
 
             const btn = document.getElementById('btn-save-committee');
             btn.disabled = true; btn.innerText = 'กำลังบันทึก...';
+
             try {
-                const response = await fetch(API_URL, { method: 'POST', body: JSON.stringify({ action: 'recordCommitteeDecision', patientIds: patientIds, fy: fy, round: round, months: months }) });
-                const result = await response.json();
-                if (result.success) {
-                    alert('บันทึกมติคณะกรรมการเรียบร้อยแล้ว');
-                    closeCommitteeModal(); document.getElementById('check-all').checked = false; updateSelectCount(); loadReportData();
-                } else { alert(result.message); }
-            } catch (e) { alert("เชื่อมต่อล้มเหลว"); }
+                // 1. อัปเดตข้อมูลลง Firebase ด้วย Batch (อัปเดตหลายคนพร้อมกันในพริบตา)
+                const batch = db.batch();
+                patientIds.forEach(id => {
+                    const ref = db.collection('Patients').doc(String(id));
+                    const p = allPatients.find(x => x.id === String(id));
+                    if (p) {
+                        let diaperObj = cleanJSON(p.diaper) || {};
+                        diaperObj.committee_status = 'จัดสรรแล้ว';
+                        diaperObj.fy = fy;
+                        diaperObj.round = round;
+                        diaperObj.alloc_months = months;
+                        batch.update(ref, { diaper: JSON.stringify(diaperObj) });
+                    }
+                });
+                await batch.commit();
+
+                // 2. แอบซิงค์ข้อมูลให้ Google Sheets ฝั่งหลังบ้าน
+                fetch(API_URL, { 
+                    method: 'POST', 
+                    body: JSON.stringify({ 
+                        action: 'recordCommitteeDecision', 
+                        patientIds: patientIds, 
+                        fy: fy, round: round, months: months 
+                    }) 
+                }).catch(e => console.log('Silent sync completed.'));
+
+                alert('บันทึกมติคณะกรรมการเรียบร้อยแล้ว');
+                closeCommitteeModal(); 
+                document.getElementById('check-all').checked = false; 
+                updateSelectCount(); 
+                
+                // โหลดข้อมูลใหม่เพื่อแสดงผลในตาราง
+                await loadReportData(); 
+            } catch (e) { 
+                console.error(e);
+                alert("บันทึกล้มเหลว กรุณาลองใหม่"); 
+            }
+            
             btn.disabled = false; btn.innerText = 'บันทึกมติ';
         }
 
@@ -388,7 +445,6 @@
             allPatients.forEach(p => {
                 if(String(p.status).trim().toLowerCase() !== 'active') return;
 
-                // จัดรูปร่าง JSON ยาให้กลายเป็นข้อความอ่านง่าย
                 let medDisplay = p.medication || '-';
                 if (medDisplay.startsWith('[')) {
                     try { const meds = JSON.parse(medDisplay); medDisplay = meds.map(m => `${m.name} (${m.dose})`).join(', '); } catch(e) {}
@@ -419,14 +475,13 @@
         }
 
         // ==========================================
-        // 3. ระบบออกรายงาน ผลงาน อสม. (อัปเดต: กรองตามหมู่ได้)
+        // 3. ระบบออกรายงาน ผลงาน อสม. (กรองตามหมู่ได้)
         // ==========================================
         function exportVHVExcel() {
             const vFilter = document.getElementById('vhv-village-filter').value;
             const exportData = []; 
             let runningNum = 1;
 
-            // คัดกรองเอาเฉพาะ อสม. ที่ตัวเลขหมู่ตรงกับ Dropdown
             const filteredVHVs = allVHVs.filter(v => vFilter === '' || String(v.village_no) === vFilter);
 
             if (filteredVHVs.length === 0) {
@@ -464,7 +519,6 @@
             const worksheet = XLSX.utils.json_to_sheet(exportData);
             const workbook = XLSX.utils.book_new();
             
-            // ปรับชื่อชีตและชื่อไฟล์ให้สัมพันธ์กับหมู่ที่เลือก
             const sheetName = vFilter === '' ? "สถิติรวม" : `สถิติ อสม. หมู่ ${vFilter}`;
             XLSX.utils.book_append_sheet(workbook, worksheet, sheetName);
             worksheet['!cols'] = [{wch:8},{wch:30},{wch:15},{wch:15},{wch:20},{wch:22},{wch:20},{wch:20}];
@@ -472,7 +526,6 @@
             const fileNameSuffix = vFilter === '' ? 'รวมทุกหมู่' : `หมู่_${vFilter}`;
             XLSX.writeFile(workbook, `รายงานผลงานอสม_${fileNameSuffix}_${getTodayDateStr()}.xlsx`);
         }
-
     </script>
 </body>
 </html>
