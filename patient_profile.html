@@ -40,7 +40,7 @@
         
         <div id="loading-state" class="flex flex-col items-center justify-center py-16 space-y-4">
             <div class="loader-small"></div>
-            <p class="text-[#526069] text-sm animate-pulse">กำลังดึงข้อมูลประวัติจากระบบ...</p>
+            <p class="text-[#526069] text-sm animate-pulse">กำลังโหลดประวัติจาก Firebase...</p>
         </div>
 
         <div id="profile-content" class="hidden space-y-4">
@@ -221,9 +221,9 @@
 
         const urlParams = new URLSearchParams(window.location.search);
         const patientId = urlParams.get('id');
-        let currentUserRole = 'VHV'; // ตัวแปรเก็บสิทธิ์ผู้ใช้งาน
+        let currentUserRole = 'VHV';
 
-        // ฟังก์ชันอัจฉริยะ: ย้อนกลับไปหน้าที่ถูกต้องตามสิทธิ์และที่มา
+        // กลับหน้าเดิมให้ถูกตามสิทธิ์
         function goBackToList() {
             if (currentUserRole === 'ADMIN') {
                 if (document.referrer.includes('admin_delegation.html')) {
@@ -236,7 +236,6 @@
             }
         }
         
-        // โหลดข้อมูลสิทธิ์ทันทีที่เปิดหน้า
         document.addEventListener("DOMContentLoaded", () => {
             liff.init({ liffId: LIFF_ID }).then(() => {
                 if (liff.isLoggedIn()) {
@@ -247,7 +246,6 @@
             });
         });
 
-        // [อัปเดต] เช็คสิทธิ์ Hybrid แบบรวดเร็ว
         async function checkUserRole(uid) {
             try {
                 const userDoc = await db.collection('VHVs').doc(String(uid)).get();
@@ -281,7 +279,6 @@
             setTimeout(() => modal.classList.add('hidden'), 300);
         }
 
-        // [อัปเดต] โหลดข้อมูลประวัติจาก Firebase โดยตรง (เร็วสุดๆ)
         async function loadPatientProfile() {
             if (!patientId) { goBackToList(); return; }
             try {
@@ -296,7 +293,6 @@
                 
                 const data = docSnap.data();
 
-                // โหลดข้อมูลพื้นฐาน
                 const profileUrl = getDriveImageUrl(data.profile_pic);
                 if (profileUrl) document.getElementById('profile-initial').innerHTML = `<img src="${profileUrl}" class="w-full h-full object-cover">`;
                 else document.getElementById('profile-initial').innerText = data.name ? data.name.substring(0, 1) : '?';
@@ -314,7 +310,6 @@
                     mapLink.classList.remove('hidden');
                 }
 
-                // สรุป ADL/DEP
                 document.getElementById('profile-adl').innerText = (data.adl !== "" && data.adl !== null && data.adl !== undefined) ? data.adl : '-';
                 if (data.last_assess && data.last_assess !== '-') document.getElementById('profile-last-assess').innerText = `(${data.last_assess})`;
                 
@@ -332,7 +327,6 @@
                 else if (depStatus.includes('ปานกลาง')) depBadge.className = "bg-[#f97316] text-white px-3 py-1 rounded-full text-xs font-bold inline-block mt-1 shadow-sm";
                 else if (depStatus.includes('รุนแรง')) depBadge.className = "bg-[#ba1a1a] text-white px-3 py-1 rounded-full text-xs font-bold inline-block mt-1 shadow-sm";
 
-                // โหลดข้อมูลโรค ยา และสิทธิ์ผ้าอ้อม
                 document.getElementById('profile-disease').innerText = data.disease || '-';
                 const medContainer = document.getElementById('profile-medication');
                 if (data.medication && typeof data.medication === 'string' && data.medication.startsWith('[')) {
@@ -401,14 +395,31 @@
             } catch (error) { console.error(error); alert("โหลดข้อมูลล้มเหลว กรุณาลองใหม่"); }
         }
 
-        // โหลดกราฟจาก Google Sheets (เพราะประวัติเก่ายังอยู่ในระบบเดิม)
+        // [อัปเดตสุดๆ] ดึงกราฟจาก Firebase โดยตรง (เร็วทันใจ ไม่ต้องรอ GAS)
         async function loadAllCharts() {
             try {
-                const [vitalsRes, assessRes] = await Promise.all([ 
-                    fetch(API_URL, { method: 'POST', body: JSON.stringify({ action: 'getVitals', id: patientId }) }), 
-                    fetch(API_URL, { method: 'POST', body: JSON.stringify({ action: 'getAssessments', id: patientId }) }) 
+                // ยิงคำสั่งดึง Vitals และ Assessments ของคนไข้ออกมาพร้อมกันเลย
+                const [vitalsSnap, assessSnap] = await Promise.all([ 
+                    db.collection('Vitals').where('patient_id', '==', String(patientId)).get(),
+                    db.collection('Assessments').where('patient_id', '==', String(patientId)).get()
                 ]);
-                const vitals = await vitalsRes.json(); const assessments = await assessRes.json();
+                
+                const vitals = [];
+                vitalsSnap.forEach(doc => vitals.push(doc.data()));
+                
+                const assessments = [];
+                assessSnap.forEach(doc => assessments.push(doc.data()));
+
+                // ฟังก์ชันจัดเรียงวันที่ให้กราฟแสดงตามลำดับเวลาถูกต้อง
+                const parseThaiDate = (dateStr) => {
+                    if(!dateStr) return 0;
+                    if(dateStr.includes('T')) return new Date(dateStr).getTime();
+                    const parts = dateStr.split(' ')[0].split('/');
+                    if(parts.length >= 3) return new Date(parts[2], parts[1]-1, parts[0]).getTime();
+                    return 0;
+                };
+                vitals.sort((a,b) => parseThaiDate(a.date) - parseThaiDate(b.date));
+                assessments.sort((a,b) => parseThaiDate(a.date) - parseThaiDate(b.date));
 
                 const formatLabel = (dateStr) => {
                     if (!dateStr) return '';
@@ -454,7 +465,6 @@
         function startADL() { window.location.href = `adl_assessment.html?id=${patientId}`; }
         function startDepression() { window.location.href = `depression_assessment.html?id=${patientId}`; }
         
-        // สั่งให้เริ่มดึงข้อมูลทันที
         loadPatientProfile(); 
         loadAllCharts();
 
@@ -478,7 +488,6 @@
             }, 300);
         }
 
-        // [อัปเดต] การเปลี่ยนสถานะ (Soft Delete) อัปเดตลง Firebase ทันที
         async function savePatientStatus() {
             const selectedStatus = document.querySelector('input[name="patient_status"]:checked');
             if (!selectedStatus) return alert('กรุณาเลือกสถานะใหม่ที่ต้องการเปลี่ยนครับ');
@@ -489,12 +498,10 @@
             btn.disabled = true;
 
             try {
-                // 1. อัปเดตข้อมูลสถานะลง Firebase (คอลัมน์ status จะถูกเปลี่ยน ทำให้โดนเตะออกจากระบบแจ้งเตือนโดยปริยาย)
                 await db.collection('Patients').doc(String(patientId)).update({ 
                     status: newStatus 
                 });
                 
-                // 2. ปล่อยให้มันไปแก้ข้อมูลใน Google Sheets แบบเงียบๆ เป็นการทำ Soft Delete ตามที่คุณเคยระบุไว้
                 fetch(API_URL, {
                     method: 'POST',
                     headers: { 'Content-Type': 'text/plain;charset=utf-8' },
