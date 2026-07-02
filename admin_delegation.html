@@ -420,7 +420,35 @@
             return `${dd}/${mm}/${yyyy}`;
         }
 
-        async function saveAssignment(patientId) {
+function F_updatePatientVHV(id, vhvId, taskDesc, pNameReq, pHouseReq, pVillageReq) {
+  const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('Patients');
+  const data = sheet.getDataRange().getValues();
+  const headers = data[0].map(h => String(h).trim().toLowerCase());
+  const colId = headers.indexOf('patient_id');
+  const colName = headers.indexOf('name');
+  const colHouse = headers.indexOf('house_no');
+  const colVillage = headers.indexOf('village_no');
+  const colAssignedVHV = headers.indexOf('assigned_vhv_id');
+
+  // ใช้ชื่อคนไข้จากหน้าเว็บ (Firebase) เป็นหลัก ถ้าไม่มีค่อยใช้ค่าจาก Sheet
+  let pName = pNameReq || 'ไม่ระบุชื่อ';
+  let pHouse = pHouseReq || '-';
+  let pVillage = pVillageReq || '-';
+
+  if (colId !== -1 && colAssignedVHV !== -1) {
+    for (let i = 1; i < data.length; i++) {
+      if (String(data[i][colId]) === String(id)) {
+        sheet.getRange(i + 1, colAssignedVHV + 1).setValue(String(vhvId).trim());
+        // ถ้าหน้าเว็บไม่ได้ส่งชื่อมา ให้ดึงจาก Sheet
+        if (!pNameReq && colName > -1) pName = data[i][colName] || pName;
+        if (!pHouseReq && colHouse > -1) pHouse = data[i][colHouse] || pHouse;
+        if (!pVillageReq && colVillage > -1) pVillage = data[i][colVillage] || pVillage;
+        break; // อัปเดตชีตเสร็จแล้ว ออกจากลูปได้เลย ไม่ต้องรอให้จบ
+      }
+    }
+  }
+
+             async function saveAssignment(patientId) {
             const vhvId = document.getElementById(`select_${patientId}`).value;
             const checkedTasks = Array.from(document.querySelectorAll(`.task-check-${patientId}:checked`)).map(cb => cb.value);
 
@@ -432,22 +460,38 @@
 
             try {
                 const taskDesc = checkedTasks.join(', ');
-                const todayStr = getTodayString(); // สร้างวันเวลาที่สั่งงาน
+                const todayStr = getTodayString(); 
+                
+                // ดึงชื่อและที่อยู่จาก Firebase ที่หน้าเว็บมีอยู่แล้ว เพื่อส่งไปให้ LINE เลย
+                const p = allPatients.find(x => x.id === patientId);
+                const pName = p ? p.name : 'ไม่ระบุชื่อ';
+                const pHouse = p ? p.house_no : '-';
+                const pVillage = p ? p.village_no : '-';
 
                 await db.collection('Patients').doc(String(patientId)).update({ 
                     assigned_vhv_id: String(vhvId),
                     needs_assessment: true,
                     task_desc: taskDesc,
                     tasks_required: checkedTasks,
-                    task_date: todayStr // บันทึกวันที่สั่งงานลงไปเพื่อใช้เช็คความคืบหน้า
+                    task_date: todayStr
                 });
                 
                 alert('มอบหมายงานสำเร็จ! (ระบบกำลังส่งแจ้งเตือน LINE ให้ อสม. เบื้องหลัง)');
                 loadDataChannels();
                 
+                // สั่งยิง LINE และส่งชื่อคนไข้ไปด้วยเลย (เพิ่ม header ป้องกันเน็ตบล็อก)
                 fetch(API_URL, { 
                     method: 'POST', 
-                    body: JSON.stringify({ action: 'updatePatientVHV', id: patientId, vhvId: vhvId, taskDesc: taskDesc }) 
+                    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+                    body: JSON.stringify({ 
+                        action: 'updatePatientVHV', 
+                        id: patientId, 
+                        vhvId: vhvId, 
+                        taskDesc: taskDesc,
+                        pName: pName,
+                        pHouse: pHouse,
+                        pVillage: pVillage
+                    }) 
                 }).catch(e => console.log("แจ้งเตือน LINE ล้มเหลว แต่บันทึกข้อมูลแล้ว"));
 
             } catch(e) { 
