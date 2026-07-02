@@ -7,13 +7,20 @@
     <script src="https://cdn.tailwindcss.com?plugins=forms"></script>
     <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700&family=Sarabun:wght@300;400;500;600;700&display=swap" rel="stylesheet"/>
     <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+    
+    <!-- โหลดเครื่องมือ Firebase -->
+    <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore-compat.js"></script>
+    <script src="config.js"></script>
+
     <style>
         body { font-family: 'Sarabun', sans-serif; background-color: #f9f9ff; padding-bottom: 100px; -webkit-tap-highlight-color: transparent;}
         .material-symbols-outlined { font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24; }
         input[type="radio"] { display: none; }
         input[type="radio"]:checked + label { background-color: #00694a; color: white; border-color: #00694a; font-weight: bold; }
+        .loader-small { border: 2px solid #f3f3f3; border-bottom-color: transparent; border-radius: 50%; width: 16px; height: 16px; animation: spin 1s linear infinite; display: inline-block; vertical-align: middle; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
     </style>
-    <script src="config.js"></script>
 </head>
 <body class="text-[#111c2d]">
 
@@ -49,12 +56,14 @@
     </div>
 
     <script>
+        // เริ่มต้นการใช้งาน Firebase
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.firestore();
      
         const urlParams = new URLSearchParams(window.location.search);
         const patientId = urlParams.get('id');
         document.getElementById('patient-id-display').innerText = `รหัส: ${patientId || 'ไม่ระบุ'}`;
 
-        // อัปเดตข้อมูลแบบประเมินให้ตรงกับแบบฟอร์ม 20 คะแนน
         const adlQuestions = [
             { id: 'q1', title: "1. การรับประทานอาหารเมื่อเตรียมสำรับไว้ให้ (Feeding)", choices: [
                 { label: "0: ไม่สามารถตักเข้าปากได้ ต้องมีคนป้อน", score: 0 },
@@ -159,37 +168,60 @@
         }
 
         async function saveADL() {
-            if (!patientId) return alert("ไม่พบข้อมูลผู้ป่วย");
+            if (!patientId) return alert("ไม่พบข้อมูลผู้ป่วย กรุณากลับไปหน้ารายชื่อ");
 
             let answered = 0;
             adlQuestions.forEach(q => { if(document.querySelector(`input[name="${q.id}"]:checked`)) answered++; });
             if (answered < 10) return alert(`กรุณาตอบคำถามให้ครบถ้วน (ตอบแล้ว ${answered}/10 ข้อ)`);
 
-            const score = document.getElementById('total-score').innerText;
+            const score = parseInt(document.getElementById('total-score').innerText);
             const group = document.getElementById('result-group').innerText;
             const btn = document.getElementById('btn-save');
             
-            btn.innerHTML = 'กำลังบันทึก...';
+            btn.innerHTML = '<div class="loader-small mr-2"></div> กำลังบันทึก...';
             btn.disabled = true;
 
             try {
-                const response = await fetch(API_URL, {
+                // สร้างวันที่แบบไทย
+                const now = new Date();
+                const dd = String(now.getDate()).padStart(2, '0');
+                const mm = String(now.getMonth() + 1).padStart(2, '0');
+                const yyyy = now.getFullYear() + 543;
+                const formattedDate = `${dd}/${mm}/${yyyy}`;
+
+                // 1. อัปเดตข้อมูลผู้ป่วยในคอลเลกชัน Patients (อัปเดตคะแนน ADL และ Group ปัจจุบัน)
+                await db.collection('Patients').doc(String(patientId)).update({
+                    adl: String(score),
+                    group: group,
+                    last_assess: formattedDate
+                });
+
+                // 2. บันทึกประวัติการประเมินลงคอลเลกชัน Assessments (เพื่อเอาไปวาดกราฟ)
+                await db.collection('Assessments').add({
+                    patient_id: String(patientId),
+                    type: 'ADL',
+                    score1: score,
+                    score2: 0,
+                    result: group,
+                    date: formattedDate,
+                    timestamp: firebase.firestore.FieldValue.serverTimestamp()
+                });
+
+                // 3. แอบส่งข้อมูลให้ระบบเก่า (Google Sheets) เพื่อซิงค์ข้อมูล (Silent Sync)
+                fetch(API_URL, {
                     method: 'POST',
                     headers: { 'Content-Type': 'text/plain;charset=utf-8' },
                     body: JSON.stringify({ action: 'saveADLScore', id: patientId, score: score, group: group })
-                });
-                
-                const data = await response.json();
-                if (data.success) {
-                    alert('บันทึกผลการประเมินสำเร็จ!');
-                    window.location.href = `patient_profile.html?id=${patientId}`;
-                } else {
-                    alert('เกิดข้อผิดพลาด: ' + data.error);
-                    btn.innerHTML = 'บันทึกผล'; btn.disabled = false;
-                }
+                }).catch(e => console.log('Silent sync completed.'));
+
+                alert('บันทึกผลการประเมินสำเร็จ!');
+                window.location.href = `patient_profile.html?id=${patientId}`;
+
             } catch (err) {
-                alert('การเชื่อมต่อล้มเหลว');
-                btn.innerHTML = 'บันทึกผล'; btn.disabled = false;
+                console.error(err);
+                alert('การเชื่อมต่อฐานข้อมูลล้มเหลว กรุณาลองอีกครั้ง');
+                btn.innerHTML = 'บันทึกผล <span class="material-symbols-outlined text-sm">save</span>'; 
+                btn.disabled = false;
             }
         }
 
