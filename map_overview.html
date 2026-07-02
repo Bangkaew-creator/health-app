@@ -11,6 +11,10 @@
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
 
+    <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore-compat.js"></script>
+    <script src="config.js"></script>
+
     <style>
         body { font-family: 'Sarabun', sans-serif; background-color: #f8fafc; -webkit-tap-highlight-color: transparent;}
         .material-symbols-outlined { font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24; }
@@ -18,12 +22,11 @@
         .custom-popup .leaflet-popup-content-wrapper { border-radius: 16px; padding: 4px; box-shadow: 0 4px 20px rgba(0,0,0,0.08); }
         .custom-popup .leaflet-popup-content { margin: 8px 12px; }
     </style>
-    <script src="config.js"></script>
 </head>
 <body class="text-[#111c2d] overflow-hidden">
 
     <header class="bg-[#00694a] shadow-md flex items-center w-full px-4 h-16 text-white gap-3 sticky top-0 z-50">
-        <button onclick="window.location.href='dashboard.html'" class="w-10 h-10 flex items-center justify-center rounded-full hover:bg-white/20 transition-colors">
+        <button onclick="window.history.back()" class="w-10 h-10 flex items-center justify-center rounded-full hover:bg-white/20 transition-colors">
             <span class="material-symbols-outlined">arrow_back</span>
         </button>
         <div class="flex-1">
@@ -64,11 +67,15 @@
     </div>
 
     <script>
-       
+        // เริ่มต้นการใช้งาน Firebase
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.firestore();
+
         let map;
         let markersGroup;
 
         function initMap() {
+            // ตั้งค่าพิกัดศูนย์กลางเบื้องต้น (เช่น กรุงเทพฯ / สมุทรปราการ)
             map = L.map('map', { zoomControl: false }).setView([13.6375, 100.6750], 14); 
             L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution: '&copy; OpenStreetMap' }).addTo(map);
             L.control.zoom({ position: 'bottomleft' }).addTo(map);
@@ -77,20 +84,20 @@
 
         async function loadMarkers() {
             try {
-                const response = await fetch(API_URL, { method: 'POST', body: JSON.stringify({ action: 'getAllPatients' }) });
-                const patients = await response.json();
+                // เปลี่ยนไปดึงข้อมูลผู้ป่วยจาก Firebase Firestore แทน
+                const snapshot = await db.collection('Patients').get();
+                const patients = [];
+                snapshot.forEach(doc => patients.push(doc.data()));
                 
                 let validCoordsCount = 0;
-                let missingFieldCount = 0;
+                let activePatientsCount = 0;
 
                 patients.forEach(p => {
-                    // เช็คว่าหลังบ้านส่งคอลัมน์ lat_long มาหรือไม่
-                    if (p.lat_long === undefined) {
-                        missingFieldCount++;
-                        return;
-                    }
+                    // กรองเฉพาะเคสที่ยัง Active
+                    if (String(p.status || 'Active').trim().toLowerCase() !== 'active') return;
+                    activePatientsCount++;
 
-                    // เช็คว่าในคอลัมน์มีข้อมูลที่มีเครื่องหมายจุลภาค (,) หรือไม่
+                    // ตรวจสอบว่ามีพิกัด GPS ที่สมบูรณ์หรือไม่
                     if (!p.lat_long || !p.lat_long.includes(',')) return;
 
                     const coords = p.lat_long.split(',');
@@ -101,13 +108,23 @@
 
                     validCoordsCount++;
 
-                    let markerColor = '#94a3b8'; 
+                    // เลือกสีหมุดตามกลุ่มการประเมิน
+                    let markerColor = '#94a3b8'; // สีเทา (ยังไม่ประเมิน)
                     if (p.group === 'ติดสังคม') markerColor = '#00694a';
                     else if (p.group === 'ติดบ้าน') markerColor = '#f59e0b';
                     else if (p.group === 'ติดเตียง') markerColor = '#dc2626';
 
-                    const marker = L.circleMarker([lat, lng], { radius: 9, fillColor: markerColor, color: '#ffffff', weight: 2, opacity: 1, fillOpacity: 0.9 });
+                    // วาดหมุดลงแผนที่
+                    const marker = L.circleMarker([lat, lng], { 
+                        radius: 9, 
+                        fillColor: markerColor, 
+                        color: '#ffffff', 
+                        weight: 2, 
+                        opacity: 1, 
+                        fillOpacity: 0.9 
+                    });
 
+                    // สร้างหน้าต่าง Popup เมื่อกดที่หมุด
                     const popupContent = `
                         <div class="custom-popup space-y-1">
                             <h4 class="font-bold text-sm text-gray-900">${p.name || 'ไม่ระบุชื่อ'}</h4>
@@ -125,23 +142,19 @@
                     markersGroup.addLayer(marker);
                 });
 
-                // อัปเดตป้ายแจ้งเตือนมุมขวาบน
-                document.getElementById('coord-count').innerText = `${validCoordsCount}/${patients.length}`;
+                // อัปเดตป้ายตัวเลขบอกจำนวนหมุด
+                document.getElementById('coord-count').innerText = `${validCoordsCount}/${activePatientsCount}`;
 
-                // แจ้งเตือนสาเหตุที่หมุดไม่ขึ้น
-                if (validCoordsCount === 0) {
-                    if (missingFieldCount === patients.length && patients.length > 0) {
-                        alert("⚠️ แผนที่ไม่สามารถแสดงหมุดได้\n\nสาเหตุ: ระบบหลังบ้าน (Code.gs) ยังไม่ได้ส่งข้อมูลคอลัมน์ 'lat_long' มาให้แผนที่ครับ กรุณาตรวจสอบฟังก์ชัน getAllPatients ใน Code.gs");
-                    } else {
-                        alert("📍 ไม่พบข้อมูลพิกัดในระบบ\n\nคุณยังไม่ได้บันทึกพิกัด GPS ให้ผู้ป่วยเลยครับ กรุณาไปที่ 'แฟ้มประวัติ > แก้ไข' แล้วกดปุ่มเข็มทิศเพื่อบันทึกพิกัดก่อนครับ");
-                    }
-                } else {
+                // แจ้งเตือนกรณีไม่มีพิกัด และซูมแผนที่ให้พอดีกับหมุดที่มีอยู่
+                if (validCoordsCount === 0 && activePatientsCount > 0) {
+                    alert("📍 ไม่พบข้อมูลพิกัดในระบบ\n\nคุณยังไม่ได้บันทึกพิกัด GPS ให้ผู้ป่วยเลยครับ กรุณาไปที่ 'แฟ้มประวัติ > แก้ไข' แล้วกดปุ่มเข็มทิศเพื่อบันทึกพิกัดก่อนครับ");
+                } else if (validCoordsCount > 0) {
                     map.fitBounds(markersGroup.getBounds(), { padding: [40, 40] });
                 }
 
             } catch (error) {
                 console.error(error);
-                alert("ไม่สามารถเชื่อมต่อฐานข้อมูลเพื่อดึงพิกัดได้");
+                alert("ไม่สามารถเชื่อมต่อฐานข้อมูล Firebase เพื่อดึงพิกัดได้");
             }
         }
 
