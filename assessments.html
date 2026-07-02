@@ -39,7 +39,6 @@
     </header>
 
     <main class="max-w-2xl mx-auto pt-6 pb-4">
-
         <div id="loading-state" class="flex flex-col items-center justify-center py-10 space-y-3">
             <div class="loader"></div>
             <p class="text-xs text-gray-400 animate-pulse">กำลังโหลดข้อมูลจาก Firebase...</p>
@@ -54,7 +53,6 @@
             <h3 class="text-gray-700 font-bold">ไม่มีงานค้าง</h3>
             <p class="text-[13px]">เยี่ยมมาก! คุณไม่มีงานประเมินที่ค้างอยู่</p>
         </div>
-
     </main>
 
     <nav class="fixed bottom-0 left-0 w-full bg-white border-t border-gray-100 shadow-[0_-4px_20px_rgba(0,0,0,0.03)] grid grid-cols-4 h-[75px] z-50 px-2 pb-2">
@@ -92,29 +90,24 @@
                         fetchAssignments();
                     });
                 } else { liff.login(); }
-            }).catch(err => {
-                fetchAssignments();
-            });
+            }).catch(err => { fetchAssignments(); });
         });
 
-        // [อัปเดต] เปลี่ยนมาเชื่อมต่อดึงข้อมูลผู้ป่วยตรงจาก Firebase Firestore
         async function fetchAssignments() {
             try {
                 const snapshot = await db.collection('Patients').get();
                 const allPatients = [];
                 snapshot.forEach(doc => allPatients.push(doc.data()));
                 
-                // กรองเคสที่ถูกมอบหมายงานให้ อสม. รายนี้โดยตรง และเคสต้องมีสถานะ Active
                 const myAssignedPatients = allPatients.filter(p => {
                     const isActive = String(p.status || 'Active').trim().toLowerCase() === 'active';
                     const isMyAssignedCase = String(p.assigned_vhv_id || "").trim() === currentUserUid;
-                    
                     return isActive && isMyAssignedCase && currentUserUid !== "";
                 });
                 
-                // แยกสถานะกลุ่ม รอประเมิน (pending) หรือ ประเมินเสร็จแล้ว (completed)
                 assignments = myAssignedPatients.map(p => {
-                    const isPending = (!p.adl || p.adl === '-' || p.group === 'ยังไม่ประเมิน' || p.group === '-');
+                    // [แก้ไขใหม่] เพิ่มการเช็ค needs_assessment จากคำสั่งแอดมิน
+                    const isPending = (p.needs_assessment === true || !p.adl || p.adl === '-' || p.group === 'ยังไม่ประเมิน' || p.group === '-');
                     return {
                         ...p,
                         tabStatus: isPending ? 'pending' : 'completed'
@@ -152,13 +145,20 @@
                 
                 filteredData.forEach(p => {
                     let avatarHtml = `<div class="w-12 h-12 rounded-full bg-gray-100 text-gray-500 font-bold text-lg flex items-center justify-center flex-shrink-0 border">${p.name ? p.name.substring(0,1) : '?'}</div>`;
-                    
                     if(p.profile_pic && p.profile_pic.startsWith('http')) {
-                        avatarHtml = `<img src="${p.profile_pic}" class="w-12 h-12 rounded-full object-cover flex-shrink-0 shadow-sm">`;
+                        const match = p.profile_pic.match(/d\/([a-zA-Z0-9_-]+)/) || p.profile_pic.match(/id=([a-zA-Z0-9_-]+)/);
+                        if(match) avatarHtml = `<img src="https://drive.google.com/thumbnail?id=${match[1]}&sz=150" class="w-12 h-12 rounded-full object-cover flex-shrink-0 shadow-sm">`;
+                        else avatarHtml = `<img src="${p.profile_pic}" class="w-12 h-12 rounded-full object-cover flex-shrink-0 shadow-sm">`;
+                    }
+
+                    // แสดงข้อความต่างกันถ้าเป็นเคสรอประเมินซ้ำ
+                    let badgeText = "รอประเมิน ADL";
+                    if (currentTab === 'pending' && p.needs_assessment === true && p.adl && p.adl !== '-') {
+                        badgeText = "รอประเมินรอบใหม่";
                     }
 
                     const statusBadge = currentTab === 'pending' 
-                        ? `<span class="bg-amber-100 text-amber-700 text-[10px] font-bold px-2 py-0.5 rounded">รอประเมิน ADL</span>`
+                        ? `<span class="bg-amber-100 text-amber-700 text-[10px] font-bold px-2 py-0.5 rounded">${badgeText}</span>`
                         : `<span class="bg-green-100 text-green-700 text-[10px] font-bold px-2 py-0.5 rounded">เสร็จสิ้น</span>`;
 
                     const btnColor = currentTab === 'pending' ? 'bg-[#00694a] text-white hover:bg-[#005239]' : 'bg-gray-100 text-gray-500 border border-gray-200';
@@ -176,7 +176,6 @@
                                     <p class="text-xs text-gray-500 truncate">บ้านเลขที่ ${p.house_no || '-'} • หมู่ ${p.village_no || '-'}</p>
                                 </div>
                             </div>
-                            
                             <button onclick="window.location.href='patient_profile.html?id=${p.id}'" class="w-full py-2.5 rounded-xl font-bold text-xs ${btnColor} transition-colors flex items-center justify-center gap-1 active:scale-[0.98]">
                                 ${btnText} <span class="material-symbols-outlined text-[14px]">arrow_forward</span>
                             </button>
