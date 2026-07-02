@@ -1,5 +1,4 @@
 // [F0] คอนฟิกหลัก
-// เปลี่ยนจากเดิมที่มี 2 อัน เป็น 3 อัน
 const SHEET_NAMES = { USERS: 'Users', PATIENTS: 'Patients', VITALS: 'Vitals' };
 const IMAGE_FOLDER_ID = '1dMIOwVRSkYvEGDb5-VksdrA2Hx60xYrd';
 
@@ -9,8 +8,7 @@ function doPost(e) {
     const requestData = JSON.parse(e.postData.contents);
     let response = {};
     switch (requestData.action) {
-      case 'checkUserRegistration': response = F_checkUser(requestData.uid); break;
-      case 'registerNewUser': response = F_registerUser(requestData.uid, requestData.name, requestData.village, requestData.adminPassword); break;
+      case 'checkUserRegistration': response = F_checkUserRegistration(requestData.uid); break;
       case 'saveNewPatient': response = F_savePatient(requestData.patient); break;
       case 'getAllPatients': response = F_getAllPatients(); break;
       case 'getPatientById': response = F_getPatientById(requestData.id); break;
@@ -25,10 +23,9 @@ function doPost(e) {
       case 'updatePatientStatus': response = F_updatePatientStatus(requestData.id, requestData.status); break;
       case 'updateResourceApproval': response = F_updateResourceApproval(requestData.id, requestData.diaperQty, requestData.underpadQty); break;
       case 'getAllVHVs': response = F_getAllVHVs(); break;
-      case 'updatePatientVHV': response = F_updatePatientVHV(requestData.id, requestData.vhvId); break;
+      case 'updatePatientVHV': response = F_updatePatientVHV(requestData.id, requestData.vhvId, requestData.taskDesc); break; // [แก้ไขจุดนี้]
       case 'recordCommitteeDecision': response = F_recordCommitteeDecision(requestData.patientIds, requestData.fy, requestData.round, requestData.months); break;
       case 'registerUser': response = F_registerUser(requestData.uid, requestData.name, requestData.role, requestData.village_no, requestData.phone); break;
-      case 'checkUserRegistration': response = F_checkUserRegistration(requestData.uid); break;
       case 'getPendingVHVs': response = F_getPendingVHVs(); break;
       case 'manageVHVStatus': response = F_manageVHVStatus(requestData.targetUid, requestData.actionType); break;
       case 'getUserProfile': response = F_getUserProfile(requestData.uid); break;
@@ -45,14 +42,11 @@ function doPost(e) {
   }
 }
 
-// [F2] ฟังก์ชันดึงรายชื่อผู้ป่วยทั้งหมด (รองรับ 31 คอลัมน์ และอัปเดตดึงพิกัด lat_long)
 function F_getAllPatients() {
   const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('Patients');
   if (!sheet) return [];
-  
   const data = sheet.getDataRange().getValues();
   if (data.length < 2) return [];
-  
   const headers = data[0].map(h => String(h).trim().toLowerCase());
   
   const colId = headers.indexOf('patient_id');
@@ -62,7 +56,7 @@ function F_getAllPatients() {
   const colAge = headers.indexOf('age');
   const colHouse = headers.indexOf('house_no');
   const colVillage = headers.indexOf('village_no');
-  const colLatLong = headers.indexOf('lat_long'); // [จุดที่แก้ไข 1] เพิ่มการค้นหาคอลัมน์พิกัด
+  const colLatLong = headers.indexOf('lat_long'); 
   const colDisease = headers.indexOf('disease');
   const colMedication = headers.indexOf('medication');
   const colCaregiverName = headers.indexOf('caregiver_name');
@@ -80,7 +74,6 @@ function F_getAllPatients() {
   for (let i = 1; i < data.length; i++) {
     const row = data[i];
     if (colId === -1 || !row[colId]) continue; 
-    
     let currentStatus = 'Active';
     if (colStatus > -1 && String(row[colStatus]).trim() !== '') {
       currentStatus = String(row[colStatus]).trim();
@@ -94,7 +87,7 @@ function F_getAllPatients() {
       age: colAge > -1 ? String(row[colAge]) : '-',
       house_no: colHouse > -1 ? String(row[colHouse]) : '',
       village_no: colVillage > -1 ? String(row[colVillage]) : '',
-      lat_long: colLatLong > -1 ? String(row[colLatLong]) : '', // [จุดที่แก้ไข 2] ส่งค่าพิกัดแนบไปให้หน้าแอปแผนที่
+      lat_long: colLatLong > -1 ? String(row[colLatLong]) : '', 
       disease: colDisease > -1 ? String(row[colDisease]) : '-',
       medication: colMedication > -1 ? String(row[colMedication]) : '-',
       caregiver_name: colCaregiverName > -1 ? String(row[colCaregiverName]) : '-',
@@ -113,13 +106,9 @@ function F_getAllPatients() {
   return list;
 }
 
-// [F3] ฟังก์ชันบันทึกผู้ป่วยใหม่ (บันทึกให้ครบ 31 คอลัมน์)
 function F_savePatient(p) {
   const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(SHEET_NAMES.PATIENTS);
-
-  // สร้างรหัสผู้ป่วย HN-ปีเดือนวัน-เวลา
   const patientId = "HN-" + Utilities.formatDate(new Date(), "GMT+7", "yyyyMMdd-HHmm");
-
   const safeHouseNo = "'" + p.house_no;
   let safeDob = p.dob;
   if (safeDob) {
@@ -131,29 +120,15 @@ function F_savePatient(p) {
     }
   }
 
-  // บันทึกลงแถวใหม่ 31 คอลัมน์
   sheet.appendRow([
-    patientId,
-    p.id_card || '',
-    p.prefix || '',
-    p.fullname || '',
-    safeDob || '',
-    p.age || '',
-    safeHouseNo || '',
-    p.village_no || '',
-    p.lat_long || '',
-    '', '', '',                                    // Index 9-11 (ว่าง)
-    p.caregiver_name || '',                        // Index 12 (คอลัมน์ M: ชื่อผู้ดูแล)
-    p.caregiver_phone ? "'" + p.caregiver_phone : '', // Index 13 (คอลัมน์ N: เบอร์โทรผู้ดูแล)
-    '', '', '', '', '', '',                        // Index 14-19 (ว่าง)
-    'ยังไม่ประเมิน', '-',                            // Index 20-21 (Group, ADL)
-    '', '-', '-', '-', '-', '-', '', '',           // Index 22-29 (Profile_Pic จนถึง Last_Assess)
-    'Active'                                       // Index 30 (Status)
+    patientId, p.id_card || '', p.prefix || '', p.fullname || '', safeDob || '', p.age || '',
+    safeHouseNo || '', p.village_no || '', p.lat_long || '', '', '', '', 
+    p.caregiver_name || '', p.caregiver_phone ? "'" + p.caregiver_phone : '', '', '', '', '', '', '', 
+    'ยังไม่ประเมิน', '-', '', '-', '-', '-', '-', '-', '', '', 'Active'
   ]);
-
   return { success: true, patient_id: patientId };
 }
-// [F_Config] ฟังก์ชันอ่านค่ารหัสผ่านแอดมินจากชีต Config
+
 function F_getConfig(key) {
   const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('Config');
   if (!sheet) return null;
@@ -164,171 +139,53 @@ function F_getConfig(key) {
   return null;
 }
 
-// [F4] ฟังก์ชันตรวจสอบผู้ใช้งานเมื่อเข้าสู่ระบบ (ล็อกเป้าหมายหัวตารางเป๊ะๆ)
-function F_checkUser(uid) {
-  const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('Users');
-  if (!sheet) return { status: 'unregistered' };
-  
-  const data = sheet.getDataRange().getValues();
-  if (data.length < 2) return { status: 'unregistered' };
-
-  // ดึงค่า Config
-  const hospitalName = F_getConfig('HOSPITAL_NAME') || 'เทศบาลเมืองบางแก้ว';
-  const villageCount = F_getConfig('VILLAGE_COUNT') || 15;
-  const diaperPrice = F_getConfig('DIAPER_PRICE') || 9.50;
-  const underpadPrice = F_getConfig('UNDERPAD_PRICE') || 6.00;
-  
-  // ล็อกหัวตารางเป๊ะๆ จากชีท Users
-  const headers = data[0].map(h => String(h).trim().toLowerCase());
-  const colUid = headers.indexOf('uid');
-  const colName = headers.indexOf('name');
-  const colVillage = headers.indexOf('village_no');
-  const colStatus = headers.indexOf('status');
-  const colPhone = headers.indexOf('phone');
-  const colPic = headers.indexOf('profile_pic');
-
-  if (colUid === -1) return { status: 'unregistered', hospital_name: hospitalName, village_count: villageCount };
-
-  for (let i = 1; i < data.length; i++) {
-    if (String(data[i][colUid]) === String(uid)) {
-      if (colStatus > -1 && data[i][colStatus] !== 'Active') {
-        // [แก้ไขตรงนี้] เพิ่ม user_status เข้าไป เพื่อให้หน้าเว็บรู้สถานะที่แท้จริง
-        return { 
-          status: 'inactive', 
-          user_status: data[i][colStatus], // เพิ่มบรรทัดนี้
-          hospital_name: hospitalName 
-        };
-      }
-      
-      const village = colVillage > -1 ? String(data[i][colVillage]) : '';
-      const role = (village === 'ADMIN') ? 'ADMIN' : 'VHV';
-      
-      return { 
-        status: 'registered', 
-        name: colName > -1 ? data[i][colName] : '', 
-        village: village,
-        role: role,
-        phone: colPhone > -1 ? data[i][colPhone] : '',  
-        pic_url: colPic > -1 ? data[i][colPic] : '',
-        hospital_name: hospitalName,
-        village_count: villageCount, 
-        diaper_price: diaperPrice,   
-        underpad_price: underpadPrice 
-      };
-    }
-  }
-  return { status: 'unregistered', hospital_name: hospitalName, village_count: villageCount };
-}
-
-// [F5] ฟังก์ชันลงทะเบียนผู้ใช้ใหม่แบบแยกรหัสผ่าน (จำกัด 7 คอลัมน์ A-G)
-// 2. ฟังก์ชันลงทะเบียน (อัปเดต: บังคับเซฟลงชีตทันที และทำความสะอาดข้อมูล)
-function F_registerUser(uid, name, role, village_no, phone) {
-  const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('Users');
-  const data = sheet.getDataRange().getValues();
-  const headers = data[0].map(h => String(h).trim().toLowerCase());
-  const colUid = headers.indexOf('uid');
-  
-  const cleanUid = String(uid).trim();
-
-  for (let i = 1; i < data.length; i++) {
-    if (colUid > -1 && String(data[i][colUid]).trim() === cleanUid) {
-      return { status: 'already_registered' };
-    }
-  }
-  
-  const initialStatus = role === 'ADMIN' ? 'Active' : 'Pending';
-  
-  let newRow = new Array(headers.length).fill('');
-  if(colUid > -1) newRow[colUid] = cleanUid;
-  if(headers.indexOf('name') > -1) newRow[headers.indexOf('name')] = String(name).trim();
-  if(headers.indexOf('role') > -1) newRow[headers.indexOf('role')] = String(role).trim();
-  if(headers.indexOf('village_no') > -1) newRow[headers.indexOf('village_no')] = String(village_no).trim();
-  if(headers.indexOf('status') > -1) newRow[headers.indexOf('status')] = initialStatus;
-  if(headers.indexOf('phone') > -1) newRow[headers.indexOf('phone')] = "'" + String(phone).trim();
-  
-  sheet.appendRow(newRow);
-  
-  // [จุดสำคัญ] บังคับให้ Google Sheets บันทึกข้อมูลลงตาราง "เดี๋ยวนั้นทันที"
-  SpreadsheetApp.flush(); 
-  
-  return { status: 'success', user_status: initialStatus };
-}
-// [F5.1] ฟังก์ชันอัปเดตโปรไฟล์ อสม. และ แอดมิน (เขียนพิกัดลงล็อกตารางเดิม)
 function F_updateVHVProfile(data) {
   const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(SHEET_NAMES.USERS);
   let picUrl = "";
-
-  // 1. จัดการอัปโหลดรูปภาพลง Google Drive
   if (data.pic && data.pic !== "") {
     try {
       const folderName = "VHV_Profiles";
       const folderIterator = DriveApp.getFoldersByName(folderName);
       let folder = folderIterator.hasNext() ? folderIterator.next() : DriveApp.createFolder(folderName);
-      
       const blob = Utilities.newBlob(Utilities.base64Decode(data.pic), "image/jpeg", "vhv_" + data.uid + ".jpg");
       const file = folder.createFile(blob);
       file.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
       picUrl = file.getUrl();
-    } catch (e) {
-      console.log("Upload Error: " + e);
-    }
+    } catch (e) { console.log("Upload Error: " + e); }
   }
 
-  // 2. ค้นหาแถวเพื่อเขียนทับข้อมูล
   const dataRange = sheet.getDataRange().getValues();
   let rowIndex = -1;
   for (let i = 1; i < dataRange.length; i++) {
-    if (dataRange[i][0] === data.uid) {
-      rowIndex = i + 1;
-      break;
-    }
+    if (dataRange[i][0] === data.uid) { rowIndex = i + 1; break; }
   }
 
-  // 3. จัดการเขียนบันทึกข้อมูลลงตำแหน่งคอลัมน์ที่ถูกต้อง (1-based index)
   if (rowIndex > -1) {
-    sheet.getRange(rowIndex, 2).setValue(data.name);       // คอลัมน์ B: Name
-    sheet.getRange(rowIndex, 3).setValue(data.village);    // คอลัมน์ C: Village_No (กรณีแอดมินจะรักษาสถานะ 'ADMIN' ไว้)
-    sheet.getRange(rowIndex, 6).setValue("'" + data.phone); // คอลัมน์ F: Phone
-    
-    if (picUrl !== "") {
-      sheet.getRange(rowIndex, 7).setValue(picUrl);        // คอลัมน์ G: Profile_Pic
-    }
+    sheet.getRange(rowIndex, 2).setValue(data.name);       
+    sheet.getRange(rowIndex, 3).setValue(data.village);    
+    sheet.getRange(rowIndex, 6).setValue("'" + data.phone); 
+    if (picUrl !== "") sheet.getRange(rowIndex, 7).setValue(picUrl);        
     return { success: true, message: "อัปเดตข้อมูลสำเร็จ", pic_url: picUrl };
-  } else {
-    return { success: false, message: "ไม่พบข้อมูลผู้ใช้งาน" };
-  }
+  } else { return { success: false, message: "ไม่พบข้อมูลผู้ใช้งาน" }; }
 }
 
-// [F6] ฟังก์ชันดึงข้อมูลผู้ป่วยรายบุคคลตาม ID
 function F_getPatientById(id) {
   const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(SHEET_NAMES.PATIENTS);
   const data = sheet.getDataRange().getValues();
-
   for (let i = 1; i < data.length; i++) {
     if (data[i][0] === id) {
       return {
-        id: data[i][0],
-        id_card: data[i][1], prefix: data[i][2], name: data[i][3],
-        dob: data[i][4], age: data[i][5], house_no: data[i][6], village_no: data[i][7], lat_long: data[i][8],
-        disease: data[i][9], medication: data[i][10],
-        caregiver_card: data[i][11], caregiver_name: data[i][12], caregiver_phone: data[i][13],
-        diaper: data[i][14], equipment: data[i][15],
-        pic_bed: data[i][16], pic_bath: data[i][17], pic_entrance: data[i][18], pic_walkway: data[i][19],
-        group: data[i][20] || 'ยังไม่ประเมิน',
-        // [แก้ไข] ดักจับการแสดงผลคะแนนต่างๆ ไม่ให้เลข 0 หายไป
-        adl: data[i][21] !== "" ? data[i][21] : '-',
-        profile_pic: data[i][22] || '', bp: data[i][23] || '-', hr: data[i][24] || '-',
-        score_2q: data[i][25] !== "" ? data[i][25] : '-',
-        score_9q: data[i][26] !== "" ? data[i][26] : '-',
-        dep_status: data[i][27] || '-',
-        assigned_vhv: data[i][28] || '', last_assess: data[i][29] || '', status: data[i][30]
+        id: data[i][0], id_card: data[i][1], prefix: data[i][2], name: data[i][3], dob: data[i][4], age: data[i][5], house_no: data[i][6], village_no: data[i][7], lat_long: data[i][8],
+        disease: data[i][9], medication: data[i][10], caregiver_card: data[i][11], caregiver_name: data[i][12], caregiver_phone: data[i][13], diaper: data[i][14], equipment: data[i][15],
+        pic_bed: data[i][16], pic_bath: data[i][17], pic_entrance: data[i][18], pic_walkway: data[i][19], group: data[i][20] || 'ยังไม่ประเมิน', adl: data[i][21] !== "" ? data[i][21] : '-',
+        profile_pic: data[i][22] || '', bp: data[i][23] || '-', hr: data[i][24] || '-', score_2q: data[i][25] !== "" ? data[i][25] : '-', score_9q: data[i][26] !== "" ? data[i][26] : '-',
+        dep_status: data[i][27] || '-', assigned_vhv: data[i][28] || '', last_assess: data[i][29] || '', status: data[i][30]
       };
     }
   }
   return { error: 'ไม่พบข้อมูลผู้ป่วย' };
 }
 
-// [F7] ฟังก์ชันบันทึกคะแนน ADL (อัปเดตเก็บประวัติ)
 function F_saveADLScore(id, score, group) {
   const ss = SpreadsheetApp.getActiveSpreadsheet();
   const sheet = ss.getSheetByName(SHEET_NAMES.PATIENTS);
@@ -336,7 +193,6 @@ function F_saveADLScore(id, score, group) {
   const today = Utilities.formatDate(new Date(), "GMT+7", "dd/MM/yyyy");
   const timestamp = Utilities.formatDate(new Date(), "GMT+7", "dd/MM/yyyy HH:mm");
 
-  // 1. เก็บประวัติลงชีต Assessments (สร้างอัตโนมัติถ้ายังไม่มี)
   let aSheet = ss.getSheetByName('Assessments');
   if (!aSheet) {
     aSheet = ss.insertSheet('Assessments');
@@ -344,7 +200,6 @@ function F_saveADLScore(id, score, group) {
   }
   aSheet.appendRow([timestamp, id, 'ADL', score, '', group]);
 
-  // 2. อัปเดตข้อมูลล่าสุดหน้า Patients
   for (let i = 1; i < data.length; i++) {
     if (data[i][0] === id) {
       sheet.getRange(i + 1, 21).setValue(group);
@@ -356,42 +211,35 @@ function F_saveADLScore(id, score, group) {
   return { error: 'ไม่พบข้อมูลผู้ป่วย' };
 }
 
-// [F8] ฟังก์ชันอัปเดตข้อมูลผู้ป่วย
 function F_updatePatientData(p) {
   const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(SHEET_NAMES.PATIENTS);
   const data = sheet.getDataRange().getValues();
-
   for (let i = 1; i < data.length; i++) {
     if (data[i][0] === p.id) {
-      const row = i + 1; // ตำแหน่งแถวที่เจอข้อมูล
-
-      // เขียนข้อมูลใหม่ทับลงไปตามคอลัมน์ (ใส่ ' ดักหน้าข้อมูลที่เป็นตัวเลขเพื่อป้องกันความเพี้ยน)
-      sheet.getRange(row, 3).setValue(p.prefix);             // คอลัมน์ C: คำนำหน้า
-      sheet.getRange(row, 4).setValue(p.fullname);           // คอลัมน์ D: ชื่อ-สกุล
-      sheet.getRange(row, 7).setValue("'" + p.house_no);     // คอลัมน์ G: บ้านเลขที่
-      sheet.getRange(row, 8).setValue(p.village_no);         // คอลัมน์ H: หมู่ที่
-      sheet.getRange(row, 9).setValue(p.lat_long);           // คอลัมน์ I: พิกัด GPS
-      sheet.getRange(row, 10).setValue(p.disease);           // คอลัมน์ J: โรคประจำตัว
-      sheet.getRange(row, 11).setValue(p.medication);        // คอลัมน์ K: ยาที่ใช้ประจำ
-      sheet.getRange(row, 13).setValue(p.caregiver_name);    // คอลัมน์ M: ชื่อผู้ดูแล
-      sheet.getRange(row, 14).setValue("'" + p.caregiver_phone); // คอลัมน์ N: เบอร์โทรผู้ดูแล
-      sheet.getRange(row, 15).setValue(p.diaper);            // คอลัมน์ O
-      sheet.getRange(row, 16).setValue(p.equipment);         // คอลัมน์ P
-
+      const row = i + 1; 
+      sheet.getRange(row, 3).setValue(p.prefix);             
+      sheet.getRange(row, 4).setValue(p.fullname);           
+      sheet.getRange(row, 7).setValue("'" + p.house_no);     
+      sheet.getRange(row, 8).setValue(p.village_no);         
+      sheet.getRange(row, 9).setValue(p.lat_long);           
+      sheet.getRange(row, 10).setValue(p.disease);           
+      sheet.getRange(row, 11).setValue(p.medication);        
+      sheet.getRange(row, 13).setValue(p.caregiver_name);    
+      sheet.getRange(row, 14).setValue("'" + p.caregiver_phone); 
+      sheet.getRange(row, 15).setValue(p.diaper);            
+      sheet.getRange(row, 16).setValue(p.equipment);         
       return { success: true };
     }
   }
   return { error: 'ไม่พบข้อมูลที่ต้องการแก้ไข' };
 }
 
-// [F9] ฟังก์ชันบันทึกผลคัดกรองซึมเศร้า (อัปเดตเก็บประวัติ)
 function F_saveDepressionScore(id, score2q, score9q, status) {
   const ss = SpreadsheetApp.getActiveSpreadsheet();
   const sheet = ss.getSheetByName(SHEET_NAMES.PATIENTS);
   const data = sheet.getDataRange().getValues();
   const timestamp = Utilities.formatDate(new Date(), "GMT+7", "dd/MM/yyyy HH:mm");
 
-  // 1. เก็บประวัติลงชีต Assessments
   let aSheet = ss.getSheetByName('Assessments');
   if (!aSheet) {
     aSheet = ss.insertSheet('Assessments');
@@ -399,7 +247,6 @@ function F_saveDepressionScore(id, score2q, score9q, status) {
   }
   aSheet.appendRow([timestamp, id, 'DEP', score2q, score9q, status]);
 
-  // 2. อัปเดตข้อมูลล่าสุดหน้า Patients
   for (let i = 1; i < data.length; i++) {
     if (data[i][0] === id) {
       sheet.getRange(i + 1, 26).setValue(score2q);
@@ -411,7 +258,6 @@ function F_saveDepressionScore(id, score2q, score9q, status) {
   return { error: 'ไม่พบข้อมูลผู้ป่วย' };
 }
 
-// [F10] บันทึกประวัติสัญญาณชีพ
 function F_saveVitals(data) {
   const ss = SpreadsheetApp.getActiveSpreadsheet();
   let vSheet = ss.getSheetByName(SHEET_NAMES.VITALS);
@@ -419,93 +265,63 @@ function F_saveVitals(data) {
     vSheet = ss.insertSheet(SHEET_NAMES.VITALS);
     vSheet.appendRow(['Timestamp', 'Patient_ID', 'BP_Sys', 'BP_Dia', 'HR', 'Blood_Sugar', 'Meal_Type']);
   }
-
   const timestamp = Utilities.formatDate(new Date(), "GMT+7", "dd/MM/yyyy HH:mm");
+  vSheet.appendRow([timestamp, data.patient_id, data.sys, data.dia, data.hr, data.sugar, data.meal_type]);
 
-  // บันทึกลงชีต Vitals (ประวัติ)
-  vSheet.appendRow([
-    timestamp, data.patient_id, data.sys, data.dia, data.hr, data.sugar, data.meal_type
-  ]);
-
-  // อัปเดตค่าล่าสุดไปที่ชีต Patients ด้วย (เพื่อให้โชว์หน้าแดชบอร์ด)
   const pSheet = ss.getSheetByName(SHEET_NAMES.PATIENTS);
   const pData = pSheet.getDataRange().getValues();
   for (let i = 1; i < pData.length; i++) {
     if (pData[i][0] === data.patient_id) {
-      if (data.sys && data.dia) pSheet.getRange(i + 1, 24).setValue(data.sys + '/' + data.dia); // คอลัมน์ X: BP_Latest
-      if (data.hr) pSheet.getRange(i + 1, 25).setValue(data.hr); // คอลัมน์ Y: HR_Latest
+      if (data.sys && data.dia) pSheet.getRange(i + 1, 24).setValue(data.sys + '/' + data.dia); 
+      if (data.hr) pSheet.getRange(i + 1, 25).setValue(data.hr); 
       break;
     }
   }
   return { success: true };
 }
 
-// [F11] ดึงประวัติสัญญาณชีพเพื่อทำกราฟ
 function F_getVitals(id) {
   const vSheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(SHEET_NAMES.VITALS);
   if (!vSheet) return [];
   const data = vSheet.getDataRange().getValues();
   const records = [];
-
   for (let i = 1; i < data.length; i++) {
     if (data[i][1] === id) {
-      records.push({
-        date: data[i][0],
-        sys: data[i][2], dia: data[i][3], hr: data[i][4],
-        sugar: data[i][5], meal: data[i][6]
-      });
+      records.push({ date: data[i][0], sys: data[i][2], dia: data[i][3], hr: data[i][4], sugar: data[i][5], meal: data[i][6] });
     }
   }
   return records;
 }
 
-// [F12] ดึงประวัติการประเมิน (ADL, DEP)
 function F_getAssessments(id) {
   const aSheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('Assessments');
   if (!aSheet) return [];
   const data = aSheet.getDataRange().getValues();
   const records = [];
-
   for (let i = 1; i < data.length; i++) {
     if (data[i][1] === id) {
-      records.push({
-        date: data[i][0],
-        type: data[i][2],
-        score1: data[i][3],
-        score2: data[i][4],
-        result: data[i][5]
-      });
+      records.push({ date: data[i][0], type: data[i][2], score1: data[i][3], score2: data[i][4], result: data[i][5] });
     }
   }
   return records;
 }
 
-// [F13] ฟังก์ชันอัปโหลดรูปภาพไปเก็บบน Google Drive
 function F_uploadImage(id, imageType, base64Data, filename) {
   try {
     const folder = DriveApp.getFolderById(IMAGE_FOLDER_ID);
-
-    // แยกส่วนหัวของ Base64 ออก เพื่อเอาเฉพาะเนื้อไฟล์
     const contentType = base64Data.substring(5, base64Data.indexOf(';'));
     const bytes = Utilities.base64Decode(base64Data.split(',')[1]);
     const blob = Utilities.newBlob(bytes, contentType, filename);
-
-    // สร้างไฟล์ใน Drive
     const file = folder.createFile(blob);
-
-    // ดึงลิงก์ของไฟล์เพื่อนำไปโชว์
     const fileUrl = file.getUrl();
 
-    // ค้นหาผู้ป่วยและบันทึกลิงก์ลงคอลัมน์ที่ถูกต้อง
     const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(SHEET_NAMES.PATIENTS);
     const data = sheet.getDataRange().getValues();
-
-    // กำหนดคอลัมน์ตามประเภทรูปภาพ
-    let colIndex = 22; // Default: Profile_Pic (คอลัมน์ W = Index 22)
-    if (imageType === 'Pic_Bed') colIndex = 16;        // คอลัมน์ Q
-    else if (imageType === 'Pic_Bath') colIndex = 17;    // คอลัมน์ R
-    else if (imageType === 'Pic_Entrance') colIndex = 18; // คอลัมน์ S
-    else if (imageType === 'Pic_Walkway') colIndex = 19;  // คอลัมน์ T
+    let colIndex = 22; 
+    if (imageType === 'Pic_Bed') colIndex = 16;        
+    else if (imageType === 'Pic_Bath') colIndex = 17;    
+    else if (imageType === 'Pic_Entrance') colIndex = 18; 
+    else if (imageType === 'Pic_Walkway') colIndex = 19;  
 
     for (let i = 1; i < data.length; i++) {
       if (data[i][0] === id) {
@@ -514,19 +330,14 @@ function F_uploadImage(id, imageType, base64Data, filename) {
       }
     }
     return { error: 'ไม่พบข้อมูลผู้ป่วย' };
-  } catch (e) {
-    return { error: e.toString() };
-  }
+  } catch (e) { return { error: e.toString() }; }
 }
 
-// [F14] ฟังก์ชันอัปเดตสถานะผู้ป่วย (Soft Delete)
 function F_updatePatientStatus(id, newStatus) {
   const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(SHEET_NAMES.PATIENTS);
   const data = sheet.getDataRange().getValues();
-
   for (let i = 1; i < data.length; i++) {
     if (data[i][0] === id) {
-      // อัปเดตคอลัมน์ AE (Index 30) เป็นสถานะใหม่ (เช่น 'เสียชีวิต', 'ย้ายที่อยู่')
       sheet.getRange(i + 1, 31).setValue(newStatus);
       return { success: true, message: 'อัปเดตสถานะเรียบร้อยแล้ว' };
     }
@@ -534,37 +345,27 @@ function F_updatePatientStatus(id, newStatus) {
   return { success: false, message: 'ไม่พบข้อมูลผู้ป่วยรายนี้' };
 }
 
-// [F15] ฟังก์ชันบันทึกการอนุมัติผ้าอ้อม/แผ่นรองซับ
-// [F8] ฟังก์ชันบันทึกการอนุมัติผ้าอ้อม/แผ่นรองซับ (แก้ไข: บันทึกกลับลงคอลัมน์ O)
 function F_updateResourceApproval(id, diaperQty, underpadQty) {
   const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('Patients'); 
   const data = sheet.getDataRange().getValues();
-  
   const headers = data[0].map(h => String(h).trim().toLowerCase());
   const colId = headers.indexOf('patient_id');
-  const colDiaper = headers.indexOf('diaper_size'); // เป้าหมายคือคอลัมน์ O
+  const colDiaper = headers.indexOf('diaper_size'); 
   
   if (colId === -1 || colDiaper === -1) return { success: false, message: 'หารหัสผู้ป่วย หรือ คอลัมน์ Diaper_Size ไม่พบ' };
-
   for (let i = 1; i < data.length; i++) {
     if (String(data[i][colId]) === String(id)) {
       let currentDiaper = String(data[i][colDiaper]).trim();
       let diaperObj = {};
-      
       if (currentDiaper && currentDiaper !== '') {
-        // ล้างเครื่องหมายคำพูดซ้อนกันออกก่อนอ่านค่า
         if (currentDiaper.includes('""')) { currentDiaper = currentDiaper.replace(/""/g, '"'); }
         if (currentDiaper.startsWith('"') && currentDiaper.endsWith('"')) { currentDiaper = currentDiaper.substring(1, currentDiaper.length - 1); }
         try { diaperObj = JSON.parse(currentDiaper); } catch(e) {}
       }
-      
-      // เพิ่มยอดจำนวนชิ้นที่แอดมินอนุมัติเข้าไปในก้อน JSON
       diaperObj.approved_diaper = diaperQty || 0;
       diaperObj.approved_underpad = underpadQty || 0;
       diaperObj.approve_status = "อนุมัติแล้ว";
       diaperObj.approve_date = Utilities.formatDate(new Date(), "GMT+7", "dd/MM/yyyy");
-      
-      // บันทึกกลับลงไปในชีต
       sheet.getRange(i + 1, colDiaper + 1).setValue(JSON.stringify(diaperObj));
       return { success: true, message: 'บันทึกการอนุมัติเรียบร้อยแล้ว' };
     }
@@ -572,14 +373,11 @@ function F_updateResourceApproval(id, diaperQty, underpadQty) {
   return { success: false, message: 'ไม่พบรหัสผู้ป่วยรายนี้' };
 }
 
-// [F16_VHVs] ฟังก์ชันดึงรายชื่อ อสม. ทั้งหมดในระบบ (อัปเดต: ดึงรหัส UID ไปผูกเคส)
 function F_getAllVHVs() {
   const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('Users');
   if (!sheet) return [];
-  
   const data = sheet.getDataRange().getValues();
   if (data.length < 2) return [];
-  
   const headers = data[0].map(h => String(h).trim().toLowerCase());
   const colUid = headers.indexOf('uid');
   const colName = headers.indexOf('name');
@@ -592,25 +390,18 @@ function F_getAllVHVs() {
     if (colUid > -1 && data[i][colUid]) {
        const status = colStatus > -1 ? String(data[i][colStatus]).trim() : '';
        const village = colVillage > -1 ? String(data[i][colVillage]).trim() : '';
-       
        if (status === 'Active' && village.toUpperCase() !== 'ADMIN') {
-         list.push({
-           uid: String(data[i][colUid]).trim(), // <--- ดึง UID ไปใช้ระบุตัวตนหน้าเว็บ
-           name: colName > -1 ? String(data[i][colName]) : 'ไม่ระบุชื่อ',
-           village_no: village,
-           phone: colPhone > -1 ? String(data[i][colPhone]) : '-'
-         });
+         list.push({ uid: String(data[i][colUid]).trim(), name: colName > -1 ? String(data[i][colName]) : 'ไม่ระบุชื่อ', village_no: village, phone: colPhone > -1 ? String(data[i][colPhone]) : '-' });
        }
     }
   }
   return list;
 }
 
-// [F17] ฟังก์ชันอัปเดตผู้รับผิดชอบเคสผู้ป่วย (Assigned VHV)
-function F_updatePatientVHV(id, vhvId) {
+// [แก้ไขจุดนี้] เปลี่ยนแปลงการดึง Task Description ไปแจ้งเตือน
+function F_updatePatientVHV(id, vhvId, taskDesc) {
   const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('Patients');
   const data = sheet.getDataRange().getValues();
-  
   const headers = data[0].map(h => String(h).trim().toLowerCase());
   const colId = headers.indexOf('patient_id');
   const colName = headers.indexOf('name');
@@ -622,14 +413,14 @@ function F_updatePatientVHV(id, vhvId) {
 
   for (let i = 1; i < data.length; i++) {
     if (String(data[i][colId]) === String(id)) {
-      // 1. บันทึกคนรับผิดชอบ
       sheet.getRange(i + 1, colAssignedVHV + 1).setValue(String(vhvId).trim());
       
       const pName = colName > -1 ? data[i][colName] : 'ไม่ระบุชื่อ';
       const pHouse = colHouse > -1 ? data[i][colHouse] : '-';
       const pVillage = colVillage > -1 ? data[i][colVillage] : '-';
       
-      const messageText = `📋 มีการมอบหมายภารกิจ อสม.\n\nรบกวนลงพื้นที่ติดตามดูแลและประเมินอาการผู้ป่วย:\n\n👤 ผู้ป่วย: ${pName}\n🏠 ที่อยู่: บ้านเลขที่ ${pHouse} หมู่ที่ ${pVillage}\n\nเมื่อดำเนินการเสร็จสิ้น รบกวนบันทึกผ่านแอปพลิเคชันด้วยครับ 🙏`;
+      const tDesc = taskDesc ? taskDesc : "ติดตามเยี่ยมบ้านทั่วไป";
+      const messageText = `📋 มีการมอบหมายภารกิจ อสม.\n\nรบกวนลงพื้นที่ติดตามและดูแลผู้ป่วย:\n\n👤 ผู้ป่วย: ${pName}\n🏠 ที่อยู่: บ้านเลขที่ ${pHouse} หมู่ที่ ${pVillage}\n📌 งานที่ต้องทำ: ${tDesc}\n\nเมื่อดำเนินการเสร็จสิ้น รบกวนบันทึกและกด "ยืนยันปิดงาน" ผ่านแอปพลิเคชันด้วยครับ 🙏`;
       
       let lineResultMsg = "ไม่ได้ส่ง (หา Token จาก Config ไม่เจอ)";
       const lineToken = F_getConfig('LINE_CHANNEL_ACCESS_TOKEN'); 
@@ -637,51 +428,33 @@ function F_updatePatientVHV(id, vhvId) {
       if (lineToken && vhvId) {
         try {
           const resText = sendLinePushMessage(vhvId, messageText, lineToken);
-          // [แก้ไข] ให้ระบบรู้จักใบเสร็จแบบใหม่ที่มีคำว่า "sentMessages" ด้วย
           if (resText === "{}" || resText.includes("sentMessages")) {
              lineResultMsg = "ส่งแจ้งเตือนเข้า LINE สำเร็จ!";
           } else {
              lineResultMsg = `LINE ปฏิเสธข้อความ: ${resText}\n(พยายามส่งไปที่ UID: ${vhvId})`;
           }
-        } catch(e) {
-          lineResultMsg = "Error ฝั่ง Google: " + e.message;
-        }
+        } catch(e) { lineResultMsg = "Error ฝั่ง Google: " + e.message; }
       }
-      
       return { success: true, message: `บันทึกการมอบหมายงานเรียบร้อยแล้ว\n\n[สถานะ LINE]\n${lineResultMsg}` };
     }
   }
   return { success: false, message: 'ไม่พบรหัสผู้ป่วยรายนี้' };
 }
 
-// ฟังก์ชันภายในสำหรับเชื่อมต่อ LINE (มีระบบล้างช่องว่างอัตโนมัติ)
 function sendLinePushMessage(toUid, textMessage, accessToken) {
   const url = "https://api.line.me/v2/bot/message/push";
-  const payload = {
-    "to": String(toUid).trim(),
-    "messages": [{ "type": "text", "text": textMessage }]
-  };
-  const options = {
-    "method": "post",
-    "headers": {
-      "Content-Type": "application/json",
-      "Authorization": "Bearer " + String(accessToken).trim()
-    },
-    "payload": JSON.stringify(payload),
-    "muteHttpExceptions": true // อนุญาตให้อ่านข้อความ Error จาก LINE ได้
-  };
+  const payload = { "to": String(toUid).trim(), "messages": [{ "type": "text", "text": textMessage }] };
+  const options = { "method": "post", "headers": { "Content-Type": "application/json", "Authorization": "Bearer " + String(accessToken).trim() }, "payload": JSON.stringify(payload), "muteHttpExceptions": true };
   const response = UrlFetchApp.fetch(url, options);
   return response.getContentText();
 }
 
-// [F18] ฟังก์ชันบันทึกมติคณะกรรมการ (กปท.) ลงในฐานข้อมูลผู้ป่วย
 function F_recordCommitteeDecision(patientIds, fy, round, months) {
   const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('Patients');
   const data = sheet.getDataRange().getValues();
   const headers = data[0].map(h => String(h).trim().toLowerCase());
-  
   const colId = headers.indexOf('patient_id');
-  const colDiaper = headers.indexOf('diaper_size'); // คอลัมน์ O ที่เราเก็บ JSON ผ้าอ้อม
+  const colDiaper = headers.indexOf('diaper_size'); 
 
   if (colId === -1 || colDiaper === -1) return { success: false, message: 'โครงสร้างตารางไม่สมบูรณ์' };
 
@@ -690,21 +463,17 @@ function F_recordCommitteeDecision(patientIds, fy, round, months) {
     if (patientIds.includes(String(data[i][colId]))) {
       let currentDiaper = String(data[i][colDiaper]).trim();
       let diaperObj = {};
-      
       if (currentDiaper && currentDiaper !== '') {
         if (currentDiaper.includes('""')) currentDiaper = currentDiaper.replace(/""/g, '"');
         if (currentDiaper.startsWith('"') && currentDiaper.endsWith('"')) currentDiaper = currentDiaper.substring(1, currentDiaper.length - 1);
         try { diaperObj = JSON.parse(currentDiaper); } catch(e) {}
       }
-
-      // เพิ่มข้อมูลมติคณะกรรมการเข้าไปใน JSON
       diaperObj.committee_status = "จัดสรรแล้ว";
       diaperObj.fy = String(fy).trim();
       diaperObj.round = String(round).trim();
       diaperObj.alloc_months = parseInt(months) || 1;
       diaperObj.committee_date = Utilities.formatDate(new Date(), "GMT+7", "dd/MM/yyyy");
 
-      // บันทึกกลับลงคอลัมน์ O
       sheet.getRange(i + 1, colDiaper + 1).setValue(JSON.stringify(diaperObj));
       updatedCount++;
     }
@@ -712,79 +481,52 @@ function F_recordCommitteeDecision(patientIds, fy, round, months) {
   return { success: true, message: `บันทึกมติจัดสรรให้ผู้ป่วยจำนวน ${updatedCount} ราย สำเร็จ!` };
 }
 
-// 1. ฟังก์ชันตรวจสอบสิทธิ์เข้าใช้งาน (อัปเดต: ล้างช่องว่างป้องกันหา UID ไม่เจอ 100%)
 function F_checkUserRegistration(uid) {
   const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('Users');
   const data = sheet.getDataRange().getValues();
   const headers = data[0].map(h => String(h).trim().toLowerCase());
-  
   const colUid = headers.indexOf('uid');
   const colRole = headers.indexOf('role');
   const colVillage = headers.indexOf('village_no');
   const colStatus = headers.indexOf('status');
-  
   const vCount = F_getConfig('VILLAGE_COUNT') || 15;
   
   if (colUid === -1) return { status: 'error', message: 'ไม่พบคอลัมน์ UID' };
-  
-  // ล้างช่องว่างออกจาก UID ต้นทางก่อน
   const targetUid = String(uid).trim();
-  
   for (let i = 1; i < data.length; i++) {
-    // ใช้ .trim() ฝั่งข้อมูลในชีตด้วย เพื่อบังคับจับคู่ให้ตรงเป๊ะ
     if (String(data[i][colUid]).trim() === targetUid) {
-      
-      // ดึงสถานะ ถ้าช่องว่างเปล่าให้ถือเป็น Pending ทันที
       let userStatus = colStatus > -1 ? String(data[i][colStatus]).trim() : 'Active';
       if (userStatus === '') userStatus = 'Pending'; 
-
-      return {
-        status: 'registered',
-        role: colRole > -1 ? String(data[i][colRole]).trim() : 'VHV',
-        village_no: colVillage > -1 ? String(data[i][colVillage]).trim() : '',
-        user_status: userStatus,
-        village_count: vCount
-      };
+      return { status: 'registered', role: colRole > -1 ? String(data[i][colRole]).trim() : 'VHV', village_no: colVillage > -1 ? String(data[i][colVillage]).trim() : '', user_status: userStatus, village_count: vCount };
     }
   }
   return { status: 'not_registered', village_count: vCount };
 }
 
-// 2. ฟังก์ชันลงทะเบียน (อัปเดต: แก้บัคเลข 0 หาย โดยเติมเครื่องหมาย ' นำหน้า)
 function F_registerUser(uid, name, role, village_no, phone) {
   const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('Users');
   const data = sheet.getDataRange().getValues();
   const headers = data[0].map(h => String(h).trim().toLowerCase());
   const colUid = headers.indexOf('uid');
-  
   for (let i = 1; i < data.length; i++) {
-    if (colUid > -1 && String(data[i][colUid]) === String(uid)) {
-      return { status: 'already_registered' };
-    }
+    if (colUid > -1 && String(data[i][colUid]) === String(uid)) return { status: 'already_registered' };
   }
-  
   const initialStatus = role === 'ADMIN' ? 'Active' : 'Pending';
-  
   let newRow = new Array(headers.length).fill('');
   if(headers.indexOf('uid') > -1) newRow[headers.indexOf('uid')] = uid;
   if(headers.indexOf('name') > -1) newRow[headers.indexOf('name')] = name;
   if(headers.indexOf('role') > -1) newRow[headers.indexOf('role')] = role;
   if(headers.indexOf('village_no') > -1) newRow[headers.indexOf('village_no')] = village_no;
   if(headers.indexOf('status') > -1) newRow[headers.indexOf('status')] = initialStatus;
-  
-  // [จุดสำคัญ] บังคับให้เป็น Text เพื่อรักษาเลข 0 นำหน้าเอาไว้
   if(headers.indexOf('phone') > -1) newRow[headers.indexOf('phone')] = "'" + String(phone).trim();
-  
   sheet.appendRow(newRow);
   return { status: 'success', user_status: initialStatus };
 }
 
-// 3. (ฟังก์ชันใหม่) ดึงรายชื่อ อสม. ที่ "รออนุมัติ" ไปโชว์หน้าแอดมิน
 function F_getPendingVHVs() {
   const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('Users');
   const data = sheet.getDataRange().getValues();
   const headers = data[0].map(h => String(h).trim().toLowerCase());
-  
   const colUid = headers.indexOf('uid');
   const colName = headers.indexOf('name');
   const colVillage = headers.indexOf('village_no');
@@ -796,28 +538,20 @@ function F_getPendingVHVs() {
     if (colUid > -1 && data[i][colUid]) {
        const status = colStatus > -1 ? String(data[i][colStatus]).trim() : '';
        if (status === 'Pending') {
-         list.push({
-           uid: String(data[i][colUid]).trim(),
-           name: colName > -1 ? String(data[i][colName]) : 'ไม่ระบุชื่อ',
-           village_no: colVillage > -1 ? String(data[i][colVillage]) : '',
-           phone: colPhone > -1 ? String(data[i][colPhone]) : '-'
-         });
+         list.push({ uid: String(data[i][colUid]).trim(), name: colName > -1 ? String(data[i][colName]) : 'ไม่ระบุชื่อ', village_no: colVillage > -1 ? String(data[i][colVillage]) : '', phone: colPhone > -1 ? String(data[i][colPhone]) : '-' });
        }
     }
   }
   return list;
 }
 
-// [F19] ฟังก์ชันเปลี่ยนสถานะ อสม. เป็น Active หรือ Rejected
 function F_manageVHVStatus(uid, actionType) {
   const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('Users');
   const data = sheet.getDataRange().getValues();
   const headers = data[0].map(h => String(h).trim().toLowerCase());
   const colUid = headers.indexOf('uid');
   const colStatus = headers.indexOf('status');
-  
   if (colUid === -1 || colStatus === -1) return { success: false, message: 'ไม่พบคอลัมน์ที่ต้องการ' };
-  
   for(let i=1; i<data.length; i++) {
      if(String(data[i][colUid]) === String(uid)) {
         sheet.getRange(i+1, colStatus+1).setValue(actionType);
@@ -827,115 +561,41 @@ function F_manageVHVStatus(uid, actionType) {
   return { success: false, message: 'ไม่พบผู้ใช้นี้' };
 }
 
-// [F20] ฟังก์ชันดึงรายชื่อ อสม. ที่ "รออนุมัติ" ไปโชว์หน้าแอดมิน
-function F_getPendingVHVs() {
-  const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('Users');
-  const data = sheet.getDataRange().getValues();
-  const headers = data[0].map(h => String(h).trim().toLowerCase());
-  
-  const colUid = headers.indexOf('uid');
-  const colName = headers.indexOf('name');
-  const colVillage = headers.indexOf('village_no');
-  const colStatus = headers.indexOf('status');
-  const colPhone = headers.indexOf('phone');
-  
-  const list = [];
-  for (let i = 1; i < data.length; i++) {
-    if (colUid > -1 && data[i][colUid]) {
-       const status = colStatus > -1 ? String(data[i][colStatus]).trim() : '';
-       if (status === 'Pending') {
-         list.push({
-           uid: String(data[i][colUid]).trim(),
-           name: colName > -1 ? String(data[i][colName]) : 'ไม่ระบุชื่อ',
-           village_no: colVillage > -1 ? String(data[i][colVillage]) : '',
-           phone: colPhone > -1 ? String(data[i][colPhone]) : '-'
-         });
-       }
-    }
-  }
-  return list;
-}
-
-// [F21] ฟังก์ชันเปลี่ยนสถานะ อสม. เป็น Active หรือ Rejected
-function F_manageVHVStatus(uid, actionType) {
-  const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('Users');
-  const data = sheet.getDataRange().getValues();
-  const headers = data[0].map(h => String(h).trim().toLowerCase());
-  const colUid = headers.indexOf('uid');
-  const colStatus = headers.indexOf('status');
-  
-  if (colUid === -1 || colStatus === -1) return { success: false, message: 'ไม่พบคอลัมน์ที่ต้องการ' };
-  
-  for(let i=1; i<data.length; i++) {
-     if(String(data[i][colUid]) === String(uid)) {
-        sheet.getRange(i+1, colStatus+1).setValue(actionType);
-        return { success: true, message: `อัปเดตสถานะสำเร็จ` };
-     }
-  }
-  return { success: false, message: 'ไม่พบผู้ใช้นี้' };
-}
-
-// [F22] ฟังก์ชันนำเข้าข้อมูลผู้ป่วยจาก Excel (เวอร์ชันอัจฉริยะ: ตรวจสอบข้อมูลซ้ำซ้อน ป้องกันรายชื่อซ้อนกัน 100%)
 function F_importPatients(patients) {
   const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('Patients');
   if (!sheet || !patients || patients.length === 0) return { success: false, message: 'ไม่มีข้อมูลสำหรับนำเข้า' };
-
-  // ดึงข้อมูลปัจจุบันทั้งหมดในตารางเพื่อใช้ตรวจสอบความซ้ำซ้อน
   const existingData = sheet.getDataRange().getValues();
   const headers = existingData[0].map(h => String(h).trim().toLowerCase());
   const colIdCard = headers.indexOf('id_card');
   const colName = headers.indexOf('name');
-  
   const timestamp = Utilities.formatDate(new Date(), "GMT+7", "yyyyMMdd-HHmm");
   const todayStr = Utilities.formatDate(new Date(), "GMT+7", "dd/MM/yyyy"); 
-  
-  const newRowsToAppend = []; // คิวสำหรับเก็บรายชื่อคนไข้ใหม่เพื่อยิงเข้าตารางทีเดียว
-  let updateCount = 0;
-  let insertCount = 0;
-  let counter = 1;
+  const newRowsToAppend = [];
+  let updateCount = 0, insertCount = 0, counter = 1;
 
   patients.forEach(p => {
-    // ทำความสะอาดข้อมูลเพื่อป้องกันความผิดพลาดในการเปรียบเทียบตัวอักษร
     const cleanIdCard = p.id_card ? String(p.id_card).trim().replace(/-/g, '') : '';
     const cleanName = p.name ? String(p.name).trim() : '';
-    
     let existingRowIndex = -1;
-    
-    // 1. วนลูปตรวจสอบข้อมูลซ้ำซ้อน (เช็คเลขบัตรประชาชนก่อน ถ้าไม่มีบัตรให้เช็คชื่อ-นามสกุล)
     for (let i = 1; i < existingData.length; i++) {
       const sheetIdCard = colIdCard > -1 ? String(existingData[i][colIdCard]).trim().replace(/-/g, '') : '';
       const sheetName = colName > -1 ? String(existingData[i][colName]).trim() : '';
-      
-      if (cleanIdCard !== '' && sheetIdCard === cleanIdCard) {
-        existingRowIndex = i + 1; // ล็อกพิกัดแถวใน Google Sheets (1-based index)
-        break;
-      } else if (cleanIdCard === '' && cleanName !== '' && sheetName === cleanName) {
-        existingRowIndex = i + 1;
-        break;
-      }
+      if (cleanIdCard !== '' && sheetIdCard === cleanIdCard) { existingRowIndex = i + 1; break; } 
+      else if (cleanIdCard === '' && cleanName !== '' && sheetName === cleanName) { existingRowIndex = i + 1; break; }
     }
-
     let rowData = new Array(31).fill('');
-
     if (existingRowIndex > -1) {
-      // [เคสเจอข้อมูลซ้ำ]: คัดลอกข้อมูลเดิมทั้งหมดในแถวนั้นมาตั้งต้นก่อน เพื่อไม่ให้ค่าเก่า (พิกัด, รูปภาพ, ผู้ดูแล) โดนลบหาย
-      for (let c = 0; c < 31; c++) {
-        rowData[c] = existingData[existingRowIndex - 1][c];
-      }
+      for (let c = 0; c < 31; c++) rowData[c] = existingData[existingRowIndex - 1][c];
       updateCount++;
     } else {
-      // [เคสคนไข้รายใหม่]: ทำการรันรหัสรหัส HN ใหม่ และใส่สถานะตั้งต้นระบบ
       rowData[0] = "HN-" + timestamp + "-" + String(counter).padStart(3, '0');
       counter++;
-      
-      rowData[20] = 'ยังไม่ประเมิน';
-      rowData[21] = '-';
+      rowData[20] = 'ยังไม่ประเมิน'; rowData[21] = '-';
       for (let i = 23; i <= 27; i++) rowData[i] = '-';
       rowData[30] = 'Active';
       insertCount++;
     }
 
-    // 2. เติมข้อมูลหรืออัปเดตข้อมูลล่าสุดจากไฟล์ Excel เข้าไปในคอลัมน์ที่กำหนด
     if (p.id_card) rowData[1] = "'" + cleanIdCard;
     if (p.prefix) rowData[2] = String(p.prefix).trim();
     if (p.name) rowData[3] = cleanName;
@@ -947,20 +607,9 @@ function F_importPatients(patients) {
     if (p.medication) rowData[10] = String(p.medication).trim();
     if (p.caregiver_name) rowData[12] = String(p.caregiver_name).trim();
     if (p.caregiver_phone) rowData[13] = "'" + String(p.caregiver_phone).trim();
-    
-    // จัดกลุ่มโครงสร้างผ้าอ้อมเป็นก้อน JSON อัตโนมัติเพื่อส่งเข้าหน้าอนุมัติวัสดุ
     if (p.diaper && String(p.diaper).trim() !== '') {
-      rowData[14] = JSON.stringify({
-        size: String(p.diaper).trim(),
-        req_diaper: true,
-        req_underpad: false,
-        approve_status: "รออนุมัติ",
-        approved_diaper: 0,
-        approved_underpad: 0
-      });
+      rowData[14] = JSON.stringify({ size: String(p.diaper).trim(), req_diaper: true, req_underpad: false, approve_status: "รออนุมัติ", approved_diaper: 0, approved_underpad: 0 });
     }
-
-    // ประมวลผลคะแนน ADL คัดกรองกลุ่มโรค พร้อมประทับตราวันที่ประเมินปัจจุบัน
     const adlValue = String(p.adl).trim();
     if (adlValue !== '' && adlValue !== '-') {
       rowData[21] = Number(adlValue) || adlValue;
@@ -970,56 +619,34 @@ function F_importPatients(patients) {
         else if (scoreNum <= 11) rowData[20] = 'ติดบ้าน';
         else rowData[20] = 'ติดสังคม';
       }
-      rowData[29] = todayStr; // วันเริ่มนับประเมินใหม่
+      rowData[29] = todayStr;
     }
-
-    // 3. จัดบันทึกข้อมูลกลับลงแผ่นงาน Google Sheets
     if (existingRowIndex > -1) {
-      // เขียนแก้ไขทับแถวเดิมตัวที่ซ้ำทันที
       sheet.getRange(existingRowIndex, 1, 1, 31).setValues([rowData]);
-      // อัปเดตข้อมูลในความจำชั่วคราว เผื่อในไฟล์ Excel มีรายชื่อซ้ำกันซ้อนกันในชุดเดียว
       existingData[existingRowIndex - 1] = rowData;
     } else {
-      // หากเป็นผู้ป่วยใหม่ ให้เก็บรวบรวมเข้าคิวไปเขียนลงตารางพร้อมกันตอนท้าย (ช่วยให้ระบบทำงานเร็วมาก)
       newRowsToAppend.push(rowData);
-      existingData.push(rowData); // เติมเข้าความจำชั่วคราวเพื่อเช็คซ้ำกันเองในตารางด้วย
+      existingData.push(rowData);
     }
   });
 
-  // ถ้ารวบรวมแล้วพบว่ามีรายชื่อผู้ป่วยใหม่ ให้ทำการ Batch Insert ยิงลงตารางรวดเดียวเพื่อความเร็ว
   if (newRowsToAppend.length > 0) {
     const lastRow = sheet.getLastRow();
     sheet.getRange(lastRow + 1, 1, newRowsToAppend.length, 31).setValues(newRowsToAppend);
   }
-
-  SpreadsheetApp.flush(); // สั่งให้ระบบเซฟข้อมูลลงแผ่นตารางทันที
-
-  return { 
-    success: true, 
-    message: `ระบบคัดกรองข้อมูลเสร็จสิ้น:\n- เพิ่มผู้ป่วยใหม่รายใหม่: ${insertCount} ราย\n- อัปเดตปรับปรุงข้อมูลเดิม: ${updateCount} ราย` 
-  };
+  SpreadsheetApp.flush();
+  return { success: true, message: `ระบบคัดกรองข้อมูลเสร็จสิ้น:\n- เพิ่มผู้ป่วยใหม่รายใหม่: ${insertCount} ราย\n- อัปเดตปรับปรุงข้อมูลเดิม: ${updateCount} ราย` };
 }
 
-
-// ==========================================
-// ส่วนที่ 1: ระบบจัดการโปรไฟล์แอดมิน/อสม.
-// ==========================================
 function F_getUserProfile(uid) {
   const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('Users');
   const data = sheet.getDataRange().getValues();
   const headers = data[0].map(h => String(h).trim().toLowerCase());
   const colUid = headers.indexOf('uid');
-  
   if(colUid === -1) return { success: false, message: 'ไม่พบคอลัมน์ UID' };
-  
   for(let i = 1; i < data.length; i++) {
     if(String(data[i][colUid]).trim() === String(uid).trim()) {
-       return {
-         success: true,
-         name: headers.indexOf('name') > -1 ? data[i][headers.indexOf('name')] : '',
-         phone: headers.indexOf('phone') > -1 ? data[i][headers.indexOf('phone')] : '',
-         profile_pic: headers.indexOf('profile_pic') > -1 ? data[i][headers.indexOf('profile_pic')] : ''
-       }
+       return { success: true, name: headers.indexOf('name') > -1 ? data[i][headers.indexOf('name')] : '', phone: headers.indexOf('phone') > -1 ? data[i][headers.indexOf('phone')] : '', profile_pic: headers.indexOf('profile_pic') > -1 ? data[i][headers.indexOf('profile_pic')] : '' }
     }
   }
   return { success: false, message: 'ไม่พบผู้ใช้' };
@@ -1030,7 +657,6 @@ function F_updateUserProfile(uid, name, phone, picUrl) {
   const data = sheet.getDataRange().getValues();
   const headers = data[0].map(h => String(h).trim().toLowerCase());
   const colUid = headers.indexOf('uid');
-  
   for(let i = 1; i < data.length; i++) {
     if(String(data[i][colUid]).trim() === String(uid).trim()) {
        if(headers.indexOf('name') > -1 && name !== undefined) sheet.getRange(i+1, headers.indexOf('name')+1).setValue(String(name).trim());
@@ -1042,23 +668,14 @@ function F_updateUserProfile(uid, name, phone, picUrl) {
   return { success: false, message: 'ไม่พบผู้ใช้นี้ในระบบ' };
 }
 
-// ==========================================
-// ส่วนที่ 2: ระบบจัดการการตั้งค่า (Config)
-// ==========================================
 function F_getAllSystemConfigs() {
   const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('Config');
   if(!sheet) return [];
   const data = sheet.getDataRange().getValues();
   const configs = [];
-  
-  // สมมติว่าแถวที่ 1 เป็นหัวตาราง (Key, Value, Description)
   for(let i = 1; i < data.length; i++) { 
      if(data[i][0]) {
-        configs.push({
-           key: String(data[i][0]).trim(),
-           value: String(data[i][1] || ''),
-           description: String(data[i][2] || '') // คอลัมน์ C ไว้ใส่คำอธิบายภาษาไทยให้แอดมินเข้าใจง่าย
-        });
+        configs.push({ key: String(data[i][0]).trim(), value: String(data[i][1] || ''), description: String(data[i][2] || '') });
      }
   }
   return configs;
@@ -1067,74 +684,22 @@ function F_getAllSystemConfigs() {
 function F_updateSystemConfigs(configArray) {
   const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('Config');
   const data = sheet.getDataRange().getValues();
-  
   let updated = 0;
   for(let i=1; i<data.length; i++) {
      const rowKey = String(data[i][0]).trim();
-     // ค้นหาว่าแถวนี้ตรงกับข้อมูลที่ส่งมาให้อัปเดตหรือไม่
      const match = configArray.find(c => c.key === rowKey);
      if(match) {
         sheet.getRange(i+1, 2).setValue(String(match.value).trim());
         updated++;
      }
   }
-  SpreadsheetApp.flush(); // บังคับเซฟทันที
+  SpreadsheetApp.flush(); 
   return { success: true, message: `อัปเดตการตั้งค่าสำเร็จจำนวน ${updated} รายการ` };
 }
 
-// [ฟังก์ชันใหม่] ตรวจสอบรหัสลับและลงทะเบียนผู้ดูแลระบบ (ADMIN)
 function F_registerAdmin(uid, name, phone, secretCode) {
-  // ไปดึงรหัสลับที่ตั้งไว้ในชีต Config
   const actualCode = F_getConfig('ADMIN_SECRET_CODE');
-  
-  if (!actualCode) {
-    return { status: 'error', message: 'ระบบยังไม่ได้ตั้งค่า ADMIN_SECRET_CODE ในชีต Config' };
-  }
-  
-  // ตรวจสอบว่ารหัสที่พิมพ์มา ตรงกับใน Config หรือไม่
-  if (String(secretCode).trim() !== String(actualCode).trim()) {
-    return { status: 'invalid_code', message: 'รหัสลับไม่ถูกต้อง' };
-  }
-  
-  // ถ้ารหัสถูกต้อง ให้เรียกใช้ระบบลงทะเบียนปกติ แต่ยัดยศให้เป็น ADMIN และสถานะ Active ทันที
+  if (!actualCode) return { status: 'error', message: 'ระบบยังไม่ได้ตั้งค่า ADMIN_SECRET_CODE ในชีต Config' };
+  if (String(secretCode).trim() !== String(actualCode).trim()) return { status: 'invalid_code', message: 'รหัสลับไม่ถูกต้อง' };
   return F_registerUser(uid, name, 'ADMIN', 'ADMIN', phone);
 }
-
-// ==========================================
-// [F99] ฟังก์ชันพิเศษ: ใช้สำหรับรันเพื่อจัดหัวตารางอัตโนมัติ (อัปเดต 31 คอลัมน์)
-// ==========================================
-function F99_setupDatabase() {
-  const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(SHEET_NAMES.PATIENTS);
-
-  // 1. ล้างข้อมูลเก่า
-  sheet.clear();
-
-  // 2. ชุดหัวตารางใหม่แบบ Full Database 31 คอลัมน์
-  const headers = [
-    'Patient_ID', 'ID_Card', 'Prefix', 'Name', 'DOB',
-    'Age', 'House_No', 'Village_No', 'Lat_Long', 'Disease',
-    'Medication', 'Caregiver_ID_Card', 'Caregiver_Name', 'Caregiver_Phone', 'Diaper_Size',
-    'Required_Equipment', 'Pic_Bed', 'Pic_Bath', 'Pic_Entrance', 'Pic_Walkway',
-    'Patient_Group', 'ADL_Score', 'Profile_Pic', 'BP_Latest', 'HR_Latest',
-    'Score_2Q', 'Score_9Q', 'Depression_Status', 'Assigned_VHV_ID', 'Last_Assessment_Date',
-    'Status'
-  ];
-
-  // 3. นำหัวตารางไปวางและตกแต่ง
-  sheet.getRange(1, 1, 1, headers.length).setValues([headers]);
-  sheet.getRange(1, 1, 1, headers.length).setFontWeight("bold").setBackground("#e7eeff");
-  sheet.setFrozenRows(1);
-}
-
-function testDrivePermission() {
-  // บังคับขอสิทธิ์สร้างไฟล์ในโฟลเดอร์
-  const folder = DriveApp.getFolderById(IMAGE_FOLDER_ID);
-  folder.createFile("test_permission.txt", "ทดสอบสิทธิ์", MimeType.PLAIN_TEXT);
-}
-
-// ฟังก์ชันหลอกเพื่อกระตุ้นให้ Google ขอสิทธิ์ UrlFetchApp
-function forceAuthorize() {
-  UrlFetchApp.fetch("https://www.google.com");
-  Logger.log("ได้รับสิทธิ์การเชื่อมต่ออินเทอร์เน็ตเรียบร้อยแล้ว!");
-}
-
