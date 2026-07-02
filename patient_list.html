@@ -7,20 +7,22 @@
     <script src="https://cdn.tailwindcss.com?plugins=forms"></script>
     <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700&display=swap" rel="stylesheet"/>
     <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+    
+    <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore-compat.js"></script>
+    <script charset="utf-8" src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+    <script src="config.js"></script>
+
     <style>
         body { font-family: 'Sarabun', sans-serif; background-color: #f8fafc; padding-bottom: 90px; -webkit-tap-highlight-color: transparent;}
         .material-symbols-outlined { font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24; }
         .loader { border: 3px solid #d8e3fb; border-bottom-color: #00694a; border-radius: 50%; width: 36px; height: 36px; animation: spin 1s linear infinite; }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
     </style>
-    <script charset="utf-8" src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
-    <script src="config.js"></script>
 </head>
 <body class="text-[#111c2d]">
 
-    <!-- Header -->
     <header class="bg-[#00694a] sticky top-0 z-50 shadow-md flex items-center w-full px-4 h-16 text-white gap-3">
-        <!-- ปุ่มย้อนกลับกลับไปหน้าแรก -->
         <button onclick="window.location.href='dashboard.html'" class="w-10 h-10 flex items-center justify-center rounded-full hover:bg-white/20 transition-colors">
             <span class="material-symbols-outlined">arrow_back</span>
         </button>
@@ -29,7 +31,6 @@
 
     <main class="max-w-2xl mx-auto pt-6 pb-4">
         
-        <!-- แถบค้นหา -->
         <div class="px-4 mb-6">
             <div class="relative">
                 <span class="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-gray-500 text-[22px]">search</span>
@@ -38,7 +39,6 @@
             
             <div class="flex justify-between items-end mt-4 px-1">
                 <p class="text-[13px] font-bold text-gray-600">พบข้อมูล <span id="count-display" class="text-[#00694a]">0</span> รายการ</p>
-                <!-- ปุ่มเรียงลำดับหมู่ -->
                 <button onclick="sortByVillage()" class="flex items-center gap-1 text-[11px] font-bold text-gray-500 hover:text-[#00694a] bg-white px-3 py-1.5 rounded-full border border-gray-200 shadow-sm">
                     <span class="material-symbols-outlined text-[16px]">sort</span> เรียงตามหมู่
                 </button>
@@ -47,10 +47,9 @@
 
         <div id="loading-state" class="flex flex-col items-center justify-center py-10 space-y-3">
             <div class="loader"></div>
-            <p class="text-xs text-gray-400 animate-pulse">กำลังดึงข้อมูล...</p>
+            <p class="text-xs text-gray-400 animate-pulse">กำลังโหลดข้อมูลจาก Firebase...</p>
         </div>
 
-        <!-- รายชื่อผู้ป่วย (อิงดีไซน์ใหม่) -->
         <div id="patient-list" class="space-y-4 px-4 hidden mb-6"></div>
         
         <div id="empty-state" class="hidden text-center py-14 space-y-3 text-gray-400">
@@ -60,7 +59,6 @@
 
     </main>
 
-    <!-- แถบเมนูด้านล่าง (Highlight ที่ปุ่มผู้ป่วย) -->
     <nav class="fixed bottom-0 left-0 w-full bg-white border-t border-gray-100 shadow-[0_-4px_20px_rgba(0,0,0,0.03)] grid grid-cols-4 h-[75px] z-50 px-2 pb-2">
         <button onclick="window.location.href='dashboard.html'" class="flex flex-col items-center justify-center text-gray-400 hover:text-gray-600 transition-colors">
             <span class="material-symbols-outlined mb-0.5 text-[24px]">home</span>
@@ -81,50 +79,54 @@
     </nav>
 
     <script>
-        // ไม่ต้องประกาศ API_URL แล้ว เพราะดึงจาก config.js
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.firestore();
+
         let allPatients = []; 
         let isSortedByVillage = false;
         let currentUserUid = "";
-        let vhvCurrentVillage = ""; // เก็บเลขหมู่ของ อสม.
+        let vhvCurrentVillage = ""; 
 
-        // 1. โหลด LIFF และเช็คโปรไฟล์ อสม. ทันทีที่เปิดหน้าเว็บ
         document.addEventListener("DOMContentLoaded", () => {
             liff.init({ liffId: LIFF_ID }).then(() => {
                 if (liff.isLoggedIn()) {
                     liff.getProfile().then(async p => {
                         currentUserUid = p.userId;
-                        await fetchVHVProfile(currentUserUid); // ถามหมู่จากหลังบ้านก่อน
-                        fetchPatients(); // ค่อยดึงข้อมูลคนไข้
+                        await fetchVHVProfile(currentUserUid); 
+                        fetchPatients(); 
                     });
                 } else { liff.login(); }
             }).catch(err => {
-                fetchPatients(); // เผื่อกรณีทดสอบบนคอมพิวเตอร์
+                fetchPatients(); 
             });
         });
 
-        // 2. ฟังก์ชันไปดึง "เลขหมู่" ของ อสม. ที่กำลังเข้าใช้งาน
         async function fetchVHVProfile(uid) {
             try {
-                const response = await fetch(API_URL, { method: 'POST', body: JSON.stringify({ action: 'checkUserRegistration', uid: uid }) });
-                const data = await response.json();
-                if (data.status === 'registered') {
-                    vhvCurrentVillage = String(data.village).trim();
+                const docSnap = await db.collection('VHVs').doc(String(uid)).get();
+                if(docSnap.exists) {
+                    vhvCurrentVillage = String(docSnap.data().village_no || docSnap.data().village || "").trim();
+                } else {
+                    const response = await fetch(API_URL, { method: 'POST', body: JSON.stringify({ action: 'checkUserRegistration', uid: uid }) });
+                    const data = await response.json();
+                    if (data.status === 'registered') {
+                        vhvCurrentVillage = String(data.village).trim();
+                    }
                 }
             } catch (error) { console.error("ดึงข้อมูล อสม. ล้มเหลว"); }
         }
 
-        // 3. ฟังก์ชันดึงคนไข้ และ "กรองเอาเฉพาะหมู่ตัวเอง"
         async function fetchPatients() {
             try {
-                const response = await fetch(API_URL, { method: 'POST', body: JSON.stringify({ action: 'getAllPatients' }) });
-                const rawPatients = await response.json();
+                const snapshot = await db.collection('Patients').get();
+                const rawPatients = [];
+                snapshot.forEach(doc => rawPatients.push(doc.data()));
                 
-                // [ปิดบั๊ก] กรองสถานะ Active และกรองให้หมู่ตรงกับ อสม.
                 allPatients = rawPatients.filter(p => {
                     const isActive = String(p.status || 'Active').trim().toLowerCase() === 'active';
                     const isMyVillage = String(p.village_no).trim() === vhvCurrentVillage;
                     
-                    // ถ้าเข้าผ่าน LINE และมีหมู่ จะแสดงเฉพาะหมู่ตัวเอง
+                    // ถ้ายังไม่มีระบบ Assign แบบเจาะจง ให้โชว์คนไข้ในหมู่เดียวกันทั้งหมด
                     return isActive && isMyVillage && vhvCurrentVillage !== "";
                 });
                 
@@ -136,13 +138,6 @@
             }
         }
 
-        // ฟังก์ชันแปลงลิงก์ Google Drive เป็นรูปภาพ Thumbnail
-        const getDriveImageUrl = (url) => {
-            if(!url) return null;
-            const match = url.match(/d\/([a-zA-Z0-9_-]+)/) || url.match(/id=([a-zA-Z0-9_-]+)/);
-            return match ? `https://drive.google.com/thumbnail?id=${match[1]}&sz=150` : null;
-        };
-
         function sortByVillage() {
             isSortedByVillage = !isSortedByVillage;
             if(isSortedByVillage) {
@@ -152,7 +147,7 @@
                     return vA - vB;
                 });
             } else {
-                allPatients.sort((a, b) => parseInt(a.id) - parseInt(b.id));
+                allPatients.sort((a, b) => parseInt(a.id) - parseInt(b.id)); // เรียงตาม ID เดิม
             }
             renderPatientList();
         }
@@ -180,12 +175,11 @@
                 else if (p.group === 'ติดบ้าน') badgeColor = 'bg-[#f59e0b] text-white';
                 else if (p.group === 'ติดเตียง') badgeColor = 'bg-[#dc2626] text-white';
 
-                let groupDisplay = p.group !== 'ยังไม่ประเมิน' ? p.group : 'ต้องประเมิน';
+                let groupDisplay = (p.group !== 'ยังไม่ประเมิน' && p.group !== '-') ? p.group : 'ต้องประเมิน';
 
                 let avatarHtml = `<div class="w-14 h-14 rounded-[14px] bg-[#eef2ff] text-[#00694a] font-bold text-xl flex items-center justify-center flex-shrink-0">${p.name ? p.name.substring(0,1) : '?'}</div>`;
-                const imgUrl = getDriveImageUrl(p.profile_pic);
-                if(imgUrl) {
-                    avatarHtml = `<img src="${imgUrl}" class="w-14 h-14 rounded-[14px] object-cover flex-shrink-0 shadow-sm">`;
+                if(p.profile_pic && p.profile_pic.startsWith('http')) {
+                    avatarHtml = `<img src="${p.profile_pic}" class="w-14 h-14 rounded-[14px] object-cover flex-shrink-0 shadow-sm">`;
                 }
 
                 const cardHtml = `
