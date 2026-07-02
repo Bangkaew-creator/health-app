@@ -35,17 +35,24 @@
             gap: 2px;
             box-shadow: 0 1px 2px rgba(0,0,0,0.02);
         }
-        .tab-btn:hover { background-color: #f1f5f9; }
+        .tab-btn:hover {
+            background-color: #f1f5f9;
+        }
         .tab-btn.active { 
             color: #00694a; 
             background-color: #f0fdf4;
             border-color: #bbf7d0;
             box-shadow: 0 4px 12px rgba(0, 105, 74, 0.06);
         }
-        #tab-approve { color: #d97706; border-color: #fed7aa; }
+        #tab-approve {
+            color: #d97706;
+            border-color: #fed7aa;
+        }
         #tab-approve.active {
-            color: #b45309; background-color: #fffbeb;
-            border-color: #fde68a; box-shadow: 0 4px 12px rgba(217, 119, 6, 0.06);
+            color: #b45309;
+            background-color: #fffbeb;
+            border-color: #fde68a;
+            box-shadow: 0 4px 12px rgba(217, 119, 6, 0.06);
         }
         
         .loader-small { border: 2px solid #f3f3f3; border-bottom-color: #00694a; border-radius: 50%; width: 24px; height: 24px; animation: spin 1s linear infinite; }
@@ -143,6 +150,7 @@
     </main>
 
     <script>
+        // เชื่อมต่อ Firebase
         firebase.initializeApp(firebaseConfig);
         const db = firebase.firestore();
 
@@ -160,7 +168,9 @@
         async function verifyAdminAccess(uid) {
             try {
                 const userDoc = await db.collection('VHVs').doc(String(uid)).get();
-                let isAdmin = false; let hospital = 'เทศบาลเมืองบางแก้ว'; let vCount = 15;
+                let isAdmin = false;
+                let hospital = 'เทศบาลเมืองบางแก้ว';
+                let vCount = 15;
 
                 if (userDoc.exists && String(userDoc.data().role).toUpperCase() === 'ADMIN') {
                     isAdmin = true;
@@ -194,15 +204,21 @@
         function calculateDaysSince(dateStr) {
             if (!dateStr || dateStr.trim() === '' || dateStr === '-') return -1;
             let targetDate;
+            
             if (dateStr.includes('/')) {
                 const parts = dateStr.split(' ')[0].split('/');
                 let year = parseInt(parts[2]);
-                if (year > 2400) year -= 543;
+                if (year > 2400) { year -= 543; }
                 targetDate = new Date(year, parseInt(parts[1]) - 1, parseInt(parts[0]));
-            } else { targetDate = new Date(dateStr); }
+            } else {
+                targetDate = new Date(dateStr);
+            }
+
             if (isNaN(targetDate)) return -1;
             const diffTime = Math.abs(new Date() - targetDate);
-            return Math.floor(diffTime / (1000 * 60 * 60 * 24));
+            const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+            
+            return diffDays;
         }
 
         async function loadDataChannels() {
@@ -212,7 +228,9 @@
                     db.collection('VHVs').get()
                 ]);
                 
-                allPatients = []; pSnap.forEach(doc => allPatients.push(doc.data()));
+                allPatients = [];
+                pSnap.forEach(doc => allPatients.push(doc.data()));
+                
                 allVHVs = [];
                 vSnap.forEach(doc => {
                     const v = doc.data();
@@ -222,7 +240,8 @@
                 const pendingRes = await fetch(API_URL, { method: 'POST', body: JSON.stringify({ action: 'getPendingVHVs' }) });
                 pendingVHVs = await pendingRes.json();
                 
-                distributePatients(); renderPendingVHVs(); 
+                distributePatients();
+                renderPendingVHVs(); 
                 document.getElementById('loading-state').classList.add('hidden');
                 document.getElementById('filter-wrapper').classList.remove('hidden');
                 switchTab(currentTab);
@@ -260,6 +279,7 @@
                         <h3 class="font-bold text-slate-800 text-sm mt-2">${v.name}</h3>
                         <p class="text-[11px] text-amber-700 bg-amber-50 font-bold px-2 py-0.5 rounded inline-block mt-1">ขอรับสิทธิ์ หมู่ที่ ${v.village_no}</p>
                         <p class="text-[11px] text-slate-500 mt-2 flex items-center gap-1"><span class="material-symbols-outlined text-[14px]">call</span> ${v.phone}</p>
+                        
                         <div class="flex gap-2 mt-4 pt-3 border-t border-slate-100">
                             <button onclick="manageVHVStatus('${v.uid}', 'Rejected')" class="flex-1 py-2 bg-red-50 text-red-600 font-bold text-xs rounded-xl hover:bg-red-100">ปฏิเสธ</button>
                             <button onclick="manageVHVStatus('${v.uid}', 'Active')" class="flex-[2] py-2 bg-[#00694a] text-white font-bold text-xs rounded-xl hover:bg-[#005239]">✅ อนุมัติสิทธิ์</button>
@@ -271,9 +291,11 @@
 
         async function manageVHVStatus(uid, actionType) {
             if(!confirm(actionType === 'Active' ? 'ยืนยันการอนุมัติสิทธิ์ให้บุคคลนี้ใช่หรือไม่?' : 'ยืนยันการปฏิเสธสิทธิ์ใช่หรือไม่?')) return;
+            
             try {
                 const response = await fetch(API_URL, { method: 'POST', body: JSON.stringify({ action: 'manageVHVStatus', targetUid: uid, actionType: actionType }) });
                 const result = await response.json();
+                
                 if(result.success) {
                     if (actionType === 'Active') {
                         const targetVHV = pendingVHVs.find(v => String(v.uid) === String(uid));
@@ -420,35 +442,7 @@
             return `${dd}/${mm}/${yyyy}`;
         }
 
-function F_updatePatientVHV(id, vhvId, taskDesc, pNameReq, pHouseReq, pVillageReq) {
-  const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('Patients');
-  const data = sheet.getDataRange().getValues();
-  const headers = data[0].map(h => String(h).trim().toLowerCase());
-  const colId = headers.indexOf('patient_id');
-  const colName = headers.indexOf('name');
-  const colHouse = headers.indexOf('house_no');
-  const colVillage = headers.indexOf('village_no');
-  const colAssignedVHV = headers.indexOf('assigned_vhv_id');
-
-  // ใช้ชื่อคนไข้จากหน้าเว็บ (Firebase) เป็นหลัก ถ้าไม่มีค่อยใช้ค่าจาก Sheet
-  let pName = pNameReq || 'ไม่ระบุชื่อ';
-  let pHouse = pHouseReq || '-';
-  let pVillage = pVillageReq || '-';
-
-  if (colId !== -1 && colAssignedVHV !== -1) {
-    for (let i = 1; i < data.length; i++) {
-      if (String(data[i][colId]) === String(id)) {
-        sheet.getRange(i + 1, colAssignedVHV + 1).setValue(String(vhvId).trim());
-        // ถ้าหน้าเว็บไม่ได้ส่งชื่อมา ให้ดึงจาก Sheet
-        if (!pNameReq && colName > -1) pName = data[i][colName] || pName;
-        if (!pHouseReq && colHouse > -1) pHouse = data[i][colHouse] || pHouse;
-        if (!pVillageReq && colVillage > -1) pVillage = data[i][colVillage] || pVillage;
-        break; // อัปเดตชีตเสร็จแล้ว ออกจากลูปได้เลย ไม่ต้องรอให้จบ
-      }
-    }
-  }
-
-             async function saveAssignment(patientId) {
+        async function saveAssignment(patientId) {
             const vhvId = document.getElementById(`select_${patientId}`).value;
             const checkedTasks = Array.from(document.querySelectorAll(`.task-check-${patientId}:checked`)).map(cb => cb.value);
 
@@ -463,7 +457,7 @@ function F_updatePatientVHV(id, vhvId, taskDesc, pNameReq, pHouseReq, pVillageRe
                 const todayStr = getTodayString(); 
                 
                 // ดึงชื่อและที่อยู่จาก Firebase ที่หน้าเว็บมีอยู่แล้ว เพื่อส่งไปให้ LINE เลย
-                const p = allPatients.find(x => x.id === patientId);
+                const p = allPatients.find(x => x.id === patientId || x.patient_id === patientId); 
                 const pName = p ? p.name : 'ไม่ระบุชื่อ';
                 const pHouse = p ? p.house_no : '-';
                 const pVillage = p ? p.village_no : '-';
@@ -500,7 +494,6 @@ function F_updatePatientVHV(id, vhvId, taskDesc, pNameReq, pHouseReq, pVillageRe
                 btn.innerText = 'บันทึกและส่งแจ้งเตือน LINE อส.'; 
             }
         }
-    }
     </script>
 </body>
 </html>
