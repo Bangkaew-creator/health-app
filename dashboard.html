@@ -8,7 +8,12 @@
     <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700&display=swap" rel="stylesheet"/>
     <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
     <script charset="utf-8" src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+    
+    <!-- โหลดเครื่องมือ Firebase -->
+    <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore-compat.js"></script>
     <script src="config.js"></script>
+
     <style>
         body { font-family: 'Sarabun', sans-serif; background-color: #f8fafc; padding-bottom: 90px; -webkit-tap-highlight-color: transparent;}
         .material-symbols-outlined { font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24; }
@@ -109,7 +114,7 @@
 
         <div id="loading-state" class="flex flex-col items-center justify-center py-10 space-y-3">
             <div class="loader"></div>
-            <p class="text-xs text-gray-400 animate-pulse">กำลังดึงข้อมูล...</p>
+            <p class="text-xs text-gray-400 animate-pulse">กำลังโหลดข้อมูลจาก Firebase...</p>
         </div>
 
         <div id="patient-list" class="space-y-4 px-4 hidden mb-6"></div>
@@ -118,6 +123,7 @@
             <span class="material-symbols-outlined text-[48px]">person_search</span>
             <p class="text-[13px]">ไม่พบข้อมูลที่ตรงตามเงื่อนไข</p>
         </div>
+        
         <!-- เครดิตผู้พัฒนา -->
         <div class="text-center mt-10 mb-8 opacity-70">
             <div class="flex items-center justify-center gap-1.5 mb-1 text-gray-400">
@@ -149,18 +155,21 @@
     </nav>
 
     <script>
-        
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.firestore();
+
         let allPatients = []; 
         let currentFilter = 'all'; 
-        let vhvCurrentVillage = null; // เก็บหมู่ของอสม.
+        let vhvCurrentVillage = null; 
+        let vhvCurrentUid = null;
 
-                document.addEventListener("DOMContentLoaded", () => {
+        document.addEventListener("DOMContentLoaded", () => {
             liff.init({ liffId: LIFF_ID }).then(() => {
                 if (liff.isLoggedIn()) {
                     liff.getProfile().then(async profile => {
-                        // [แก้ไข] ใส่ await เพื่อบังคับให้ระบบโหลดโปรไฟล์(และเลขหมู่)ให้เสร็จก่อน
+                        vhvCurrentUid = profile.userId;
                         await fetchVHVProfile(profile.userId); 
-                        fetchPatients(); // ค่อยไปดึงข้อมูลผู้ป่วย
+                        fetchPatients(); 
                     }).catch(err => {
                         setDefaultVHVProfile();
                         fetchPatients();
@@ -175,42 +184,52 @@
             });
         });
 
-                // แก้ไขฟังก์ชันจุดนี้ในหน้า dashboard.html ของ อสม.
+        // [อัปเดต] ดึงข้อมูลโปรไฟล์ของ อสม. จาก Firebase แทน GAS
         async function fetchVHVProfile(uid) {
             try {
-                const response = await fetch(API_URL, {
-                    method: 'POST',
-                    body: JSON.stringify({ action: 'checkUserRegistration', uid: uid })
-                });
-                const data = await response.json();
-                
-                if (data.status === 'registered') {
+                const docSnap = await db.collection('VHVs').doc(String(uid)).get();
+                if (docSnap.exists) {
+                    const data = docSnap.data();
+                    if(data.status === 'Rejected') return window.location.href = 'index.html';
+
                     document.getElementById('header-vhv-name').innerText = data.name;
                     
-                    // [แก้ไขให้ดึงแบบไดนามิก] ใช้ค่าโรงพยาบาล/หน่วยงานจากหลังบ้านมาโชว์คู่กับเลขหมู่
                     const hospital = data.hospital_name || 'เทศบาลเมืองบางแก้ว';
-                    if (data.village) {
-                        vhvCurrentVillage = data.village;
-                        document.getElementById('header-vhv-village').innerText = 'หมู่ที่ ' + data.village + ' | ' + hospital;
-                        document.getElementById('my-village-number').innerText = data.village;
+                    if (data.village_no) {
+                        vhvCurrentVillage = data.village_no;
+                        document.getElementById('header-vhv-village').innerText = 'หมู่ที่ ' + data.village_no + ' | ' + hospital;
+                        document.getElementById('my-village-number').innerText = data.village_no;
                     }
                     
                     const picContainer = document.getElementById('header-profile-pic');
-                    if (data.pic_url) {
-                        const match = data.pic_url.match(/d\/([a-zA-Z0-9_-]+)/) || data.pic_url.match(/id=([a-zA-Z0-9_-]+)/);
-                        if (match) picContainer.innerHTML = `<img src="https://drive.google.com/thumbnail?id=${match[1]}&sz=150" class="w-full h-full object-cover">`;
-                        else picContainer.innerHTML = data.name.substring(0, 1);
+                    if (data.profile_pic) {
+                        picContainer.innerHTML = `<img src="${data.profile_pic}" class="w-full h-full object-cover">`;
                     } else {
                         picContainer.innerHTML = data.name.substring(0, 1);
                     }
 
                     updateVillageTotal();
                 } else {
-                    setDefaultVHVProfile();
+                    // ถ้าใน Firebase ยังไม่มี ค่อยลองหาใน GAS เผื่อแอดมินเพิ่งอนุมัติจากระบบเก่า
+                    const response = await fetch(API_URL, { method: 'POST', body: JSON.stringify({ action: 'checkUserRegistration', uid: uid }) });
+                    const data = await response.json();
+                    if (data.status === 'registered') {
+                        document.getElementById('header-vhv-name').innerText = data.name;
+                        const hospital = data.hospital_name || 'เทศบาลเมืองบางแก้ว';
+                        if (data.village) {
+                            vhvCurrentVillage = data.village;
+                            document.getElementById('header-vhv-village').innerText = 'หมู่ที่ ' + data.village + ' | ' + hospital;
+                            document.getElementById('my-village-number').innerText = data.village;
+                        }
+                        const picContainer = document.getElementById('header-profile-pic');
+                        if (data.pic_url) {
+                            picContainer.innerHTML = `<img src="${data.pic_url}" class="w-full h-full object-cover">`;
+                        } else picContainer.innerHTML = data.name.substring(0, 1);
+                        
+                        updateVillageTotal();
+                    } else { setDefaultVHVProfile(); }
                 }
-            } catch (error) {
-                setDefaultVHVProfile();
-            }
+            } catch (error) { setDefaultVHVProfile(); }
         }
 
         function setDefaultVHVProfile() {
@@ -220,20 +239,27 @@
             document.getElementById('my-village-number').innerText = '-';
         }
 
-                // ฟังก์ชันดึงข้อมูลผู้ป่วยสำหรับ อสม.
+        // [อัปเดต] ดึงข้อมูลผู้ป่วยสำหรับ อสม. ตรงจาก Firebase เร็วติดจรวด
         async function fetchPatients() {
             try {
-                const response = await fetch(API_URL, { method: 'POST', body: JSON.stringify({ action: 'getAllPatients' }) });
-                const rawPatients = await response.json();
+                // กวาดข้อมูลคนไข้ทั้งหมดมาก่อน เพราะต้องการเอาไปกรองเองใน Frontend จะได้เร็ว
+                const snapshot = await db.collection('Patients').get();
+                const rawPatients = [];
+                snapshot.forEach(doc => { rawPatients.push(doc.data()); });
                 
-                // [เพิ่มการกรอง] กรองให้เหลือเฉพาะ "หมู่ตัวเอง" และ "สถานะ Active" เท่านั้น
+                // กรองให้เหลือเฉพาะ "ผู้ที่อยู่ในความดูแลของ อสม." และ "สถานะ Active"
                 allPatients = rawPatients.filter(p => {
-                    // เช็คว่าเป็นหมู่ที่ อสม. ดูแลอยู่ใช่หรือไม่ (ถ้าไม่ได้ล็อกอิน ข้ามการเช็คหมู่)
+                    // หาก อสม. ถูกแอดมิน assigned เข้ารหัสให้แล้ว ให้โชว์เฉพาะคนไข้รหัสตัวเองเป็นหลัก (ตามฟังก์ชันมอบหมายงาน)
+                    // ถ้ายังไม่มีระบบมอบหมายงานตรงๆ จะโชว์ตามเลขหมู่บ้านเป็น default
                     const isMyVillage = vhvCurrentVillage ? (String(p.village_no) === String(vhvCurrentVillage)) : true;
-                    // เช็คว่าสถานะยังเป็น Active อยู่ใช่หรือไม่
+                    const isAssignedToMe = (p.assigned_vhv_id && String(p.assigned_vhv_id) === String(vhvCurrentUid));
+                    
                     const isActive = String(p.status || 'Active').trim().toLowerCase() === 'active';
                     
-                    return isMyVillage && isActive;
+                    // เงื่อนไข: ถ้าโดน assign มาตรงๆ ต้องโชว์ หรือ ถ้ายังไม่มีการ assign แต่เลขหมู่ตรงกันก็ให้โชว์
+                    const shouldShow = isAssignedToMe || (!p.assigned_vhv_id && isMyVillage);
+
+                    return shouldShow && isActive;
                 });
                 
                 updateTopSummaryCards();
@@ -243,7 +269,8 @@
                 document.getElementById('loading-state').classList.add('hidden');
                 document.getElementById('patient-list').classList.remove('hidden');
             } catch (error) {
-                console.error("ไม่สามารถเชื่อมต่อฐานข้อมูลผู้ป่วยได้");
+                console.error("ไม่สามารถเชื่อมต่อฐานข้อมูลผู้ป่วยได้", error);
+                document.getElementById('loading-state').innerHTML = `<p class="text-sm text-red-500 font-bold">เกิดข้อผิดพลาดในการโหลดข้อมูล</p>`;
             }
         }
 
@@ -254,11 +281,7 @@
         }
 
         function updateVillageTotal() {
-            if (vhvCurrentVillage && allPatients.length > 0) {
-                // กรองเฉพาะผู้ป่วยที่มีหมู่ตรงกับ อสม.
-                const totalInVillage = allPatients.filter(p => String(p.village_no) === String(vhvCurrentVillage)).length;
-                document.getElementById('my-village-total').innerText = totalInVillage;
-            }
+            document.getElementById('my-village-total').innerText = allPatients.length;
         }
 
         function changeFilter(filterType, element) {
@@ -287,11 +310,11 @@
             let displayCount = 0;
 
             allPatients.forEach(p => {
-                if (currentFilter === 'visited' && p.last_assess !== todayStr) return;
+                if (currentFilter === 'visited' && String(p.last_assess) !== String(todayStr)) return;
                 if (currentFilter === 'pending' && p.group !== 'ยังไม่ประเมิน' && p.adl !== '-') return;
-                if (currentFilter === 'new' && p.last_assess !== '') return;
+                if (currentFilter === 'new' && p.last_assess !== '' && p.last_assess !== '-') return;
 
-                const nameMatch = p.name ? p.name.toLowerCase().includes(searchKeyword) : false;
+                const nameMatch = p.name ? String(p.name).toLowerCase().includes(searchKeyword) : false;
                 const houseMatch = p.house_no ? String(p.house_no).toLowerCase().includes(searchKeyword) : false;
                 const villageMatch = p.village_no ? String(p.village_no).toLowerCase().includes(searchKeyword) : false;
                 
@@ -304,19 +327,24 @@
                 else if (p.group === 'ติดบ้าน') badgeColor = 'bg-[#f59e0b] text-white';
                 else if (p.group === 'ติดเตียง') badgeColor = 'bg-[#dc2626] text-white';
 
-                let groupDisplay = p.group !== 'ยังไม่ประเมิน' ? p.group : 'ต้องประเมิน';
+                let groupDisplay = (p.group !== 'ยังไม่ประเมิน' && p.group !== '-') ? p.group : 'ต้องประเมิน';
 
                 let avatarHtml = `<div class="w-14 h-14 rounded-[14px] bg-[#eef2ff] text-[#00694a] font-bold text-xl flex items-center justify-center flex-shrink-0">${p.name ? p.name.substring(0,1) : '?'}</div>`;
                 if(p.profile_pic && p.profile_pic.startsWith('http')) {
-                    const match = p.profile_pic.match(/d\/([a-zA-Z0-9_-]+)/) || p.profile_pic.match(/id=([a-zA-Z0-9_-]+)/);
-                    if(match) avatarHtml = `<img src="https://drive.google.com/thumbnail?id=${match[1]}&sz=150" class="w-14 h-14 rounded-[14px] object-cover flex-shrink-0 shadow-sm">`;
+                    avatarHtml = `<img src="${p.profile_pic}" class="w-14 h-14 rounded-[14px] object-cover flex-shrink-0 shadow-sm">`;
+                }
+
+                // สัญลักษณ์ช่วย อสม. สังเกต
+                let infoBadge = '';
+                if(p.assigned_vhv_id === vhvCurrentUid) {
+                    infoBadge = `<span class="material-symbols-outlined text-emerald-500 text-[14px]" title="ได้รับมอบหมายตรง">assignment_ind</span>`;
                 }
 
                 const cardHtml = `
                     <div onclick="window.location.href='patient_profile.html?id=${p.id}'" class="bg-white rounded-[20px] p-4 shadow-sm border border-gray-100 flex items-center gap-4 cursor-pointer active:scale-[0.98] transition-transform">
                         ${avatarHtml}
                         <div class="flex-1 min-w-0">
-                            <h3 class="font-bold text-[15px] text-gray-900 truncate">${p.name || 'ไม่ระบุชื่อ'}</h3>
+                            <h3 class="font-bold text-[15px] text-gray-900 truncate flex items-center gap-1">${p.name || 'ไม่ระบุชื่อ'} ${infoBadge}</h3>
                             <p class="text-xs text-gray-500 mt-1 truncate">บ้านเลขที่ ${p.house_no || '-'} • หมู่ ${p.village_no || '-'}</p>
                         </div>
                         <div class="flex flex-col items-end justify-center gap-2 flex-shrink-0">
@@ -335,10 +363,11 @@
         function filterPatients() { renderPatientList(); }
 
         function getTodayString() {
+            // ปรับเป็นปี พ.ศ. ให้ตรงกับระบบบันทึกแบบฟอร์ม
             const today = new Date();
             const dd = String(today.getDate()).padStart(2, '0');
             const mm = String(today.getMonth() + 1).padStart(2, '0');
-            const yyyy = today.getFullYear();
+            const yyyy = today.getFullYear() + 543;
             return `${dd}/${mm}/${yyyy}`;
         }
 
