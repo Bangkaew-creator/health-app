@@ -23,7 +23,7 @@ function doPost(e) {
       case 'updatePatientStatus': response = F_updatePatientStatus(requestData.id, requestData.status); break;
       case 'updateResourceApproval': response = F_updateResourceApproval(requestData.id, requestData.diaperQty, requestData.underpadQty); break;
       case 'getAllVHVs': response = F_getAllVHVs(); break;
-      case 'updatePatientVHV': response = F_updatePatientVHV(requestData.id, requestData.vhvId, requestData.taskDesc); break; // [แก้ไขจุดนี้]
+      case 'updatePatientVHV': response = F_updatePatientVHV(requestData.id, requestData.vhvId, requestData.taskDesc); break; // [อัปเดตจุดนี้]
       case 'recordCommitteeDecision': response = F_recordCommitteeDecision(requestData.patientIds, requestData.fy, requestData.round, requestData.months); break;
       case 'registerUser': response = F_registerUser(requestData.uid, requestData.name, requestData.role, requestData.village_no, requestData.phone); break;
       case 'getPendingVHVs': response = F_getPendingVHVs(); break;
@@ -398,7 +398,6 @@ function F_getAllVHVs() {
   return list;
 }
 
-// [แก้ไขจุดนี้] เปลี่ยนแปลงการดึง Task Description ไปแจ้งเตือน
 function F_updatePatientVHV(id, vhvId, taskDesc) {
   const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('Patients');
   const data = sheet.getDataRange().getValues();
