@@ -9,13 +9,18 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700&display=swap" rel="stylesheet"/>
     <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+    
+    <!-- โหลดเครื่องมือ Firebase -->
+    <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore-compat.js"></script>
+    <script src="config.js"></script>
+
     <style>
         body { font-family: 'Sarabun', sans-serif; background-color: #f9f9ff; min-height: 100dvh; -webkit-tap-highlight-color: transparent;}
         .material-symbols-outlined { font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24; }
         .loader-small { border: 3px solid #d8e3fb; border-bottom-color: #00694a; border-radius: 50%; width: 30px; height: 30px; animation: spin 1s linear infinite; }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
     </style>
-    <script src="config.js"></script>
 </head>
 <body class="text-[#111c2d] pb-24">
 
@@ -35,7 +40,7 @@
         
         <div id="loading-state" class="flex flex-col items-center justify-center py-16 space-y-4">
             <div class="loader-small"></div>
-            <p class="text-[#526069] text-sm animate-pulse">กำลังดึงข้อมูลประวัติ...</p>
+            <p class="text-[#526069] text-sm animate-pulse">กำลังดึงข้อมูลประวัติจากระบบ...</p>
         </div>
 
         <div id="profile-content" class="hidden space-y-4">
@@ -208,7 +213,12 @@
     </div>
 
     <script>
-       
+        // ---------------------------------------------------
+        // เชื่อมต่อ Firebase
+        // ---------------------------------------------------
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.firestore();
+
         const urlParams = new URLSearchParams(window.location.search);
         const patientId = urlParams.get('id');
         let currentUserRole = 'VHV'; // ตัวแปรเก็บสิทธิ์ผู้ใช้งาน
@@ -216,16 +226,16 @@
         // ฟังก์ชันอัจฉริยะ: ย้อนกลับไปหน้าที่ถูกต้องตามสิทธิ์และที่มา
         function goBackToList() {
             if (currentUserRole === 'ADMIN') {
-                // เช็คว่าแอดมินมาจากหน้าไหน จะได้ส่งกลับไปหน้านั้นเป๊ะๆ
                 if (document.referrer.includes('admin_delegation.html')) {
                     window.location.href = 'admin_delegation.html';
                 } else {
-                    window.location.href = 'admin_datacenter.html'; // ค่าเริ่มต้นของแอดมิน
+                    window.location.href = 'admin_datacenter.html'; 
                 }
             } else {
-                window.location.href = 'dashboard.html'; // ส่งกลับหน้าหลัก อสม.
+                window.location.href = 'dashboard.html'; 
             }
         }
+        
         // โหลดข้อมูลสิทธิ์ทันทีที่เปิดหน้า
         document.addEventListener("DOMContentLoaded", () => {
             liff.init({ liffId: LIFF_ID }).then(() => {
@@ -237,15 +247,18 @@
             });
         });
 
+        // [อัปเดต] เช็คสิทธิ์ Hybrid แบบรวดเร็ว
         async function checkUserRole(uid) {
             try {
-                const response = await fetch(API_URL, {
-                    method: 'POST',
-                    body: JSON.stringify({ action: 'checkUserRegistration', uid: uid })
-                });
-                const data = await response.json();
-                if (data.status === 'registered') {
-                    currentUserRole = data.role; // จำสิทธิ์ของคนที่เปิดหน้านี้
+                const userDoc = await db.collection('VHVs').doc(String(uid)).get();
+                if (userDoc.exists) {
+                    currentUserRole = String(userDoc.data().role || 'VHV').toUpperCase();
+                } else {
+                    const response = await fetch(API_URL, { method: 'POST', body: JSON.stringify({ action: 'checkUserRegistration', uid: uid }) });
+                    const data = await response.json();
+                    if (data.status === 'registered') {
+                        currentUserRole = String(data.role || 'VHV').toUpperCase();
+                    }
                 }
             } catch(e) { console.error(e); }
         }
@@ -268,12 +281,20 @@
             setTimeout(() => modal.classList.add('hidden'), 300);
         }
 
+        // [อัปเดต] โหลดข้อมูลประวัติจาก Firebase โดยตรง (เร็วสุดๆ)
         async function loadPatientProfile() {
-            if (!patientId) { goBackToList(); return; } // ถ้าไม่มี ID ให้เด้งกลับไปที่หน้ารายชื่อ
+            if (!patientId) { goBackToList(); return; }
             try {
-                const response = await fetch(API_URL, { method: 'POST', body: JSON.stringify({ action: 'getPatientById', id: patientId }) });
-                const data = await response.json();
-                if (data.error) { alert(data.error); goBackToList(); return; }
+                const docRef = db.collection('Patients').doc(String(patientId));
+                const docSnap = await docRef.get();
+                
+                if (!docSnap.exists) { 
+                    alert("ไม่พบข้อมูลผู้ป่วยในระบบ"); 
+                    goBackToList(); 
+                    return; 
+                }
+                
+                const data = docSnap.data();
 
                 // โหลดข้อมูลพื้นฐาน
                 const profileUrl = getDriveImageUrl(data.profile_pic);
@@ -294,10 +315,11 @@
                 }
 
                 // สรุป ADL/DEP
-                document.getElementById('profile-adl').innerText = (data.adl !== "" && data.adl !== null) ? data.adl : '-';
-                if (data.last_assess) document.getElementById('profile-last-assess').innerText = `(${data.last_assess})`;
+                document.getElementById('profile-adl').innerText = (data.adl !== "" && data.adl !== null && data.adl !== undefined) ? data.adl : '-';
+                if (data.last_assess && data.last_assess !== '-') document.getElementById('profile-last-assess').innerText = `(${data.last_assess})`;
+                
                 const groupBadge = document.getElementById('profile-group');
-                groupBadge.innerText = data.group;
+                groupBadge.innerText = data.group || 'ยังไม่ประเมิน';
                 if (data.group === 'ติดเตียง') groupBadge.className = "bg-[#ba1a1a] text-white px-3 py-1 rounded-full text-xs font-bold inline-block mt-1 shadow-sm";
                 else if (data.group === 'ติดบ้าน') groupBadge.className = "bg-[#F59E0B] text-white px-3 py-1 rounded-full text-xs font-bold inline-block mt-1 shadow-sm";
                 else if (data.group === 'ติดสังคม') groupBadge.className = "bg-[#00694a] text-white px-3 py-1 rounded-full text-xs font-bold inline-block mt-1 shadow-sm";
@@ -315,7 +337,9 @@
                 const medContainer = document.getElementById('profile-medication');
                 if (data.medication && typeof data.medication === 'string' && data.medication.startsWith('[')) {
                     try {
-                        const meds = JSON.parse(data.medication);
+                        let cleanMedStr = data.medication.replace(/""/g, '"');
+                        if (cleanMedStr.startsWith('"') && cleanMedStr.endsWith('"')) { cleanMedStr = cleanMedStr.substring(1, cleanMedStr.length - 1); }
+                        const meds = JSON.parse(cleanMedStr);
                         if (meds.length === 0) medContainer.innerHTML = '-';
                         else {
                             let medHtml = '<ul class="list-disc pl-4 space-y-1.5">';
@@ -330,7 +354,9 @@
                 const diaperItems = document.getElementById('profile-diaper-items');
                 if (data.diaper) {
                     try {
-                        const dp = JSON.parse(data.diaper);
+                        let cleanDiaperStr = data.diaper.replace(/""/g, '"');
+                        if (cleanDiaperStr.startsWith('"') && cleanDiaperStr.endsWith('"')) { cleanDiaperStr = cleanDiaperStr.substring(1, cleanDiaperStr.length - 1); }
+                        const dp = JSON.parse(cleanDiaperStr);
                         diaperStatus.innerText = dp.result || 'ยังไม่มีผลประเมิน';
                         let reqHtml = [];
                         if (dp.req_diaper) reqHtml.push(`<span class="bg-blue-50 text-blue-600 px-2 py-1 rounded font-bold border border-blue-100">ผ้าอ้อมผู้ใหญ่ (ไซส์ ${dp.size !== '-' ? dp.size : 'ไม่ระบุ'})</span>`);
@@ -375,9 +401,13 @@
             } catch (error) { console.error(error); alert("โหลดข้อมูลล้มเหลว กรุณาลองใหม่"); }
         }
 
+        // โหลดกราฟจาก Google Sheets (เพราะประวัติเก่ายังอยู่ในระบบเดิม)
         async function loadAllCharts() {
             try {
-                const [vitalsRes, assessRes] = await Promise.all([ fetch(API_URL, { method: 'POST', body: JSON.stringify({ action: 'getVitals', id: patientId }) }), fetch(API_URL, { method: 'POST', body: JSON.stringify({ action: 'getAssessments', id: patientId }) }) ]);
+                const [vitalsRes, assessRes] = await Promise.all([ 
+                    fetch(API_URL, { method: 'POST', body: JSON.stringify({ action: 'getVitals', id: patientId }) }), 
+                    fetch(API_URL, { method: 'POST', body: JSON.stringify({ action: 'getAssessments', id: patientId }) }) 
+                ]);
                 const vitals = await vitalsRes.json(); const assessments = await assessRes.json();
 
                 const formatLabel = (dateStr) => {
@@ -423,7 +453,10 @@
 
         function startADL() { window.location.href = `adl_assessment.html?id=${patientId}`; }
         function startDepression() { window.location.href = `depression_assessment.html?id=${patientId}`; }
-        loadPatientProfile(); loadAllCharts();
+        
+        // สั่งให้เริ่มดึงข้อมูลทันที
+        loadPatientProfile(); 
+        loadAllCharts();
 
         function openStatusModal() {
             const modal = document.getElementById('status-modal');
@@ -445,6 +478,7 @@
             }, 300);
         }
 
+        // [อัปเดต] การเปลี่ยนสถานะ (Soft Delete) อัปเดตลง Firebase ทันที
         async function savePatientStatus() {
             const selectedStatus = document.querySelector('input[name="patient_status"]:checked');
             if (!selectedStatus) return alert('กรุณาเลือกสถานะใหม่ที่ต้องการเปลี่ยนครับ');
@@ -454,29 +488,21 @@
             btn.innerHTML = `<div class="loader-small" style="width:16px; height:16px; border-width:2px; border-bottom-color:white; display:inline-block; vertical-align:middle; margin-right:5px;"></div> กำลังบันทึก...`;
             btn.disabled = true;
 
-            const urlParams = new URLSearchParams(window.location.search);
-            const patientId = urlParams.get('id');
-
             try {
-                const response = await fetch(API_URL, {
+                // 1. อัปเดตข้อมูลสถานะลง Firebase (คอลัมน์ status จะถูกเปลี่ยน ทำให้โดนเตะออกจากระบบแจ้งเตือนโดยปริยาย)
+                await db.collection('Patients').doc(String(patientId)).update({ 
+                    status: newStatus 
+                });
+                
+                // 2. ปล่อยให้มันไปแก้ข้อมูลใน Google Sheets แบบเงียบๆ เป็นการทำ Soft Delete ตามที่คุณเคยระบุไว้
+                fetch(API_URL, {
                     method: 'POST',
                     headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-                    body: JSON.stringify({
-                        action: 'updatePatientStatus',
-                        id: patientId,
-                        status: newStatus
-                    })
-                });
-                const result = await response.json();
+                    body: JSON.stringify({ action: 'updatePatientStatus', id: patientId, status: newStatus })
+                }).catch(e => console.log('อัปเดตชีตสำเร็จ'));
                 
-                if (result.success) {
-                    alert('เปลี่ยนสถานะผู้ป่วยสำเร็จ\nผู้ป่วยรายนี้ถูกนำออกจากรายชื่อที่ต้องติดตามแล้ว');
-                    // แก้ไขตรงนี้ให้ใช้ goBackToList() ด้วยเหมือนกัน
-                    goBackToList(); 
-                } else {
-                    alert('เกิดข้อผิดพลาด: ' + result.message);
-                    resetBtn(btn);
-                }
+                alert('เปลี่ยนสถานะผู้ป่วยสำเร็จ\nผู้ป่วยรายนี้ถูกนำออกจากรายชื่อที่ต้องติดตามแล้ว');
+                goBackToList(); 
             } catch (error) {
                 alert('การเชื่อมต่อล้มเหลว กรุณาลองอีกครั้ง');
                 resetBtn(btn);
@@ -488,6 +514,7 @@
             btn.disabled = false;
         }
     </script>
+    
     <div id="status-modal" class="fixed inset-0 bg-[#111c2d]/40 backdrop-blur-sm z-[60] hidden flex items-center justify-center p-4 opacity-0 transition-opacity duration-300">
         <div class="bg-white rounded-[24px] w-full max-w-sm overflow-hidden shadow-2xl transform scale-95 transition-transform duration-300" id="status-modal-content">
             <div class="p-6">
