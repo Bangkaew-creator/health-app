@@ -32,23 +32,6 @@
 </header>
 
 <main class="max-w-2xl mx-auto p-4 pt-6 space-y-6">
-    
-    <section class="bg-[#f5fff7] rounded-[22px] p-5 border-2 border-dashed border-[#00694a]/30 shadow-sm text-center relative">
-        <div class="absolute top-0 right-0 bg-[#00694a] text-white text-[10px] font-bold px-2 py-1 rounded-bl-lg">แนะนำ</div>
-        <div class="w-12 h-12 bg-[#00694a]/10 text-[#00694a] rounded-full flex items-center justify-center mx-auto mb-3">
-            <span class="material-symbols-outlined text-2xl">smart_button</span>
-        </div>
-        <h2 class="text-base font-bold text-[#00694a] mb-1">สแกนบัตรประชาชน</h2>
-        <p class="text-xs text-[#526069] mb-4">ถ่ายรูปหน้าบัตร เพื่อดึงข้อมูลอัตโนมัติ (กำลังพัฒนาระบบหลังบ้าน)</p>
-        
-        <input type="file" id="camera-input" accept="image/*" capture="environment" class="hidden">
-        
-        <button type="button" onclick="document.getElementById('camera-input').click()" class="w-full py-3.5 bg-[#00694a] text-white rounded-xl text-sm font-bold flex items-center justify-center gap-2 active:scale-95 transition-transform shadow-md">
-            <span class="material-symbols-outlined text-[20px]">document_scanner</span>
-            เปิดกล้องสแกนบัตร (OCR)
-        </button>
-        <p id="ocr-status" class="text-xs text-[#00694a] mt-2 hidden"></p>
-    </section>
 
     <form id="patient-form" class="space-y-6">
         
