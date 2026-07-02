@@ -23,7 +23,7 @@ function doPost(e) {
       case 'updatePatientStatus': response = F_updatePatientStatus(requestData.id, requestData.status); break;
       case 'updateResourceApproval': response = F_updateResourceApproval(requestData.id, requestData.diaperQty, requestData.underpadQty); break;
       case 'getAllVHVs': response = F_getAllVHVs(); break;
-      case 'updatePatientVHV': response = F_updatePatientVHV(requestData.id, requestData.vhvId, requestData.taskDesc); break; // [อัปเดตจุดนี้]
+      case 'updatePatientVHV': response = F_updatePatientVHV(requestData.id, requestData.vhvId, requestData.taskDesc, requestData.pName, requestData.pHouse, requestData.pVillage); break;
       case 'recordCommitteeDecision': response = F_recordCommitteeDecision(requestData.patientIds, requestData.fy, requestData.round, requestData.months); break;
       case 'registerUser': response = F_registerUser(requestData.uid, requestData.name, requestData.role, requestData.village_no, requestData.phone); break;
       case 'getPendingVHVs': response = F_getPendingVHVs(); break;
@@ -398,7 +398,7 @@ function F_getAllVHVs() {
   return list;
 }
 
-function F_updatePatientVHV(id, vhvId, taskDesc) {
+function F_updatePatientVHV(id, vhvId, taskDesc, pNameReq, pHouseReq, pVillageReq) {
   const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('Patients');
   const data = sheet.getDataRange().getValues();
   const headers = data[0].map(h => String(h).trim().toLowerCase());
@@ -408,36 +408,42 @@ function F_updatePatientVHV(id, vhvId, taskDesc) {
   const colVillage = headers.indexOf('village_no');
   const colAssignedVHV = headers.indexOf('assigned_vhv_id');
 
-  if (colId === -1 || colAssignedVHV === -1) return { success: false, message: 'โครงสร้างตารางไม่สมบูรณ์' };
+  // ใช้ชื่อคนไข้จากหน้าเว็บ (Firebase) เป็นหลัก ถ้าไม่มีค่อยใช้ค่าจาก Sheet
+  let pName = pNameReq || 'ไม่ระบุชื่อ';
+  let pHouse = pHouseReq || '-';
+  let pVillage = pVillageReq || '-';
 
-  for (let i = 1; i < data.length; i++) {
-    if (String(data[i][colId]) === String(id)) {
-      sheet.getRange(i + 1, colAssignedVHV + 1).setValue(String(vhvId).trim());
-      
-      const pName = colName > -1 ? data[i][colName] : 'ไม่ระบุชื่อ';
-      const pHouse = colHouse > -1 ? data[i][colHouse] : '-';
-      const pVillage = colVillage > -1 ? data[i][colVillage] : '-';
-      
-      const tDesc = taskDesc ? taskDesc : "ติดตามเยี่ยมบ้านทั่วไป";
-      const messageText = `📋 มีการมอบหมายภารกิจ อสม.\n\nรบกวนลงพื้นที่ติดตามและดูแลผู้ป่วย:\n\n👤 ผู้ป่วย: ${pName}\n🏠 ที่อยู่: บ้านเลขที่ ${pHouse} หมู่ที่ ${pVillage}\n📌 งานที่ต้องทำ: ${tDesc}\n\nเมื่อดำเนินการเสร็จสิ้น รบกวนบันทึกและกด "ยืนยันปิดงาน" ผ่านแอปพลิเคชันด้วยครับ 🙏`;
-      
-      let lineResultMsg = "ไม่ได้ส่ง (หา Token จาก Config ไม่เจอ)";
-      const lineToken = F_getConfig('LINE_CHANNEL_ACCESS_TOKEN'); 
-      
-      if (lineToken && vhvId) {
-        try {
-          const resText = sendLinePushMessage(vhvId, messageText, lineToken);
-          if (resText === "{}" || resText.includes("sentMessages")) {
-             lineResultMsg = "ส่งแจ้งเตือนเข้า LINE สำเร็จ!";
-          } else {
-             lineResultMsg = `LINE ปฏิเสธข้อความ: ${resText}\n(พยายามส่งไปที่ UID: ${vhvId})`;
-          }
-        } catch(e) { lineResultMsg = "Error ฝั่ง Google: " + e.message; }
+  if (colId !== -1 && colAssignedVHV !== -1) {
+    for (let i = 1; i < data.length; i++) {
+      if (String(data[i][colId]) === String(id)) {
+        sheet.getRange(i + 1, colAssignedVHV + 1).setValue(String(vhvId).trim());
+        // ถ้าหน้าเว็บไม่ได้ส่งชื่อมา ให้ดึงจาก Sheet
+        if (!pNameReq && colName > -1) pName = data[i][colName] || pName;
+        if (!pHouseReq && colHouse > -1) pHouse = data[i][colHouse] || pHouse;
+        if (!pVillageReq && colVillage > -1) pVillage = data[i][colVillage] || pVillage;
+        break; // อัปเดตชีตเสร็จแล้ว ออกจากลูปได้เลย ไม่ต้องรอให้จบ
       }
-      return { success: true, message: `บันทึกการมอบหมายงานเรียบร้อยแล้ว\n\n[สถานะ LINE]\n${lineResultMsg}` };
     }
   }
-  return { success: false, message: 'ไม่พบรหัสผู้ป่วยรายนี้' };
+
+  // ส่งแจ้งเตือน LINE ทันที (แม้หาข้อมูลในชีตไม่เจอ ก็ยิงข้อความได้ เพราะได้ชื่อมาจากหน้าเว็บแล้ว)
+  const tDesc = taskDesc ? taskDesc : "ติดตามเยี่ยมบ้านทั่วไป";
+  const messageText = `📋 มีการมอบหมายภารกิจ อสม.\n\nรบกวนลงพื้นที่ติดตามดูแลและประเมินอาการผู้ป่วย:\n\n👤 ผู้ป่วย: ${pName}\n🏠 ที่อยู่: บ้านเลขที่ ${pHouse} หมู่ที่ ${pVillage}\n📌 งานที่ต้องทำ: ${tDesc}\n\nเมื่อดำเนินการเสร็จสิ้น รบกวนบันทึกและกด "ยืนยันปิดงาน" ผ่านแอปพลิเคชันด้วยครับ 🙏`;
+  
+  let lineResultMsg = "ไม่ได้ส่ง (หา Token จาก Config ไม่เจอ)";
+  const lineToken = F_getConfig('LINE_CHANNEL_ACCESS_TOKEN'); 
+  
+  if (lineToken && vhvId) {
+    try {
+      const resText = sendLinePushMessage(vhvId, messageText, lineToken);
+      if (resText === "{}" || resText.includes("sentMessages")) {
+         lineResultMsg = "ส่งแจ้งเตือนเข้า LINE สำเร็จ!";
+      } else {
+         lineResultMsg = `LINE ปฏิเสธข้อความ: ${resText}\n(พยายามส่งไปที่ UID: ${vhvId})`;
+      }
+    } catch(e) { lineResultMsg = "Error ฝั่ง Google: " + e.message; }
+  }
+  return { success: true, message: `บันทึกการมอบหมายงานเรียบร้อยแล้ว\n\n[สถานะ LINE]\n${lineResultMsg}` };
 }
 
 function sendLinePushMessage(toUid, textMessage, accessToken) {
