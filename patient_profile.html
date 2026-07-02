@@ -10,7 +10,6 @@
     <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700&display=swap" rel="stylesheet"/>
     <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
     
-    <!-- โหลดเครื่องมือ Firebase -->
     <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore-compat.js"></script>
     <script src="config.js"></script>
@@ -199,6 +198,9 @@
             </div>
 
         </div>
+
+        <div id="done-btn-container" class="mt-6 pt-4 hidden"></div>
+
         <div class="mt-6 pt-6 border-t border-red-100">
             <button type="button" onclick="openStatusModal()" class="w-full py-4 bg-red-50 text-red-600 rounded-[16px] font-bold shadow-sm border border-red-100 flex items-center justify-center gap-2 hover:bg-red-100 active:scale-95 transition-all">
                 <span class="material-symbols-outlined text-[20px]">manage_accounts</span>
@@ -213,9 +215,6 @@
     </div>
 
     <script>
-        // ---------------------------------------------------
-        // เชื่อมต่อ Firebase
-        // ---------------------------------------------------
         firebase.initializeApp(firebaseConfig);
         const db = firebase.firestore();
 
@@ -223,7 +222,6 @@
         const patientId = urlParams.get('id');
         let currentUserRole = 'VHV';
 
-        // กลับหน้าเดิมให้ถูกตามสิทธิ์
         function goBackToList() {
             if (currentUserRole === 'ADMIN') {
                 if (document.referrer.includes('admin_delegation.html')) {
@@ -389,16 +387,54 @@
                 document.getElementById('btn-edit').onclick = () => window.location.href = `patient_edit.html?id=${patientId}`;
                 document.getElementById('btn-edit').classList.remove('hidden');
 
+                // [เพิ่ม] เช็คงานที่ได้รับมอบหมายและแสดงปุ่มจบงาน
+                if (data.needs_assessment === true) {
+                    const requiredTasks = data.tasks_required || [];
+                    const doneContainer = document.getElementById('done-btn-container');
+                    doneContainer.classList.remove('hidden');
+
+                    let isCompleted = true;
+                    let pendingMessages = [];
+
+                    if (requiredTasks.includes("ประเมิน ADL") && (!data.adl || data.adl === '-')) {
+                        isCompleted = false;
+                        pendingMessages.push("แบบประเมิน ADL");
+                    }
+                    if (requiredTasks.includes("ประเมิน 2Q/9Q") && (!data.dep_status || data.dep_status === '-')) {
+                        isCompleted = false;
+                        pendingMessages.push("แบบคัดกรองซึมเศร้า 2Q/9Q");
+                    }
+                    
+                    if (isCompleted) {
+                        doneContainer.innerHTML = `
+                            <div class="bg-emerald-50 p-4 rounded-[20px] border border-emerald-200 text-center shadow-sm">
+                                <h3 class="text-sm font-bold text-emerald-800 mb-3">ทำภารกิจครบถ้วนแล้ว 🎉</h3>
+                                <button onclick="markTaskComplete('${patientId}')" class="w-full bg-emerald-600 text-white py-3.5 rounded-xl font-bold shadow-md hover:bg-emerald-700 active:scale-95 transition-all flex items-center justify-center gap-2">
+                                    <span class="material-symbols-outlined">task_alt</span> ยืนยันปิดงาน
+                                </button>
+                            </div>
+                        `;
+                    } else {
+                        doneContainer.innerHTML = `
+                            <div class="bg-amber-50 p-4 rounded-[20px] border border-amber-200 shadow-sm">
+                                <h3 class="text-sm font-bold text-amber-800 flex items-center gap-2 mb-2"><span class="material-symbols-outlined text-[18px]">warning</span> ภารกิจที่ยังค้างอยู่</h3>
+                                <ul class="list-disc pl-5 text-[13px] text-amber-700 font-medium mb-3">
+                                    ${pendingMessages.map(m => `<li>${m}</li>`).join('')}
+                                </ul>
+                                <p class="text-[11px] text-amber-600 font-medium text-center bg-amber-100/50 py-1.5 rounded-lg">กรุณาบันทึกข้อมูลให้ครบเพื่อปลดล็อกปุ่มจบงาน</p>
+                            </div>
+                        `;
+                    }
+                }
+
                 document.getElementById('loading-state').classList.add('hidden');
                 document.getElementById('profile-content').classList.remove('hidden');
 
             } catch (error) { console.error(error); alert("โหลดข้อมูลล้มเหลว กรุณาลองใหม่"); }
         }
 
-        // [อัปเดตสุดๆ] ดึงกราฟจาก Firebase โดยตรง (เร็วทันใจ ไม่ต้องรอ GAS)
         async function loadAllCharts() {
             try {
-                // ยิงคำสั่งดึง Vitals และ Assessments ของคนไข้ออกมาพร้อมกันเลย
                 const [vitalsSnap, assessSnap] = await Promise.all([ 
                     db.collection('Vitals').where('patient_id', '==', String(patientId)).get(),
                     db.collection('Assessments').where('patient_id', '==', String(patientId)).get()
@@ -410,7 +446,6 @@
                 const assessments = [];
                 assessSnap.forEach(doc => assessments.push(doc.data()));
 
-                // ฟังก์ชันจัดเรียงวันที่ให้กราฟแสดงตามลำดับเวลาถูกต้อง
                 const parseThaiDate = (dateStr) => {
                     if(!dateStr) return 0;
                     if(dateStr.includes('T')) return new Date(dateStr).getTime();
@@ -467,6 +502,22 @@
         
         loadPatientProfile(); 
         loadAllCharts();
+
+        // [เพิ่ม] ฟังก์ชันจบงานให้ อสม. กดยืนยัน
+        async function markTaskComplete(id) {
+            if(!confirm("ยืนยันว่าได้ปฏิบัติงานครบถ้วนแล้วใช่หรือไม่?")) return;
+            try {
+                await db.collection('Patients').doc(String(id)).update({
+                    needs_assessment: false,
+                    task_desc: "",
+                    tasks_required: []
+                });
+                alert("บันทึกจบงานเรียบร้อยแล้ว!");
+                window.location.reload();
+            } catch(e) {
+                alert("เกิดข้อผิดพลาดในการบันทึก");
+            }
+        }
 
         function openStatusModal() {
             const modal = document.getElementById('status-modal');
