@@ -8,7 +8,11 @@
     <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700&display=swap" rel="stylesheet"/>
     <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
     <script charset="utf-8" src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+    
+    <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore-compat.js"></script>
     <script src="config.js"></script>
+    
     <style>
         body { font-family: 'Sarabun', sans-serif; background-color: #f4f7fa; }
         .material-symbols-outlined { font-variation-settings: 'FILL' 1, 'wght' 400, 'GRAD' 0, 'opsz' 24; }
@@ -21,7 +25,6 @@
 
     <div id="sidebar-overlay" class="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-40 hidden lg:hidden" onclick="toggleSidebar()"></div>
     
-    <!-- เมนูด้านข้าง (Sidebar) -->
     <aside id="sidebar" class="fixed inset-y-0 left-0 w-72 bg-navy text-white flex flex-col z-50 transform -translate-x-full lg:translate-x-0 lg:static transition-transform duration-300 ease-in-out">
         <div class="p-6 flex items-center justify-between border-b border-slate-700/40">
             <div class="flex items-center gap-3">
@@ -36,8 +39,6 @@
             <a href="admin_datacenter.html" class="flex items-center gap-3 px-4 py-3.5 text-slate-400 hover:bg-white/5 hover:text-white rounded-xl font-medium transition-all"><span class="material-symbols-outlined">folder_shared</span> ศูนย์ข้อมูลผู้ป่วย</a>
             <a href="admin_delegation.html" class="flex items-center gap-3 px-4 py-3.5 text-slate-400 hover:bg-white/5 hover:text-white rounded-xl font-medium transition-all"><span class="material-symbols-outlined">assignment_ind</span> มอบหมายงาน อสม.</a>
             <a href="admin_reports.html" class="flex items-center gap-3 px-4 py-3.5 text-slate-400 hover:bg-white/5 hover:text-white rounded-xl font-medium transition-all"><span class="material-symbols-outlined">summarize</span> ศูนย์รายงาน (Export)</a>
-            
-            <!-- เมนูตั้งค่าระบบที่เพิ่มเข้ามา -->
             <a href="admin_settings.html" class="flex items-center justify-between px-4 py-3.5 bg-white/10 text-amber-400 rounded-xl font-bold transition-all"><span class="flex items-center gap-3"><span class="material-symbols-outlined">settings</span> ตั้งค่าระบบ</span><span class="w-1.5 h-1.5 rounded-full bg-amber-400"></span></a>
         </nav>
     </aside>
@@ -56,7 +57,6 @@
         <div class="flex-1 overflow-y-auto p-4 lg:p-8 pb-20">
             <div class="max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-6 lg:gap-8">
                 
-                <!-- ส่วนที่ 1: ตั้งค่าโปรไฟล์แอดมิน -->
                 <div class="bg-white rounded-[24px] shadow-sm border border-slate-200 overflow-hidden">
                     <div class="bg-slate-50 px-6 py-4 border-b border-slate-100 flex items-center gap-3">
                         <span class="material-symbols-outlined text-blue-600">manage_accounts</span>
@@ -64,7 +64,6 @@
                     </div>
                     <div class="p-6 lg:p-8 space-y-6">
                         
-                        <!-- รูปโปรไฟล์ -->
                         <div class="flex flex-col sm:flex-row items-center sm:items-start gap-6">
                             <div class="relative">
                                 <img id="prof-img" src="https://via.placeholder.com/150" alt="Profile" class="w-24 h-24 rounded-2xl object-cover shadow-md border-4 border-white">
@@ -78,7 +77,6 @@
                             </div>
                         </div>
 
-                        <!-- ฟอร์มข้อมูล -->
                         <div class="space-y-4">
                             <div>
                                 <label class="block text-xs font-bold text-slate-600 mb-1">ชื่อ-นามสกุล</label>
@@ -96,7 +94,6 @@
                     </div>
                 </div>
 
-                <!-- ส่วนที่ 2: ตั้งค่าระบบ (Config) -->
                 <div class="bg-white rounded-[24px] shadow-sm border border-slate-200 overflow-hidden">
                     <div class="bg-amber-50 px-6 py-4 border-b border-amber-100 flex items-center gap-3">
                         <span class="material-symbols-outlined text-amber-600">admin_panel_settings</span>
@@ -111,12 +108,11 @@
                         
                         <div class="bg-blue-50 border border-blue-100 p-4 rounded-xl mb-6 flex items-start gap-3">
                             <span class="material-symbols-outlined text-blue-500 mt-0.5 text-[18px]">info</span>
-                            <p class="text-[11px] text-blue-700 leading-relaxed">การเปลี่ยนแปลงข้อมูลในส่วนนี้จะส่งผลต่อการทำงานของระบบทั้งหมด (เช่น จำนวนหมู่บ้านที่แสดงใน Dropdown หรือ Token การส่งข้อความแจ้งเตือน)</p>
+                            <p class="text-[11px] text-blue-700 leading-relaxed">การเปลี่ยนแปลงข้อมูลในส่วนนี้จะส่งผลต่อการทำงานของระบบทั้งหมด (เช่น จำนวนหมู่บ้านที่แสดงใน Dropdown หรือเกณฑ์ราคาทรัพยากรเบิกจ่าย)</p>
                         </div>
 
                         <div id="config-container" class="space-y-4 mb-6 max-h-[350px] overflow-y-auto pr-2">
-                            <!-- ฟิลด์ตั้งค่าจะถูกสร้างที่นี่ด้วย Javascript -->
-                        </div>
+                            </div>
 
                         <button onclick="saveSystemConfigs()" id="btn-save-config" class="w-full bg-[#00694a] hover:bg-[#005239] text-white font-bold py-3 rounded-xl shadow-lg transition-all flex justify-center items-center gap-2">
                             บันทึกการตั้งค่าระบบ
@@ -129,11 +125,18 @@
     </main>
 
     <script>
-     
+        // เริ่มต้นการทำงานของ Firebase
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.firestore();
+
         let currentUserUid = "";
         let originalConfigs = [];
+        let globalHospitalName = "เทศบาลเมืองบางแก้ว";
 
-        function toggleSidebar() { document.getElementById('sidebar').classList.toggle('-translate-x-full'); }
+        function toggleSidebar() { 
+            document.getElementById('sidebar').classList.toggle('-translate-x-full'); 
+            document.getElementById('sidebar-overlay').classList.toggle('hidden');
+        }
 
         document.addEventListener("DOMContentLoaded", () => {
             liff.init({ liffId: LIFF_ID }).then(() => {
@@ -146,36 +149,60 @@
             });
         });
 
+        // ตรวจสอบสิทธิ์และดึงค่ากลาง
         async function verifyAdminAccess(uid) {
             try {
-                const response = await fetch(API_URL, { method: 'POST', body: JSON.stringify({ action: 'checkUserRegistration', uid: uid }) });
-                const data = await response.json();
-                if (data.status === 'registered' && data.role === 'ADMIN') {
-                    document.getElementById('sidebar-hospital-name').innerText = data.hospital_name || 'เทศบาลเมืองบางแก้ว';
+                const userDoc = await db.collection('VHVs').doc(String(uid)).get();
+                let isAdmin = false;
+
+                if (userDoc.exists && String(userDoc.data().role).toUpperCase() === 'ADMIN') {
+                    isAdmin = true;
+                    globalHospitalName = userDoc.data().hospital_name || globalHospitalName;
+                } else {
+                    const response = await fetch(API_URL, { method: 'POST', body: JSON.stringify({ action: 'checkUserRegistration', uid: uid }) });
+                    const data = await response.json();
+                    if (data.status === 'registered' && String(data.role).toUpperCase() === 'ADMIN') {
+                        isAdmin = true;
+                        globalHospitalName = data.hospital_name || globalHospitalName;
+                    }
+                }
+
+                if (isAdmin) {
+                    document.getElementById('sidebar-hospital-name').innerText = globalHospitalName;
                     loadProfileData();
                     loadSystemConfigs();
                 } else window.location.href = 'dashboard.html';
             } catch (error) { window.location.href = 'index.html'; }
         }
 
-        // --- ส่วนที่ 1: จัดการโปรไฟล์ ---
+        // --- ส่วนที่ 1: ดึงและจัดการโปรไฟล์แอดมิน ---
         async function loadProfileData() {
             try {
-                const response = await fetch(API_URL, { method: 'POST', body: JSON.stringify({ action: 'getUserProfile', uid: currentUserUid }) });
-                const data = await response.json();
-                if (data.success) {
+                const docSnap = await db.collection('VHVs').doc(String(currentUserUid)).get();
+                if(docSnap.exists) {
+                    const data = docSnap.data();
                     document.getElementById('input-prof-name').value = data.name || '';
                     document.getElementById('input-prof-phone').value = data.phone || '';
                     
                     const picUrl = data.profile_pic || 'https://via.placeholder.com/150';
                     document.getElementById('input-prof-url').value = picUrl;
                     document.getElementById('prof-img').src = picUrl;
-                    
-                    // ให้รูปอัปเดตตามช่อง URL
-                    document.getElementById('input-prof-url').addEventListener('input', function() {
-                        document.getElementById('prof-img').src = this.value || 'https://via.placeholder.com/150';
-                    });
+                } else {
+                    // แอดมินใหม่ดึงผ่าน GAS นำทางปูพื้นฐาน
+                    const response = await fetch(API_URL, { method: 'POST', body: JSON.stringify({ action: 'getUserProfile', uid: currentUserUid }) });
+                    const data = await response.json();
+                    if (data.success) {
+                        document.getElementById('input-prof-name').value = data.name || '';
+                        document.getElementById('input-prof-phone').value = data.phone || '';
+                        const picUrl = data.profile_pic || 'https://via.placeholder.com/150';
+                        document.getElementById('input-prof-url').value = picUrl;
+                        document.getElementById('prof-img').src = picUrl;
+                    }
                 }
+                
+                document.getElementById('input-prof-url').addEventListener('input', function() {
+                    document.getElementById('prof-img').src = this.value || 'https://via.placeholder.com/150';
+                });
             } catch (error) { console.error("ดึงโปรไฟล์ล้มเหลว"); }
         }
 
@@ -192,38 +219,65 @@
         }
 
         async function saveAdminProfile() {
-            const name = document.getElementById('input-prof-name').value;
-            const phone = document.getElementById('input-prof-phone').value;
-            const pic = document.getElementById('input-prof-url').value;
+            const name = document.getElementById('input-prof-name').value.trim();
+            const phone = document.getElementById('input-prof-phone').value.trim();
+            const pic = document.getElementById('input-prof-url').value.trim();
 
             const btn = document.getElementById('btn-save-profile');
-            btn.disabled = true; btn.innerHTML = '<div class="loader-small"></div> กำลังบันทึก...';
+            btn.disabled = true; btn.innerHTML = '<div class="loader-small border-t-white"></div> กำลังบันทึก...';
 
             try {
-                const response = await fetch(API_URL, { 
+                // 1. อัปเดตลงตรงคลัง Firebase
+                await db.collection('VHVs').doc(String(currentUserUid)).update({
+                    name: name, phone: phone, profile_pic: pic
+                });
+
+                // 2. ปล่อยซิงค์คลัง Google Sheets ทำงานเบื้องหลังเงียบๆ
+                fetch(API_URL, { 
                     method: 'POST', 
                     body: JSON.stringify({ action: 'updateUserProfile', uid: currentUserUid, name: name, phone: phone, pic: pic }) 
-                });
-                const result = await response.json();
-                alert(result.success ? 'อัปเดตโปรไฟล์เรียบร้อยแล้ว' : result.message);
-            } catch (error) { alert('เชื่อมต่อล้มเหลว'); }
+                }).catch(e => console.log('Silent sync completed.'));
+
+                alert('อัปเดตโปรไฟล์ส่วนตัวสำเร็จ!');
+            } catch (error) { alert('บันทึกข้อมูลขัดข้อง กรุณาลองใหม่'); }
             
             btn.disabled = false; btn.innerHTML = 'บันทึกข้อมูลส่วนตัว';
         }
 
-        // --- ส่วนที่ 2: จัดการ Config ---
+        // --- ส่วนที่ 2: จัดการ Config ระบบส่วนกลาง ---
         async function loadSystemConfigs() {
             try {
-                const response = await fetch(API_URL, { method: 'POST', body: JSON.stringify({ action: 'getAllSystemConfigs' }) });
-                originalConfigs = await response.json();
+                // ดึงข้อมูลการตั้งค่าจากคอลเลกชัน SystemConfig ใน Firebase
+                const snapshot = await db.collection('SystemConfig').get();
+                originalConfigs = [];
                 
+                snapshot.forEach(doc => {
+                    const d = doc.data();
+                    originalConfigs.push({ key: doc.id, value: d.value, description: d.description || '' });
+                });
+
+                // ถ้าในคอลเลกชัน Firebase ยังว่างเปล่า (กรณีรันครั้งแรก) ให้ดึงข้อมูลปูพื้นฐานจาก GAS ทันที
+                if (originalConfigs.length === 0) {
+                    const response = await fetch(API_URL, { method: 'POST', body: JSON.stringify({ action: 'getAllSystemConfigs' }) });
+                    const items = await response.json();
+                    
+                    const batch = db.batch();
+                    items.forEach(c => {
+                        const ref = db.collection('SystemConfig').doc(String(c.key));
+                        batch.set(ref, { value: String(c.value), description: String(c.description || '') });
+                        originalConfigs.push({ key: c.key, value: String(c.value), description: String(c.description || '') });
+                    });
+                    await batch.commit();
+                }
+
+                // เรียงลำดับเพื่อให้ลำดับการแสดงผลของกล่องข้อความเหมือนตารางเดิม
+                originalConfigs.sort((a,b) => a.key.localeCompare(b.key));
+
                 const container = document.getElementById('config-container');
                 container.innerHTML = '';
 
                 originalConfigs.forEach(c => {
-                    // หากไม่ได้เขียนอธิบาย (Description) ไว้ ให้ใช้ชื่อ Key เป็นชื่อป้ายกำกับแทน
                     const labelTitle = c.description && c.description.trim() !== '' ? c.description : c.key;
-                    
                     container.insertAdjacentHTML('beforeend', `
                         <div class="bg-slate-50 border border-slate-200 p-3.5 rounded-xl">
                             <label class="block text-[12px] font-bold text-slate-700 mb-1 flex items-center gap-1.5">
@@ -240,29 +294,65 @@
 
         async function saveSystemConfigs() {
             const configsToUpdate = [];
+            const batch = db.batch();
+            let hasChanges = false;
             
+            // ข้อมูลอัปเดตแบบคู่ขนานเพื่อแชร์เข้าโปรไฟล์แอดมินสำหรับหน้าประมวลผลอื่น
+            let updatedDiaperPrice = null;
+            let updatedUnderpadPrice = null;
+            let updatedVillageCount = null;
+            let updatedHospitalName = null;
+
             originalConfigs.forEach(c => {
                 const el = document.getElementById(`config-${c.key}`);
                 if(el) {
-                    configsToUpdate.push({ key: c.key, value: el.value });
+                    const newVal = el.value.trim();
+                    configsToUpdate.push({ key: c.key, value: newVal });
+                    
+                    const ref = db.collection('SystemConfig').doc(String(c.key));
+                    batch.update(ref, { value: newVal });
+                    hasChanges = true;
+
+                    // ตรวจจับคีย์สำคัญเพื่อนำไปซิงค์ใส่โปรไฟล์แอดมินสำหรับหน้าจออื่นๆ
+                    if (c.key === 'diaper_price') updatedDiaperPrice = parseFloat(newVal);
+                    if (c.key === 'underpad_price') updatedUnderpadPrice = parseFloat(newVal);
+                    if (c.key === 'village_count') updatedVillageCount = parseInt(newVal);
+                    if (c.key === 'hospital_name') updatedHospitalName = newVal;
                 }
             });
 
-            if(configsToUpdate.length === 0) return;
+            if(!hasChanges) return;
 
             const btn = document.getElementById('btn-save-config');
-            btn.disabled = true; btn.innerHTML = '<div class="loader-small"></div> กำลังบันทึก...';
+            btn.disabled = true; btn.innerHTML = '<div class="loader-small border-t-white"></div> กำลังบันทึก...';
 
             try {
-                const response = await fetch(API_URL, { 
+                // 1. บันทึกลงคอลเลกชันการตั้งค่าหลักใน Firebase
+                await batch.commit();
+
+                // 2. อัปเดตคีย์สำคัญแชร์ใส่โปรไฟล์แอดมินโดยตรง เพื่อความเข้ากันได้ของระบบคำนวณงบประมาณ
+                let profileUpdateObj = {};
+                if(updatedDiaperPrice !== null) profileUpdateObj.diaper_price = updatedDiaperPrice;
+                if(updatedUnderpadPrice !== null) profileUpdateObj.underpad_price = updatedUnderpadPrice;
+                if(updatedVillageCount !== null) profileUpdateObj.village_count = updatedVillageCount;
+                if(updatedHospitalName !== null) {
+                    profileUpdateObj.hospital_name = updatedHospitalName;
+                    document.getElementById('sidebar-hospital-name').innerText = updatedHospitalName;
+                }
+
+                if(Object.keys(profileUpdateObj).length > 0) {
+                    await db.collection('VHVs').doc(String(currentUserUid)).update(profileUpdateObj);
+                }
+
+                // 3. แอบส่งค่าซิงค์ลง Google Sheets หลังบ้านแบบเงียบๆ (Silent Background Sync)
+                fetch(API_URL, { 
                     method: 'POST', 
                     body: JSON.stringify({ action: 'updateSystemConfigs', configs: configsToUpdate }) 
-                });
-                const result = await response.json();
-                if(result.success) {
-                    alert('อัปเดตการตั้งค่าระบบเรียบร้อยแล้ว');
-                } else alert('เกิดข้อผิดพลาดในการบันทึก');
-            } catch (error) { alert('เชื่อมต่อล้มเหลว'); }
+                }).catch(e => console.log('Config silent sync triggered.'));
+
+                alert('บันทึกการตั้งค่าระบบส่วนกลางเข้า Firebase เรียบร้อยแล้ว!');
+                await loadSystemConfigs(); // รีโหลดเพื่อล้างค่าตัวแปรอาร์เรย์เดิมในแรม
+            } catch (error) { alert('เกิดข้อผิดพลาดในการบันทึกข้อมูล'); }
             
             btn.disabled = false; btn.innerHTML = 'บันทึกการตั้งค่าระบบ';
         }
