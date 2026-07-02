@@ -433,7 +433,8 @@
 
             try {
                 await db.collection('Patients').doc(String(patientId)).update({ 
-                    assigned_vhv_id: String(vhvId) 
+                    assigned_vhv_id: String(vhvId),
+                    needs_assessment: true  // <--- เพิ่มบรรทัดนี้ เพื่อจุดพลุเตือนให้ประเมินใหม่
                 });
                 
                 alert('มอบหมายงานสำเร็จ! (ระบบกำลังส่งแจ้งเตือน LINE ให้ อสม. เบื้องหลัง)');
