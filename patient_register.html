@@ -7,6 +7,12 @@
     <script src="https://cdn.tailwindcss.com?plugins=forms"></script>
     <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700&display=swap" rel="stylesheet"/>
     <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+    
+    <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore-compat.js"></script>
+    <script charset="utf-8" src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+    <script src="config.js"></script>
+    
     <style>
         body { font-family: 'Sarabun', sans-serif; background-color: #f8fafc; padding-bottom: 100px; -webkit-tap-highlight-color: transparent;}
         .material-symbols-outlined { font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24; }
@@ -15,12 +21,11 @@
         .input-field { width: 100%; border: 1px solid #e2e8f0; border-radius: 14px; padding: 14px; font-size: 15px; outline: none; transition: all 0.2s; background-color: #ffffff; }
         .input-field:focus { border-color: #00694a; box-shadow: 0 0 0 3px rgba(0,105,74,0.1); }
     </style>
-    <script src="config.js"></script>
 </head>
 <body class="text-[#111c2d]">
 
 <header class="bg-white sticky top-0 z-50 shadow-sm flex items-center w-full px-4 h-16 border-b border-gray-200 gap-3">
-    <button onclick="window.history.back()" class="w-10 h-10 flex items-center justify-center rounded-full bg-gray-50 text-[#00694a] hover:bg-gray-100">
+    <button onclick="goBack()" class="w-10 h-10 flex items-center justify-center rounded-full bg-gray-50 text-[#00694a] hover:bg-gray-100">
         <span class="material-symbols-outlined">arrow_back</span>
     </button>
     <h1 class="text-base font-bold text-[#00694a]">ลงทะเบียนผู้ป่วยใหม่</h1>
@@ -42,7 +47,7 @@
             <span class="material-symbols-outlined text-[20px]">document_scanner</span>
             เปิดกล้องสแกนบัตร (OCR)
         </button>
-        <p id="ocr-status" class="text-xs text-[#ba1a1a] mt-2 hidden">ถ่ายรูปสำเร็จ รอการเชื่อมต่อ API OCR ในเฟสถัดไป...</p>
+        <p id="ocr-status" class="text-xs text-[#00694a] mt-2 hidden"></p>
     </section>
 
     <form id="patient-form" class="space-y-6">
@@ -134,7 +139,46 @@
 </main>
 
 <script>
-    
+    // ---------------------------------------------------
+    // เชื่อมต่อ Firebase และระบบเช็คสิทธิ์
+    // ---------------------------------------------------
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.firestore();
+    let currentUserRole = 'VHV';
+
+    document.addEventListener("DOMContentLoaded", () => {
+        liff.init({ liffId: LIFF_ID }).then(() => {
+            if (liff.isLoggedIn()) {
+                liff.getProfile().then(profile => {
+                    checkUserRole(profile.userId);
+                }).catch(err => console.error(err));
+            } else { window.location.href = 'index.html'; }
+        }).catch(() => { });
+    });
+
+    async function checkUserRole(uid) {
+        try {
+            const userDoc = await db.collection('VHVs').doc(String(uid)).get();
+            if (userDoc.exists) {
+                currentUserRole = String(userDoc.data().role || 'VHV').toUpperCase();
+            } else {
+                const response = await fetch(API_URL, { method: 'POST', body: JSON.stringify({ action: 'checkUserRegistration', uid: uid }) });
+                const data = await response.json();
+                if (data.status === 'registered') {
+                    currentUserRole = String(data.role || 'VHV').toUpperCase();
+                }
+            }
+        } catch(e) { console.error(e); }
+    }
+
+    function goBack() {
+        if (currentUserRole === 'ADMIN') {
+            window.location.href = 'admin_datacenter.html';
+        } else {
+            window.location.href = 'dashboard.html';
+        }
+    }
+
     // 1. คำนวณอายุอัตโนมัติ
     document.getElementById('dob').addEventListener('change', function() {
         if(this.value) {
@@ -157,7 +201,6 @@
             const statusText = document.getElementById('ocr-status');
             statusText.classList.remove('hidden');
             statusText.innerText = "รูปถ่ายพร้อมแล้ว! (เตรียมส่งทำ OCR ในเฟสถัดไป)";
-            statusText.classList.replace('text-[#ba1a1a]', 'text-[#00694a]');
         }
     });
 
@@ -186,48 +229,70 @@
         }
     });
 
-    // 4. บันทึกข้อมูลเข้าฐานข้อมูลจริง (เชื่อมกับ doPost ของคุณ)
+    // 4. บันทึกข้อมูลเข้า Firebase โดยตรง และซิงค์เบื้องหลัง
     document.getElementById('patient-form').addEventListener('submit', async function(e) {
         e.preventDefault();
         const btn = document.getElementById('btn-save');
         btn.innerHTML = `<div class="loader-small" style="border-bottom-color:#fff;"></div> กำลังบันทึกข้อมูล...`;
         btn.disabled = true;
 
-        // [อัปเดต] โครงสร้าง Payload ให้ตรงกับ case 'saveNewPatient' ใน doPost
-        const payload = {
-            action: 'saveNewPatient',
-            patient: {
-                id_card: document.getElementById('id_card') ? document.getElementById('id_card').value : '',
-                prefix: document.getElementById('prefix').value,
-                fullname: document.getElementById('fullname').value,
-                dob: document.getElementById('dob').value,
-                age: document.getElementById('age').value,
-                house_no: document.getElementById('house_no').value,
-                village_no: document.getElementById('village_no').value,
-                lat_long: document.getElementById('lat_long_value').value,
-                caregiver_name: document.getElementById('caregiver_name').value,
-                caregiver_phone: document.getElementById('caregiver_phone').value
-            }
+        // สร้าง ID อัตโนมัติจากโครงสร้างของ Firebase ของเรา
+        const docRef = db.collection('Patients').doc();
+        
+        const patientData = {
+            id: docRef.id,
+            id_card: document.getElementById('id_card').value.trim(),
+            prefix: document.getElementById('prefix').value,
+            name: document.getElementById('fullname').value.trim(), // เปลี่ยนเป็นคีย์ name ให้ตรงกับโมเดลหลัก
+            dob: document.getElementById('dob').value,
+            age: document.getElementById('age').value,
+            house_no: document.getElementById('house_no').value.trim(),
+            village_no: document.getElementById('village_no').value.trim(),
+            lat_long: document.getElementById('lat_long_value').value,
+            caregiver_name: document.getElementById('caregiver_name').value.trim(),
+            caregiver_phone: document.getElementById('caregiver_phone').value.trim(),
+            status: 'Active',
+            group: 'ยังไม่ประเมิน',
+            last_assess: '-',
+            dep_status: '-',
+            disease: '-',
+            medication: '-',
+            diaper: '',
+            equipment: '-'
         };
 
         try {
-            const response = await fetch(API_URL, { 
+            // 1. บันทึกลง Firebase (เร็วสุดๆ 0.1 วิ)
+            await docRef.set(patientData);
+
+            // 2. ส่งข้อมูลไปซิงค์ลง Google Sheets และยิง LINE เตือนเบื้องหลัง (ปล่อยรันเงียบๆ ไม่ต้องรอดึงจอค้าง)
+            fetch(API_URL, { 
                 method: 'POST', 
                 headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-                body: JSON.stringify(payload) 
-            });
-            const result = await response.json();
-            
-            if (result.success) {
-                alert(`ลงทะเบียนผู้ป่วยใหม่เรียบร้อยแล้ว!\nรหัสผู้ป่วย: ${result.patient_id}`);
-                window.location.href = 'dashboard.html'; // กลับหน้าหลัก
-            } else {
-                alert('เกิดข้อผิดพลาดในการบันทึกข้อมูล');
-                btn.innerHTML = `<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">save</span> บันทึกข้อมูลและลงทะเบียนผู้ป่วย`;
-                btn.disabled = false;
-            }
+                body: JSON.stringify({
+                    action: 'saveNewPatient',
+                    patient: {
+                        id: docRef.id, // ส่งรหัสเดียวกันไปบันทึกในชีต
+                        id_card: patientData.id_card,
+                        prefix: patientData.prefix,
+                        fullname: patientData.name,
+                        dob: patientData.dob,
+                        age: patientData.age,
+                        house_no: patientData.house_no,
+                        village_no: patientData.village_no,
+                        lat_long: patientData.lat_long,
+                        caregiver_name: patientData.caregiver_name,
+                        caregiver_phone: patientData.caregiver_phone
+                    }
+                }) 
+            }).catch(e => console.log('Sync background triggered.'));
+
+            alert(`ลงทะเบียนผู้ป่วยใหม่เรียบร้อยแล้ว!\nรหัสผู้ป่วย: ${docRef.id}`);
+            goBack(); // นำทางกลับตามระดับสิทธิ์ผู้ใช้งานทันที
+
         } catch (error) {
-            alert('การเชื่อมต่อฐานข้อมูลล้มเหลว');
+            console.error(error);
+            alert('เกิดข้อผิดพลาดในการบันทึกข้อมูล');
             btn.innerHTML = `<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">save</span> บันทึกข้อมูลและลงทะเบียนผู้ป่วย`;
             btn.disabled = false;
         }
