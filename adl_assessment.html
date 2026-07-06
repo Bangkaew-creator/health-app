@@ -8,9 +8,9 @@
     <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700&family=Sarabun:wght@300;400;500;600;700&display=swap" rel="stylesheet"/>
     <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
     
-    <!-- โหลดเครื่องมือ Firebase -->
     <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore-compat.js"></script>
+    <script charset="utf-8" src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
     <script src="config.js"></script>
 
     <style>
@@ -63,6 +63,16 @@
         const urlParams = new URLSearchParams(window.location.search);
         const patientId = urlParams.get('id');
         document.getElementById('patient-id-display').innerText = `รหัส: ${patientId || 'ไม่ระบุ'}`;
+
+        // เพิ่มการเรียกใช้งาน LIFF เพื่อดึง UID ของ อสม. 🌟
+        let currentUserUid = "";
+        document.addEventListener("DOMContentLoaded", () => {
+            liff.init({ liffId: LIFF_ID }).then(() => {
+                if (liff.isLoggedIn()) {
+                    liff.getProfile().then(p => { currentUserUid = p.userId; });
+                } else { liff.login(); }
+            });
+        });
 
         const adlQuestions = [
             { id: 'q1', title: "1. การรับประทานอาหารเมื่อเตรียมสำรับไว้ให้ (Feeding)", choices: [
@@ -171,7 +181,18 @@
             if (!patientId) return alert("ไม่พบข้อมูลผู้ป่วย กรุณากลับไปหน้ารายชื่อ");
 
             let answered = 0;
-            adlQuestions.forEach(q => { if(document.querySelector(`input[name="${q.id}"]:checked`)) answered++; });
+            let rawScores = []; // 🌟 เก็บค่าดิบ 10 ข้อ
+            
+            adlQuestions.forEach(q => { 
+                const selected = document.querySelector(`input[name="${q.id}"]:checked`);
+                if(selected) {
+                    answered++;
+                    rawScores.push(parseInt(selected.value));
+                } else {
+                    rawScores.push(null);
+                }
+            });
+            
             if (answered < 10) return alert(`กรุณาตอบคำถามให้ครบถ้วน (ตอบแล้ว ${answered}/10 ข้อ)`);
 
             const score = parseInt(document.getElementById('total-score').innerText);
@@ -182,32 +203,33 @@
             btn.disabled = true;
 
             try {
-                // สร้างวันที่แบบไทย
                 const now = new Date();
                 const dd = String(now.getDate()).padStart(2, '0');
                 const mm = String(now.getMonth() + 1).padStart(2, '0');
                 const yyyy = now.getFullYear() + 543;
                 const formattedDate = `${dd}/${mm}/${yyyy}`;
 
-                // 1. อัปเดตข้อมูลผู้ป่วยในคอลเลกชัน Patients (อัปเดตคะแนน ADL และ Group ปัจจุบัน)
+                // 1. อัปเดตข้อมูลผู้ป่วยในคอลเลกชัน Patients
                 await db.collection('Patients').doc(String(patientId)).update({
-                adl: String(score),
-                group: group,
-                last_assess: formattedDate,
+                    adl: String(score),
+                    group: group,
+                    last_assess: formattedDate,
                 });
 
-                // 2. บันทึกประวัติการประเมินลงคอลเลกชัน Assessments (เพื่อเอาไปวาดกราฟ)
+                // 2. บันทึกประวัติการประเมินลงคอลเลกชัน Assessments (🌟 โยน raw_scores และ assessor_uid เข้าไป 🌟)
                 await db.collection('Assessments').add({
                     patient_id: String(patientId),
                     type: 'ADL',
                     score1: score,
                     score2: 0,
                     result: group,
+                    raw_scores: rawScores,      // <--- คะแนนรายข้อ
+                    assessor_uid: currentUserUid, // <--- รหัส อสม.
                     date: formattedDate,
                     timestamp: firebase.firestore.FieldValue.serverTimestamp()
                 });
 
-                // 3. แอบส่งข้อมูลให้ระบบเก่า (Google Sheets) เพื่อซิงค์ข้อมูล (Silent Sync)
+                // 3. แอบส่งข้อมูลให้ระบบเก่า (Google Sheets)
                 fetch(API_URL, {
                     method: 'POST',
                     headers: { 'Content-Type': 'text/plain;charset=utf-8' },
