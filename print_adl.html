@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="utf-8"/>
+    <title>พิมพ์ผลประเมิน ADL</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700&display=swap" rel="stylesheet"/>
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+    
+    <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore-compat.js"></script>
+    <script src="config.js"></script>
+    
+    <style>
+        body { font-family: 'Sarabun', sans-serif; background-color: #e2e8f0; }
+        @page { size: A4; margin: 15mm 20mm; }
+        @media print {
+            body { background-color: white; }
+            .no-print { display: none !important; }
+            .a4-container { box-shadow: none; margin: 0; padding: 0; border: none; }
+        }
+        .a4-container { width: 210mm; min-height: 297mm; margin: 20px auto; background: white; padding: 20mm; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+        .checkbox-box { display: inline-flex; align-items: center; justify-content: center; width: 16px; height: 16px; border: 1.5px solid #000; margin-right: 6px; font-size: 14px; font-weight: bold; line-height: 1; }
+        .text-line { border-bottom: 1px dotted #666; display: inline-block; padding: 0 8px; min-height: 20px;}
+    </style>
+</head>
+<body class="text-gray-900 text-sm">
+
+    <div class="no-print fixed top-4 right-4 z-50 flex gap-2">
+        <button onclick="window.close()" class="bg-gray-500 text-white px-4 py-2 rounded-lg shadow font-bold">ปิดหน้าต่าง</button>
+        <button onclick="window.print()" class="bg-blue-600 text-white px-4 py-2 rounded-lg shadow font-bold flex items-center gap-2"><span class="material-symbols-outlined">print</span> พิมพ์เอกสาร</button>
+    </div>
+
+    <div class="a4-container relative">
+        <div class="text-center mb-6">
+            <h1 class="text-xl font-bold mb-1">แบบประเมินคัดกรอง Barthel ADL</h1>
+            <h2 class="text-base font-medium">ความสามารถในการดำเนินชีวิตประจำวัน ดัชนีบาร์เธลเอดีแอล (Barthel ADL index)</h2>
+        </div>
+
+        <div class="mb-6 leading-8">
+            ชื่อ-สกุล <span id="p-name" class="text-line min-w-[200px]"></span> 
+            อายุ <span id="p-age" class="text-line min-w-[50px] text-center"></span> ปี 
+            เลขบัตรประชาชน <span id="p-idcard" class="text-line min-w-[150px]"></span> <br>
+            วันเดือนปีเกิด <span id="p-dob" class="text-line min-w-[120px]"></span> 
+            เบอร์โทรศัพท์ <span id="p-phone" class="text-line min-w-[120px]"></span> 
+            บ้านเลขที่ <span id="p-house" class="text-line min-w-[80px]"></span> 
+            หมู่ที่ <span id="p-village" class="text-line min-w-[50px] text-center"></span>
+        </div>
+
+        <div id="adl-questions-container" class="space-y-3 mb-8 pl-2">
+            <div class="text-center text-gray-500 py-10">กำลังโหลดข้อมูลการประเมิน...</div>
+        </div>
+
+        <div class="mt-8 border-t-2 border-gray-800 pt-6">
+            <div class="flex justify-between items-start">
+                <div class="space-y-3">
+                    <p class="font-bold text-base">สรุปผลการประเมิน</p>
+                    <p>คะแนนรวม: <span id="total-score" class="font-bold text-lg px-2 underline"></span> คะแนน</p>
+                    <p>การจัดกลุ่ม: <span id="patient-group" class="font-bold text-lg px-2 underline"></span></p>
+                    <p class="text-xs text-gray-600 mt-2">* 0-4 = ติดเตียง / 5-11 = ติดบ้าน / 12-20 = ติดสังคม</p>
+                </div>
+                
+                <div class="text-center mt-4">
+                    <p class="mb-8">ลงชื่อ....................................................... ผู้ประเมิน</p>
+                    <p>( <span id="assessor-name" class="text-line min-w-[150px] text-center font-medium"></span> )</p>
+                    <p class="mt-1">วันที่ประเมิน: <span id="assess-date" class="text-line min-w-[120px] text-center"></span></p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.firestore();
+
+        // ฐานข้อมูลคำถาม (คะแนนเรียงลำดับตามช่องในฟอร์ม A4 จริง)
+        const adlQuestions = [
+            { title: "1. Feeding (รับประทานอาหารเมื่อเตรียมสำหรับไว้ให้เรียบร้อยต่อหน้า)", options: [{ val: 0, label: "ไม่สามารถตักอาหารเข้าปากได้ ต้องมีคนป้อนให้" }, { val: 1, label: "ตักอาหารเองได้แต่ต้องมีคนช่วย" }, { val: 2, label: "ตักอาหารและช่วยตัวเองได้เป็นปกติ" }] },
+            { title: "2. Grooming (ล้างหน้า หวีผม แปรงฟัน โกนหนวด ใน 24 - 28 ชั่วโมงที่ผ่านมา)", options: [{ val: 0, label: "ต้องการความช่วยเหลือ" }, { val: 1, label: "ทำเองได้ (รวมทั้งที่ทำได้เองถ้าเตรียมอุปกรณ์ไว้ให้)" }] },
+            { title: "3. Transfer (ลุกนั่งจากที่นอน หรือจากเตียงไปยังเก้าอี้)", options: [{ val: 0, label: "ไม่สามารถนั่งได้ (นั่งแล้วจะล้มเสมอ) หรือต้องใช้คน 2 คนยก" }, { val: 1, label: "ต้องการความช่วยเหลืออย่างมากจึงจะนั่งได้" }, { val: 2, label: "ต้องการความช่วยเหลือบ้าง (เช่น ช่วยพยุงเล็กน้อย)" }, { val: 3, label: "ทำได้เอง" }] },
+            { title: "4. Toilet use (ใช้ห้องน้ำ)", options: [{ val: 0, label: "ช่วยตัวเองไม่ได้" }, { val: 1, label: "ทำเองได้บ้าง แต่ต้องการความช่วยเหลือในบางสิ่ง" }, { val: 2, label: "ช่วยตัวเองได้ดี" }] },
+            { title: "5. Mobility (การเคลื่อนที่ภายในห้องหรือบ้าน)", options: [{ val: 0, label: "เคลื่อนที่ไปไหนไม่ได้" }, { val: 1, label: "ต้องใช้รถเข็นช่วยตัวเองให้เคลื่อนที่ได้เอง" }, { val: 2, label: "เดินหรือเคลื่อนที่โดยมีคนช่วย เช่น พยุง" }, { val: 3, label: "เดินหรือเคลื่อนที่ได้เอง" }] },
+            { title: "6. Dressing (การสวมใส่เสื้อผ้า)", options: [{ val: 0, label: "ต้องมีคนสวมใส่ให้ ช่วยตัวเองไม่ได้" }, { val: 1, label: "ช่วยตัวเองได้ประมาณร้อยละ 50 ที่เหลือต้องมีคนช่วย" }, { val: 2, label: "ช่วยตัวเองได้ดี (รวมทั้งการติดกระดุม รูดซิป)" }] },
+            { title: "7. Stairs (การขึ้นลงบันได 1 ชั้น)", options: [{ val: 0, label: "ไม่สามารถทำได้" }, { val: 1, label: "ต้องการคนช่วย" }, { val: 2, label: "ขึ้นลงได้เอง" }] },
+            { title: "8. Bathing (การอาบน้ำ)", options: [{ val: 0, label: "ต้องมีคนช่วยหรือทำให้" }, { val: 1, label: "อาบน้ำเองได้" }] },
+            { title: "9. Bowels (การกลั้นการถ่ายอุจจาระในระยะ 1 สัปดาห์ที่ผ่านมา)", options: [{ val: 0, label: "กลั้นไม่ได้ หรือต้องการการสวนอุจจาระอยู่เสมอ" }, { val: 1, label: "กลั้นไม่ได้บางครั้ง (เป็นน้อยกว่า 1 ครั้งต่อสัปดาห์)" }, { val: 2, label: "กลั้นได้เป็นปกติ" }] },
+            { title: "10. Bladder (การกลั้นปัสสาวะในระยะ 1 สัปดาห์ที่ผ่านมา)", options: [{ val: 0, label: "กลั้นไม่ได้ หรือใส่สายสวนปัสสาวะแต่ไม่สามารถดูแลเองได้" }, { val: 1, label: "กลั้นไม่ได้บางครั้ง (เป็นน้อยกว่าวันละ 1 ครั้ง)" }, { val: 2, label: "กลั้นได้เป็นปกติ" }] }
+        ];
+
+        document.addEventListener("DOMContentLoaded", async () => {
+            const urlParams = new URLSearchParams(window.location.search);
+            const patientId = urlParams.get('pid');
+            if (!patientId) return alert("ไม่พบรหัสผู้ป่วย");
+
+            try {
+                // 1. ดึงข้อมูลส่วนตัวผู้ป่วย
+                const pDoc = await db.collection('Patients').doc(patientId).get();
+                if (pDoc.exists) {
+                    const p = pDoc.data();
+                    document.getElementById('p-name').innerText = (p.prefix || '') + (p.fullname || p.name || '-');
+                    document.getElementById('p-age').innerText = p.age || '-';
+                    document.getElementById('p-idcard').innerText = p.id_card || '-';
+                    document.getElementById('p-dob').innerText = p.dob || '-';
+                    document.getElementById('p-phone').innerText = p.caregiver_phone || '-';
+                    document.getElementById('p-house').innerText = p.house_no || '-';
+                    document.getElementById('p-village').innerText = p.village_no || '-';
+                }
+
+                // 2. ดึงประวัติ ADL ล่าสุดจากคอลเลกชัน Assessments
+                const assessSnap = await db.collection('Assessments')
+                    .where('patient_id', '==', String(patientId))
+                    .get();
+
+                let adlRecords = [];
+                assessSnap.forEach(doc => {
+                    const d = doc.data();
+                    if(d.type === 'ADL') adlRecords.push(d);
+                });
+
+                // เรียงลำดับจากใหม่ไปเก่า และดึงใบแรกสุด
+                adlRecords.sort((a,b) => {
+                    const timeA = a.timestamp ? a.timestamp.toDate().getTime() : 0;
+                    const timeB = b.timestamp ? b.timestamp.toDate().getTime() : 0;
+                    return timeB - timeA;
+                });
+
+                let rawScores = [];
+                let assessorUid = '';
+
+                if (adlRecords.length > 0) {
+                    const aData = adlRecords[0];
+                    document.getElementById('total-score').innerText = aData.score1 || aData.total_score || '-';
+                    document.getElementById('patient-group').innerText = aData.result || aData.group || '-';
+                    document.getElementById('assess-date').innerText = aData.date || '-';
+
+                    rawScores = aData.raw_scores || []; 
+                    assessorUid = aData.assessor_uid || '';
+                } else {
+                    document.getElementById('total-score').innerText = '-';
+                    document.getElementById('patient-group').innerText = 'ไม่พบประวัติ';
+                }
+
+                // 3. ดึงชื่อคนประเมิน (อสม.)
+                if (assessorUid) {
+                    const vDoc = await db.collection('VHVs').doc(assessorUid).get();
+                    if (vDoc.exists) document.getElementById('assessor-name').innerText = vDoc.data().name;
+                }
+
+                // 4. สร้างข้อคำถาม 10 ข้อ พร้อมติ๊กถูก
+                const container = document.getElementById('adl-questions-container');
+                container.innerHTML = ''; 
+
+                adlQuestions.forEach((q, index) => {
+                    const selectedScore = rawScores[index]; 
+                    let html = `<div class="mb-3"><p class="font-medium text-gray-900">${q.title}</p><div class="pl-4 mt-1 space-y-1">`;
+                    
+                    q.options.forEach(opt => {
+                        const mark = (selectedScore === opt.val) ? '✓' : '&nbsp;&nbsp;'; 
+                        html += `
+                            <div class="flex items-start">
+                                <span class="checkbox-box mt-0.5">${mark}</span>
+                                <span>${opt.val}. ${opt.label}</span>
+                            </div>
+                        `;
+                    });
+                    
+                    html += `</div></div>`;
+                    container.insertAdjacentHTML('beforeend', html);
+                });
+
+            } catch (error) {
+                console.error(error);
+                alert("เกิดข้อผิดพลาดในการดึงข้อมูลสำหรับพิมพ์");
+            }
+        });
+    </script>
+</body>
+</html>
