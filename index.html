@@ -107,7 +107,6 @@
     </div>
 
     <script>
-        // เริ่มการทำงานของ Firebase
         firebase.initializeApp(firebaseConfig);
         const db = firebase.firestore();
         
@@ -117,7 +116,6 @@
             });
         });
 
-        // ฟังก์ชันสร้างตัวเลือกหมู่บ้านตาม Config ที่ดึงมา
         function buildVillageOptions(vCount) {
             const vSelect = document.getElementById('reg-village');
             vSelect.innerHTML = '<option value="" disabled selected>-- เลือกหมู่ที่รับผิดชอบ --</option>';
@@ -126,6 +124,7 @@
             }
         }
 
+        // 🌟 แก้ไข: ตรวจสอบสิทธิ์การเข้าใช้งานจาก Firebase โดยตรง
         async function checkRegistration() {
             document.getElementById('registration-screen').classList.add('hidden');
             document.getElementById('admin-registration-screen').classList.add('hidden');
@@ -134,33 +133,36 @@
             document.getElementById('loading-screen').classList.remove('hidden');
 
             try {
-                // ดึงค่าจำนวนหมู่จาก Firebase (แก้ปัญหาหมู่โผล่มาแค่ 15 ตลอด)
+                const profile = await liff.getProfile();
+                const uid = profile.userId;
+
+                // วิ่งไปเช็คใน Firebase ทันที
+                const userDoc = await db.collection('VHVs').doc(String(uid)).get();
+
                 let vCount = 15;
                 try {
                     const sysSnap = await db.collection('SystemConfig').doc('VILLAGE_COUNT').get();
                     if(sysSnap.exists) vCount = parseInt(sysSnap.data().value) || 15;
-                } catch(e) { console.log("ดึง Config ไม่สำเร็จ ใช้ค่าเริ่มต้น 15"); }
-
-                const profile = await liff.getProfile();
-                const response = await fetch(API_URL, { method: 'POST', body: JSON.stringify({ action: 'checkUserRegistration', uid: profile.userId }) });
-                const data = await response.json();
+                } catch(e) {}
 
                 document.getElementById('loading-screen').classList.add('hidden');
 
-                if (data.status === 'registered') {
-                    if (data.role === 'ADMIN') window.location.href = 'admin_dashboard.html';
-                    else window.location.href = 'dashboard.html';
-                    
-                } else if (data.status === 'inactive') {
-                    const uStatus = String(data.user_status).toLowerCase();
-                    if (uStatus === 'rejected' || uStatus === 'blocked') {
-                        alert('บัญชีของคุณถูกปฏิเสธ หรือไม่อนุญาตให้เข้าถึงระบบ');
-                    } else {
+                if (userDoc.exists) {
+                    // ถ้ามีชื่อในระบบแล้ว
+                    const userData = userDoc.data();
+                    const status = String(userData.status || '').toLowerCase();
+                    const role = String(userData.role || '').toUpperCase();
+
+                    if (status === 'active') {
+                        if (role === 'ADMIN') window.location.href = 'admin_dashboard.html';
+                        else window.location.href = 'dashboard.html';
+                    } else if (status === 'pending') {
                         document.getElementById('pending-screen').classList.remove('hidden');
+                    } else {
+                        alert('บัญชีของคุณถูกปฏิเสธ หรือไม่อนุญาตให้เข้าถึงระบบ');
                     }
-                    
                 } else {
-                    // เรียกใช้ฟังก์ชันใส่จำนวนหมู่ที่ดึงมาจาก Firebase
+                    // ถ้าไม่มีชื่อ (หรือแอดมินคนที่ค้างอยู่) จะแสดงหน้าลงทะเบียนให้กรอกใหม่
                     buildVillageOptions(vCount);
                     document.getElementById('registration-screen').classList.remove('hidden');
                     document.getElementById('admin-trigger').classList.remove('hidden');
@@ -168,17 +170,13 @@
             } catch (error) { 
                 alert("เกิดข้อผิดพลาดในการเชื่อมต่อเครือข่าย"); 
                 document.getElementById('loading-screen').classList.add('hidden');
-                document.getElementById('pending-screen').classList.remove('hidden');
+                document.getElementById('registration-screen').classList.remove('hidden');
             }
         }
 
-        // ==========================================
-        // ฟังก์ชันจัดการสลับหน้าต่าง (UI Toggles)
-        // ==========================================
         function showAdminRegistration() {
             document.getElementById('registration-screen').style.display = 'none';
             document.getElementById('admin-trigger').style.display = 'none';
-            
             const adminScreen = document.getElementById('admin-registration-screen');
             adminScreen.classList.remove('hidden');
             adminScreen.style.display = 'block'; 
@@ -186,15 +184,12 @@
         
         function hideAdminRegistration() {
             document.getElementById('admin-registration-screen').style.display = 'none';
-            
             document.getElementById('registration-screen').classList.remove('hidden');
             document.getElementById('registration-screen').style.display = 'block'; 
             document.getElementById('admin-trigger').style.display = 'block'; 
         }
 
-        // ==========================================
-        // ส่งข้อมูลเข้าสู่ระบบ
-        // ==========================================
+        // 🌟 แก้ไข: บันทึกข้อมูลแอดมินใหม่ ลง Firebase และ Google Sheets
         async function registerAdmin() {
             const name = document.getElementById('admin-reg-name').value;
             const phone = document.getElementById('admin-reg-phone').value;
@@ -207,6 +202,8 @@
 
             try {
                 const profile = await liff.getProfile();
+                
+                // 1. ตรวจสอบรหัสผ่านกับ Google Sheets
                 const response = await fetch(API_URL, {
                     method: 'POST',
                     body: JSON.stringify({ action: 'registerAdmin', uid: profile.userId, name: name, phone: phone, secretCode: secretCode })
@@ -214,6 +211,28 @@
                 const data = await response.json();
                 
                 if (data.status === 'success') {
+                    // 2. ดึงข้อมูลหน่วยงานจาก Config 
+                    let hName = "เทศบาลเมืองบางแก้ว";
+                    let vCount = 15;
+                    try {
+                        const hSnap = await db.collection('SystemConfig').doc('HOSPITAL_NAME').get();
+                        if(hSnap.exists) hName = hSnap.data().value;
+                        const vSnap = await db.collection('SystemConfig').doc('VILLAGE_COUNT').get();
+                        if(vSnap.exists) vCount = parseInt(vSnap.data().value);
+                    } catch(e) {}
+
+                    // 3. สร้าง Profile แอดมินใน Firebase ทันที!
+                    await db.collection('VHVs').doc(String(profile.userId)).set({
+                        uid: profile.userId,
+                        name: name,
+                        phone: phone,
+                        role: 'ADMIN',
+                        status: 'Active',
+                        hospital_name: hName,
+                        village_count: vCount,
+                        profile_pic: profile.pictureUrl || ''
+                    });
+
                     alert("ยินดีต้อนรับเจ้าหน้าที่ระบบ! ลงทะเบียนสำเร็จ");
                     window.location.href = 'admin_dashboard.html'; 
                 } else if (data.status === 'invalid_code') {
@@ -232,6 +251,7 @@
             }
         }
 
+        // 🌟 แก้ไข: บันทึกข้อมูล อสม.ใหม่ ลง Firebase และ Google Sheets
         async function registerUser() {
             const name = document.getElementById('reg-name').value;
             const phone = document.getElementById('reg-phone').value;
@@ -244,6 +264,8 @@
 
             try {
                 const profile = await liff.getProfile();
+                
+                // 1. ส่งข้อมูลให้ Google Sheets
                 const response = await fetch(API_URL, {
                     method: 'POST',
                     body: JSON.stringify({ action: 'registerUser', uid: profile.userId, name: name, role: 'VHV', village_no: village, phone: phone })
@@ -251,6 +273,17 @@
                 const data = await response.json();
                 
                 if (data.status === 'success') {
+                    // 2. สร้าง Profile อสม. ใน Firebase ทันที!
+                    await db.collection('VHVs').doc(String(profile.userId)).set({
+                        uid: profile.userId,
+                        name: name,
+                        phone: phone,
+                        role: 'VHV',
+                        status: 'Pending',
+                        village_no: village,
+                        profile_pic: profile.pictureUrl || ''
+                    });
+
                     document.getElementById('registration-screen').classList.add('hidden');
                     document.getElementById('pending-screen').classList.remove('hidden');
                 } else { 
