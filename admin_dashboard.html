@@ -261,35 +261,24 @@
             }).catch(() => bounceToLogin());
         });
 
-        // [อัปเดตระบบตรวจสอบสิทธิ์] ระบบลูกผสม Hybrid Auth 
+        // [อัปเดตระบบตรวจสอบสิทธิ์] Firebase Only (ตัดระบบลูกผสม Hybrid Auth)
         async function verifyAdminAccess(uid, profile) {
             try {
                 const userDoc = await db.collection('VHVs').doc(String(uid)).get();
                 let isAdmin = false;
                 let hospital = 'เทศบาลเมืองบางแก้ว';
 
+                // ดึงข้อมูลการตั้งค่าชื่อหน่วยงานจาก SystemConfig
+                try {
+                    const sysSnap = await db.collection('SystemConfig').doc('HOSPITAL_NAME').get();
+                    if(sysSnap.exists) hospital = sysSnap.data().value || hospital;
+                } catch(e) {}
+
                 if (userDoc.exists) {
                     const userData = userDoc.data();
                     if (String(userData.role || userData.Role || '').toUpperCase() === 'ADMIN') {
                         isAdmin = true;
                         hospital = userData.hospital_name || hospital;
-                    }
-                }
-
-                if (!isAdmin) {
-                    const response = await fetch(API_URL, { method: 'POST', body: JSON.stringify({ action: 'checkUserRegistration', uid: uid }) });
-                    const data = await response.json();
-                    
-                    if (data.status === 'registered' && String(data.role).toUpperCase() === 'ADMIN') {
-                        isAdmin = true;
-                        hospital = data.hospital_name || hospital;
-                        
-                        await db.collection('VHVs').doc(String(uid)).set({
-                            uid: String(uid), role: 'ADMIN', hospital_name: hospital,
-                            name: data.name || profile.displayName || 'Admin', 
-                            phone: data.phone || '',
-                            pic_url: profile.pictureUrl || ''
-                        }, { merge: true });
                     }
                 }
 
@@ -310,7 +299,7 @@
 
         function bounceToLogin() { window.location.href = 'index.html'; }
 
-        // [อัปเดตระบบดึงข้อมูล] ดึงสถิติทั้งหมดจาก Firebase ในเสี้ยววินาที!
+        // ดึงสถิติทั้งหมดจาก Firebase โดยตรง
         async function loadDashboardData() {
             try {
                 const snapshot = await db.collection('Patients').get();
