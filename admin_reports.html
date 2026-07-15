@@ -177,7 +177,7 @@
     <script>
         firebase.initializeApp(firebaseConfig);
         const db = firebase.firestore();
-       
+        
         let allPatients = [];
         let allVHVs = [];
 
@@ -216,18 +216,17 @@
                 const userDoc = await db.collection('VHVs').doc(String(uid)).get();
                 let isAdmin = false; let vCount = 15; let hospital = 'เทศบาลเมืองบางแก้ว';
 
+                try {
+                    const sysSnap = await db.collection('SystemConfig').doc('HOSPITAL_NAME').get();
+                    if(sysSnap.exists) hospital = sysSnap.data().value || hospital;
+                    const sysCountSnap = await db.collection('SystemConfig').doc('VILLAGE_COUNT').get();
+                    if(sysCountSnap.exists) vCount = parseInt(sysCountSnap.data().value) || vCount;
+                } catch(e) {}
+
                 if (userDoc.exists && String(userDoc.data().role).toUpperCase() === 'ADMIN') {
                     isAdmin = true;
                     hospital = userDoc.data().hospital_name || hospital;
-                    vCount = parseInt(userDoc.data().village_count) || 15;
-                } else {
-                    const response = await fetch(API_URL, { method: 'POST', body: JSON.stringify({ action: 'checkUserRegistration', uid: uid }) });
-                    const data = await response.json();
-                    if (data.status === 'registered' && data.role === 'ADMIN') {
-                        isAdmin = true;
-                        hospital = data.hospital_name || hospital;
-                        vCount = parseInt(data.village_count) || 15;
-                    }
+                    vCount = parseInt(userDoc.data().village_count) || vCount;
                 }
 
                 if (isAdmin) {
@@ -243,7 +242,6 @@
             } catch (error) { window.location.href = 'index.html'; }
         }
 
-        // [อัปเดต] ดึงข้อมูลจาก Firebase พร้อมกันปรู๊ดปร๊าด
         async function loadReportData() {
             try {
                 const [patientsSnap, vhvsSnap] = await Promise.all([
@@ -273,9 +271,6 @@
             document.getElementById(`content-${tab}`).classList.remove('hidden');
         }
 
-        // ==========================================
-        // 1. ระบบรายงาน กปท. (เบิกจ่ายผ้าอ้อม)
-        // ==========================================
         function renderKPTTable() {
             const tbody = document.getElementById('report-list');
             tbody.innerHTML = '';
@@ -348,7 +343,6 @@
             setTimeout(() => { m.classList.add('hidden'); }, 300);
         }
 
-        // [อัปเดต] บันทึกมติเข้า Firebase ด้วย Batch ไวติดจรวด
         async function saveCommitteeDecision() {
             const checkedBoxes = document.querySelectorAll('.row-checkbox:checked');
             const patientIds = Array.from(checkedBoxes).map(cb => cb.value);
@@ -360,7 +354,7 @@
             btn.disabled = true; btn.innerText = 'กำลังบันทึก...';
 
             try {
-                // 1. อัปเดตข้อมูลลง Firebase ด้วย Batch (อัปเดตหลายคนพร้อมกันในพริบตา)
+                // อัปเดตข้อมูลลง Firebase ด้วย Batch เพียงอย่างเดียว
                 const batch = db.batch();
                 patientIds.forEach(id => {
                     const ref = db.collection('Patients').doc(String(id));
@@ -376,22 +370,11 @@
                 });
                 await batch.commit();
 
-                // 2. แอบซิงค์ข้อมูลให้ Google Sheets ฝั่งหลังบ้าน
-                fetch(API_URL, { 
-                    method: 'POST', 
-                    body: JSON.stringify({ 
-                        action: 'recordCommitteeDecision', 
-                        patientIds: patientIds, 
-                        fy: fy, round: round, months: months 
-                    }) 
-                }).catch(e => console.log('Silent sync completed.'));
-
                 alert('บันทึกมติคณะกรรมการเรียบร้อยแล้ว');
                 closeCommitteeModal(); 
                 document.getElementById('check-all').checked = false; 
                 updateSelectCount(); 
                 
-                // โหลดข้อมูลใหม่เพื่อแสดงผลในตาราง
                 await loadReportData(); 
             } catch (e) { 
                 console.error(e);
@@ -436,9 +419,6 @@
             XLSX.writeFile(workbook, `รายงานเบิกผ้าอ้อม_กปท_${getTodayDateStr()}.xlsx`);
         }
 
-        // ==========================================
-        // 2. ระบบออกรายงาน ทะเบียนประวัติสุขภาพ (Health Registry)
-        // ==========================================
         function exportRegistryExcel() {
             const exportData = []; let runningNum = 1;
             
@@ -474,9 +454,6 @@
             XLSX.writeFile(workbook, `ทะเบียนประวัติสุขภาพผู้ป่วย_${getTodayDateStr()}.xlsx`);
         }
 
-        // ==========================================
-        // 3. ระบบออกรายงาน ผลงาน อสม. (กรองตามหมู่ได้)
-        // ==========================================
         function exportVHVExcel() {
             const vFilter = document.getElementById('vhv-village-filter').value;
             const exportData = []; 
