@@ -141,12 +141,6 @@
             const userDoc = await db.collection('VHVs').doc(String(uid)).get();
             if (userDoc.exists) {
                 currentUserRole = String(userDoc.data().role || 'VHV').toUpperCase();
-            } else {
-                const response = await fetch(API_URL, { method: 'POST', body: JSON.stringify({ action: 'checkUserRegistration', uid: uid }) });
-                const data = await response.json();
-                if (data.status === 'registered') {
-                    currentUserRole = String(data.role || 'VHV').toUpperCase();
-                }
             }
         } catch(e) { console.error(e); }
     }
@@ -230,27 +224,6 @@
 
         try {
             await docRef.set(patientData);
-
-            fetch(API_URL, { 
-                method: 'POST', 
-                headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-                body: JSON.stringify({
-                    action: 'saveNewPatient',
-                    patient: {
-                        id: docRef.id,
-                        id_card: patientData.id_card,
-                        prefix: patientData.prefix,
-                        fullname: patientData.name,
-                        dob: patientData.dob,
-                        age: patientData.age,
-                        house_no: patientData.house_no,
-                        village_no: patientData.village_no,
-                        lat_long: patientData.lat_long,
-                        caregiver_name: patientData.caregiver_name,
-                        caregiver_phone: patientData.caregiver_phone
-                    }
-                }) 
-            }).catch(e => console.log('Sync background triggered.'));
 
             alert(`ลงทะเบียนผู้ป่วยใหม่เรียบร้อยแล้ว!\nรหัสผู้ป่วย: ${docRef.id}`);
             goBack(); 
