@@ -142,38 +142,27 @@
             });
         });
 
-        // [อัปเดต 1] เช็คสิทธิ์ด้วย Hybrid Auth (เหมือนหน้าอื่นๆ)
+        // [อัปเดต 1] เช็คสิทธิ์และดึงราคาอ้างอิงจาก SystemConfig ของ Firebase ล้วนๆ
         async function verifyAdminAccess(uid) {
             try {
                 const userDoc = await db.collection('VHVs').doc(String(uid)).get();
                 let isAdmin = false;
                 let hospital = 'เทศบาลเมืองบางแก้ว';
 
-                if (userDoc.exists) {
-                    const userData = userDoc.data();
-                    if (String(userData.role || userData.Role || '').toUpperCase() === 'ADMIN') {
-                        isAdmin = true;
-                        hospital = userData.hospital_name || hospital;
-                        configDiaperPrice = parseFloat(userData.diaper_price || 9.50);
-                        configUnderpadPrice = parseFloat(userData.underpad_price || 6.00);
-                    }
-                }
-
-                if (!isAdmin) {
-                    const response = await fetch(API_URL, { method: 'POST', body: JSON.stringify({ action: 'checkUserRegistration', uid: uid }) });
-                    const data = await response.json();
+                try {
+                    const sysSnapHospital = await db.collection('SystemConfig').doc('HOSPITAL_NAME').get();
+                    if(sysSnapHospital.exists) hospital = sysSnapHospital.data().value || hospital;
                     
-                    if (data.status === 'registered' && String(data.role).toUpperCase() === 'ADMIN') {
-                        isAdmin = true;
-                        hospital = data.hospital_name || hospital;
-                        configDiaperPrice = parseFloat(data.diaper_price || 9.50);
-                        configUnderpadPrice = parseFloat(data.underpad_price || 6.00);
-                        
-                        await db.collection('VHVs').doc(String(uid)).set({
-                            uid: String(uid), role: 'ADMIN', hospital_name: hospital,
-                            diaper_price: configDiaperPrice, underpad_price: configUnderpadPrice
-                        }, { merge: true });
-                    }
+                    const sysSnapDiaper = await db.collection('SystemConfig').doc('DIAPER_PRICE').get();
+                    if(sysSnapDiaper.exists) configDiaperPrice = parseFloat(sysSnapDiaper.data().value) || 9.50;
+
+                    const sysSnapUnderpad = await db.collection('SystemConfig').doc('UNDERPAD_PRICE').get();
+                    if(sysSnapUnderpad.exists) configUnderpadPrice = parseFloat(sysSnapUnderpad.data().value) || 6.00;
+                } catch(e) { console.log('ไม่พบตั้งค่าราคาจาก Config ใช้ค่าพื้นฐานแทน'); }
+
+                if (userDoc.exists && String(userDoc.data().role).toUpperCase() === 'ADMIN') {
+                    isAdmin = true;
+                    hospital = userDoc.data().hospital_name || hospital;
                 }
 
                 if (isAdmin) {
@@ -307,7 +296,7 @@
             });
         }
 
-        // [อัปเดต 3] บันทึกการอนุมัติลง Firebase ทันที + แจ้งเตือนเงียบๆ เบื้องหลัง
+        // [อัปเดต 3] บันทึกการอนุมัติลง Firebase ทันที + ส่ง LINE แบบเงียบๆ ผ่าน GAS
         async function approveRequest(id, hasDiaper, hasUnderpad) {
             const diaperQty = hasDiaper ? document.getElementById(`diaper_${id}`).value : 0;
             const underpadQty = hasUnderpad ? document.getElementById(`underpad_${id}`).value : 0;
