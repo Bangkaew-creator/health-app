@@ -3,7 +3,7 @@
 <head>
     <meta charset="utf-8"/>
     <meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" name="viewport"/>
-    <title>งานประเมินที่ได้รับมอบหมาย</title>
+    <title>งานประเมิน - อสม.สามารถ (Orsomo Smart)</title>
     <script src="https://cdn.tailwindcss.com?plugins=forms"></script>
     <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700&display=swap" rel="stylesheet"/>
     <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
@@ -29,7 +29,7 @@
             <button onclick="window.location.href='dashboard.html'" class="w-10 h-10 flex items-center justify-center rounded-full bg-gray-50 text-[#00694a] hover:bg-gray-100 transition-colors">
                 <span class="material-symbols-outlined">arrow_back</span>
             </button>
-            <h1 class="text-base font-bold text-[#00694a]">งานประเมิน (ที่ได้รับมอบหมาย)</h1>
+            <h1 class="text-base font-bold text-[#00694a]">งานประเมินสุขภาพ</h1>
         </div>
         
         <div class="flex px-4 bg-white">
@@ -51,7 +51,7 @@
                 <span class="material-symbols-outlined text-[40px] text-green-500">task_alt</span>
             </div>
             <h3 class="text-gray-700 font-bold">ไม่มีงานค้าง</h3>
-            <p class="text-[13px]">เยี่ยมมาก! คุณไม่มีงานประเมินที่ค้างอยู่</p>
+            <p class="text-[13px]">เยี่ยมมาก! ไม่มีงานประเมินที่ค้างอยู่ในความดูแลของคุณ</p>
         </div>
     </main>
 
@@ -81,32 +81,56 @@
         let assignments = []; 
         let currentTab = 'pending';
         let currentUserUid = ""; 
+        let vhvCurrentVillage = ""; 
 
         document.addEventListener("DOMContentLoaded", () => {
             liff.init({ liffId: LIFF_ID }).then(() => {
                 if (liff.isLoggedIn()) {
-                    liff.getProfile().then(p => {
+                    liff.getProfile().then(async p => {
                         currentUserUid = String(p.userId).trim();
+                        await fetchVHVProfile(currentUserUid);
                         fetchAssignments();
                     });
                 } else { liff.login(); }
             }).catch(err => { fetchAssignments(); });
         });
 
+        // ดึงข้อมูลเขตพื้นที่รับผิดชอบของ อสม. จาก Firebase
+        async function fetchVHVProfile(uid) {
+            try {
+                const docSnap = await db.collection('VHVs').doc(String(uid)).get();
+                if(docSnap.exists) {
+                    const data = docSnap.data();
+                    if(data.status === 'Rejected' || data.status === 'Pending') {
+                        window.location.href = 'index.html';
+                        return;
+                    }
+                    vhvCurrentVillage = String(data.village_no || data.village || "").trim();
+                } else {
+                    window.location.href = 'index.html';
+                }
+            } catch (error) { console.error("ดึงข้อมูล อสม. ล้มเหลว", error); }
+        }
+
         async function fetchAssignments() {
             try {
+                // กวาดข้อมูลคนไข้ทั้งหมดมาก่อน แล้วคัดกรองจากหมู่บ้าน เพื่อให้เห็นภาพรวมทั้งหมู่
                 const snapshot = await db.collection('Patients').get();
                 const allPatients = [];
                 snapshot.forEach(doc => allPatients.push(doc.data()));
                 
                 const myAssignedPatients = allPatients.filter(p => {
                     const isActive = String(p.status || 'Active').trim().toLowerCase() === 'active';
-                    const isMyAssignedCase = String(p.assigned_vhv_id || "").trim() === currentUserUid;
-                    return isActive && isMyAssignedCase && currentUserUid !== "";
+                    const isMyVillage = String(p.village_no).trim() === vhvCurrentVillage;
+                    const isAssignedToMe = (p.assigned_vhv_id && String(p.assigned_vhv_id) === String(currentUserUid));
+                    
+                    // เงื่อนไข: ถ้าเป็นเคสที่โดนแอดมินมอบหมายตรง หรือเป็นเคสในหมู่บ้านตัวเอง
+                    const shouldShow = isAssignedToMe || isMyVillage;
+
+                    return isActive && shouldShow && vhvCurrentVillage !== "";
                 });
                 
                 assignments = myAssignedPatients.map(p => {
-                    // [แก้ไขใหม่] เพิ่มการเช็ค needs_assessment จากคำสั่งแอดมิน
                     const isPending = (p.needs_assessment === true || !p.adl || p.adl === '-' || p.group === 'ยังไม่ประเมิน' || p.group === '-');
                     return {
                         ...p,
@@ -120,6 +144,7 @@
             } catch (error) {
                 console.error(error);
                 alert("ไม่สามารถดึงข้อมูลงานประเมินได้");
+                document.getElementById('loading-state').innerHTML = `<p class="text-sm text-red-500 font-bold">เกิดข้อผิดพลาดในการเชื่อมต่อฐานข้อมูล</p>`;
             }
         }
 
@@ -145,13 +170,17 @@
                 
                 filteredData.forEach(p => {
                     let avatarHtml = `<div class="w-12 h-12 rounded-full bg-gray-100 text-gray-500 font-bold text-lg flex items-center justify-center flex-shrink-0 border">${p.name ? p.name.substring(0,1) : '?'}</div>`;
-                    if(p.profile_pic && p.profile_pic.startsWith('http')) {
-                        const match = p.profile_pic.match(/d\/([a-zA-Z0-9_-]+)/) || p.profile_pic.match(/id=([a-zA-Z0-9_-]+)/);
-                        if(match) avatarHtml = `<img src="https://drive.google.com/thumbnail?id=${match[1]}&sz=150" class="w-12 h-12 rounded-full object-cover flex-shrink-0 shadow-sm">`;
-                        else avatarHtml = `<img src="${p.profile_pic}" class="w-12 h-12 rounded-full object-cover flex-shrink-0 shadow-sm">`;
+                    
+                    if(p.profile_pic) {
+                        if (p.profile_pic.startsWith('http')) {
+                            const match = p.profile_pic.match(/d\/([a-zA-Z0-9_-]+)/) || p.profile_pic.match(/id=([a-zA-Z0-9_-]+)/);
+                            if(match) avatarHtml = `<img src="https://drive.google.com/thumbnail?id=${match[1]}&sz=150" class="w-12 h-12 rounded-full object-cover flex-shrink-0 shadow-sm">`;
+                            else avatarHtml = `<img src="${p.profile_pic}" class="w-12 h-12 rounded-full object-cover flex-shrink-0 shadow-sm">`;
+                        } else if (p.profile_pic.startsWith('data:image')) {
+                            avatarHtml = `<img src="${p.profile_pic}" class="w-12 h-12 rounded-full object-cover flex-shrink-0 shadow-sm">`;
+                        }
                     }
 
-                    // แสดงข้อความต่างกันถ้าเป็นเคสรอประเมินซ้ำ
                     let badgeText = "รอประเมิน ADL";
                     if (currentTab === 'pending' && p.needs_assessment === true && p.adl && p.adl !== '-') {
                         badgeText = "รอประเมินรอบใหม่";
@@ -160,6 +189,12 @@
                     const statusBadge = currentTab === 'pending' 
                         ? `<span class="bg-amber-100 text-amber-700 text-[10px] font-bold px-2 py-0.5 rounded">${badgeText}</span>`
                         : `<span class="bg-green-100 text-green-700 text-[10px] font-bold px-2 py-0.5 rounded">เสร็จสิ้น</span>`;
+
+                    // สัญลักษณ์ช่วยให้ อสม. ทราบว่านี่คือเคสที่ถูกแอดมินเจาะจงมอบหมายมา (เน้นย้ำ)
+                    let infoBadge = '';
+                    if(p.assigned_vhv_id === currentUserUid) {
+                        infoBadge = `<span class="material-symbols-outlined text-emerald-500 text-[14px]" title="ได้รับมอบหมายตรง">assignment_ind</span>`;
+                    }
 
                     const btnColor = currentTab === 'pending' ? 'bg-[#00694a] text-white hover:bg-[#005239]' : 'bg-gray-100 text-gray-500 border border-gray-200';
                     const btnText = currentTab === 'pending' ? 'ไปที่แฟ้มประวัติเพื่อประเมิน' : 'ดูแฟ้มประวัติ';
@@ -170,7 +205,7 @@
                                 ${avatarHtml}
                                 <div class="flex-1 min-w-0">
                                     <div class="flex justify-between items-start mb-0.5">
-                                        <h3 class="font-bold text-[15px] text-gray-900 truncate">${p.name || 'ไม่ระบุชื่อ'}</h3>
+                                        <h3 class="font-bold text-[15px] text-gray-900 truncate flex items-center gap-1">${p.name || 'ไม่ระบุชื่อ'} ${infoBadge}</h3>
                                         ${statusBadge}
                                     </div>
                                     <p class="text-xs text-gray-500 truncate">บ้านเลขที่ ${p.house_no || '-'} • หมู่ ${p.village_no || '-'}</p>
