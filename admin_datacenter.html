@@ -128,7 +128,7 @@
     <script>
         firebase.initializeApp(firebaseConfig);
         const db = firebase.firestore();
-      
+        
         let allPatients = [];
         let currentTab = 'active';
 
@@ -157,6 +157,14 @@
                 const userDoc = await db.collection('VHVs').doc(String(uid)).get();
                 let isAdmin = false; let hospital = 'เทศบาลเมืองบางแก้ว'; let vCount = 15;
 
+                // ดึงข้อมูลการตั้งค่าชื่อหน่วยงานและจำนวนหมู่จาก SystemConfig
+                try {
+                    const sysSnap = await db.collection('SystemConfig').doc('HOSPITAL_NAME').get();
+                    if(sysSnap.exists) hospital = sysSnap.data().value || hospital;
+                    const sysCountSnap = await db.collection('SystemConfig').doc('VILLAGE_COUNT').get();
+                    if(sysCountSnap.exists) vCount = parseInt(sysCountSnap.data().value) || vCount;
+                } catch(e) {}
+
                 if (userDoc.exists) {
                     const userData = userDoc.data();
                     const role = String(userData.role || userData.Role || '').toUpperCase();
@@ -164,20 +172,6 @@
                         isAdmin = true;
                         hospital = userData.hospital_name || hospital;
                         vCount = parseInt(userData.village_count) || vCount;
-                    }
-                }
-
-                if (!isAdmin) {
-                    const response = await fetch(API_URL, { method: 'POST', body: JSON.stringify({ action: 'checkUserRegistration', uid: uid }) });
-                    const data = await response.json();
-                    if (data.status === 'registered' && String(data.role).toUpperCase() === 'ADMIN') {
-                        isAdmin = true;
-                        hospital = data.hospital_name || hospital;
-                        vCount = parseInt(data.village_count) || vCount;
-                        await db.collection('VHVs').doc(String(uid)).set({
-                            uid: String(uid), role: 'ADMIN', hospital_name: hospital,
-                            village_count: vCount, name: data.name || 'Admin', phone: data.phone || ''
-                        }, { merge: true });
                     }
                 }
 
@@ -361,7 +355,10 @@
                 const batch = db.batch();
                 patients.forEach(p => {
                     const docRef = db.collection('Patients').doc();
-                    p.id = docRef.id; p.status = 'Active';
+                    p.id = docRef.id; 
+                    p.status = 'Active';
+                    p.group = 'ยังไม่ประเมิน';
+                    // ทำการแปลงค่าให้รองรับโครงสร้างใหม่ที่ไม่ได้พึ่งพา GAS
                     Object.keys(p).forEach(key => p[key] === undefined ? delete p[key] : {});
                     batch.set(docRef, p);
                 });
