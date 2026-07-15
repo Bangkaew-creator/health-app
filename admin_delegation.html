@@ -107,7 +107,7 @@
             <button class="tab-btn" id="tab-approve" onclick="switchTab('approve')">
                 <span class="text-sm">🔐 รออนุมัติ อสม.</span>
                 <span class="text-xs font-normal text-amber-500/70">(<span id="badge-pending-vhv" class="font-bold">0</span> คำขอ)</span>
-            </button>           
+            </button>            
         </div>
 
         <div class="p-4 lg:p-6">
@@ -172,24 +172,17 @@
                 let hospital = 'เทศบาลเมืองบางแก้ว';
                 let vCount = 15;
 
+                try {
+                    const sysSnap = await db.collection('SystemConfig').doc('HOSPITAL_NAME').get();
+                    if(sysSnap.exists) hospital = sysSnap.data().value || hospital;
+                    const sysCountSnap = await db.collection('SystemConfig').doc('VILLAGE_COUNT').get();
+                    if(sysCountSnap.exists) vCount = parseInt(sysCountSnap.data().value) || vCount;
+                } catch(e) {}
+
                 if (userDoc.exists && String(userDoc.data().role).toUpperCase() === 'ADMIN') {
                     isAdmin = true;
                     hospital = userDoc.data().hospital_name || hospital;
                     vCount = parseInt(userDoc.data().village_count) || vCount;
-                }
-
-                if (!isAdmin) {
-                    const response = await fetch(API_URL, { method: 'POST', body: JSON.stringify({ action: 'checkUserRegistration', uid: uid }) });
-                    const data = await response.json();
-                    if (data.status === 'registered' && String(data.role).toUpperCase() === 'ADMIN') {
-                        isAdmin = true;
-                        hospital = data.hospital_name || hospital;
-                        vCount = parseInt(data.village_count) || vCount;
-                        await db.collection('VHVs').doc(String(uid)).set({
-                            uid: String(uid), role: 'ADMIN', hospital_name: hospital,
-                            village_count: vCount, name: data.name || 'Admin', phone: data.phone || ''
-                        }, { merge: true });
-                    }
                 }
 
                 if (isAdmin) {
@@ -232,13 +225,18 @@
                 pSnap.forEach(doc => allPatients.push(doc.data()));
                 
                 allVHVs = [];
+                pendingVHVs = [];
+                
                 vSnap.forEach(doc => {
                     const v = doc.data();
-                    if(String(v.role).toUpperCase() !== 'ADMIN') allVHVs.push(v);
+                    if(String(v.role).toUpperCase() !== 'ADMIN') {
+                        if (String(v.status) === 'Pending') {
+                            pendingVHVs.push(v);
+                        } else {
+                            allVHVs.push(v);
+                        }
+                    }
                 });
-
-                const pendingRes = await fetch(API_URL, { method: 'POST', body: JSON.stringify({ action: 'getPendingVHVs' }) });
-                pendingVHVs = await pendingRes.json();
                 
                 distributePatients();
                 renderPendingVHVs(); 
@@ -293,21 +291,14 @@
             if(!confirm(actionType === 'Active' ? 'ยืนยันการอนุมัติสิทธิ์ให้บุคคลนี้ใช่หรือไม่?' : 'ยืนยันการปฏิเสธสิทธิ์ใช่หรือไม่?')) return;
             
             try {
-                const response = await fetch(API_URL, { method: 'POST', body: JSON.stringify({ action: 'manageVHVStatus', targetUid: uid, actionType: actionType }) });
-                const result = await response.json();
-                
-                if(result.success) {
-                    if (actionType === 'Active') {
-                        const targetVHV = pendingVHVs.find(v => String(v.uid) === String(uid));
-                        if(targetVHV) {
-                            targetVHV.status = 'Active';
-                            targetVHV.role = 'VHV';
-                            await db.collection('VHVs').doc(String(uid)).set(targetVHV, { merge: true });
-                        }
-                    }
-                    alert('ดำเนินการเรียบร้อยแล้ว');
-                    loadDataChannels(); 
-                } else alert(result.message);
+                // เปลี่ยนสถานะใน Firebase โดยตรง
+                await db.collection('VHVs').doc(String(uid)).update({
+                    status: actionType,
+                    role: actionType === 'Active' ? 'VHV' : 'None'
+                });
+
+                alert('ดำเนินการเรียบร้อยแล้ว');
+                loadDataChannels(); 
             } catch(e) { alert("เชื่อมต่อล้มเหลว"); }
         }
 
@@ -366,7 +357,7 @@
                                 <select id="select_${p.id}" class="w-full text-xs rounded-lg border-slate-200 focus:ring-emerald-500">${generateVHVOptionsStrict(p.village_no, p.assigned_vhv_id)}</select>
                             </div>
                         </div>
-                        <button onclick="saveAssignment('${p.id}')" id="btn_${p.id}" class="w-full mt-4 py-2 bg-navy text-white font-bold text-xs rounded-xl hover:bg-opacity-90">บันทึกและส่งแจ้งเตือน LINE อส.</button>
+                        <button onclick="saveAssignment('${p.id}')" id="btn_${p.id}" class="w-full mt-4 py-2 bg-navy text-white font-bold text-xs rounded-xl hover:bg-opacity-90">บันทึกการมอบหมายงาน</button>
                     </div>
                 `);
             });
@@ -398,7 +389,7 @@
                                 <select id="select_${p.id}" class="w-full text-xs rounded-lg border-slate-200 focus:ring-emerald-500">${generateVHVOptionsStrict(p.village_no, p.assigned_vhv_id)}</select>
                             </div>
                         </div>
-                        <button onclick="saveAssignment('${p.id}')" id="btn_${p.id}" class="w-full mt-4 py-2 bg-[#00694a] text-white font-bold text-xs rounded-xl hover:bg-opacity-90">บันทึกและส่งแจ้งเตือน LINE อส.</button>
+                        <button onclick="saveAssignment('${p.id}')" id="btn_${p.id}" class="w-full mt-4 py-2 bg-[#00694a] text-white font-bold text-xs rounded-xl hover:bg-opacity-90">บันทึกการมอบหมายงาน</button>
                     </div>
                 `);
             });
@@ -455,13 +446,8 @@
             try {
                 const taskDesc = checkedTasks.join(', ');
                 const todayStr = getTodayString(); 
-                
-                // ดึงชื่อและที่อยู่จาก Firebase ที่หน้าเว็บมีอยู่แล้ว เพื่อส่งไปให้ LINE เลย
-                const p = allPatients.find(x => x.id === patientId || x.patient_id === patientId); 
-                const pName = p ? p.name : 'ไม่ระบุชื่อ';
-                const pHouse = p ? p.house_no : '-';
-                const pVillage = p ? p.village_no : '-';
 
+                // อัปเดตเข้าระบบ Firebase ทันที
                 await db.collection('Patients').doc(String(patientId)).update({ 
                     assigned_vhv_id: String(vhvId),
                     needs_assessment: true,
@@ -470,28 +456,13 @@
                     task_date: todayStr
                 });
                 
-                alert('มอบหมายงานสำเร็จ! (ระบบกำลังส่งแจ้งเตือน LINE ให้ อสม. เบื้องหลัง)');
+                alert('มอบหมายงานสำเร็จ!\n(ข้อมูลถูกบันทึกเข้าระบบเรียบร้อยแล้ว)');
                 loadDataChannels();
                 
-                // สั่งยิง LINE และส่งชื่อคนไข้ไปด้วยเลย (เพิ่ม header ป้องกันเน็ตบล็อก)
-                fetch(API_URL, { 
-                    method: 'POST', 
-                    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-                    body: JSON.stringify({ 
-                        action: 'updatePatientVHV', 
-                        id: patientId, 
-                        vhvId: vhvId, 
-                        taskDesc: taskDesc,
-                        pName: pName,
-                        pHouse: pHouse,
-                        pVillage: pVillage
-                    }) 
-                }).catch(e => console.log("แจ้งเตือน LINE ล้มเหลว แต่บันทึกข้อมูลแล้ว"));
-
             } catch(e) { 
                 alert("เชื่อมต่อขัดข้อง กรุณาลองใหม่"); 
                 btn.disabled = false; 
-                btn.innerText = 'บันทึกและส่งแจ้งเตือน LINE อส.'; 
+                btn.innerText = 'บันทึกการมอบหมายงาน'; 
             }
         }
     </script>
