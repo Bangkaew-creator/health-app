@@ -120,29 +120,13 @@
                     dia: dia || '',
                     hr: hr || '',
                     sugar: sugar || '',
-                    meal: mealSelected ? mealSelected.value : '', // ตั้งค่าคีย์เป็น meal เพื่อให้ตรงกับโครงสร้างดึงกราฟหลัก
+                    meal: mealSelected ? mealSelected.value : '',
                     date: formattedDate,
                     timestamp: firebase.firestore.FieldValue.serverTimestamp()
                 };
 
-                // 1. ส่งข้อมูลสัญญาณชีพตรงไปบันทึกที่ Firebase Firestore
+                // ส่งข้อมูลสัญญาณชีพตรงไปบันทึกที่ Firebase Firestore อย่างเดียว
                 await db.collection('Vitals').add(vitalsData);
-
-                // 2. แอบสั่งรันคำสั่งยิงเก็บประวัติเข้า Google Sheets ตัวเก่าไว้เบื้องหลัง (Silent Sync)
-                fetch(API_URL, {
-                    method: 'POST',
-                    body: JSON.stringify({
-                        action: 'saveVitals',
-                        data: {
-                            patient_id: patientId,
-                            sys: vitalsData.sys,
-                            dia: vitalsData.dia,
-                            hr: vitalsData.hr,
-                            sugar: vitalsData.sugar,
-                            meal_type: vitalsData.meal // แปลงกลับเป็นคีย์โครงสร้างเดิมตอนส่งหาคลังชีต
-                        }
-                    })
-                }).catch(err => console.log('Silent background sync finished.'));
 
                 alert('บันทึกสัญญาณชีพเรียบร้อยและอัปเดตกราฟทันที!');
                 window.location.href = `patient_profile.html?id=${patientId}`;
