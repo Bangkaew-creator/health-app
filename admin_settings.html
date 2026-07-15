@@ -193,22 +193,20 @@
             });
         });
 
-        // ตรวจสอบสิทธิ์และดึงค่ากลาง
+        // ตรวจสอบสิทธิ์จาก Firebase เท่านั้น
         async function verifyAdminAccess(uid) {
             try {
                 const userDoc = await db.collection('VHVs').doc(String(uid)).get();
                 let isAdmin = false;
 
+                try {
+                    const sysSnapHospital = await db.collection('SystemConfig').doc('HOSPITAL_NAME').get();
+                    if(sysSnapHospital.exists) globalHospitalName = sysSnapHospital.data().value || globalHospitalName;
+                } catch(e) {}
+
                 if (userDoc.exists && String(userDoc.data().role).toUpperCase() === 'ADMIN') {
                     isAdmin = true;
                     globalHospitalName = userDoc.data().hospital_name || globalHospitalName;
-                } else {
-                    const response = await fetch(API_URL, { method: 'POST', body: JSON.stringify({ action: 'checkUserRegistration', uid: uid }) });
-                    const data = await response.json();
-                    if (data.status === 'registered' && String(data.role).toUpperCase() === 'ADMIN') {
-                        isAdmin = true;
-                        globalHospitalName = data.hospital_name || globalHospitalName;
-                    }
                 }
 
                 if (isAdmin) {
@@ -219,7 +217,7 @@
             } catch (error) { window.location.href = 'index.html'; }
         }
 
-        // --- ส่วนที่ 1: ดึงและจัดการโปรไฟล์แอดมิน ---
+        // --- ส่วนที่ 1: ดึงและจัดการโปรไฟล์แอดมิน (Firebase Only) ---
         async function loadProfileData() {
             try {
                 const docSnap = await db.collection('VHVs').doc(String(currentUserUid)).get();
@@ -228,19 +226,9 @@
                     document.getElementById('input-prof-name').value = data.name || '';
                     document.getElementById('input-prof-phone').value = data.phone || '';
                     
-                    const picUrl = data.profile_pic || 'https://via.placeholder.com/150';
+                    const picUrl = data.profile_pic || data.pic_url || 'https://via.placeholder.com/150';
                     document.getElementById('input-prof-url').value = picUrl;
                     document.getElementById('prof-img').src = picUrl;
-                } else {
-                    const response = await fetch(API_URL, { method: 'POST', body: JSON.stringify({ action: 'getUserProfile', uid: currentUserUid }) });
-                    const data = await response.json();
-                    if (data.success) {
-                        document.getElementById('input-prof-name').value = data.name || '';
-                        document.getElementById('input-prof-phone').value = data.phone || '';
-                        const picUrl = data.profile_pic || 'https://via.placeholder.com/150';
-                        document.getElementById('input-prof-url').value = picUrl;
-                        document.getElementById('prof-img').src = picUrl;
-                    }
                 }
                 
                 document.getElementById('input-prof-url').addEventListener('input', function() {
@@ -274,18 +262,13 @@
                     name: name, phone: phone, profile_pic: pic
                 }, { merge: true });
 
-                fetch(API_URL, { 
-                    method: 'POST', 
-                    body: JSON.stringify({ action: 'updateUserProfile', uid: currentUserUid, name: name, phone: phone, pic: pic }) 
-                }).catch(e => console.log('Silent sync completed.'));
-
                 alert('อัปเดตโปรไฟล์ส่วนตัวสำเร็จ!');
             } catch (error) { alert('บันทึกข้อมูลขัดข้อง กรุณาลองใหม่'); }
             
             btn.disabled = false; btn.innerHTML = 'บันทึกข้อมูลส่วนตัว';
         }
 
-        // --- ส่วนที่ 2: จัดการ Config ระบบส่วนกลาง ---
+        // --- ส่วนที่ 2: จัดการ Config ระบบส่วนกลาง (Firebase Only) ---
         async function loadSystemConfigs() {
             try {
                 const snapshot = await db.collection('SystemConfig').get();
@@ -295,19 +278,6 @@
                     const d = doc.data();
                     originalConfigs.push({ key: doc.id, value: d.value });
                 });
-
-                if (originalConfigs.length === 0) {
-                    const response = await fetch(API_URL, { method: 'POST', body: JSON.stringify({ action: 'getAllSystemConfigs' }) });
-                    const items = await response.json();
-                    
-                    const batch = db.batch();
-                    items.forEach(c => {
-                        const ref = db.collection('SystemConfig').doc(String(c.key));
-                        batch.set(ref, { value: String(c.value) });
-                        originalConfigs.push({ key: c.key, value: String(c.value) });
-                    });
-                    await batch.commit();
-                }
 
                 // นำค่าไปใส่ใน input ที่เรียงลำดับไว้แล้ว
                 originalConfigs.forEach(c => {
@@ -320,10 +290,8 @@
         }
 
         async function saveSystemConfigs() {
-            // จับคู่ Key ให้ตรงกับฐานข้อมูลเป๊ะๆ ตามที่ต้องการเรียง
             const targetKeys = ['ADMIN_SECRET_CODE', 'HOSPITAL_NAME', 'VILLAGE_COUNT', 'DIAPER_PRICE', 'UNDERPAD_PRICE', 'LINE_LIFF_ID', 'LINE_CHANNEL_ACCESS_TOKEN'];
             
-            const configsToUpdate = [];
             const batch = db.batch();
             let hasChanges = false;
             
@@ -333,8 +301,6 @@
                 const el = document.getElementById(`config-${key}`);
                 if(el) {
                     const newVal = el.value.trim();
-                    configsToUpdate.push({ key: key, value: newVal });
-                    
                     const ref = db.collection('SystemConfig').doc(String(key));
                     batch.set(ref, { value: newVal }, { merge: true });
                     hasChanges = true;
@@ -359,7 +325,7 @@
                 if(updatedDiaperPrice !== null && !isNaN(updatedDiaperPrice)) profileUpdateObj.diaper_price = updatedDiaperPrice;
                 if(updatedUnderpadPrice !== null && !isNaN(updatedUnderpadPrice)) profileUpdateObj.underpad_price = updatedUnderpadPrice;
                 if(updatedVillageCount !== null && !isNaN(updatedVillageCount)) profileUpdateObj.village_count = updatedVillageCount;
-                if(updatedHospitalName !== null) {
+                if(updatedHospitalName !== null && updatedHospitalName !== "") {
                     profileUpdateObj.hospital_name = updatedHospitalName;
                     document.getElementById('sidebar-hospital-name').innerText = updatedHospitalName;
                 }
@@ -367,11 +333,6 @@
                 if(Object.keys(profileUpdateObj).length > 0) {
                     await db.collection('VHVs').doc(String(currentUserUid)).set(profileUpdateObj, { merge: true });
                 }
-
-                // 3. ซิงค์ลง Google Sheets
-                fetch(API_URL, { 
-                    method: 'POST', body: JSON.stringify({ action: 'updateSystemConfigs', configs: configsToUpdate }) 
-                }).catch(e => console.log('Silent sync completed.'));
 
                 alert('บันทึกการตั้งค่าระบบเรียบร้อยแล้ว!');
             } catch (error) { alert('เกิดข้อผิดพลาดในการบันทึกข้อมูล: ' + error.message); }
