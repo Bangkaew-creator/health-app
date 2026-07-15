@@ -77,7 +77,6 @@
     </div>
 
     <script>
-        // เริ่มต้น Firebase
         firebase.initializeApp(firebaseConfig);
         const db = firebase.firestore();
         
@@ -85,13 +84,11 @@
         const patientId = urlParams.get('id');
         document.getElementById('patient-id-display').innerText = `รหัส: ${patientId || 'ไม่ระบุ'}`;
 
-        // ข้อมูลคำถาม 2Q
         const questions2Q = [
             { id: 'q2_1', text: "1. ท่านรู้สึกหดหู่ เศร้า หรือท้อแท้สิ้นหวัง หรือไม่?" },
             { id: 'q2_2', text: "2. ท่านรู้สึกเบื่อ ทำอะไรก็ไม่เพลิดเพลิน หรือไม่?" }
         ];
 
-        // ข้อมูลคำถาม 9Q
         const questions9Q = [
             { id: 'q9_1', text: "1. เบื่อหน่าย ไม่สนใจอยากทำอะไร" },
             { id: 'q9_2', text: "2. ไม่สบายใจ ซึมเศร้า ท้อแท้" },
@@ -225,7 +222,6 @@
             }
         }
 
-        // [อัปเดต] บันทึกคะแนนเข้า Firebase โดยตรง 
         async function saveDepression() {
             if (!patientId) return alert("ไม่พบข้อมูลผู้ป่วย กรุณากลับไปหน้ารายชื่อ");
 
@@ -248,19 +244,18 @@
             btn.disabled = true;
 
             try {
-                // สร้างวันที่แบบไทย
                 const now = new Date();
                 const dd = String(now.getDate()).padStart(2, '0');
                 const mm = String(now.getMonth() + 1).padStart(2, '0');
                 const yyyy = now.getFullYear() + 543;
                 const formattedDate = `${dd}/${mm}/${yyyy}`;
 
-                // 1. อัปเดตสถานะซึมเศร้าในโปรไฟล์คนไข้
+                // 1. อัปเดตสถานะซึมเศร้าในโปรไฟล์คนไข้ (Firebase Only)
                 await db.collection('Patients').doc(String(patientId)).update({
                     dep_status: status
                 });
 
-                // 2. บันทึกประวัติการประเมินลง Assessments เพื่อวาดกราฟ
+                // 2. บันทึกประวัติการประเมินลง Assessments (Firebase Only)
                 await db.collection('Assessments').add({
                     patient_id: String(patientId),
                     type: 'DEP',
@@ -270,19 +265,6 @@
                     date: formattedDate,
                     timestamp: firebase.firestore.FieldValue.serverTimestamp()
                 });
-
-                // 3. แอบยิงซิงค์ข้อมูลให้ Google Sheets ฝั่งหลังบ้าน
-                fetch(API_URL, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-                    body: JSON.stringify({ 
-                        action: 'saveDepression', 
-                        id: patientId, 
-                        score2q: score2qStr, 
-                        score9q: score9qStr, 
-                        status: status 
-                    })
-                }).catch(e => console.log('Silent sync completed.'));
 
                 alert('บันทึกผลการประเมินซึมเศร้าสำเร็จ!');
                 window.location.href = `patient_profile.html?id=${patientId}`;
