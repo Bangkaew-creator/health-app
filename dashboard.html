@@ -184,7 +184,7 @@
             });
         });
 
-        // [อัปเดต] ดึงข้อมูลโปรไฟล์ของ อสม. จาก Firebase แทน GAS
+        // [อัปเดต] ดึงข้อมูลโปรไฟล์ของ อสม. จาก Firebase เพียงอย่างเดียว
         async function fetchVHVProfile(uid) {
             try {
                 const docSnap = await db.collection('VHVs').doc(String(uid)).get();
@@ -210,24 +210,7 @@
 
                     updateVillageTotal();
                 } else {
-                    // ถ้าใน Firebase ยังไม่มี ค่อยลองหาใน GAS เผื่อแอดมินเพิ่งอนุมัติจากระบบเก่า
-                    const response = await fetch(API_URL, { method: 'POST', body: JSON.stringify({ action: 'checkUserRegistration', uid: uid }) });
-                    const data = await response.json();
-                    if (data.status === 'registered') {
-                        document.getElementById('header-vhv-name').innerText = data.name;
-                        const hospital = data.hospital_name || 'เทศบาลเมืองบางแก้ว';
-                        if (data.village) {
-                            vhvCurrentVillage = data.village;
-                            document.getElementById('header-vhv-village').innerText = 'หมู่ที่ ' + data.village + ' | ' + hospital;
-                            document.getElementById('my-village-number').innerText = data.village;
-                        }
-                        const picContainer = document.getElementById('header-profile-pic');
-                        if (data.pic_url) {
-                            picContainer.innerHTML = `<img src="${data.pic_url}" class="w-full h-full object-cover">`;
-                        } else picContainer.innerHTML = data.name.substring(0, 1);
-                        
-                        updateVillageTotal();
-                    } else { setDefaultVHVProfile(); }
+                    setDefaultVHVProfile();
                 }
             } catch (error) { setDefaultVHVProfile(); }
         }
@@ -239,24 +222,17 @@
             document.getElementById('my-village-number').innerText = '-';
         }
 
-        // [อัปเดต] ดึงข้อมูลผู้ป่วยสำหรับ อสม. ตรงจาก Firebase เร็วติดจรวด
         async function fetchPatients() {
             try {
-                // กวาดข้อมูลคนไข้ทั้งหมดมาก่อน เพราะต้องการเอาไปกรองเองใน Frontend จะได้เร็ว
                 const snapshot = await db.collection('Patients').get();
                 const rawPatients = [];
                 snapshot.forEach(doc => { rawPatients.push(doc.data()); });
                 
-                // กรองให้เหลือเฉพาะ "ผู้ที่อยู่ในความดูแลของ อสม." และ "สถานะ Active"
                 allPatients = rawPatients.filter(p => {
-                    // หาก อสม. ถูกแอดมิน assigned เข้ารหัสให้แล้ว ให้โชว์เฉพาะคนไข้รหัสตัวเองเป็นหลัก (ตามฟังก์ชันมอบหมายงาน)
-                    // ถ้ายังไม่มีระบบมอบหมายงานตรงๆ จะโชว์ตามเลขหมู่บ้านเป็น default
                     const isMyVillage = vhvCurrentVillage ? (String(p.village_no) === String(vhvCurrentVillage)) : true;
                     const isAssignedToMe = (p.assigned_vhv_id && String(p.assigned_vhv_id) === String(vhvCurrentUid));
-                    
                     const isActive = String(p.status || 'Active').trim().toLowerCase() === 'active';
                     
-                    // เงื่อนไข: ถ้าโดน assign มาตรงๆ ต้องโชว์ หรือ ถ้ายังไม่มีการ assign แต่เลขหมู่ตรงกันก็ให้โชว์
                     const shouldShow = isAssignedToMe || (!p.assigned_vhv_id && isMyVillage);
 
                     return shouldShow && isActive;
@@ -337,7 +313,6 @@
                     avatarHtml = `<img src="${p.profile_pic}" class="w-14 h-14 rounded-[14px] object-cover flex-shrink-0 shadow-sm">`;
                 }
 
-                // สัญลักษณ์ช่วย อสม. สังเกต
                 let infoBadge = '';
                 if(p.assigned_vhv_id === vhvCurrentUid) {
                     infoBadge = `<span class="material-symbols-outlined text-emerald-500 text-[14px]" title="ได้รับมอบหมายตรง">assignment_ind</span>`;
@@ -366,7 +341,6 @@
         function filterPatients() { renderPatientList(); }
 
         function getTodayString() {
-            // ปรับเป็นปี พ.ศ. ให้ตรงกับระบบบันทึกแบบฟอร์ม
             const today = new Date();
             const dd = String(today.getDate()).padStart(2, '0');
             const mm = String(today.getMonth() + 1).padStart(2, '0');
