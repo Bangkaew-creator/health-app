@@ -23,7 +23,7 @@
 </head>
 <body class="text-[#111c2d] pb-24">
 
-    <header class="bg-[#00694a] sticky top-0 z-50 shadow-md flex justify-between items-center w-full px-4 h-16 text-white">
+    <header class="bg-[#00694a] sticky top-0 z-50 shadow-sm flex justify-between items-center w-full px-4 h-16 text-white">
         <div class="flex items-center gap-3">
             <button onclick="goBackToList()" class="w-10 h-10 flex items-center justify-center rounded-full hover:bg-white/20 transition-colors">
                 <span class="material-symbols-outlined">arrow_back</span>
@@ -95,10 +95,6 @@
             </div>
             
             <div id="done-btn-container" class="hidden"></div>
-            <div class="bg-white rounded-[20px] p-5 shadow-sm border border-[#bdcac1]/30">
-                <h3 class="text-sm font-bold flex items-center gap-2 mb-4 text-[#00694a]">
-                    <span class="material-symbols-outlined text-[18px]">badge</span> ข้อมูลส่วนบุคคล
-                </h3>
 
             <div class="bg-white rounded-[20px] p-5 shadow-sm border border-[#bdcac1]/30">
                 <h3 class="text-sm font-bold flex items-center gap-2 mb-4 text-[#00694a]">
@@ -213,6 +209,33 @@
         </div>
     </main>
 
+    <!-- Modal เปลี่ยนสถานะ -->
+    <div id="status-modal" class="fixed inset-0 bg-black/50 z-[100] hidden flex items-center justify-center opacity-0 transition-opacity duration-300">
+        <div id="status-modal-content" class="bg-white rounded-[24px] w-[90%] max-w-sm p-6 transform scale-95 transition-transform duration-300">
+            <h3 class="text-lg font-bold text-[#ba1a1a] mb-2 flex items-center gap-2">
+                <span class="material-symbols-outlined">warning</span> เปลี่ยนสถานะผู้ป่วย
+            </h3>
+            <p class="text-sm text-gray-600 mb-4">หากเปลี่ยนสถานะ ผู้ป่วยรายนี้จะไม่แสดงในหน้าหลักของ อสม. อีกต่อไป</p>
+            
+            <div class="space-y-3 mb-6">
+                <label class="flex items-center gap-3 p-3 border border-gray-200 rounded-xl cursor-pointer hover:bg-red-50">
+                    <input type="radio" name="patient_status" value="เสียชีวิต" class="w-4 h-4 text-red-600 focus:ring-red-500">
+                    <span class="text-sm font-semibold text-gray-800">เสียชีวิต</span>
+                </label>
+                <label class="flex items-center gap-3 p-3 border border-gray-200 rounded-xl cursor-pointer hover:bg-orange-50">
+                    <input type="radio" name="patient_status" value="ย้ายที่อยู่" class="w-4 h-4 text-orange-500 focus:ring-orange-500">
+                    <span class="text-sm font-semibold text-gray-800">ย้ายที่อยู่ / ออกจากพื้นที่</span>
+                </label>
+            </div>
+
+            <div class="flex gap-3">
+                <button onclick="closeStatusModal()" class="flex-1 py-3 bg-gray-100 text-gray-700 rounded-xl font-bold hover:bg-gray-200">ยกเลิก</button>
+                <button onclick="savePatientStatus()" id="btn-save-status" class="flex-1 py-3 bg-[#ba1a1a] text-white rounded-xl font-bold hover:bg-red-700">ยืนยัน</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal ดูรูปภาพขยาย -->
     <div id="imageModal" class="fixed inset-0 bg-black/90 z-[100] hidden flex-col items-center justify-center opacity-0 transition-opacity duration-300">
         <button onclick="closeModal()" class="absolute top-4 right-4 text-white p-3 bg-black/50 rounded-full hover:bg-white/20"><span class="material-symbols-outlined">close</span></button>
         <img id="modalImage" src="" class="max-w-[95%] max-h-[90%] object-contain rounded-lg shadow-2xl">
@@ -226,7 +249,6 @@
         const patientId = urlParams.get('id');
         let currentUserRole = 'VHV';
         
-        // ตัวแปรเก็บข้อมูลเพื่อใช้ตรวจสอบการทำงาน
         let currentPatientData = null;
         let latestADLDate = 0;
         let latestDEPDate = 0;
@@ -240,7 +262,7 @@
             const parts = String(dateStr).split(' ')[0].split('/');
             if(parts.length >= 3) {
                 let year = parseInt(parts[2]);
-                if (year > 2400) year -= 543; // จัดการปี พ.ศ. ให้เป็น ค.ศ.
+                if (year > 2400) year -= 543;
                 return new Date(year, parseInt(parts[1])-1, parseInt(parts[0])).getTime();
             }
             return 0;
@@ -268,17 +290,12 @@
             });
         });
 
+        // ดึง Role จาก Firebase อย่างเดียว (ตัด Fallback กลับไปหา GAS)
         async function checkUserRole(uid) {
             try {
                 const userDoc = await db.collection('VHVs').doc(String(uid)).get();
                 if (userDoc.exists) {
                     currentUserRole = String(userDoc.data().role || 'VHV').toUpperCase();
-                } else {
-                    const response = await fetch(API_URL, { method: 'POST', body: JSON.stringify({ action: 'checkUserRegistration', uid: uid }) });
-                    const data = await response.json();
-                    if (data.status === 'registered') {
-                        currentUserRole = String(data.role || 'VHV').toUpperCase();
-                    }
                 }
             } catch(e) { console.error(e); }
         }
@@ -286,7 +303,7 @@
         const getDriveImageUrl = (url) => {
             if(!url) return null;
             const match = url.match(/d\/([a-zA-Z0-9_-]+)/) || url.match(/id=([a-zA-Z0-9_-]+)/);
-            return match ? `https://drive.google.com/thumbnail?id=${match[1]}&sz=w1000` : null;
+            return match ? `https://drive.google.com/thumbnail?id=${match[1]}&sz=w1000` : url;
         };
 
         function openModal(imgSrc) {
@@ -434,7 +451,6 @@
                 const assessments = [];
                 assessSnap.forEach(doc => assessments.push(doc.data()));
 
-                // เก็บวันที่ล่าสุดไว้ใช้เทียบตอนปิดงาน
                 vitals.forEach(v => {
                     const t = parseThaiDate(v.date);
                     if(t > latestVitalDate) latestVitalDate = t;
@@ -499,7 +515,6 @@
         loadPatientProfile(); 
         loadAllCharts();
 
-        // [ฟังก์ชันตรวจสอบการทำภารกิจที่เพิ่มใหม่]
         function checkTaskCompletion() {
             if (!currentPatientData || currentPatientData.needs_assessment !== true) return;
             
@@ -510,7 +525,6 @@
             const taskTime = parseThaiDate(currentPatientData.task_date);
             let pendingMessages = [];
 
-            // ตรวจสอบว่าวันที่บันทึกครั้งล่าสุด ทันสมัยกว่าวันที่แอดมินมอบหมายงานหรือไม่
             if (requiredTasks.includes("ประเมิน ADL")) {
                 if (latestADLDate < taskTime || latestADLDate === 0) pendingMessages.push("แบบประเมิน ADL");
             }
@@ -543,7 +557,6 @@
             }
         }
 
-        // ฟังก์ชันกดยืนยันจบงาน (ลบป้ายสถานะค้างงานทิ้ง)
         async function markTaskComplete(id) {
             if(!confirm("ยืนยันว่าได้ปฏิบัติงานครบถ้วนแล้วใช่หรือไม่?")) return;
             try {
@@ -589,15 +602,10 @@
             btn.disabled = true;
 
             try {
+                // บันทึกสถานะลง Firebase เท่านั้น
                 await db.collection('Patients').doc(String(patientId)).update({ 
                     status: newStatus 
                 });
-                
-                fetch(API_URL, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-                    body: JSON.stringify({ action: 'updatePatientStatus', id: patientId, status: newStatus })
-                }).catch(e => console.log('อัปเดตชีตสำเร็จ'));
                 
                 alert('เปลี่ยนสถานะผู้ป่วยสำเร็จ\nผู้ป่วยรายนี้ถูกนำออกจากรายชื่อที่ต้องติดตามแล้ว');
                 goBackToList(); 
@@ -608,7 +616,7 @@
         }
 
         function resetBtn(btn) {
-            btn.innerHTML = 'ยืนยันการเปลี่ยน';
+            btn.innerHTML = 'ยืนยัน';
             btn.disabled = false;
         }
     </script>
