@@ -223,7 +223,6 @@
             );
         }
 
-        // [อัปเดต] โหลดข้อมูลจาก Firebase รวดเร็วปานสายฟ้า
         async function loadPatientData() {
             initUI();
             if (!patientId) return alert("ไม่พบรหัสผู้ป่วย");
@@ -248,7 +247,6 @@
                 document.getElementById('caregiver_name').value = data.caregiver_name || '';
                 document.getElementById('caregiver_phone').value = data.caregiver_phone || '';
 
-                // โหลดข้อมูลโรคประจำตัว
                 if (data.disease) {
                     const savedDiseases = data.disease.split(',').map(item => item.trim());
                     let otherDiseases = [];
@@ -260,7 +258,6 @@
                     document.getElementById('disease_other').value = otherDiseases.join(', ');
                 }
 
-                // โหลดข้อมูลยา
                 const cleanMed = cleanAndParseJSON(data.medication);
                 if (cleanMed && Array.isArray(cleanMed)) {
                     if (cleanMed.length === 0) addMedRow();
@@ -271,7 +268,6 @@
                     addMedRow(); 
                 }
 
-                // โหลดข้อมูลประเมินผ้าอ้อม
                 const dp = cleanAndParseJSON(data.diaper);
                 if(dp) {
                     if(dp.result) {
@@ -288,7 +284,6 @@
                     document.getElementById('req_underpad').checked = dp.req_underpad || false;
                 }
 
-                // โหลดข้อมูลอุปกรณ์
                 if(data.equipment) {
                     const savedEq = data.equipment.split(',').map(item => item.trim());
                     let otherEq = [];
@@ -303,7 +298,6 @@
                 document.getElementById('btn-save').innerHTML = 'บันทึกข้อมูลและแบบประเมิน <span class="material-symbols-outlined text-sm">save</span>'; 
                 document.getElementById('btn-save').disabled = false;
 
-                // --- จัดการระบบเลื่อนหน้าจออัตโนมัติ (Auto-scroll) สองสัญชาติทำงานเสร็จสิ้น ---
                 if (window.location.hash) {
                     setTimeout(() => {
                         const targetId = window.location.hash.substring(1);
@@ -328,19 +322,16 @@
             }
         }
 
-        // [อัปเดต] บันทึกเข้า Firebase ทันที + ซิงค์ชีตเงียบๆ หลังบ้าน
         async function saveData(e) {
             e.preventDefault();
             const btn = document.getElementById('btn-save');
             btn.innerHTML = 'กำลังบันทึกข้อมูล...'; 
             btn.disabled = true;
 
-            // รวบรวมข้อมูลโรค
             let finalDiseases = [];
             document.querySelectorAll('.disease-cb:checked').forEach(cb => finalDiseases.push(cb.value));
             if (document.getElementById('disease_other').value.trim()) finalDiseases.push(document.getElementById('disease_other').value.trim());
 
-            // รวบรวมข้อมูลยา
             let medArray = [];
             document.querySelectorAll('[id^="med_"]').forEach(row => {
                 const name = row.querySelector('.med-name').value.trim();
@@ -349,7 +340,6 @@
                 if (name || dose || usage) medArray.push({ name, dose, usage });
             });
 
-            // รวบรวมข้อมูลแบบประเมินผ้าอ้อม
             const diaperResult = document.querySelector('input[name="diaper_result"]:checked');
             const indications = Array.from(document.querySelectorAll('.diaper-ind:checked')).map(cb => cb.value);
             const diaperObj = {
@@ -360,7 +350,6 @@
                 req_underpad: document.getElementById('req_underpad').checked
             };
 
-            // รวบรวมข้อมูลอุปกรณ์
             let eqArray = Array.from(document.querySelectorAll('.eq-cb:checked')).map(cb => cb.value);
             if (document.getElementById('equip_other').value.trim()) eqArray.push(document.getElementById('equip_other').value.trim());
 
@@ -369,7 +358,7 @@
                 name: document.getElementById('fullname').value.trim(),
                 house_no: document.getElementById('house_no').value.trim(), 
                 village_no: document.getElementById('village_no').value.trim(),
-                lat_long: document.getElementById('lat_long').value.trim(), 
+                lat_long: document.getElementById('lat_long_value').value.trim(), 
                 disease: finalDiseases.length > 0 ? finalDiseases.join(', ') : '-',
                 medication: JSON.stringify(medArray), 
                 caregiver_name: document.getElementById('caregiver_name').value.trim(), 
@@ -379,30 +368,8 @@
             };
 
             try {
-                // 1. อัปเดตข้อมูลตรงเข้า Firebase (เสร็จใน 0.1 วินาที)
+                // อัปเดตข้อมูลตรงเข้า Firebase อย่างเดียว
                 await db.collection('Patients').doc(String(patientId)).update(updateData);
-
-                // 2. ปล่อยให้ระบบซิงค์ลง Google Sheets วิ่งเบื้องหลังเงียบๆ 
-                fetch(API_URL, { 
-                    method: 'POST', 
-                    body: JSON.stringify({ 
-                        action: 'updatePatientData', 
-                        data: {
-                            id: patientId,
-                            prefix: updateData.prefix,
-                            fullname: updateData.name, // ใช้คีย์เดิมที่ GAS คาดหวัง
-                            house_no: updateData.house_no,
-                            village_no: updateData.village_no,
-                            lat_long: updateData.lat_long,
-                            disease: updateData.disease,
-                            medication: updateData.medication,
-                            caregiver_name: updateData.caregiver_name,
-                            caregiver_phone: updateData.caregiver_phone,
-                            diaper: updateData.diaper,
-                            equipment: updateData.equipment
-                        } 
-                    }) 
-                }).catch(err => console.log('Silent sync completed.'));
 
                 alert('บันทึกข้อมูลเรียบร้อยแล้ว!');
                 window.location.href = `patient_profile.html?id=${patientId}`;
