@@ -97,23 +97,28 @@
                     });
                 } else { liff.login(); }
             }).catch(err => {
-                fetchPatients(); 
+                // กรณีโหลด LIFF ไม่สำเร็จ
+                window.location.href = 'index.html';
             });
         });
 
+        // ดึงข้อมูลเขตพื้นที่รับผิดชอบของ อสม. จาก Firebase (ไม่พึ่ง GAS)
         async function fetchVHVProfile(uid) {
             try {
                 const docSnap = await db.collection('VHVs').doc(String(uid)).get();
                 if(docSnap.exists) {
-                    vhvCurrentVillage = String(docSnap.data().village_no || docSnap.data().village || "").trim();
-                } else {
-                    const response = await fetch(API_URL, { method: 'POST', body: JSON.stringify({ action: 'checkUserRegistration', uid: uid }) });
-                    const data = await response.json();
-                    if (data.status === 'registered') {
-                        vhvCurrentVillage = String(data.village).trim();
+                    const data = docSnap.data();
+                    // ตรวจสอบสถานะการอนุมัติ
+                    if(data.status === 'Rejected' || data.status === 'Pending') {
+                        window.location.href = 'index.html';
+                        return;
                     }
+                    vhvCurrentVillage = String(data.village_no || data.village || "").trim();
+                } else {
+                    // หากไม่พบข้อมูลบัญชี ให้กลับไปหน้าลงทะเบียน
+                    window.location.href = 'index.html';
                 }
-            } catch (error) { console.error("ดึงข้อมูล อสม. ล้มเหลว"); }
+            } catch (error) { console.error("ดึงข้อมูล อสม. ล้มเหลว", error); }
         }
 
         async function fetchPatients() {
@@ -125,9 +130,12 @@
                 allPatients = rawPatients.filter(p => {
                     const isActive = String(p.status || 'Active').trim().toLowerCase() === 'active';
                     const isMyVillage = String(p.village_no).trim() === vhvCurrentVillage;
+                    const isAssignedToMe = (p.assigned_vhv_id && String(p.assigned_vhv_id) === String(currentUserUid));
                     
-                    // ถ้ายังไม่มีระบบ Assign แบบเจาะจง ให้โชว์คนไข้ในหมู่เดียวกันทั้งหมด
-                    return isActive && isMyVillage && vhvCurrentVillage !== "";
+                    // แสดงเคสที่ได้รับมอบหมายตรง หรือ เคสในหมู่บ้านที่ยังไม่มีใครดูแล
+                    const shouldShow = isAssignedToMe || (!p.assigned_vhv_id && isMyVillage);
+
+                    return isActive && shouldShow && vhvCurrentVillage !== "";
                 });
                 
                 renderPatientList();
@@ -182,11 +190,17 @@
                     avatarHtml = `<img src="${p.profile_pic}" class="w-14 h-14 rounded-[14px] object-cover flex-shrink-0 shadow-sm">`;
                 }
 
+                // สัญลักษณ์ช่วยให้ อสม. ทราบว่านี่คือเคสที่ถูกแอดมินเจาะจงมอบหมายมา
+                let infoBadge = '';
+                if(p.assigned_vhv_id === currentUserUid) {
+                    infoBadge = `<span class="material-symbols-outlined text-emerald-500 text-[14px]" title="ได้รับมอบหมายตรง">assignment_ind</span>`;
+                }
+
                 const cardHtml = `
                     <div onclick="window.location.href='patient_profile.html?id=${p.id}'" class="bg-white rounded-[20px] p-4 shadow-sm border border-gray-100 flex items-center gap-4 cursor-pointer active:scale-[0.98] transition-transform">
                         ${avatarHtml}
                         <div class="flex-1 min-w-0">
-                            <h3 class="font-bold text-[15px] text-gray-900 truncate">${p.name || 'ไม่ระบุชื่อ'}</h3>
+                            <h3 class="font-bold text-[15px] text-gray-900 truncate flex items-center gap-1">${p.name || 'ไม่ระบุชื่อ'} ${infoBadge}</h3>
                             <p class="text-xs text-gray-500 mt-1 truncate">บ้านเลขที่ ${p.house_no || '-'} • หมู่ ${p.village_no || '-'}</p>
                         </div>
                         <div class="flex flex-col items-end justify-center gap-2 flex-shrink-0">
