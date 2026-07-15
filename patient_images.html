@@ -8,10 +8,8 @@
     <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700&display=swap" rel="stylesheet"/>
     <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
     
-    <!-- เพิ่ม Firebase Storage -->
     <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-storage-compat.js"></script>
     <script src="config.js"></script>
 
     <style>
@@ -59,10 +57,11 @@
 
         <section class="bg-white rounded-[20px] p-5 shadow-sm border border-gray-100 space-y-4">
             <h3 class="text-sm font-bold text-gray-700 flex items-center gap-1 border-b pb-2">
-                <span class="material-symbols-outlined text-base">cabin</span> สภาพแวดล้อมบ้านผู้ป่วย (4 จุดหลัก)
+                <span class="material-symbols-outlined text-base">cabin</span> สภาพแวดล้อมบ้านผู้ป่วย
             </h3>
 
             <div class="grid grid-cols-2 gap-4">
+                <!-- จุดที่ 1 -->
                 <div class="space-y-1">
                     <label class="text-xs text-gray-500 font-medium">1. สภาพที่นอน/เตียง</label>
                     <div onclick="triggerUpload('Pic_Bed')" class="upload-card" id="card-Pic_Bed">
@@ -75,6 +74,7 @@
                     </div>
                 </div>
 
+                <!-- จุดที่ 2 -->
                 <div class="space-y-1">
                     <label class="text-xs text-gray-500 font-medium">2. สภาพห้องน้ำ</label>
                     <div onclick="triggerUpload('Pic_Bath')" class="upload-card" id="card-Pic_Bath">
@@ -87,6 +87,7 @@
                     </div>
                 </div>
 
+                <!-- จุดที่ 3 -->
                 <div class="space-y-1">
                     <label class="text-xs text-gray-500 font-medium">3. ทางเข้าบ้าน/บันได</label>
                     <div onclick="triggerUpload('Pic_Entrance')" class="upload-card" id="card-Pic_Entrance">
@@ -99,6 +100,7 @@
                     </div>
                 </div>
 
+                <!-- จุดที่ 4 -->
                 <div class="space-y-1">
                     <label class="text-xs text-gray-500 font-medium">4. ทางเดินภายในบ้าน</label>
                     <div onclick="triggerUpload('Pic_Walkway')" class="upload-card" id="card-Pic_Walkway">
@@ -118,10 +120,8 @@
     <input type="file" id="file-hidden-input" accept="image/*" class="hidden" onchange="handleFileSelect(event)">
 
     <script>
-        // เริ่มต้น Firebase (เพิ่ม Storage)
         firebase.initializeApp(firebaseConfig);
         const db = firebase.firestore();
-        const storage = firebase.storage();
 
         const urlParams = new URLSearchParams(window.location.search);
         const patientId = urlParams.get('id');
@@ -129,15 +129,6 @@
         document.getElementById('patient-id-display').innerText = `รหัส: ${patientId || '-'}`;
         
         let currentTargetType = ''; 
-
-        // Mapping ชื่อฟิลด์
-        const fieldMap = {
-            'Profile_Pic': 'profile_pic',
-            'Pic_Bed': 'pic_bed',
-            'Pic_Bath': 'pic_bath',
-            'Pic_Entrance': 'pic_entrance',
-            'Pic_Walkway': 'pic_walkway'
-        };
 
         function triggerUpload(type) {
             currentTargetType = type;
@@ -147,44 +138,49 @@
         async function loadExistingImages() {
             if (!patientId) return;
             try {
+                // 1. โหลดรูปโปรไฟล์ (ยังเก็บไว้ที่ Document หลักเพื่อให้ดึงโชว์หน้ารายชื่อได้เร็ว)
                 const docSnap = await db.collection('Patients').doc(String(patientId)).get();
                 if (docSnap.exists) {
                     const data = docSnap.data();
                     displaySavedImage('Profile_Pic', data.profile_pic);
-                    displaySavedImage('Pic_Bed', data.pic_bed);
-                    displaySavedImage('Pic_Bath', data.pic_bath);
-                    displaySavedImage('Pic_Entrance', data.pic_entrance);
-                    displaySavedImage('Pic_Walkway', data.pic_walkway);
                 }
+
+                // 2. โหลดรูปสภาพแวดล้อมต่างๆ จาก Subcollection "Images" (ไม่จำกัดจำนวน 1MB)
+                const imagesSnap = await db.collection('Patients').doc(String(patientId)).collection('Images').get();
+                imagesSnap.forEach(imgDoc => {
+                    const imgType = imgDoc.id; // ไอดีของเอกสารคือชื่อประเภทรูป เช่น Pic_Bed
+                    const imgData = imgDoc.data();
+                    displaySavedImage(imgType, imgData.url);
+                });
+
             } catch (e) { console.log("โหลดภาพเดิมไม่สำเร็จ", e); }
         }
 
         function displaySavedImage(type, url) {
-            if (url && (url.startsWith('http') || url.startsWith('data:image'))) {
-                const img = document.getElementById(`img-${type}`);
-                const placeholder = document.getElementById(`placeholder-${type}`);
-                
+            // ตรวจสอบว่าใน HTML มีกล่องรูปนี้ให้แสดงหรือไม่
+            const imgElement = document.getElementById(`img-${type}`);
+            const placeholderElement = document.getElementById(`placeholder-${type}`);
+            
+            if (imgElement && url && (url.startsWith('http') || url.startsWith('data:image'))) {
                 let directUrl = url;
-                // หากเคยเป็นลิงก์ Google Drive (ของเก่า) ให้แปลงเป็น Thumbnail
                 const match = url.match(/d\/([a-zA-Z0-9_-]+)/) || url.match(/id=([a-zA-Z0-9_-]+)/);
                 if (match && match[1]) {
                     directUrl = `https://drive.google.com/thumbnail?id=${match[1]}&sz=w800`;
                 }
                 
-                img.src = directUrl;
-                img.classList.remove('hidden');
-                placeholder.classList.add('hidden');
+                imgElement.src = directUrl;
+                imgElement.classList.remove('hidden');
+                if (placeholderElement) placeholderElement.classList.add('hidden');
             }
         }
 
-        // ฟังก์ชันบีบอัดรูปภาพ
         function compressImage(file, callback) {
             const reader = new FileReader();
             reader.onload = function(event) {
                 const img = new Image();
                 img.onload = function() {
-                    const MAX_WIDTH = 800; 
-                    const MAX_HEIGHT = 800;
+                    const MAX_WIDTH = 600; 
+                    const MAX_HEIGHT = 600;
                     let width = img.width;
                     let height = img.height;
 
@@ -200,7 +196,7 @@
                     const ctx = canvas.getContext('2d');
                     ctx.drawImage(img, 0, 0, width, height);
                     
-                    const dataUrl = canvas.toDataURL('image/jpeg', 0.7);
+                    const dataUrl = canvas.toDataURL('image/jpeg', 0.6); 
                     callback(dataUrl); 
                 };
                 img.src = event.target.result;
@@ -215,34 +211,31 @@
             const loading = document.getElementById(`loading-${currentTargetType}`);
             loading.classList.remove('hidden'); 
 
-            compressImage(file, async function(fullDataUrl) {
-                const filename = `${patientId}_${currentTargetType}_${Date.now()}.jpg`;
-
+            compressImage(file, async function(base64DataUrl) {
                 try {
                     // 1. แสดงผลหน้าจอมือถือทันที
                     const img = document.getElementById(`img-${currentTargetType}`);
                     const placeholder = document.getElementById(`placeholder-${currentTargetType}`);
-                    img.src = fullDataUrl;
+                    img.src = base64DataUrl;
                     img.classList.remove('hidden');
                     placeholder.classList.add('hidden');
 
-                    const targetField = fieldMap[currentTargetType];
-
-                    // 2. อัปโหลดรูปที่บีบอัดแล้วขึ้น Firebase Storage
-                    const storageRef = storage.ref(`patients_images/${patientId}/${filename}`);
-                    const uploadTask = await storageRef.putString(fullDataUrl, 'data_url');
-                    
-                    // 3. ดึง URL (Download Link) จาก Storage
-                    const downloadURL = await uploadTask.ref.getDownloadURL();
-
-                    // 4. บันทึก URL ลง Firestore
-                    await db.collection('Patients').doc(String(patientId)).update({
-                        [targetField]: downloadURL
-                    });
+                    if (currentTargetType === 'Profile_Pic') {
+                        // รูปโปรไฟล์ เก็บใน Document หลัก เพื่อให้ดึงไปโชว์ในหน้ารายชื่อคนไข้ (patient_list) ได้ง่าย
+                        await db.collection('Patients').doc(String(patientId)).update({
+                            profile_pic: base64DataUrl
+                        });
+                    } else {
+                        // รูปอื่นๆ (ที่นอน, ห้องน้ำ, ทางเดิน, ยา ฯลฯ) เก็บแยกใน Subcollection "Images"
+                        await db.collection('Patients').doc(String(patientId)).collection('Images').doc(currentTargetType).set({
+                            url: base64DataUrl,
+                            updated_at: firebase.firestore.FieldValue.serverTimestamp()
+                        });
+                    }
 
                 } catch (err) {
                     console.error(err);
-                    alert('เกิดข้อผิดพลาดในการอัปโหลดรูปภาพ กรุณาลองใหม่และตรวจสอบว่าเปิดสิทธิ์ Firebase Storage แล้วครับ');
+                    alert('เกิดข้อผิดพลาดในการบันทึกรูปภาพ กรุณาลองใหม่ครับ');
                 } finally {
                     loading.classList.add('hidden'); 
                     event.target.value = ''; 
