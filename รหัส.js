@@ -1,8 +1,7 @@
 /**
- * [GAS สำหรับยิง LINE Messaging API]
- * ทำหน้าที่เป็น Webhook (ตัวกลาง) รับคำสั่งจากหน้าเว็บ (Frontend)
- * แล้วยิงข้อความแจ้งเตือนไปยัง LINE ของ อสม. 
- * (ส่วนการบันทึกข้อมูลหลักย้ายไป Firebase 100% แล้ว)
+ * [Micro-GAS สำหรับยิง LINE Messaging API]
+ * ไม่พึ่งพา Google Sheets อีกต่อไป
+ * ทำหน้าที่รอรับ Payload จากหน้าเว็บและยิง LINE ทันที
  */
 
 function doPost(e) {
@@ -10,11 +9,10 @@ function doPost(e) {
     const requestData = JSON.parse(e.postData.contents);
     let response = {};
 
-    // 1. ตรวจสอบ Action ที่ส่งมาจากหน้าเว็บ
     if (requestData.action === 'updatePatientVHV') {
       
-      // ดึง Token ของ LINE จากชีต Config
-      const lineToken = F_getLineToken();
+      // ดึง Token ที่หน้าเว็บส่งมาให้ใน Payload
+      const lineToken = requestData.lineToken;
       
       if (lineToken && requestData.vhvId) {
         const tDesc = requestData.taskDesc ? requestData.taskDesc : "ติดตามเยี่ยมบ้านทั่วไป";
@@ -22,16 +20,12 @@ function doPost(e) {
         
         response = sendLinePushMessage(requestData.vhvId, messageText, lineToken);
       } else {
-        response = { success: false, message: 'ไม่พบ LINE Token ในระบบ หรือ ไม่มี UID ของ อสม.' };
+        response = { success: false, message: 'ไม่พบ LINE Token หรือ UID ของ อสม. ในระบบ' };
       }
       
-    } 
-    // 2. ดักจับคำสั่งอื่นๆ (Silent Sync) ที่หน้าเว็บอาจจะยังยิงมา เพื่อไม่ให้เกิด Error
-    else {
-      response = { 
-        success: true, 
-        message: 'Action ignored: ฟังก์ชันนี้ถูกย้ายไปทำงานบน Firebase เรียบร้อยแล้ว' 
-      };
+    } else {
+      // ดักจับคำสั่งขยะที่อาจค้างอยู่ในระบบ
+      response = { success: true, message: 'Action ignored: System migrated to Firebase' };
     }
     
     return ContentService.createTextOutput(JSON.stringify(response)).setMimeType(ContentService.MimeType.JSON);
@@ -42,23 +36,7 @@ function doPost(e) {
 }
 
 /**
- * ดึง LINE_CHANNEL_ACCESS_TOKEN จากหน้า Sheet 'Config'
- */
-function F_getLineToken() {
-  const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('Config');
-  if (!sheet) return "";
-  const data = sheet.getDataRange().getValues();
-  
-  for (let i = 1; i < data.length; i++) {
-    if (data[i][0] === 'LINE_CHANNEL_ACCESS_TOKEN') {
-      return String(data[i][1]).trim();
-    }
-  }
-  return "";
-}
-
-/**
- * ฟังก์ชันหลักในการยิงข้อความผ่าน LINE Messaging API
+ * ฟังก์ชันยิงข้อความผ่าน LINE Messaging API
  */
 function sendLinePushMessage(toUid, textMessage, accessToken) {
   const url = "https://api.line.me/v2/bot/message/push";
@@ -80,12 +58,11 @@ function sendLinePushMessage(toUid, textMessage, accessToken) {
   try {
     const response = UrlFetchApp.fetch(url, options);
     const code = response.getResponseCode();
-    const content = response.getContentText();
     
     if (code === 200) {
       return { success: true, message: "ส่งแจ้งเตือน LINE สำเร็จ" };
     } else {
-      return { success: false, message: "LINE ปฏิเสธการส่ง: " + content };
+      return { success: false, message: "LINE ปฏิเสธการส่ง: " + response.getContentText() };
     }
   } catch(e) {
     return { success: false, message: "Error ขณะส่ง LINE: " + e.message };
