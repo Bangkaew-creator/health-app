@@ -447,7 +447,7 @@
                 const taskDesc = checkedTasks.join(', ');
                 const todayStr = getTodayString(); 
 
-                // อัปเดตเข้าระบบ Firebase ทันที
+                // 1. อัปเดตเข้าระบบ Firebase ทันที
                 await db.collection('Patients').doc(String(patientId)).update({ 
                     assigned_vhv_id: String(vhvId),
                     needs_assessment: true,
@@ -456,7 +456,36 @@
                     task_date: todayStr
                 });
                 
-                alert('มอบหมายงานสำเร็จ!\n(ข้อมูลถูกบันทึกเข้าระบบเรียบร้อยแล้ว)');
+                // 2. ดึง LINE Token จาก Firebase (SystemConfig)
+                let lineToken = "";
+                try {
+                    const sysSnap = await db.collection('SystemConfig').doc('LINE_CHANNEL_ACCESS_TOKEN').get();
+                    if(sysSnap.exists) lineToken = sysSnap.data().value || "";
+                } catch(err) { console.log("โหลด Token ไม่สำเร็จ"); }
+
+                // 3. ส่งข้อมูลไปให้ GAS (Webhook) เพื่อยิง LINE แบบเงียบๆ
+                if (lineToken) {
+                    const p = allPatients.find(x => String(x.id) === String(patientId)); 
+                    const pName = p ? p.name : 'ไม่ระบุชื่อ';
+                    const pHouse = p ? p.house_no : '-';
+                    const pVillage = p ? p.village_no : '-';
+
+                    fetch(API_URL, { 
+                        method: 'POST', 
+                        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+                        body: JSON.stringify({ 
+                            action: 'updatePatientVHV', 
+                            vhvId: vhvId, 
+                            taskDesc: taskDesc,
+                            pName: pName,
+                            pHouse: pHouse,
+                            pVillage: pVillage,
+                            lineToken: lineToken // ส่ง Token ที่ดึงจาก Firebase แนบไปด้วย!
+                        }) 
+                    }).catch(e => console.log("ยิง Webhook ไม่สำเร็จ"));
+                }
+
+                alert('มอบหมายงานสำเร็จ!\n(และส่งแจ้งเตือน LINE ให้ อสม. แล้ว)');
                 loadDataChannels();
                 
             } catch(e) { 
