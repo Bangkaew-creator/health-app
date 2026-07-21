@@ -148,12 +148,13 @@
                     </div>
                     <div class="flex flex-col gap-1 pt-1">
                         <span class="text-xs text-[#526069] font-bold mb-1">รายการยาที่ใช้ประจำ</span>
-                        <div class="text-sm font-semibold text-[#111c2d] bg-gray-50 p-3 rounded-xl border border-gray-100" id="profile-medication">-</div>
+                        <!-- ปรับปรุงจุดแสดงผลรายการยา -->
+                        <div id="profile-medication" class="mt-2">-</div>
                     </div>
                 </div>
             </div>
 
-            <!-- เพิ่มปุ่ม "ประวัติรายข้อ" ไว้ที่ส่วนกราฟ -->
+            <!-- กราฟและประวัติรายข้อ -->
             <div class="bg-white rounded-[20px] p-5 shadow-sm border border-[#bdcac1]/30">
                 <div class="flex justify-between items-center mb-4 border-b border-gray-50 pb-3">
                     <h3 class="text-sm font-bold flex items-center gap-2 text-[#F59E0B]">
@@ -180,9 +181,16 @@
             </div>
 
             <div class="bg-white rounded-[20px] p-5 shadow-sm border border-[#bdcac1]/30">
-                <h3 class="text-sm font-bold flex items-center gap-2 mb-4 text-[#2563eb]">
-                    <span class="material-symbols-outlined text-[18px]">wc</span> สิทธิ์ผ้าอ้อม & อุปกรณ์การแพทย์
-                </h3>
+                <div class="flex justify-between items-center mb-4 border-b border-gray-50 pb-3">
+                    <h3 class="text-sm font-bold flex items-center gap-2 text-[#2563eb]">
+                        <span class="material-symbols-outlined text-[18px]">wc</span> สิทธิ์ผ้าอ้อม & อุปกรณ์
+                    </h3>
+                    <!-- ปุ่มพิมพ์สิทธิ์ผ้าอ้อม -->
+                    <button onclick="printForm('DIAPER')" class="text-[10px] bg-blue-50 text-blue-600 hover:bg-blue-100 px-3 py-1.5 rounded-full font-bold flex items-center gap-1 transition-colors">
+                        <span class="material-symbols-outlined text-[14px]">print</span> พิมพ์ฟอร์ม
+                    </button>
+                </div>
+                
                 <div class="space-y-3">
                     <div class="flex flex-col gap-1 border-b border-gray-50 pb-3">
                         <span class="text-xs text-[#526069] font-bold">ผลการประเมินผ้าอ้อม (สปสช.)</span>
@@ -241,7 +249,36 @@
         </div>
     </div>
 
-    <!-- Modal ประวัติประเมินรายข้อ (เพิ่มใหม่) -->
+    <!-- 🌟 Modal รายละเอียดรายการยา 🌟 -->
+    <div id="med-detail-modal" class="fixed inset-0 bg-black/60 z-[100] hidden flex-col items-center justify-center opacity-0 transition-opacity duration-300 p-4">
+        <div id="med-detail-content" class="bg-white rounded-[24px] w-full max-w-sm overflow-hidden shadow-2xl transform scale-95 transition-transform duration-300">
+            <div class="p-4 border-b border-gray-100 flex justify-between items-center bg-gray-50">
+                <h3 class="font-bold text-[#0284c7] flex items-center gap-2"><span class="material-symbols-outlined text-[18px]">info</span> ข้อมูลยา</h3>
+                <button onclick="closeMedDetailModal()" class="text-gray-400 hover:text-gray-600 bg-gray-200 rounded-full w-8 h-8 flex justify-center items-center"><span class="material-symbols-outlined text-[18px]">close</span></button>
+            </div>
+            <div class="p-5 space-y-4">
+                <div class="w-full h-48 bg-gray-100 rounded-xl overflow-hidden cursor-pointer shadow-inner border border-gray-200" onclick="expandMedImage()">
+                    <img id="med-detail-image" src="" class="w-full h-full object-contain hover:scale-105 transition-transform">
+                </div>
+                <div class="bg-blue-50 p-4 rounded-xl border border-blue-100">
+                    <p class="text-[11px] text-blue-600 font-bold mb-0.5">ชื่อยา</p>
+                    <p class="text-base text-gray-800 font-bold mb-3" id="med-detail-name">-</p>
+                    <div class="grid grid-cols-2 gap-3">
+                        <div>
+                            <p class="text-[10px] text-blue-600 font-bold mb-0.5">ขนาด/ปริมาณ</p>
+                            <p class="text-sm text-gray-800 font-medium" id="med-detail-dose">-</p>
+                        </div>
+                        <div>
+                            <p class="text-[10px] text-blue-600 font-bold mb-0.5">วิธีใช้</p>
+                            <p class="text-sm text-gray-800 font-medium" id="med-detail-usage">-</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal ประวัติประเมินรายข้อ -->
     <div id="history-modal" class="fixed inset-0 bg-black/50 z-[100] hidden flex-col items-center justify-center opacity-0 transition-opacity duration-300 p-4">
         <div id="history-modal-content" class="bg-white rounded-[24px] w-full max-w-lg max-h-[85vh] flex flex-col transform scale-95 transition-transform duration-300 overflow-hidden shadow-2xl">
             <div class="p-5 border-b border-gray-100 flex justify-between items-center bg-gray-50">
@@ -256,9 +293,9 @@
         </div>
     </div>
 
-    <!-- Modal ดูรูปภาพขยาย -->
-    <div id="imageModal" class="fixed inset-0 bg-black/90 z-[100] hidden flex-col items-center justify-center opacity-0 transition-opacity duration-300">
-        <button onclick="closeModal()" class="absolute top-4 right-4 text-white p-3 bg-black/50 rounded-full hover:bg-white/20"><span class="material-symbols-outlined">close</span></button>
+    <!-- Modal ดูรูปภาพขยาย (ปรับ Z-index ให้ซ้อนทับ Med Modal ได้) -->
+    <div id="imageModal" class="fixed inset-0 bg-black/90 z-[110] hidden flex-col items-center justify-center opacity-0 transition-opacity duration-300">
+        <button onclick="closeModal()" class="absolute top-4 right-4 text-white p-3 bg-white/10 rounded-full hover:bg-white/20"><span class="material-symbols-outlined">close</span></button>
         <img id="modalImage" src="" class="max-w-[95%] max-h-[90%] object-contain rounded-lg shadow-2xl">
     </div>
 
@@ -271,12 +308,13 @@
         let currentUserRole = 'VHV';
         
         let currentPatientData = null;
-        let globalAssessments = []; // เก็บข้อมูลประวัติแบบละเอียด
+        let globalAssessments = []; 
         let latestADLDate = 0;
         let latestDEPDate = 0;
         let latestVitalDate = 0;
         let profileLoaded = false;
         let chartsLoaded = false;
+        let currentMedImageToExpand = '';
 
         const parseThaiDate = (dateStr) => {
             if(!dateStr || dateStr === '-') return 0;
@@ -291,7 +329,6 @@
         };
 
         function goBackToList() {
-            // ระบบย้อนกลับอัจฉริยะ (รวมสิทธิ์ SUB_ADMIN)
             if (currentUserRole === 'ADMIN' || currentUserRole === 'SUB_ADMIN') {
                 if (document.referrer.includes('admin_delegation.html')) {
                     window.location.href = 'admin_delegation.html';
@@ -325,10 +362,9 @@
             } catch(e) { console.error(e); }
         }
 
-        // ฟังก์ชันดึงรูปภาพ (รองรับ Base64 จาก Firebase เต็มรูปแบบ)
         const getDriveImageUrl = (url) => {
             if(!url) return null;
-            if(String(url).startsWith('data:image')) return url; // คืนค่า Base64 กลับไปตรงๆ
+            if(String(url).startsWith('data:image')) return url; 
             const match = url.match(/d\/([a-zA-Z0-9_-]+)/) || url.match(/id=([a-zA-Z0-9_-]+)/);
             return match ? `https://drive.google.com/thumbnail?id=${match[1]}&sz=w1000` : url;
         };
@@ -346,8 +382,49 @@
         }
 
         // ==========================================
-        // ระบบประวัติรายข้อ (History Modal)
+        // ระบบยา: เปิด/ปิด Modal ข้อมูลยาแบบละเอียด
         // ==========================================
+        function openMedDetailModal(medDataStr) {
+            const med = JSON.parse(decodeURIComponent(medDataStr));
+            document.getElementById('med-detail-name').innerText = med.name || 'ไม่ได้ระบุชื่อยา';
+            document.getElementById('med-detail-dose').innerText = med.dose || '-';
+            document.getElementById('med-detail-usage').innerText = med.usage || '-';
+            document.getElementById('med-detail-image').src = med.image;
+            currentMedImageToExpand = med.image;
+
+            const modal = document.getElementById('med-detail-modal');
+            const content = document.getElementById('med-detail-content');
+            modal.classList.remove('hidden');
+            setTimeout(() => { modal.classList.remove('opacity-0'); content.classList.remove('scale-95'); }, 10);
+        }
+
+        function closeMedDetailModal() {
+            const modal = document.getElementById('med-detail-modal');
+            const content = document.getElementById('med-detail-content');
+            modal.classList.add('opacity-0');
+            content.classList.add('scale-95');
+            setTimeout(() => modal.classList.add('hidden'), 300);
+        }
+
+        function expandMedImage() {
+            if(currentMedImageToExpand) openModal(currentMedImageToExpand);
+        }
+
+        // ==========================================
+        // ฟังก์ชันเตรียมพิมพ์แบบฟอร์ม (Print Form)
+        // ==========================================
+        function printForm(type, recordDate = '') {
+            let msg = `เตรียมพิมพ์แบบฟอร์ม: ${type}`;
+            if (recordDate) msg += `\n(ข้อมูลการประเมินวันที่: ${recordDate})`;
+            msg += `\n\nระบบกำลังรอการอัปเดตโค้ดแบบฟอร์ม HTML จากผู้พัฒนาครับ 🖨️`;
+            alert(msg);
+            
+            // หมายเหตุสำหรับผู้พัฒนา: 
+            // เมื่อคุณส่งไฟล์ฟอร์ม ADL/2Q9Q/Diaper มาให้ 
+            // เราจะเปลี่ยน alert() ตรงนี้ให้เป็นการเปิดแท็บใหม่ (window.open) 
+            // แล้วโยนข้อมูล patientId และ recordDate ไปให้หน้าพิมพ์แสดงผลครับ
+        }
+
         function openHistoryModal() {
             const modal = document.getElementById('history-modal');
             const content = document.getElementById('history-modal-content');
@@ -363,8 +440,16 @@
                     const title = isADL ? 'ประเมิน ADL' : 'คัดกรองซึมเศร้า 2Q/9Q';
                     
                     let detailsHtml = '';
-                    // หากในอนาคตมีการบันทึกคำตอบรายข้อ (answers) มาด้วย จะโชว์ปุ่มตรงนี้
+                    let printBtnHtml = '';
+
                     if(a.answers && Array.isArray(a.answers) && a.answers.length > 0) {
+                        // เพิ่มปุ่มพิมพ์ในประวัติที่มีการบันทึกรายข้อ
+                        printBtnHtml = `
+                            <button onclick="printForm('${a.type}', '${a.date}')" class="text-[10px] bg-indigo-50 text-indigo-600 px-2 py-1 rounded border border-indigo-200 hover:bg-indigo-100 flex items-center gap-1 transition-colors shadow-sm">
+                                <span class="material-symbols-outlined text-[12px]">print</span> พิมพ์
+                            </button>
+                        `;
+
                         const ansList = a.answers.map(ans => `
                             <div class="flex justify-between items-start border-b border-gray-200 py-2 last:border-0">
                                 <span class="text-[12px] text-gray-700 flex-1 pr-3 leading-tight">${ans.q}</span>
@@ -391,7 +476,10 @@
                             <div class="absolute left-0 top-0 bottom-0 w-1 ${isADL ? 'bg-amber-500' : 'bg-blue-600'}"></div>
                             <div class="flex justify-between items-center mb-3">
                                 <span class="${badgeColor} text-[10px] font-bold px-2 py-0.5 rounded border">${title}</span>
-                                <span class="text-[11px] text-gray-500 font-medium">${a.date}</span>
+                                <div class="flex items-center gap-2">
+                                    <span class="text-[11px] text-gray-500 font-medium">${a.date}</span>
+                                    ${printBtnHtml}
+                                </div>
                             </div>
                             <p class="text-sm font-bold text-gray-800">ผลประเมิน: <span class="${isADL ? 'text-amber-600' : 'text-blue-600'}">${a.result}</span></p>
                             <p class="text-[12px] text-gray-600 mt-1">คะแนนรวม: <strong class="text-gray-900">${a.score1}</strong> ${a.score2 ? `และ <strong class="text-gray-900">${a.score2}</strong>` : ''}</p>
@@ -414,8 +502,7 @@
         }
 
         function toggleHistoryDetails(id) {
-            const el = document.getElementById(id);
-            el.classList.toggle('hidden');
+            document.getElementById(id).classList.toggle('hidden');
         }
 
         async function loadPatientProfile() {
@@ -424,12 +511,7 @@
                 const docRef = db.collection('Patients').doc(String(patientId));
                 const docSnap = await docRef.get();
                 
-                if (!docSnap.exists) { 
-                    alert("ไม่พบข้อมูลผู้ป่วยในระบบ"); 
-                    goBackToList(); 
-                    return; 
-                }
-                
+                if (!docSnap.exists) { alert("ไม่พบข้อมูลผู้ป่วยในระบบ"); goBackToList(); return; }
                 const data = docSnap.data();
 
                 const profileUrl = getDriveImageUrl(data.profile_pic);
@@ -439,7 +521,7 @@
                 document.getElementById('profile-name').innerText = (data.prefix || '') + (data.name || '');
                 document.getElementById('profile-age').innerText = `อายุ ${data.age || '-'} ปี`;
                 document.getElementById('profile-idcard').innerText = data.id_card || '-';
-                document.getElementById('profile-dob').innerText = data.dob || '-'; // แสดง DOB
+                document.getElementById('profile-dob').innerText = data.dob || '-';
                 document.getElementById('profile-address').innerText = `บ้านเลขที่ ${data.house_no || '-'} หมู่ ${data.village_no || '-'}`;
                 
                 document.getElementById('profile-gps').innerText = data.lat_long || 'ยังไม่มีข้อมูล';
@@ -467,17 +549,55 @@
                 else if (depStatus.includes('รุนแรง')) depBadge.className = "bg-[#ba1a1a] text-white px-3 py-1 rounded-full text-xs font-bold inline-block mt-1 shadow-sm";
 
                 document.getElementById('profile-disease').innerText = data.disease || '-';
+                
+                // 🌟 ระบบแสดงผลรายการยาอัจฉริยะ (รองรับทั้ง Text และ Image) 🌟
                 const medContainer = document.getElementById('profile-medication');
                 if (data.medication && typeof data.medication === 'string' && data.medication.startsWith('[')) {
                     try {
                         let cleanMedStr = data.medication.replace(/""/g, '"');
                         if (cleanMedStr.startsWith('"') && cleanMedStr.endsWith('"')) { cleanMedStr = cleanMedStr.substring(1, cleanMedStr.length - 1); }
                         const meds = JSON.parse(cleanMedStr);
-                        if (meds.length === 0) medContainer.innerHTML = '-';
-                        else {
-                            let medHtml = '<ul class="list-disc pl-4 space-y-1.5">';
-                            meds.forEach(m => { medHtml += `<li><span class="text-[#0284c7]">${m.name}</span> ${m.dose} <span class="text-xs font-normal text-gray-500">(${m.usage})</span></li>`; });
-                            medHtml += '</ul>';
+                        
+                        if (meds.length === 0) {
+                            medContainer.innerHTML = '-';
+                        } else {
+                            let medHtml = '<div class="space-y-2">'; 
+                            meds.forEach(m => {
+                                const hasText = m.name || m.dose || m.usage;
+                                const hasImage = m.image && String(m.image).startsWith('data:image');
+
+                                if (hasImage && hasText) {
+                                    const medDataStr = encodeURIComponent(JSON.stringify(m));
+                                    medHtml += `
+                                        <div class="flex items-center gap-3 p-2 bg-white rounded-xl border border-gray-200 shadow-sm cursor-pointer hover:border-blue-300 transition-colors group" onclick="openMedDetailModal('${medDataStr}')">
+                                            <img src="${m.image}" class="w-12 h-12 rounded-lg object-cover border border-gray-100 flex-shrink-0">
+                                            <div class="flex-1 min-w-0">
+                                                <p class="text-sm font-bold text-[#0284c7] truncate">${m.name || 'ยา (มีรูปภาพ)'}</p>
+                                                <p class="text-[10px] text-gray-500 truncate group-hover:text-blue-500 transition-colors">คลิกเพื่อดูรายละเอียดขยาย</p>
+                                            </div>
+                                            <span class="material-symbols-outlined text-gray-300 text-sm group-hover:text-blue-400">open_in_new</span>
+                                        </div>
+                                    `;
+                                } else if (hasImage && !hasText) {
+                                    medHtml += `
+                                        <div class="flex items-center gap-3 p-2 bg-white rounded-xl border border-gray-200 shadow-sm cursor-pointer hover:border-blue-300 transition-colors group" onclick="openModal('${m.image}')">
+                                            <img src="${m.image}" class="w-12 h-12 rounded-lg object-cover border border-gray-100 flex-shrink-0">
+                                            <div class="flex-1 min-w-0">
+                                                <p class="text-sm font-bold text-gray-600 truncate">รูปภาพซองยา</p>
+                                                <p class="text-[10px] text-blue-500">คลิกเพื่อดูรูปภาพแบบเต็มจอ</p>
+                                            </div>
+                                        </div>
+                                    `;
+                                } else if (!hasImage && hasText) {
+                                    medHtml += `
+                                        <div class="p-3 bg-gray-50 rounded-xl border border-gray-100">
+                                            <p class="text-sm font-bold text-[#0284c7]">${m.name || '-'}</p>
+                                            <p class="text-[11px] text-gray-600 mt-0.5">${m.dose || ''} <span class="text-gray-400">(${m.usage || ''})</span></p>
+                                        </div>
+                                    `;
+                                }
+                            });
+                            medHtml += '</div>';
                             medContainer.innerHTML = medHtml;
                         }
                     } catch(e) { medContainer.innerText = data.medication; }
@@ -493,7 +613,7 @@
                         diaperStatus.innerText = dp.result || 'ยังไม่มีผลประเมิน';
                         let reqHtml = [];
                         if (dp.req_diaper) reqHtml.push(`<span class="bg-blue-50 text-blue-600 px-2 py-1 rounded font-bold border border-blue-100">ผ้าอ้อมผู้ใหญ่ (ไซส์ ${dp.size !== '-' ? dp.size : 'ไม่ระบุ'})</span>`);
-                        if (dp.req_underpad) reqHtml.push(`<span class="bg-emerald-50 text-emerald-600 px-2 py-1 rounded font-bold border border-emerald-100">แผ่นรองซับการขับถ่าย</span>`);
+                        if (dp.req_underpad) reqHtml.push(`<span class="bg-emerald-50 text-emerald-600 px-2 py-1 rounded font-bold border border-emerald-100">แผ่นรองซับ</span>`);
                         if(reqHtml.length > 0) diaperItems.innerHTML = '<div class="flex gap-2 flex-wrap mt-1">' + reqHtml.join('') + '</div>';
                     } catch(e) { diaperStatus.innerText = '-'; }
                 } else { diaperStatus.innerText = 'ยังไม่ได้ทำแบบประเมิน'; }
@@ -564,7 +684,6 @@
                 vitals.sort((a,b) => parseThaiDate(a.date) - parseThaiDate(b.date));
                 assessments.sort((a,b) => parseThaiDate(a.date) - parseThaiDate(b.date));
                 
-                // เก็บประวัติไว้ในตัวแปรสำหรับ History Modal (เรียงจากล่าสุดไปเก่าสุด)
                 globalAssessments = [...assessments].sort((a,b) => parseThaiDate(b.date) - parseThaiDate(a.date));
 
                 const formatLabel = (dateStr) => {
