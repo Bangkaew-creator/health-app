@@ -10,6 +10,7 @@
     
     <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore-compat.js"></script>
+    <script charset="utf-8" src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
     <script src="config.js"></script>
 
     <style>
@@ -83,6 +84,18 @@
         const urlParams = new URLSearchParams(window.location.search);
         const patientId = urlParams.get('id');
         document.getElementById('patient-id-display').innerText = `รหัส: ${patientId || 'ไม่ระบุ'}`;
+
+        let currentUserUid = "";
+        document.addEventListener("DOMContentLoaded", () => {
+            liff.init({ liffId: LIFF_ID }).then(() => {
+                const mockUid = localStorage.getItem('dev_mock_uid');
+                if (mockUid) {
+                    currentUserUid = mockUid;
+                } else if (liff.isLoggedIn()) {
+                    liff.getProfile().then(p => { currentUserUid = p.userId; });
+                } else { liff.login(); }
+            });
+        });
 
         const questions2Q = [
             { id: 'q2_1', text: "1. ท่านรู้สึกหดหู่ เศร้า หรือท้อแท้สิ้นหวัง หรือไม่?" },
@@ -226,12 +239,30 @@
             if (!patientId) return alert("ไม่พบข้อมูลผู้ป่วย กรุณากลับไปหน้ารายชื่อ");
 
             let answered2Q = 0;
-            questions2Q.forEach(q => { if(document.querySelector(`input[name="${q.id}"]:checked`)) answered2Q++; });
+            let answersDetail = []; // 🌟 ตัวแปรเก็บรายละเอียดรายข้อ
+
+            questions2Q.forEach(q => { 
+                const selected = document.querySelector(`input[name="${q.id}"]:checked`);
+                if(selected) {
+                    answered2Q++;
+                    const scoreVal = parseInt(selected.value);
+                    const labelText = scoreVal === 1 ? "มี" : "ไม่มี";
+                    answersDetail.push({ q: q.text, a: labelText, score: scoreVal });
+                }
+            });
             if (answered2Q < 2) return alert('กรุณาตอบคำถาม 2Q ให้ครบถ้วน');
 
             if (need9Q) {
                 let answered9Q = 0;
-                questions9Q.forEach(q => { if(document.querySelector(`input[name="${q.id}"]:checked`)) answered9Q++; });
+                questions9Q.forEach(q => { 
+                    const selected = document.querySelector(`input[name="${q.id}"]:checked`);
+                    if(selected) {
+                        answered9Q++;
+                        const scoreVal = parseInt(selected.value);
+                        const optObj = options9Q.find(o => o.score === scoreVal);
+                        answersDetail.push({ q: q.text, a: optObj ? optObj.label : String(scoreVal), score: scoreVal });
+                    }
+                });
                 if (answered9Q < 9) return alert(`กรุณาตอบคำถาม 9Q ให้ครบถ้วน (ตอบแล้ว ${answered9Q}/9 ข้อ)`);
             }
 
@@ -255,13 +286,15 @@
                     dep_status: status
                 });
 
-                // 2. บันทึกประวัติการประเมินลง Assessments (Firebase Only)
+                // 2. บันทึกประวัติพร้อมคำตอบละเอียดลง Assessments (Firebase Only)
                 await db.collection('Assessments').add({
                     patient_id: String(patientId),
                     type: 'DEP',
                     score1: parseInt(score2qStr) || 0,
                     score2: parseInt(score9qStr) || 0,
                     result: status,
+                    answers: answersDetail,       // <-- ข้อมูลรายข้อ
+                    assessor_uid: currentUserUid, // <-- รหัสผูประเมิน
                     date: formattedDate,
                     timestamp: firebase.firestore.FieldValue.serverTimestamp()
                 });
