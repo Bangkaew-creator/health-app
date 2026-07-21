@@ -39,11 +39,13 @@
             
             <div id="sec-personal" class="bg-white rounded-[20px] p-5 shadow-sm border border-gray-100">
                 <h3 class="font-bold text-[#00694a] flex items-center gap-2 border-b pb-2 mb-4"><span class="material-symbols-outlined">person</span> ข้อมูลส่วนตัว</h3>
+                
                 <div class="grid grid-cols-3 gap-2 mb-3">
                     <div class="col-span-1">
                         <span class="text-xs text-gray-500 mb-1 block">คำนำหน้า</span>
                         <select id="prefix" class="input-field bg-white" required>
                             <option value="นาย">นาย</option><option value="นาง">นาง</option><option value="นางสาว">นางสาว</option>
+                            <option value="ด.ช.">ด.ช.</option><option value="ด.ญ.">ด.ญ.</option>
                         </select>
                     </div>
                     <div class="col-span-2">
@@ -51,14 +53,27 @@
                         <input type="text" id="fullname" class="input-field" required>
                     </div>
                 </div>
-                <div class="grid grid-cols-2 gap-2 mb-3">
+
+                <div class="grid grid-cols-2 gap-3 mb-3">
+                    <div>
+                        <span class="text-xs text-gray-500 mb-1 block">เลขบัตรประชาชน (13 หลัก)</span>
+                        <input type="tel" id="id_card" class="input-field" maxlength="13" placeholder="ระบุเลข 13 หลัก">
+                    </div>
+                    <div>
+                        <span class="text-xs text-gray-500 mb-1 block">วันเดือนปีเกิด</span>
+                        <input type="date" id="dob" class="input-field">
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-2 gap-3 mb-3 border-t border-gray-50 pt-3">
                     <div><span class="text-xs text-gray-500 mb-1 block">บ้านเลขที่</span><input type="text" id="house_no" class="input-field" required></div>
                     <div><span class="text-xs text-gray-500 mb-1 block">หมู่ที่</span><input type="number" id="village_no" class="input-field" required></div>
                 </div>
-                <div class="pt-2 border-t border-gray-50">
+                
+                <div class="pt-2">
                     <span class="text-xs text-gray-500 mb-1 block">พิกัด GPS บ้านผู้ป่วย</span>
                     <div class="flex gap-2">
-                        <input type="text" id="lat_long" class="input-field bg-gray-50 flex-1 text-xs text-gray-500" readonly>
+                        <input type="text" id="lat_long" class="input-field bg-gray-50 flex-1 text-xs text-gray-500" readonly placeholder="กดปุ่มเพื่อดึงพิกัด">
                         <button type="button" onclick="getLocation()" class="bg-[#0284c7] text-white px-4 rounded-xl flex justify-center items-center"><span class="material-symbols-outlined text-[18px]">my_location</span></button>
                     </div>
                 </div>
@@ -154,9 +169,9 @@
         </form>
     </main>
 
-    <div class="fixed bottom-0 left-0 w-full bg-white border-t p-4 z-50">
+    <div class="fixed bottom-0 left-0 w-full bg-white border-t p-4 z-50 shadow-[0_-4px_10px_rgba(0,0,0,0.05)]">
         <button type="submit" form="editForm" id="btn-save" class="w-full bg-[#00694a] text-white py-3.5 rounded-xl font-bold shadow-md hover:bg-[#005239] flex justify-center items-center gap-2">
-            บันทึกข้อมูลและแบบประเมิน <span class="material-symbols-outlined text-sm">save</span>
+            บันทึกการเปลี่ยนแปลง <span class="material-symbols-outlined text-sm">save</span>
         </button>
     </div>
 
@@ -178,6 +193,39 @@
             try { return JSON.parse(cleanStr); } catch(e) { return null; }
         }
 
+        // แปลงรูปแบบวันที่จาก Firebase (dd/mm/yyyy พ.ศ.) กลับมาเป็น HTML Date Input (yyyy-mm-dd ค.ศ.)
+        function convertThaiDateToInputFormat(thaiDateStr) {
+            if(!thaiDateStr || thaiDateStr === '-') return '';
+            try {
+                // ถ้ามีเวลาติดมาด้วย ให้เอาแค่วันที่
+                const datePart = thaiDateStr.split(' ')[0];
+                const parts = datePart.split('/');
+                if(parts.length === 3) {
+                    let year = parseInt(parts[2]);
+                    if(year > 2400) year -= 543; // แปลง พ.ศ. เป็น ค.ศ.
+                    const month = parts[1].padStart(2, '0');
+                    const day = parts[0].padStart(2, '0');
+                    return `${year}-${month}-${day}`;
+                }
+                return '';
+            } catch(e) { return ''; }
+        }
+
+        // แปลงวันที่จาก Input (yyyy-mm-dd ค.ศ.) กลับเป็นรูปแบบเก็บเข้าฐานข้อมูล (dd/mm/yyyy พ.ศ.)
+        function convertInputDateToThaiFormat(inputDateStr) {
+            if(!inputDateStr) return '';
+            try {
+                const parts = inputDateStr.split('-');
+                if(parts.length === 3) {
+                    const year = parseInt(parts[0]) + 543; // แปลง ค.ศ. เป็น พ.ศ.
+                    const month = parts[1];
+                    const day = parts[2];
+                    return `${day}/${month}/${year}`;
+                }
+                return '';
+            } catch(e) { return ''; }
+        }
+
         function initUI() {
             const eqContainer = document.getElementById('equipment-list');
             eqContainer.innerHTML = '';
@@ -185,7 +233,7 @@
                 eqContainer.innerHTML += `
                     <div>
                         <input type="checkbox" id="eq_${idx}" value="${eq}" class="eq-cb hidden">
-                        <label for="eq_${idx}" class="block w-full text-center p-2 text-xs border border-gray-200 rounded-lg cursor-pointer bg-white text-gray-600 transition-colors">${eq}</label>
+                        <label for="eq_${idx}" class="block w-full text-center p-2 text-[11px] border border-gray-200 rounded-lg cursor-pointer bg-white text-gray-600 transition-colors h-full flex items-center justify-center">${eq}</label>
                     </div>`;
             });
 
@@ -195,7 +243,7 @@
                 disContainer.innerHTML += `
                     <div>
                         <input type="checkbox" id="disease_${index}" value="${disease}" class="disease-cb hidden">
-                        <label for="disease_${index}" class="block w-full text-center py-2 px-1 text-sm border border-gray-200 rounded-lg cursor-pointer transition-colors bg-white text-gray-600">${disease}</label>
+                        <label for="disease_${index}" class="block w-full text-center py-2 px-1 text-[13px] border border-gray-200 rounded-lg cursor-pointer transition-colors bg-white text-gray-600">${disease}</label>
                     </div>`;
             });
         }
@@ -204,60 +252,81 @@
             const container = document.getElementById('med-list-container');
             const rowId = 'med_' + Date.now() + Math.floor(Math.random() * 100);
             const html = `
-                <div id="${rowId}" class="bg-gray-50 p-3 rounded-xl border border-gray-100 relative">
-                    <button type="button" onclick="document.getElementById('${rowId}').remove()" class="absolute top-2 right-2 text-gray-400 hover:text-red-500"><span class="material-symbols-outlined text-sm">delete</span></button>
-                    <div class="grid grid-cols-2 gap-2 mt-1">
-                        <div class="col-span-2"><input type="text" class="med-name input-field bg-white py-2 text-sm" placeholder="ชื่อยา" value="${name}"></div>
-                        <div><input type="text" class="med-dose input-field bg-white py-2 text-sm" placeholder="ขนาด" value="${dose}"></div>
-                        <div><input type="text" class="med-usage input-field bg-white py-2 text-sm" placeholder="วิธีใช้" value="${usage}"></div>
+                <div id="${rowId}" class="bg-gray-50 p-3 rounded-xl border border-gray-100 relative shadow-sm">
+                    <button type="button" onclick="document.getElementById('${rowId}').remove()" class="absolute top-2 right-2 text-gray-400 hover:text-red-500 transition-colors"><span class="material-symbols-outlined text-lg">delete</span></button>
+                    <div class="grid grid-cols-2 gap-2 mt-2">
+                        <div class="col-span-2"><input type="text" class="med-name input-field bg-white py-2 text-sm border-gray-200" placeholder="ชื่อยา (เช่น พาราเซตามอล)" value="${name}"></div>
+                        <div><input type="text" class="med-dose input-field bg-white py-2 text-sm border-gray-200" placeholder="ขนาด (เช่น 500mg)" value="${dose}"></div>
+                        <div><input type="text" class="med-usage input-field bg-white py-2 text-sm border-gray-200" placeholder="วิธีใช้ (เช่น ครั้งละ 1 เม็ด)" value="${usage}"></div>
                     </div>
                 </div>`;
             container.insertAdjacentHTML('beforeend', html);
         }
 
         function getLocation() {
-            if (!navigator.geolocation) return alert("อุปกรณ์ไม่รองรับ GPS");
+            if (!navigator.geolocation) return alert("อุปกรณ์ของคุณไม่รองรับการดึงพิกัด GPS");
+            
+            const btnLocation = document.querySelector('button[onclick="getLocation()"]');
+            const originalIcon = btnLocation.innerHTML;
+            btnLocation.innerHTML = '<div class="loader-small" style="width:16px;height:16px;border-color:white;border-bottom-color:transparent"></div>';
+            
             navigator.geolocation.getCurrentPosition(
-                (pos) => document.getElementById('lat_long').value = `${pos.coords.latitude.toFixed(6)}, ${pos.coords.longitude.toFixed(6)}`,
-                (err) => alert("ไม่สามารถดึงพิกัดได้ กรุณาเปิด GPS"), { enableHighAccuracy: true }
+                (pos) => {
+                    document.getElementById('lat_long').value = `${pos.coords.latitude.toFixed(6)}, ${pos.coords.longitude.toFixed(6)}`;
+                    btnLocation.innerHTML = originalIcon;
+                },
+                (err) => {
+                    alert("ไม่สามารถดึงพิกัดได้ กรุณาตรวจสอบการตั้งค่า Location ในโทรศัพท์ของคุณ");
+                    btnLocation.innerHTML = originalIcon;
+                }, 
+                { enableHighAccuracy: true, timeout: 10000 }
             );
         }
 
         async function loadPatientData() {
             initUI();
             if (!patientId) return alert("ไม่พบรหัสผู้ป่วย");
-            document.getElementById('btn-save').innerHTML = 'กำลังโหลดข้อมูล...'; 
-            document.getElementById('btn-save').disabled = true;
+            
+            const btnSave = document.getElementById('btn-save');
+            btnSave.innerHTML = '<div class="loader-small" style="border-color:white;border-bottom-color:transparent"></div> กำลังโหลดข้อมูล...'; 
+            btnSave.disabled = true;
 
             try {
                 const docSnap = await db.collection('Patients').doc(String(patientId)).get();
                 if(!docSnap.exists) {
-                    alert("ไม่พบข้อมูลผู้ป่วย");
+                    alert("ไม่พบข้อมูลผู้ป่วยในระบบ");
                     window.location.href = 'admin_datacenter.html';
                     return;
                 }
 
                 const data = docSnap.data();
                 
+                // ข้อมูลส่วนตัว
                 document.getElementById('prefix').value = data.prefix || 'นาย';
                 document.getElementById('fullname').value = data.name || '';
+                document.getElementById('id_card').value = data.id_card || '';
+                document.getElementById('dob').value = convertThaiDateToInputFormat(data.dob);
                 document.getElementById('house_no').value = data.house_no || '';
                 document.getElementById('village_no').value = data.village_no || '';
                 document.getElementById('lat_long').value = data.lat_long || '';
+                
+                // ข้อมูลผู้ดูแล
                 document.getElementById('caregiver_name').value = data.caregiver_name || '';
                 document.getElementById('caregiver_phone').value = data.caregiver_phone || '';
 
+                // โรคประจำตัว
                 if (data.disease) {
                     const savedDiseases = data.disease.split(',').map(item => item.trim());
                     let otherDiseases = [];
                     savedDiseases.forEach(d => {
                         const idx = commonDiseases.indexOf(d);
                         if (idx !== -1) document.getElementById(`disease_${idx}`).checked = true;
-                        else if (d !== '') otherDiseases.push(d);
+                        else if (d !== '' && d !== '-') otherDiseases.push(d);
                     });
                     document.getElementById('disease_other').value = otherDiseases.join(', ');
                 }
 
+                // ประวัติการใช้ยา
                 const cleanMed = cleanAndParseJSON(data.medication);
                 if (cleanMed && Array.isArray(cleanMed)) {
                     if (cleanMed.length === 0) addMedRow();
@@ -268,6 +337,7 @@
                     addMedRow(); 
                 }
 
+                // การประเมินผ้าอ้อม
                 const dp = cleanAndParseJSON(data.diaper);
                 if(dp) {
                     if(dp.result) {
@@ -284,20 +354,22 @@
                     document.getElementById('req_underpad').checked = dp.req_underpad || false;
                 }
 
+                // อุปกรณ์การแพทย์
                 if(data.equipment) {
                     const savedEq = data.equipment.split(',').map(item => item.trim());
                     let otherEq = [];
                     savedEq.forEach(eq => {
                         const idx = medicalEquipments.indexOf(eq);
                         if (idx !== -1) document.getElementById(`eq_${idx}`).checked = true;
-                        else if (eq !== '') otherEq.push(eq);
+                        else if (eq !== '' && eq !== '-') otherEq.push(eq);
                     });
                     document.getElementById('equip_other').value = otherEq.join(', ');
                 }
 
-                document.getElementById('btn-save').innerHTML = 'บันทึกข้อมูลและแบบประเมิน <span class="material-symbols-outlined text-sm">save</span>'; 
-                document.getElementById('btn-save').disabled = false;
+                btnSave.innerHTML = 'บันทึกการเปลี่ยนแปลง <span class="material-symbols-outlined text-sm">save</span>'; 
+                btnSave.disabled = false;
 
+                // ระบบเลื่อนหน้าจออัตโนมัติหากมี Hash แนบมาใน URL
                 if (window.location.hash) {
                     setTimeout(() => {
                         const targetId = window.location.hash.substring(1);
@@ -318,20 +390,37 @@
 
             } catch (error) { 
                 console.error(error);
-                alert("โหลดข้อมูลล้มเหลว"); 
+                alert("โหลดข้อมูลล้มเหลว กรุณาตรวจสอบอินเทอร์เน็ต"); 
             }
+        }
+
+        // ฟังก์ชันช่วยคำนวณอายุจากปีเกิด
+        function calculateAgeFromDOB(dobString) {
+            if(!dobString) return '';
+            try {
+                const parts = dobString.split('/');
+                if(parts.length === 3) {
+                    const birthYear = parseInt(parts[2]);
+                    const currentYear = new Date().getFullYear() + 543;
+                    const age = currentYear - birthYear;
+                    return age > 0 ? String(age) : '';
+                }
+                return '';
+            } catch(e) { return ''; }
         }
 
         async function saveData(e) {
             e.preventDefault();
             const btn = document.getElementById('btn-save');
-            btn.innerHTML = 'กำลังบันทึกข้อมูล...'; 
+            btn.innerHTML = '<div class="loader-small" style="border-color:white;border-bottom-color:transparent"></div> กำลังบันทึกข้อมูล...'; 
             btn.disabled = true;
 
+            // รวบรวมข้อมูลโรคประจำตัว
             let finalDiseases = [];
             document.querySelectorAll('.disease-cb:checked').forEach(cb => finalDiseases.push(cb.value));
             if (document.getElementById('disease_other').value.trim()) finalDiseases.push(document.getElementById('disease_other').value.trim());
 
+            // รวบรวมรายการยา
             let medArray = [];
             document.querySelectorAll('[id^="med_"]').forEach(row => {
                 const name = row.querySelector('.med-name').value.trim();
@@ -340,9 +429,21 @@
                 if (name || dose || usage) medArray.push({ name, dose, usage });
             });
 
+            // รวบรวมข้อมูลการประเมินผ้าอ้อม
             const diaperResult = document.querySelector('input[name="diaper_result"]:checked');
             const indications = Array.from(document.querySelectorAll('.diaper-ind:checked')).map(cb => cb.value);
+            
+            // ตรวจสอบข้อมูลผ้าอ้อมเดิม เผื่อมีสถานะการอนุมัติอยู่แล้ว จะได้ไม่เซ็ตทับ
+            let existingDiaperObj = {};
+            try {
+                const pDoc = await db.collection('Patients').doc(String(patientId)).get();
+                if(pDoc.exists) {
+                    existingDiaperObj = cleanAndParseJSON(pDoc.data().diaper) || {};
+                }
+            } catch(err) {}
+
             const diaperObj = {
+                ...existingDiaperObj, // นำข้อมูลเก่ามารวมด้วย เผื่อมี approve_status ค้างอยู่
                 result: diaperResult ? diaperResult.value : '',
                 indications: indications,
                 req_diaper: document.getElementById('req_diaper').checked,
@@ -350,15 +451,29 @@
                 req_underpad: document.getElementById('req_underpad').checked
             };
 
+            // หากติ๊กว่ามีความต้องการ ให้เปลี่ยนสถานะกลับเป็น รออนุมัติ (เพื่อให้แอดมินเห็น)
+            if((diaperObj.req_diaper || diaperObj.req_underpad) && diaperObj.approve_status !== 'อนุมัติแล้ว') {
+                diaperObj.approve_status = "รออนุมัติ";
+            }
+
+            // รวบรวมข้อมูลอุปกรณ์ทางการแพทย์
             let eqArray = Array.from(document.querySelectorAll('.eq-cb:checked')).map(cb => cb.value);
             if (document.getElementById('equip_other').value.trim()) eqArray.push(document.getElementById('equip_other').value.trim());
+
+            // แปลงรูปแบบวันที่เกิด
+            const dobInputStr = document.getElementById('dob').value;
+            const dobThaiFormat = convertInputDateToThaiFormat(dobInputStr);
+            const calculatedAge = calculateAgeFromDOB(dobThaiFormat);
 
             const updateData = {
                 prefix: document.getElementById('prefix').value, 
                 name: document.getElementById('fullname').value.trim(),
+                id_card: document.getElementById('id_card').value.trim(),
+                dob: dobThaiFormat,
+                age: calculatedAge,
                 house_no: document.getElementById('house_no').value.trim(), 
                 village_no: document.getElementById('village_no').value.trim(),
-                lat_long: document.getElementById('lat_long_value').value.trim(), 
+                lat_long: document.getElementById('lat_long').value.trim(), 
                 disease: finalDiseases.length > 0 ? finalDiseases.join(', ') : '-',
                 medication: JSON.stringify(medArray), 
                 caregiver_name: document.getElementById('caregiver_name').value.trim(), 
@@ -371,13 +486,13 @@
                 // อัปเดตข้อมูลตรงเข้า Firebase อย่างเดียว
                 await db.collection('Patients').doc(String(patientId)).update(updateData);
 
-                alert('บันทึกข้อมูลเรียบร้อยแล้ว!');
+                alert('อัปเดตข้อมูลเรียบร้อยแล้ว!');
                 window.location.href = `patient_profile.html?id=${patientId}`;
 
             } catch (err) { 
                 console.error(err);
                 alert('การบันทึกข้อมูลขัดข้อง กรุณาลองใหม่'); 
-                btn.innerHTML = 'บันทึกข้อมูลและแบบประเมิน <span class="material-symbols-outlined text-sm">save</span>'; 
+                btn.innerHTML = 'บันทึกการเปลี่ยนแปลง <span class="material-symbols-outlined text-sm">save</span>'; 
                 btn.disabled = false;
             }
         }
