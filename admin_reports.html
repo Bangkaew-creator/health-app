@@ -33,7 +33,7 @@
         <div class="p-6 flex items-center justify-between border-b border-slate-700/40">
             <div class="flex items-center gap-3">
                 <div class="w-11 h-11 rounded-xl bg-white/10 flex items-center justify-center border border-amber-400/30"><span class="material-symbols-outlined text-amber-400 text-[26px]">local_hospital</span></div>
-                <div><h1 id="sidebar-hospital-name" class="font-bold text-[15px] tracking-wide text-white">กำลังโหลด...</h1><p class="text-[10px] text-amber-400 font-medium">อสม.สามารถ (Orsomo Smart)</p></div>
+                <div><h1 id="sidebar-hospital-name" class="font-bold text-[15px] tracking-wide text-white">กำลังโหลด...</h1><p id="sidebar-system-name" class="text-[10px] text-amber-400 font-medium">ระบบบริหารจัดการ</p></div>
             </div>
             <button onclick="toggleSidebar()" class="lg:hidden text-slate-400 p-1"><span class="material-symbols-outlined">close</span></button>
         </div>
@@ -43,7 +43,7 @@
             <a href="admin_datacenter.html" class="flex items-center gap-3 px-4 py-3.5 text-slate-400 hover:bg-white/5 hover:text-white rounded-xl font-medium transition-all"><span class="material-symbols-outlined">folder_shared</span> ศูนย์ข้อมูลผู้ป่วย</a>
             <a href="admin_delegation.html" class="flex items-center gap-3 px-4 py-3.5 text-slate-400 hover:bg-white/5 hover:text-white rounded-xl font-medium transition-all"><span class="material-symbols-outlined">assignment_ind</span> มอบหมายงาน อสม.</a>
             <a href="admin_reports.html" class="flex items-center justify-between px-4 py-3.5 bg-white/10 text-amber-400 rounded-xl font-bold transition-all"><span class="flex items-center gap-3"><span class="material-symbols-outlined">summarize</span> ศูนย์รายงาน (Export)</span><span class="w-1.5 h-1.5 rounded-full bg-amber-400"></span></a>
-            <a href="admin_settings.html" class="flex items-center gap-3 px-4 py-3.5 text-slate-400 hover:bg-white/5 hover:text-white rounded-xl font-medium transition-all"><span class="material-symbols-outlined">settings</span> ตั้งค่าระบบ</a>
+            <a href="admin_settings.html" id="nav-settings" class="flex items-center gap-3 px-4 py-3.5 text-slate-400 hover:bg-white/5 hover:text-white rounded-xl font-medium transition-all"><span class="material-symbols-outlined">settings</span> ตั้งค่าระบบ</a>
         </nav>
     </aside>
 
@@ -180,6 +180,8 @@
         
         let allPatients = [];
         let allVHVs = [];
+        let currentUserRole = "ADMIN";
+        let assignedVillages = [];
 
         function toggleSidebar() { document.getElementById('sidebar').classList.toggle('-translate-x-full'); }
 
@@ -191,30 +193,30 @@
             try { return JSON.parse(cleanStr); } catch(e) { return null; }
         }
 
-        function calculateDaysSince(dateStr) {
-            if (!dateStr || dateStr.trim() === '' || dateStr === '-') return -1;
-            let targetDate;
-            if (dateStr.includes('/')) {
-                const parts = dateStr.split(' ')[0].split('/');
-                targetDate = new Date(parts[2], parts[1] - 1, parts[0]);
-            } else { targetDate = new Date(dateStr); }
-            if (isNaN(targetDate)) return -1;
-            return Math.floor(Math.abs(new Date() - targetDate) / (1000 * 60 * 60 * 24));
-        }
-
         function getTodayDateStr() { return new Date().toISOString().split('T')[0]; }
 
         document.addEventListener("DOMContentLoaded", () => {
+            document.getElementById('sidebar-hospital-name').innerText = DEFAULT_CONFIGS.HOSPITAL_NAME;
+            document.getElementById('sidebar-system-name').innerText = DEFAULT_CONFIGS.SYSTEM_NAME;
+            
             liff.init({ liffId: LIFF_ID }).then(() => {
-                if (liff.isLoggedIn()) { liff.getProfile().then(p => verifyAdminAccess(p.userId)); }
-                else window.location.href = 'index.html';
-            });
+                const mockUid = localStorage.getItem('dev_mock_uid');
+                if (mockUid) {
+                    verifyAdminAccess(mockUid);
+                } else if (liff.isLoggedIn()) { 
+                    liff.getProfile().then(p => verifyAdminAccess(p.userId)).catch(() => bounceToLogin());
+                } else bounceToLogin();
+            }).catch(() => bounceToLogin());
         });
+
+        function bounceToLogin() { window.location.href = 'index.html'; }
 
         async function verifyAdminAccess(uid) {
             try {
                 const userDoc = await db.collection('VHVs').doc(String(uid)).get();
-                let isAdmin = false; let vCount = 15; let hospital = 'เทศบาลเมืองบางแก้ว';
+                let hasAccess = false; 
+                let vCount = DEFAULT_CONFIGS.VILLAGE_COUNT; 
+                let hospital = DEFAULT_CONFIGS.HOSPITAL_NAME;
 
                 try {
                     const sysSnap = await db.collection('SystemConfig').doc('HOSPITAL_NAME').get();
@@ -223,18 +225,38 @@
                     if(sysCountSnap.exists) vCount = parseInt(sysCountSnap.data().value) || vCount;
                 } catch(e) {}
 
-                if (userDoc.exists && String(userDoc.data().role).toUpperCase() === 'ADMIN') {
-                    isAdmin = true;
-                    hospital = userDoc.data().hospital_name || hospital;
-                    vCount = parseInt(userDoc.data().village_count) || vCount;
+                if (userDoc.exists) {
+                    const userData = userDoc.data();
+                    const role = String(userData.role || '').toUpperCase();
+                    if (role === 'ADMIN') {
+                        hasAccess = true;
+                        currentUserRole = 'ADMIN';
+                        hospital = userData.hospital_name || hospital;
+                    } else if (role === 'SUB_ADMIN') {
+                        hasAccess = true;
+                        currentUserRole = 'SUB_ADMIN';
+                        hospital = userData.hospital_name || hospital;
+                        assignedVillages = userData.assigned_villages || [];
+                    }
                 }
 
-                if (isAdmin) {
+                if (hasAccess) {
                     document.getElementById('sidebar-hospital-name').innerText = hospital;
                     
                     const vhvFilter = document.getElementById('vhv-village-filter');
-                    for(let i=1; i<=vCount; i++){ 
-                        vhvFilter.insertAdjacentHTML('beforeend', `<option value="${i}">หมู่ที่ ${i}</option>`); 
+                    vhvFilter.innerHTML = '<option value="">ดูทุกหมู่ (ทั้งหมด)</option>';
+                    
+                    if (currentUserRole === 'SUB_ADMIN') {
+                        const navSettings = document.getElementById('nav-settings');
+                        if (navSettings) navSettings.style.display = 'none';
+                        
+                        assignedVillages.forEach(v => {
+                            vhvFilter.insertAdjacentHTML('beforeend', `<option value="${v}">หมู่ที่ ${v}</option>`);
+                        });
+                    } else {
+                        for(let i=1; i<=vCount; i++){ 
+                            vhvFilter.insertAdjacentHTML('beforeend', `<option value="${i}">หมู่ที่ ${i}</option>`); 
+                        }
                     }
 
                     loadReportData();
@@ -250,10 +272,27 @@
                 ]);
                 
                 allPatients = [];
-                patientsSnap.forEach(doc => allPatients.push(doc.data()));
+                patientsSnap.forEach(doc => {
+                    const data = doc.data();
+                    let hasPermissionToView = true;
+                    if (currentUserRole === 'SUB_ADMIN') {
+                        hasPermissionToView = assignedVillages.includes(String(data.village_no).trim());
+                    }
+                    if (hasPermissionToView) allPatients.push(data);
+                });
                 
                 allVHVs = [];
-                vhvsSnap.forEach(doc => allVHVs.push(doc.data()));
+                vhvsSnap.forEach(doc => {
+                    const v = doc.data();
+                    const vRole = String(v.role || '').toUpperCase();
+                    let hasPermissionToView = true;
+                    if (currentUserRole === 'SUB_ADMIN') {
+                        hasPermissionToView = assignedVillages.includes(String(v.village_no).trim());
+                    }
+                    if (vRole !== 'ADMIN' && vRole !== 'SUB_ADMIN' && hasPermissionToView) {
+                        allVHVs.push(v);
+                    }
+                });
                 
                 renderKPTTable();
 
@@ -305,7 +344,7 @@
                 tr.className = "border-b border-slate-100 hover:bg-slate-50 transition-colors";
                 tr.innerHTML = `
                     <td class="p-4 text-center"><input type="checkbox" class="check-row row-checkbox" value="${p.id}" onchange="updateSelectCount()"></td>
-                    <td class="p-4"><p class="font-bold text-slate-800">${p.name}</p><p class="text-[11px] text-slate-500">ID: ${p.id_card || '-'} | หมู่ ${p.village_no || '-'}</p></td>
+                    <td class="p-4"><p class="font-bold text-slate-800">${p.prefix||''}${p.name}</p><p class="text-[11px] text-slate-500">ID: ${p.id_card || '-'} | หมู่ ${p.village_no || '-'}</p></td>
                     <td class="p-4 text-center">${adlBadge}</td>
                     <td class="p-4 text-center">${diaperFormBadge}</td>
                     <td class="p-4 text-center">${historyBadge}</td>
@@ -354,7 +393,6 @@
             btn.disabled = true; btn.innerText = 'กำลังบันทึก...';
 
             try {
-                // อัปเดตข้อมูลลง Firebase ด้วย Batch เพียงอย่างเดียว
                 const batch = db.batch();
                 patientIds.forEach(id => {
                     const ref = db.collection('Patients').doc(String(id));
@@ -467,6 +505,19 @@
 
             filteredVHVs.forEach(v => {
                 let totalAssigned = 0; let visited = 0; let overdue = 0; let pendingNew = 0;
+
+                function calculateDaysSince(dateStr) {
+                    if (!dateStr || dateStr.trim() === '' || dateStr === '-') return -1;
+                    let targetDate;
+                    if (dateStr.includes('/')) {
+                        const parts = dateStr.split(' ')[0].split('/');
+                        let year = parseInt(parts[2]);
+                        if (year > 2400) { year -= 543; }
+                        targetDate = new Date(year, parseInt(parts[1]) - 1, parseInt(parts[0]));
+                    } else { targetDate = new Date(dateStr); }
+                    if (isNaN(targetDate)) return -1;
+                    return Math.floor(Math.abs(new Date() - targetDate) / (1000 * 60 * 60 * 24));
+                }
 
                 allPatients.forEach(p => {
                     if(String(p.status).trim().toLowerCase() === 'active' && p.assigned_vhv_id === v.uid) {
