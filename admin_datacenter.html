@@ -9,6 +9,8 @@
     <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
     <script charset="utf-8" src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
     
+    <!-- เพิ่ม SheetJS สำหรับจัดการ Excel -->
+    <script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore-compat.js"></script>
     <script src="config.js"></script>
@@ -76,17 +78,21 @@
             </button>
         </header>
 
-        <!-- ส่วนของแถบค้นหาและเพิ่มผู้ป่วยใหม่ -->
         <div class="p-4 lg:p-6 pb-4 z-10 flex-shrink-0 sticky top-0 bg-slate-50 shadow-sm border-b border-slate-200 space-y-3">
             <div class="flex flex-col md:flex-row gap-3">
                 <div class="relative flex-1">
                     <span class="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-slate-400">search</span>
                     <input type="text" id="search-input" oninput="filterPatients()" class="w-full pl-12 pr-4 py-3 bg-white border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 shadow-sm" placeholder="ค้นหา HN, เลขบัตร, ชื่อ-นามสกุล, หรือบ้านเลขที่...">
                 </div>
-                <!-- 🌟 ปุ่มเพิ่มผู้ป่วยใหม่ 🌟 -->
-                <button onclick="addNewPatient()" class="bg-[#00694a] hover:bg-[#005239] text-white px-5 py-3 rounded-xl text-sm font-bold shadow-sm transition-all flex justify-center items-center gap-2 active:scale-95 whitespace-nowrap">
-                    <span class="material-symbols-outlined text-[18px]">person_add</span> เพิ่มผู้ป่วยใหม่
-                </button>
+                
+                <div class="flex gap-2">
+                    <button onclick="openImportModal()" class="bg-blue-50 text-blue-700 hover:bg-blue-100 px-4 py-3 rounded-xl text-sm font-bold shadow-sm transition-all border border-blue-200 flex justify-center items-center gap-1.5 active:scale-95 whitespace-nowrap">
+                        <span class="material-symbols-outlined text-[18px]">upload_file</span> นำเข้าข้อมูล
+                    </button>
+                    <button onclick="addNewPatient()" class="bg-[#00694a] hover:bg-[#005239] text-white px-4 py-3 rounded-xl text-sm font-bold shadow-sm transition-all flex justify-center items-center gap-1.5 active:scale-95 whitespace-nowrap">
+                        <span class="material-symbols-outlined text-[18px]">person_add</span> เพิ่มผู้ป่วย
+                    </button>
+                </div>
             </div>
             <div class="flex gap-2">
                 <select id="village-filter" onchange="filterPatients()" class="flex-1 px-4 py-3 bg-white border border-slate-200 rounded-xl text-sm font-bold text-slate-600 focus:ring-2 focus:ring-emerald-500 shadow-sm outline-none">
@@ -112,6 +118,40 @@
                 <p class="text-sm text-slate-400 mt-1">ลองเปลี่ยนคำค้นหา หรือเปลี่ยนตัวกรองดูนะครับ</p>
             </div>
         </div>
+
+        <!-- Modal นำเข้าข้อมูล (Import) -->
+        <div id="import-modal" class="fixed inset-0 bg-[#111c2d]/40 backdrop-blur-sm z-[100] hidden flex items-center justify-center p-4 opacity-0 transition-opacity duration-300">
+            <div class="bg-white rounded-[24px] w-full max-w-md overflow-hidden shadow-2xl transform scale-95 transition-transform duration-300" id="import-modal-content">
+                <div class="p-6 border-b border-slate-100 flex justify-between items-center bg-slate-50">
+                    <h3 class="text-lg font-bold text-slate-800 flex items-center gap-2">
+                        <span class="material-symbols-outlined text-blue-600">upload_file</span> นำเข้าฐานข้อมูลเดิม (Excel)
+                    </h3>
+                    <button onclick="closeImportModal()" class="text-slate-400 hover:text-slate-600 bg-white p-1 rounded-full"><span class="material-symbols-outlined">close</span></button>
+                </div>
+                <div class="p-6 space-y-4">
+                    <div class="bg-amber-50 p-4 rounded-xl border border-amber-200 text-sm text-amber-800">
+                        <p class="font-bold mb-1 flex items-center gap-1"><span class="material-symbols-outlined text-[16px]">info</span> ข้อแนะนำก่อนนำเข้า</p>
+                        <p class="text-xs">กรุณาดาวน์โหลดฟอร์มต้นแบบ เพื่อให้แน่ใจว่าคอลัมน์ของข้อมูลตรงกับที่ระบบต้องการ (หากอัปโหลดไฟล์ที่มีโครงสร้างผิด ข้อมูลอาจไม่สมบูรณ์)</p>
+                    </div>
+                    
+                    <button onclick="downloadTemplate()" class="w-full bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold py-3 rounded-xl border border-slate-300 flex items-center justify-center gap-2 transition-colors">
+                        <span class="material-symbols-outlined text-[18px]">download</span> ดาวน์โหลดฟอร์มต้นแบบ
+                    </button>
+
+                    <div class="relative border-2 border-dashed border-blue-300 rounded-xl p-6 text-center hover:bg-blue-50 transition-colors cursor-pointer" onclick="document.getElementById('excel-file').click()">
+                        <span class="material-symbols-outlined text-blue-500 text-[40px] mb-2">note_add</span>
+                        <p class="text-sm font-bold text-blue-700">คลิกเพื่อเลือกไฟล์ Excel (.xlsx)</p>
+                        <p class="text-xs text-slate-400 mt-1" id="file-name-display">หรือลากไฟล์มาวางที่นี่</p>
+                        <input type="file" id="excel-file" accept=".xlsx, .xls" class="hidden" onchange="handleFileSelect(this)">
+                    </div>
+                    
+                    <button onclick="processExcelImport()" id="btn-process-import" class="w-full bg-blue-600 text-white font-bold py-3.5 rounded-xl shadow-md hover:bg-blue-700 disabled:opacity-50 flex items-center justify-center gap-2" disabled>
+                        เริ่มนำเข้าข้อมูล
+                    </button>
+                </div>
+            </div>
+        </div>
+
     </main>
 
     <script>
@@ -121,6 +161,7 @@
         let allPatients = []; 
         let currentUserRole = "ADMIN";
         let assignedVillages = [];
+        let selectedExcelFile = null;
 
         function toggleSidebar() { document.getElementById('sidebar').classList.toggle('-translate-x-full'); }
 
@@ -130,7 +171,6 @@
 
             liff.init({ liffId: LIFF_ID }).then(() => {
                 const mockUid = localStorage.getItem('dev_mock_uid');
-                
                 if (mockUid) {
                     verifyAdminAccess(mockUid); 
                 } else if (liff.isLoggedIn()) {
@@ -151,7 +191,6 @@
                 try {
                     const sysSnapHospital = await db.collection('SystemConfig').doc('HOSPITAL_NAME').get();
                     if(sysSnapHospital.exists) hospital = sysSnapHospital.data().value || hospital;
-                    
                     const sysSnapVCount = await db.collection('SystemConfig').doc('VILLAGE_COUNT').get();
                     if(sysSnapVCount.exists) vCount = parseInt(sysSnapVCount.data().value) || vCount;
                 } catch(e) {}
@@ -159,72 +198,40 @@
                 if (userDoc.exists) {
                     const userData = userDoc.data();
                     const role = String(userData.role || '').toUpperCase();
-                    
                     if (role === 'ADMIN') {
-                        hasAccess = true;
-                        currentUserRole = 'ADMIN';
-                        hospital = userData.hospital_name || hospital;
+                        hasAccess = true; currentUserRole = 'ADMIN'; hospital = userData.hospital_name || hospital;
                     } else if (role === 'SUB_ADMIN') {
-                        hasAccess = true;
-                        currentUserRole = 'SUB_ADMIN';
-                        hospital = userData.hospital_name || hospital;
+                        hasAccess = true; currentUserRole = 'SUB_ADMIN'; hospital = userData.hospital_name || hospital;
                         assignedVillages = userData.assigned_villages || [];
                     }
                 }
 
                 if (hasAccess) {
                     document.getElementById('sidebar-hospital-name').innerText = hospital;
-                    
                     const villageSelect = document.getElementById('village-filter');
                     if (currentUserRole === 'SUB_ADMIN') {
                         document.getElementById('nav-settings').style.display = 'none'; 
-                        assignedVillages.forEach(v => {
-                            villageSelect.insertAdjacentHTML('beforeend', `<option value="${v}">หมู่ที่ ${v}</option>`);
-                        });
+                        assignedVillages.forEach(v => { villageSelect.insertAdjacentHTML('beforeend', `<option value="${v}">หมู่ที่ ${v}</option>`); });
                     } else {
-                        for(let i=1; i<=vCount; i++){ 
-                            villageSelect.insertAdjacentHTML('beforeend', `<option value="${i}">หมู่ที่ ${i}</option>`); 
-                        }
+                        for(let i=1; i<=vCount; i++){ villageSelect.insertAdjacentHTML('beforeend', `<option value="${i}">หมู่ที่ ${i}</option>`); }
                     }
-
                     loadPatientData(); 
-                } else {
-                    window.location.href = 'dashboard.html'; 
-                }
+                } else window.location.href = 'dashboard.html'; 
             } catch (error) { bounceToLogin(); }
         }
 
-        // 🌟 ฟังก์ชันเพิ่มผู้ป่วยใหม่ 🌟
         async function addNewPatient() {
             if(!confirm("ต้องการสร้างแฟ้มประวัติผู้ป่วยรายใหม่ใช่หรือไม่?")) return;
-            
             try {
                 const now = new Date();
-                const year = now.getFullYear();
-                const month = String(now.getMonth() + 1).padStart(2, '0');
-                const day = String(now.getDate()).padStart(2, '0');
-                const hh = String(now.getHours()).padStart(2, '0');
-                const mm = String(now.getMinutes()).padStart(2, '0');
-                const ss = String(now.getSeconds()).padStart(2, '0');
+                const newId = `HN-${now.getFullYear()}${String(now.getMonth()+1).padStart(2,'0')}${String(now.getDate()).padStart(2,'0')}-${String(now.getHours()).padStart(2,'0')}${String(now.getMinutes()).padStart(2,'0')}${String(now.getSeconds()).padStart(2,'0')}`;
                 
-                const newId = `HN-${year}${month}${day}-${hh}${mm}${ss}`;
-                
-                // สร้างเอกสารเปล่าใน Firebase ก่อน
                 await db.collection('Patients').doc(newId).set({
-                    id: newId,
-                    status: 'Active',
-                    group: 'ยังไม่ประเมิน',
-                    adl: '-',
-                    dep_status: '-',
+                    id: newId, status: 'Active', group: 'ยังไม่ประเมิน', adl: '-', dep_status: '-',
                     timestamp: firebase.firestore.FieldValue.serverTimestamp()
                 });
-                
-                // เปลี่ยนหน้าไปยังหน้าแก้ไข เพื่อให้กรอกข้อมูลต่อได้เลย
                 window.location.href = `patient_edit.html?id=${newId}`;
-                
-            } catch (error) {
-                alert('ไม่สามารถสร้างข้อมูลได้: ' + error.message);
-            }
+            } catch (error) { alert('ไม่สามารถสร้างข้อมูลได้: ' + error.message); }
         }
 
         async function loadPatientData() {
@@ -235,22 +242,15 @@
                 snapshot.forEach(doc => {
                     const data = doc.data();
                     let hasPermissionToView = true;
-                    if (currentUserRole === 'SUB_ADMIN') {
-                        hasPermissionToView = assignedVillages.includes(String(data.village_no).trim());
-                    }
-
-                    if (hasPermissionToView) {
-                        tempPatients.push(data);
-                    }
+                    if (currentUserRole === 'SUB_ADMIN') hasPermissionToView = assignedVillages.includes(String(data.village_no).trim());
+                    if (hasPermissionToView) tempPatients.push(data);
                 });
 
                 allPatients = tempPatients.sort((a, b) => parseInt(a.village_no) - parseInt(b.village_no));
                 document.getElementById('loading-state').classList.add('hidden');
                 document.getElementById('patient-list').classList.remove('hidden');
                 filterPatients();
-            } catch (error) {
-                alert("ดึงฐานข้อมูลล้มเหลว");
-            }
+            } catch (error) { alert("ดึงฐานข้อมูลล้มเหลว"); }
         }
 
         function filterPatients() {
@@ -266,7 +266,6 @@
             allPatients.forEach(p => {
                 const pStatus = String(p.status || 'Active').trim().toLowerCase();
                 const targetStatus = statusFilter.toLowerCase();
-                
                 if (pStatus !== targetStatus) return;
                 if (villageFilter !== '' && String(p.village_no) !== villageFilter) return;
 
@@ -278,7 +277,6 @@
                 if (searchKeyword && !matchHN && !matchID && !matchName && !matchHouse) return;
 
                 displayCount++;
-
                 let badgeColor = 'bg-slate-100 text-slate-600';
                 if (p.group === 'ติดสังคม') badgeColor = 'bg-emerald-50 text-emerald-700 border-emerald-200';
                 else if (p.group === 'ติดบ้าน') badgeColor = 'bg-amber-50 text-amber-700 border-amber-200';
@@ -286,12 +284,10 @@
                 const groupDisplay = (p.group && p.group !== '-' && p.group !== 'ยังไม่ประเมิน') ? p.group : 'ยังไม่ประเมิน';
 
                 let avatarHtml = `<div class="w-14 h-14 rounded-full bg-slate-100 text-slate-400 font-bold text-xl flex items-center justify-center flex-shrink-0 border-2 border-white shadow-sm">${p.name ? p.name.substring(0,1) : '?'}</div>`;
-                if(p.profile_pic) {
-                    if (p.profile_pic.startsWith('data:image')) {
-                        avatarHtml = `<img src="${p.profile_pic}" class="w-14 h-14 rounded-full object-cover flex-shrink-0 border-2 border-white shadow-sm">`;
-                    } else if (p.profile_pic.startsWith('http')) {
-                        avatarHtml = `<img src="${p.profile_pic}" class="w-14 h-14 rounded-full object-cover flex-shrink-0 border-2 border-white shadow-sm">`;
-                    }
+                if(p.profile_pic && p.profile_pic.startsWith('data:image')) {
+                    avatarHtml = `<img src="${p.profile_pic}" class="w-14 h-14 rounded-full object-cover flex-shrink-0 border-2 border-white shadow-sm">`;
+                } else if (p.profile_pic && p.profile_pic.startsWith('http')) {
+                    avatarHtml = `<img src="${p.profile_pic}" class="w-14 h-14 rounded-full object-cover flex-shrink-0 border-2 border-white shadow-sm">`;
                 }
 
                 container.insertAdjacentHTML('beforeend', `
@@ -315,7 +311,7 @@
                             </div>
                         </div>
                         <div class="flex gap-2">
-                            <button onclick="window.open('patient_profile.html?id=${p.id}', '_blank')" class="flex-1 py-2.5 bg-slate-100 text-slate-600 text-xs font-bold rounded-xl hover:bg-slate-200 transition-colors flex items-center justify-center gap-1.5"><span class="material-symbols-outlined text-[16px]">folder_open</span> ดูแฟ้ม</button>
+                            <button onclick="window.location.href='patient_profile.html?id=${p.id}'" class="flex-1 py-2.5 bg-slate-100 text-slate-600 text-xs font-bold rounded-xl hover:bg-slate-200 transition-colors flex items-center justify-center gap-1.5"><span class="material-symbols-outlined text-[16px]">folder_open</span> ดูแฟ้ม</button>
                             ${pStatus === 'active' ? `<button onclick="updatePatientStatus('${p.id}', 'Inactive')" class="px-4 py-2.5 bg-white border border-red-200 text-red-500 text-xs font-bold rounded-xl hover:bg-red-50 transition-colors flex items-center justify-center gap-1.5" title="ยุติการดูแล"><span class="material-symbols-outlined text-[16px]">cancel</span></button>` : `<button onclick="updatePatientStatus('${p.id}', 'Active')" class="px-4 py-2.5 bg-white border border-emerald-200 text-emerald-600 text-xs font-bold rounded-xl hover:bg-emerald-50 transition-colors flex items-center justify-center gap-1.5" title="นำกลับมาดูแล (Active)"><span class="material-symbols-outlined text-[16px]">replay</span></button>`}
                         </div>
                     </div>
@@ -329,18 +325,153 @@
         async function updatePatientStatus(patientId, newStatus) {
             const actionText = newStatus === 'Inactive' ? 'ยุติการดูแล (Soft Delete)' : 'นำกลับมาดูแล (Active)';
             if (!confirm(`คุณต้องการ ${actionText} ผู้ป่วยรหัส ${patientId} ใช่หรือไม่?`)) return;
-
             try {
                 await db.collection('Patients').doc(String(patientId)).update({ status: newStatus });
-                
                 const index = allPatients.findIndex(p => p.id === patientId);
                 if(index > -1) allPatients[index].status = newStatus;
-
                 alert('อัปเดตสถานะสำเร็จ!');
                 filterPatients(); 
-            } catch (error) {
-                alert('เกิดข้อผิดพลาดในการเชื่อมต่อฐานข้อมูล');
+            } catch (error) { alert('เกิดข้อผิดพลาดในการเชื่อมต่อฐานข้อมูล'); }
+        }
+
+        // ==========================================
+        // ระบบ Import Excel
+        // ==========================================
+        function openImportModal() {
+            const m = document.getElementById('import-modal');
+            const c = document.getElementById('import-modal-content');
+            m.classList.remove('hidden'); setTimeout(() => { m.classList.remove('opacity-0'); c.classList.remove('scale-95'); }, 10);
+        }
+        
+        function closeImportModal() {
+            const m = document.getElementById('import-modal');
+            const c = document.getElementById('import-modal-content');
+            m.classList.add('opacity-0'); c.classList.add('scale-95');
+            setTimeout(() => { m.classList.add('hidden'); }, 300);
+            document.getElementById('excel-file').value = "";
+            document.getElementById('file-name-display').innerText = "หรือลากไฟล์มาวางที่นี่";
+            document.getElementById('btn-process-import').disabled = true;
+        }
+
+        function downloadTemplate() {
+            const templateData = [{
+                "คำนำหน้า (นาย/นาง/นางสาว)": "นาย",
+                "ชื่อ-นามสกุล": "ใจดี รักษา",
+                "เลขบัตรประชาชน (13 หลัก)": "1234567890123",
+                "บ้านเลขที่": "99/9",
+                "หมู่ที่": "1",
+                "เบอร์โทรศัพท์ญาติ": "0891234567",
+                "คะแนน ADL": 4,
+                "ขนาดผ้าอ้อม (S/M/L/XL)": "M"
+            }];
+            const ws = XLSX.utils.json_to_sheet(templateData);
+            const wb = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(wb, ws, "แบบฟอร์มนำเข้าผู้ป่วย");
+            XLSX.writeFile(wb, "ฟอร์มนำเข้าฐานข้อมูล_อสมสามารถ.xlsx");
+        }
+
+        function handleFileSelect(input) {
+            const file = input.files[0];
+            if (file) {
+                selectedExcelFile = file;
+                document.getElementById('file-name-display').innerHTML = `<span class="text-blue-600 font-bold">${file.name}</span>`;
+                document.getElementById('btn-process-import').disabled = false;
             }
+        }
+
+        async function processExcelImport() {
+            if (!selectedExcelFile) return;
+            const btn = document.getElementById('btn-process-import');
+            btn.innerHTML = '<div class="loader-small"></div> กำลังอ่านไฟล์...';
+            btn.disabled = true;
+
+            const reader = new FileReader();
+            reader.onload = async function(e) {
+                try {
+                    const data = new Uint8Array(e.target.result);
+                    const workbook = XLSX.read(data, {type: 'array'});
+                    const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
+                    const jsonData = XLSX.utils.sheet_to_json(firstSheet);
+                    
+                    if(jsonData.length === 0) {
+                        alert("ไม่พบข้อมูลในไฟล์ Excel");
+                        btn.innerHTML = 'เริ่มนำเข้าข้อมูล'; btn.disabled = false;
+                        return;
+                    }
+
+                    btn.innerHTML = '<div class="loader-small"></div> กำลังอัปโหลดข้อมูลลงฐานข้อมูล...';
+                    
+                    const batch = db.batch();
+                    const now = new Date();
+                    let successCount = 0;
+
+                    jsonData.forEach((row, index) => {
+                        const prefix = row["คำนำหน้า (นาย/นาง/นางสาว)"] || row["คำนำหน้า"] || "";
+                        const name = row["ชื่อ-นามสกุล"] || "";
+                        if (!name) return; // ข้ามแถวที่ไม่มีชื่อ
+
+                        const idCard = String(row["เลขบัตรประชาชน (13 หลัก)"] || row["เลขบัตรประชาชน"] || "");
+                        const houseNo = String(row["บ้านเลขที่"] || "");
+                        const villageNo = String(row["หมู่ที่"] || "");
+                        const phone = String(row["เบอร์โทรศัพท์ญาติ"] || row["เบอร์โทรศัพท์"] || "");
+                        const adlScore = String(row["คะแนน ADL"] || row["ADL"] || "-");
+                        const diaperSize = String(row["ขนาดผ้าอ้อม (S/M/L/XL)"] || row["ขนาดผ้าอ้อม"] || "").toUpperCase().trim();
+
+                        // ประเมินกลุ่มจาก ADL
+                        let group = "ยังไม่ประเมิน";
+                        if (adlScore !== "-") {
+                            const score = parseInt(adlScore);
+                            if (score >= 12) group = "ติดสังคม";
+                            else if (score >= 5) group = "ติดบ้าน";
+                            else group = "ติดเตียง";
+                        }
+
+                        // สร้าง Object ผ้าอ้อม
+                        let diaperObj = { result: "", indications: [], req_diaper: false, size: "-", req_underpad: false, approve_status: "รออนุมัติ" };
+                        if (['S','M','L','XL'].includes(diaperSize)) {
+                            diaperObj.req_diaper = true;
+                            diaperObj.size = diaperSize;
+                        }
+
+                        // สร้าง HN ย่อยระดับมิลลิวินาทีป้องกันรหัสซ้ำเมื่ออัปโหลดทีละหลายคน
+                        const ms = String(index).padStart(3, '0');
+                        const newId = `HN-${now.getFullYear()}${String(now.getMonth()+1).padStart(2,'0')}${String(now.getDate()).padStart(2,'0')}-${String(now.getHours()).padStart(2,'0')}${String(now.getMinutes()).padStart(2,'0')}${String(now.getSeconds()).padStart(2,'0')}-${ms}`;
+
+                        const docRef = db.collection('Patients').doc(newId);
+                        batch.set(docRef, {
+                            id: newId,
+                            prefix: prefix,
+                            name: name,
+                            id_card: idCard,
+                            house_no: houseNo,
+                            village_no: villageNo,
+                            caregiver_phone: phone,
+                            adl: adlScore,
+                            group: group,
+                            diaper: JSON.stringify(diaperObj),
+                            dep_status: '-',
+                            status: 'Active',
+                            timestamp: firebase.firestore.FieldValue.serverTimestamp()
+                        });
+                        successCount++;
+                    });
+
+                    if(successCount > 0) {
+                        await batch.commit();
+                        alert(`นำเข้าข้อมูลผู้ป่วยสำเร็จจำนวน ${successCount} ราย`);
+                        closeImportModal();
+                        loadPatientData(); // โหลดตารางใหม่
+                    } else {
+                        alert("ไฟล์ Excel ของคุณไม่มีโครงสร้างข้อมูลที่ถูกต้อง หรือไม่มีชื่อผู้ป่วย");
+                        btn.innerHTML = 'เริ่มนำเข้าข้อมูล'; btn.disabled = false;
+                    }
+
+                } catch(error) {
+                    alert("เกิดข้อผิดพลาดในการประมวลผลไฟล์: " + error.message);
+                    btn.innerHTML = 'เริ่มนำเข้าข้อมูล'; btn.disabled = false;
+                }
+            };
+            reader.readAsArrayBuffer(selectedExcelFile);
         }
     </script>
 </body>
