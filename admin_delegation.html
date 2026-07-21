@@ -35,19 +35,14 @@
             gap: 2px;
             box-shadow: 0 1px 2px rgba(0,0,0,0.02);
         }
-        .tab-btn:hover {
-            background-color: #f1f5f9;
-        }
+        .tab-btn:hover { background-color: #f1f5f9; }
         .tab-btn.active { 
             color: #00694a; 
             background-color: #f0fdf4;
             border-color: #bbf7d0;
             box-shadow: 0 4px 12px rgba(0, 105, 74, 0.06);
         }
-        #tab-approve {
-            color: #d97706;
-            border-color: #fed7aa;
-        }
+        #tab-approve { color: #d97706; border-color: #fed7aa; }
         #tab-approve.active {
             color: #b45309;
             background-color: #fffbeb;
@@ -66,7 +61,7 @@
         <div class="p-6 flex items-center justify-between border-b border-slate-700/40">
             <div class="flex items-center gap-3">
                 <div class="w-11 h-11 rounded-xl bg-white/10 flex items-center justify-center border border-amber-400/30"><span class="material-symbols-outlined text-amber-400 text-[26px]">local_hospital</span></div>
-                <div><h1 id="sidebar-hospital-name" class="font-bold text-[15px] tracking-wide text-white">กำลังโหลด...</h1><p class="text-[10px] text-amber-400 font-medium">อสม.สามารถ (Orsomo Smart)</p></div>
+                <div><h1 id="sidebar-hospital-name" class="font-bold text-[15px] tracking-wide text-white">กำลังโหลด...</h1><p id="sidebar-system-name" class="text-[10px] text-amber-400 font-medium">ระบบบริหารจัดการ</p></div>
             </div>
             <button onclick="toggleSidebar()" class="lg:hidden text-slate-400 p-1"><span class="material-symbols-outlined">close</span></button>
         </div>
@@ -76,7 +71,7 @@
             <a href="admin_datacenter.html" class="flex items-center gap-3 px-4 py-3.5 text-slate-400 hover:bg-white/5 hover:text-white rounded-xl font-medium transition-all"><span class="material-symbols-outlined">folder_shared</span> ศูนย์ข้อมูลผู้ป่วย</a>
             <a href="admin_delegation.html" class="flex items-center justify-between px-4 py-3.5 bg-white/10 text-amber-400 rounded-xl font-bold transition-all"><span class="flex items-center gap-3"><span class="material-symbols-outlined">assignment_ind</span> มอบหมายงาน อสม.</span><span class="w-1.5 h-1.5 rounded-full bg-amber-400"></span></a>
             <a href="admin_reports.html" class="flex items-center gap-3 px-4 py-3.5 text-slate-400 hover:bg-white/5 hover:text-white rounded-xl font-medium transition-all"><span class="material-symbols-outlined">summarize</span> รายงาน (Export)</a>
-            <a href="admin_settings.html" class="flex items-center gap-3 px-4 py-3.5 text-slate-400 hover:bg-white/5 hover:text-white rounded-xl font-medium transition-all"><span class="material-symbols-outlined">settings</span> ตั้งค่าระบบ</a>
+            <a href="admin_settings.html" id="nav-settings" class="flex items-center gap-3 px-4 py-3.5 text-slate-400 hover:bg-white/5 hover:text-white rounded-xl font-medium transition-all"><span class="material-symbols-outlined">settings</span> ตั้งค่าระบบ</a>
         </nav>
     </aside>
 
@@ -92,20 +87,20 @@
         </header>
 
         <div class="bg-white p-4 border-b border-slate-200 grid grid-cols-2 gap-3 shadow-sm z-10 sticky top-0 flex-shrink-0 w-full">
-            <button class="tab-btn active" id="tab-new" onclick="switchTab('new')">
-                <span class="text-sm">📋 เคสใหม่รอประเมิน</span>
+            <button class="tab-btn active group" id="tab-new" onclick="switchTab('new')">
+                <span class="text-sm">📋 เคสใหม่</span>
                 <span class="text-xs font-normal text-slate-400 group-[.active]:text-emerald-600">(<span id="badge-new" class="font-bold">0</span> เคส)</span>
             </button>
-            <button class="tab-btn" id="tab-reassess" onclick="switchTab('reassess')">
-                <span class="text-sm">🔄 เคสค้างติดตาม</span>
+            <button class="tab-btn group" id="tab-reassess" onclick="switchTab('reassess')">
+                <span class="text-sm">🔄 ค้างติดตาม</span>
                 <span class="text-xs font-normal text-slate-400 group-[.active]:text-emerald-600">(<span id="badge-reassess" class="font-bold">0</span> เคส)</span>
             </button>
-            <button class="tab-btn" id="tab-vhv" onclick="switchTab('vhv')">
+            <button class="tab-btn group" id="tab-vhv" onclick="switchTab('vhv')">
                 <span class="text-sm">👥 ทำเนียบ อสม.</span>
                 <span class="text-xs font-normal text-slate-400 group-[.active]:text-emerald-600">(<span id="badge-vhv-count" class="font-bold">0</span> คน)</span>
             </button>
-            <button class="tab-btn" id="tab-approve" onclick="switchTab('approve')">
-                <span class="text-sm">🔐 รออนุมัติ อสม.</span>
+            <button class="tab-btn group" id="tab-approve" onclick="switchTab('approve')">
+                <span class="text-sm">🔐 รออนุมัติสิทธิ์</span>
                 <span class="text-xs font-normal text-amber-500/70">(<span id="badge-pending-vhv" class="font-bold">0</span> คำขอ)</span>
             </button>            
         </div>
@@ -117,7 +112,7 @@
 
             <div id="filter-wrapper" class="hidden flex justify-end mb-4">
                 <div class="relative w-full md:w-48">
-                    <select id="village-filter" onchange="filterDataDisplay()" class="w-full pl-4 pr-8 py-2 bg-white border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-emerald-500 appearance-none">
+                    <select id="village-filter" onchange="filterDataDisplay()" class="w-full pl-4 pr-8 py-2 bg-white border border-slate-200 rounded-xl text-sm font-bold text-slate-600 focus:ring-2 focus:ring-emerald-500 appearance-none shadow-sm outline-none">
                         <option value="">ดูทุกหมู่ (ทั้งหมด)</option>
                     </select>
                     <span class="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none">expand_more</span>
@@ -141,7 +136,7 @@
             <div id="content-approve" class="hidden space-y-4">
                 <div class="bg-amber-50 border border-amber-200 p-4 rounded-xl mb-4">
                     <h3 class="text-sm font-bold text-amber-800">ระบบคัดกรองความปลอดภัย (Security Check)</h3>
-                    <p class="text-[11px] text-amber-700 mt-1">ผู้ที่ลงทะเบียนเข้ามาใหม่จะไม่สามารถเห็นข้อมูลชุมชนได้ จนกว่าแอดมินจะกดยืนยันสถานะ "อนุมัติ" ให้บุคคลนี้</p>
+                    <p class="text-[11px] text-amber-700 mt-1">ผู้ที่ลงทะเบียนเข้ามาใหม่จะไม่สามารถเห็นข้อมูลชุมชนได้ จนกว่าแอดมินหรือ รพ.สต. จะกดยืนยันสถานะ "อนุมัติสิทธิ์" ให้บุคคลนี้</p>
                 </div>
                 <div id="pending-vhv-list" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5"></div>
                 <div id="empty-pending" class="hidden text-center py-16 text-slate-400"><p class="text-sm">ไม่มีคำขอลงทะเบียนใหม่ค้างอยู่</p></div>
@@ -150,48 +145,86 @@
     </main>
 
     <script>
-        // เชื่อมต่อ Firebase
         firebase.initializeApp(firebaseConfig);
         const db = firebase.firestore();
 
         let allPatients = []; let allVHVs = []; let newCases = []; let reassessCases = []; let currentTab = 'new';
         let pendingVHVs = [];
+        
+        // ตัวแปรเก็บสิทธิ์การเข้าถึง
+        let currentUserRole = "ADMIN";
+        let assignedVillages = [];
 
         function toggleSidebar() { document.getElementById('sidebar').classList.toggle('-translate-x-full'); }
 
         document.addEventListener("DOMContentLoaded", () => {
+            document.getElementById('sidebar-hospital-name').innerText = DEFAULT_CONFIGS.HOSPITAL_NAME;
+            document.getElementById('sidebar-system-name').innerText = DEFAULT_CONFIGS.SYSTEM_NAME;
+            
             liff.init({ liffId: LIFF_ID }).then(() => {
-                if (liff.isLoggedIn()) { liff.getProfile().then(p => verifyAdminAccess(p.userId)); }
-            });
+                const mockUid = localStorage.getItem('dev_mock_uid');
+                if (mockUid) {
+                    verifyAdminAccess(mockUid);
+                } else if (liff.isLoggedIn()) { 
+                    liff.getProfile().then(p => verifyAdminAccess(p.userId)).catch(() => bounceToLogin());
+                } else bounceToLogin();
+            }).catch(() => bounceToLogin());
         });
+
+        function bounceToLogin() { window.location.href = 'index.html'; }
 
         async function verifyAdminAccess(uid) {
             try {
                 const userDoc = await db.collection('VHVs').doc(String(uid)).get();
-                let isAdmin = false;
-                let hospital = 'เทศบาลเมืองบางแก้ว';
-                let vCount = 15;
+                let hasAccess = false;
+                let hospital = DEFAULT_CONFIGS.HOSPITAL_NAME;
+                let vCount = DEFAULT_CONFIGS.VILLAGE_COUNT;
 
                 try {
                     const sysSnap = await db.collection('SystemConfig').doc('HOSPITAL_NAME').get();
                     if(sysSnap.exists) hospital = sysSnap.data().value || hospital;
-                    const sysCountSnap = await db.collection('SystemConfig').doc('VILLAGE_COUNT').get();
+                    const sysCountSnap = await collection('SystemConfig').doc('VILLAGE_COUNT').get();
                     if(sysCountSnap.exists) vCount = parseInt(sysCountSnap.data().value) || vCount;
                 } catch(e) {}
 
-                if (userDoc.exists && String(userDoc.data().role).toUpperCase() === 'ADMIN') {
-                    isAdmin = true;
-                    hospital = userDoc.data().hospital_name || hospital;
-                    vCount = parseInt(userDoc.data().village_count) || vCount;
+                if (userDoc.exists) {
+                    const userData = userDoc.data();
+                    const role = String(userData.role || '').toUpperCase();
+                    if (role === 'ADMIN') {
+                        hasAccess = true;
+                        currentUserRole = 'ADMIN';
+                        hospital = userData.hospital_name || hospital;
+                    } else if (role === 'SUB_ADMIN') {
+                        hasAccess = true;
+                        currentUserRole = 'SUB_ADMIN';
+                        hospital = userData.hospital_name || hospital;
+                        assignedVillages = userData.assigned_villages || [];
+                    }
                 }
 
-                if (isAdmin) {
+                if (hasAccess) {
                     document.getElementById('sidebar-hospital-name').innerText = hospital;
+                    
                     const villageSelect = document.getElementById('village-filter');
-                    for(let i=1; i<=vCount; i++){ villageSelect.insertAdjacentHTML('beforeend', `<option value="${i}">หมู่ที่ ${i}</option>`); }
+                    if (currentUserRole === 'SUB_ADMIN') {
+                        const navSettings = document.getElementById('nav-settings');
+                        if (navSettings) navSettings.style.display = 'none';
+                        // โชว์แค่หมู่ที่ตัวเองดูแล
+                        assignedVillages.forEach(v => {
+                            villageSelect.insertAdjacentHTML('beforeend', `<option value="${v}">หมู่ที่ ${v}</option>`);
+                        });
+                    } else {
+                        // แอดมินหลักโชว์ทุกหมู่
+                        for(let i=1; i<=vCount; i++){ 
+                            villageSelect.insertAdjacentHTML('beforeend', `<option value="${i}">หมู่ที่ ${i}</option>`); 
+                        }
+                    }
+
                     loadDataChannels();
-                } else window.location.href = 'dashboard.html';
-            } catch (error) { window.location.href = 'index.html'; }
+                } else {
+                    window.location.href = 'dashboard.html';
+                }
+            } catch (error) { bounceToLogin(); }
         }
 
         function calculateDaysSince(dateStr) {
@@ -209,9 +242,7 @@
 
             if (isNaN(targetDate)) return -1;
             const diffTime = Math.abs(new Date() - targetDate);
-            const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
-            
-            return diffDays;
+            return Math.floor(diffTime / (1000 * 60 * 60 * 24));
         }
 
         async function loadDataChannels() {
@@ -222,14 +253,28 @@
                 ]);
                 
                 allPatients = [];
-                pSnap.forEach(doc => allPatients.push(doc.data()));
+                pSnap.forEach(doc => {
+                    const data = doc.data();
+                    let hasPermissionToView = true;
+                    if (currentUserRole === 'SUB_ADMIN') {
+                        hasPermissionToView = assignedVillages.includes(String(data.village_no).trim());
+                    }
+                    if(hasPermissionToView) allPatients.push(data);
+                });
                 
                 allVHVs = [];
                 pendingVHVs = [];
                 
                 vSnap.forEach(doc => {
                     const v = doc.data();
-                    if(String(v.role).toUpperCase() !== 'ADMIN') {
+                    const vRole = String(v.role || '').toUpperCase();
+                    // กรอง: รพ.สต. ย่อย ดูแลเฉพาะ อสม. ในหมู่ตัวเอง
+                    let hasPermissionToView = true;
+                    if (currentUserRole === 'SUB_ADMIN') {
+                        hasPermissionToView = assignedVillages.includes(String(v.village_no).trim());
+                    }
+
+                    if(vRole !== 'ADMIN' && vRole !== 'SUB_ADMIN' && hasPermissionToView) {
                         if (String(v.status) === 'Pending') {
                             pendingVHVs.push(v);
                         } else {
@@ -291,7 +336,6 @@
             if(!confirm(actionType === 'Active' ? 'ยืนยันการอนุมัติสิทธิ์ให้บุคคลนี้ใช่หรือไม่?' : 'ยืนยันการปฏิเสธสิทธิ์ใช่หรือไม่?')) return;
             
             try {
-                // เปลี่ยนสถานะใน Firebase โดยตรง
                 await db.collection('VHVs').doc(String(uid)).update({
                     status: actionType,
                     role: actionType === 'Active' ? 'VHV' : 'None'
@@ -447,7 +491,6 @@
                 const taskDesc = checkedTasks.join(', ');
                 const todayStr = getTodayString(); 
 
-                // 1. อัปเดตเข้าระบบ Firebase ทันที
                 await db.collection('Patients').doc(String(patientId)).update({ 
                     assigned_vhv_id: String(vhvId),
                     needs_assessment: true,
@@ -456,14 +499,12 @@
                     task_date: todayStr
                 });
                 
-                // 2. ดึง LINE Token จาก Firebase (SystemConfig)
                 let lineToken = "";
                 try {
                     const sysSnap = await db.collection('SystemConfig').doc('LINE_CHANNEL_ACCESS_TOKEN').get();
                     if(sysSnap.exists) lineToken = sysSnap.data().value || "";
-                } catch(err) { console.log("โหลด Token ไม่สำเร็จ"); }
+                } catch(err) {}
 
-                // 3. ส่งข้อมูลไปให้ GAS (Webhook) เพื่อยิง LINE แบบเงียบๆ
                 if (lineToken) {
                     const p = allPatients.find(x => String(x.id) === String(patientId)); 
                     const pName = p ? p.name : 'ไม่ระบุชื่อ';
@@ -480,7 +521,7 @@
                             pName: pName,
                             pHouse: pHouse,
                             pVillage: pVillage,
-                            lineToken: lineToken // ส่ง Token ที่ดึงจาก Firebase แนบไปด้วย!
+                            lineToken: lineToken 
                         }) 
                     }).catch(e => console.log("ยิง Webhook ไม่สำเร็จ"));
                 }
