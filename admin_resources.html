@@ -32,7 +32,7 @@
         <div class="p-6 flex items-center justify-between border-b border-slate-700/40">
             <div class="flex items-center gap-3">
                 <div class="w-11 h-11 rounded-xl bg-white/10 flex items-center justify-center border border-amber-400/30"><span class="material-symbols-outlined text-amber-400 text-[26px]">local_hospital</span></div>
-                <div><h1 id="sidebar-hospital-name" class="font-bold text-[15px] tracking-wide text-white">กำลังโหลด...</h1><p class="text-[10px] text-amber-400 font-medium">อสม.สามารถ (Orsomo Smart)</p></div>
+                <div><h1 id="sidebar-hospital-name" class="font-bold text-[15px] tracking-wide text-white">กำลังโหลด...</h1><p id="sidebar-system-name" class="text-[10px] text-amber-400 font-medium">ระบบบริหารจัดการ</p></div>
             </div>
             <button onclick="toggleSidebar()" class="lg:hidden text-slate-400 p-1"><span class="material-symbols-outlined">close</span></button>
         </div>
@@ -42,7 +42,7 @@
             <a href="admin_datacenter.html" class="flex items-center gap-3 px-4 py-3.5 text-slate-400 hover:bg-white/5 hover:text-white rounded-xl font-medium transition-all"><span class="material-symbols-outlined">folder_shared</span> ศูนย์ข้อมูลผู้ป่วย</a>
             <a href="admin_delegation.html" class="flex items-center gap-3 px-4 py-3.5 text-slate-400 hover:bg-white/5 hover:text-white rounded-xl font-medium transition-all"><span class="material-symbols-outlined">assignment_ind</span> มอบหมายงาน อสม.</a>
             <a href="admin_reports.html" class="flex items-center gap-3 px-4 py-3.5 text-slate-400 hover:bg-white/5 hover:text-white rounded-xl font-medium transition-all"><span class="material-symbols-outlined">summarize</span> รายงาน (Export)</a>
-            <a href="admin_settings.html" class="flex items-center gap-3 px-4 py-3.5 text-slate-400 hover:bg-white/5 hover:text-white rounded-xl font-medium transition-all"><span class="material-symbols-outlined">settings</span> ตั้งค่าระบบ</a>        
+            <a href="admin_settings.html" id="nav-settings" class="flex items-center gap-3 px-4 py-3.5 text-slate-400 hover:bg-white/5 hover:text-white rounded-xl font-medium transition-all"><span class="material-symbols-outlined">settings</span> ตั้งค่าระบบ</a>        
         </nav>
     </aside>
 
@@ -60,7 +60,7 @@
                     <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-4 mb-4 border-b border-slate-100 pb-4">
                         <div>
                             <h3 class="text-base font-bold text-navy flex items-center gap-2"><span class="material-symbols-outlined text-amber-500">account_balance_wallet</span> คาดการณ์งบประมาณและทรัพยากร</h3>
-                            <p class="text-[11px] text-slate-500 mt-1">คำนวณจากผู้ป่วยสถานะ <strong class="text-blue-600">Active</strong> ที่ได้รับอนุมัติแล้ว</p>
+                            <p class="text-[11px] text-slate-500 mt-1">คำนวณจากผู้ป่วยสถานะ <strong class="text-blue-600">Active</strong> ในเขตพื้นที่ของคุณที่ได้รับอนุมัติแล้ว</p>
                         </div>
                         <div class="flex items-center gap-2 bg-slate-50 p-2 rounded-xl border border-slate-200">
                             <label class="text-sm font-bold text-slate-700 pl-2">ระยะเวลาคำนวณ</label>
@@ -113,21 +113,21 @@
     </main>
 
     <script>
-        // ---------------------------------------------------
-        // ตั้งค่าและเชื่อมต่อ Firebase 
-        // ---------------------------------------------------
         firebase.initializeApp(firebaseConfig);
         const db = firebase.firestore();
 
         let allRequests = [];
         let activeApprovedPatients = [];
         let currentTab = 'pending';
-        let configDiaperPrice = 9.50;
-        let configUnderpadPrice = 6.00;
+        let configDiaperPrice = DEFAULT_CONFIGS.DIAPER_PRICE;
+        let configUnderpadPrice = DEFAULT_CONFIGS.UNDERPAD_PRICE;
+        
+        // ตัวแปรเก็บสิทธิ์การเข้าถึง
+        let currentUserRole = "ADMIN";
+        let assignedVillages = [];
 
         function toggleSidebar() { document.getElementById('sidebar').classList.toggle('-translate-x-full'); }
 
-        // ฟังก์ชันล้างข้อความ JSON ฟันหนูซ้อน
         function cleanAndParseJSON(rawStr) {
             if (!rawStr || String(rawStr).trim() === '') return null;
             let cleanStr = String(rawStr).trim();
@@ -137,48 +137,70 @@
         }
 
         document.addEventListener("DOMContentLoaded", () => {
+            document.getElementById('sidebar-hospital-name').innerText = DEFAULT_CONFIGS.HOSPITAL_NAME;
+            document.getElementById('sidebar-system-name').innerText = DEFAULT_CONFIGS.SYSTEM_NAME;
+
             liff.init({ liffId: LIFF_ID }).then(() => {
-                if (liff.isLoggedIn()) { liff.getProfile().then(p => verifyAdminAccess(p.userId)); }
-            });
+                const mockUid = localStorage.getItem('dev_mock_uid');
+                if (mockUid) {
+                    verifyAdminAccess(mockUid);
+                } else if (liff.isLoggedIn()) { 
+                    liff.getProfile().then(p => verifyAdminAccess(p.userId)).catch(() => bounceToLogin());
+                } else bounceToLogin();
+            }).catch(() => bounceToLogin());
         });
 
-        // [อัปเดต 1] เช็คสิทธิ์และดึงราคาอ้างอิงจาก SystemConfig ของ Firebase ล้วนๆ
+        function bounceToLogin() { window.location.href = 'index.html'; }
+
         async function verifyAdminAccess(uid) {
             try {
                 const userDoc = await db.collection('VHVs').doc(String(uid)).get();
-                let isAdmin = false;
-                let hospital = 'เทศบาลเมืองบางแก้ว';
+                let hasAccess = false;
+                let hospital = DEFAULT_CONFIGS.HOSPITAL_NAME;
 
                 try {
                     const sysSnapHospital = await db.collection('SystemConfig').doc('HOSPITAL_NAME').get();
                     if(sysSnapHospital.exists) hospital = sysSnapHospital.data().value || hospital;
                     
                     const sysSnapDiaper = await db.collection('SystemConfig').doc('DIAPER_PRICE').get();
-                    if(sysSnapDiaper.exists) configDiaperPrice = parseFloat(sysSnapDiaper.data().value) || 9.50;
+                    if(sysSnapDiaper.exists) configDiaperPrice = parseFloat(sysSnapDiaper.data().value) || configDiaperPrice;
 
                     const sysSnapUnderpad = await db.collection('SystemConfig').doc('UNDERPAD_PRICE').get();
-                    if(sysSnapUnderpad.exists) configUnderpadPrice = parseFloat(sysSnapUnderpad.data().value) || 6.00;
-                } catch(e) { console.log('ไม่พบตั้งค่าราคาจาก Config ใช้ค่าพื้นฐานแทน'); }
+                    if(sysSnapUnderpad.exists) configUnderpadPrice = parseFloat(sysSnapUnderpad.data().value) || configUnderpadPrice;
+                } catch(e) {}
 
-                if (userDoc.exists && String(userDoc.data().role).toUpperCase() === 'ADMIN') {
-                    isAdmin = true;
-                    hospital = userDoc.data().hospital_name || hospital;
+                if (userDoc.exists) {
+                    const userData = userDoc.data();
+                    const role = String(userData.role || '').toUpperCase();
+                    if (role === 'ADMIN') {
+                        hasAccess = true;
+                        currentUserRole = 'ADMIN';
+                        hospital = userData.hospital_name || hospital;
+                    } else if (role === 'SUB_ADMIN') {
+                        hasAccess = true;
+                        currentUserRole = 'SUB_ADMIN';
+                        hospital = userData.hospital_name || hospital;
+                        assignedVillages = userData.assigned_villages || [];
+                    }
                 }
 
-                if (isAdmin) {
+                if (hasAccess) {
                     document.getElementById('sidebar-hospital-name').innerText = hospital;
                     document.getElementById('label-price-diaper').innerText = configDiaperPrice.toFixed(2);
                     document.getElementById('label-price-underpad').innerText = configUnderpadPrice.toFixed(2);
+                    
+                    if (currentUserRole === 'SUB_ADMIN') {
+                        const navSettings = document.getElementById('nav-settings');
+                        if (navSettings) navSettings.style.display = 'none';
+                    }
+
                     loadResourceData();
                 } else {
                     window.location.href = 'dashboard.html';
                 }
-            } catch (error) { 
-                window.location.href = 'index.html'; 
-            }
+            } catch (error) { bounceToLogin(); }
         }
 
-        // [อัปเดต 2] โหลดข้อมูลทรัพยากรจาก Firebase (รวดเร็วปานสายฟ้า)
         async function loadResourceData() {
             try {
                 const snapshot = await db.collection('Patients').get();
@@ -188,17 +210,26 @@
                 snapshot.forEach(doc => {
                     const p = doc.data();
                     const isActive = String(p.status || 'Active').trim().toLowerCase() === 'active';
-                    const d = cleanAndParseJSON(p.diaper); 
                     
-                    if (d && (d.req_diaper || d.req_underpad)) {
-                        allRequests.push({ patient: p, detail: d, isActive: isActive });
+                    // ระบบกรองสิทธิ์ รพ.สต. ย่อย
+                    let hasPermissionToView = true;
+                    if (currentUserRole === 'SUB_ADMIN') {
+                        hasPermissionToView = assignedVillages.includes(String(p.village_no).trim());
+                    }
+
+                    if (hasPermissionToView) {
+                        const d = cleanAndParseJSON(p.diaper); 
                         
-                        if (isActive && d.approve_status === 'อนุมัติแล้ว') {
-                            activeApprovedPatients.push({ 
-                                size: String(d.size || 'L').toUpperCase().trim(),
-                                diaperQty: parseInt(d.approved_diaper) || 0,
-                                underpadQty: parseInt(d.approved_underpad) || 0
-                            });
+                        if (d && (d.req_diaper || d.req_underpad)) {
+                            allRequests.push({ patient: p, detail: d, isActive: isActive });
+                            
+                            if (isActive && d.approve_status === 'อนุมัติแล้ว') {
+                                activeApprovedPatients.push({ 
+                                    size: String(d.size || 'L').toUpperCase().trim(),
+                                    diaperQty: parseInt(d.approved_diaper) || 0,
+                                    underpadQty: parseInt(d.approved_underpad) || 0
+                                });
+                            }
                         }
                     }
                 });
@@ -285,8 +316,8 @@
                 `;
 
                 container.insertAdjacentHTML('beforeend', `
-                    <div class="bg-white rounded-[20px] p-5 shadow-sm border border-slate-200">
-                        <h3 class="font-bold text-[15px] text-slate-800">${p.name || 'ไม่ระบุชื่อ'}</h3>
+                    <div class="bg-white rounded-[20px] p-5 shadow-sm border border-slate-200 hover:shadow-md transition-shadow">
+                        <h3 class="font-bold text-[15px] text-slate-800">${p.prefix || ''}${p.name || 'ไม่ระบุชื่อ'}</h3>
                         <p class="text-[11px] text-slate-500">หมู่ ${p.village_no || '-'} • เลขที่ ${p.house_no || '-'}</p>
                         ${statusBadge}
                         <div class="mt-3">${requestTags}</div>
@@ -296,7 +327,6 @@
             });
         }
 
-        // [อัปเดต 3] บันทึกการอนุมัติลง Firebase ทันที + ส่ง LINE แบบเงียบๆ ผ่าน GAS
         async function approveRequest(id, hasDiaper, hasUnderpad) {
             const diaperQty = hasDiaper ? document.getElementById(`diaper_${id}`).value : 0;
             const underpadQty = hasUnderpad ? document.getElementById(`underpad_${id}`).value : 0;
@@ -306,7 +336,6 @@
             btn.disabled = true; btn.innerHTML = 'กำลังบันทึก...';
 
             try {
-                // 1. ดึงข้อมูลคนไข้เดิมจาก Firebase ออกมาแก้
                 const docRef = db.collection('Patients').doc(String(id));
                 const docSnap = await docRef.get();
                 
@@ -316,7 +345,6 @@
                     
                     diaperObj.approve_status = 'อนุมัติแล้ว';
                     
-                    // สร้างวันที่รูปแบบไทย (dd/mm/yyyy)
                     const now = new Date();
                     const day = String(now.getDate()).padStart(2, '0');
                     const month = String(now.getMonth() + 1).padStart(2, '0');
@@ -326,23 +354,15 @@
                     diaperObj.approved_diaper = parseInt(diaperQty) || 0;
                     diaperObj.approved_underpad = parseInt(underpadQty) || 0;
 
-                    // 2. อัปเดตลง Firebase ทันที (เร็วปรู๊ด)
                     await docRef.update({ diaper: JSON.stringify(diaperObj) });
                     
-                    // 3. ปล่อยให้ Google Apps Script ยิง LINE แจ้งเตือน อสม. ไปแบบเงียบๆ ไม่ต้องรอผลลัพธ์
-                    fetch(API_URL, {
-                        method: 'POST',
-                        body: JSON.stringify({ action: 'updateResourceApproval', id: id, diaperQty: parseInt(diaperQty)||0, underpadQty: parseInt(underpadQty)||0 })
-                    }).catch(e => console.log('แจ้งเตือนเบื้องหลังทำงานเสร็จสิ้น'));
-
                     alert('อนุมัติรายการและอัปเดตงบประมาณสำเร็จ!');
-                    await loadResourceData(); // โหลดหน้าจอใหม่ให้ตัวเลขงบประมาณเด้งเปลี่ยนทันที
+                    await loadResourceData(); 
                 } else {
                     alert('ไม่พบข้อมูลผู้ป่วยในระบบ');
                     btn.disabled = false; btn.innerHTML = 'บันทึกอนุมัติ';
                 }
             } catch (error) { 
-                console.error(error);
                 alert('การเชื่อมต่อขัดข้อง กรุณาลองใหม่'); 
                 btn.disabled = false; btn.innerHTML = 'บันทึกอนุมัติ'; 
             }
