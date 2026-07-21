@@ -3,124 +3,109 @@
 <head>
     <meta charset="utf-8"/>
     <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-    <title>ศูนย์ข้อมูลผู้ป่วย - อสม.สามารถ (Orsomo Smart)</title>
+    <title>ศูนย์ข้อมูลผู้ป่วย - จัดการระบบ</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700&display=swap" rel="stylesheet"/>
     <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
     <script charset="utf-8" src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
+    
     <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore-compat.js"></script>
     <script src="config.js"></script>
+    
     <style>
         body { font-family: 'Sarabun', sans-serif; background-color: #f4f7fa; }
         .material-symbols-outlined { font-variation-settings: 'FILL' 1, 'wght' 400, 'GRAD' 0, 'opsz' 24; }
         .bg-navy { background-color: #0f172a; } .text-navy { color: #0f172a; }
-        .loader-small { border: 2px solid #f3f3f3; border-bottom-color: #0f172a; border-radius: 50%; width: 24px; height: 24px; animation: spin 1s linear infinite; }
+        .loader-small { border: 2px solid #f3f3f3; border-bottom-color: #00694a; border-radius: 50%; width: 24px; height: 24px; animation: spin 1s linear infinite; }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
-        .tab-btn { padding: 12px 24px; font-weight: bold; font-size: 14px; border-bottom: 3px solid transparent; color: #64748b; transition: all 0.2s; cursor: pointer; }
-        .tab-btn.active { color: #0f172a; border-bottom-color: #0f172a; }
-        .table-container::-webkit-scrollbar { height: 6px; } .table-container::-webkit-scrollbar-track { background: #f1f5f9; border-radius: 4px; } .table-container::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
     </style>
 </head>
 <body class="flex h-[100dvh] overflow-hidden text-slate-800 relative">
 
     <div id="sidebar-overlay" class="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-40 hidden lg:hidden" onclick="toggleSidebar()"></div>
+
     <aside id="sidebar" class="fixed inset-y-0 left-0 w-72 bg-navy text-white flex flex-col z-50 transform -translate-x-full lg:translate-x-0 lg:static transition-transform duration-300 ease-in-out">
         <div class="p-6 flex items-center justify-between border-b border-slate-700/40">
             <div class="flex items-center gap-3">
-                <div class="w-11 h-11 rounded-xl bg-white/10 flex items-center justify-center border border-amber-400/30"><span class="material-symbols-outlined text-amber-400 text-[26px]">local_hospital</span></div>
-                <div><h1 id="sidebar-hospital-name" class="font-bold text-[15px] tracking-wide text-white">กำลังโหลด...</h1><p class="text-[10px] text-amber-400 font-medium">อสม.สามารถ (Orsomo Smart)</p></div>
+                <div class="w-11 h-11 rounded-xl bg-white/10 flex items-center justify-center border border-amber-400/30">
+                    <span class="material-symbols-outlined text-amber-400 text-[26px]">local_hospital</span>
+                </div>
+                <div>
+                    <h1 id="sidebar-hospital-name" class="font-bold text-[15px] tracking-wide text-white">กำลังโหลด...</h1>
+                    <p id="sidebar-system-name" class="text-[10px] text-amber-400 font-medium">ระบบบริหารจัดการ</p>
+                </div>
             </div>
             <button onclick="toggleSidebar()" class="lg:hidden text-slate-400 p-1"><span class="material-symbols-outlined">close</span></button>
         </div>
+
         <nav class="flex-1 px-4 py-6 space-y-2 overflow-y-auto">
-            <a href="admin_dashboard.html" class="flex items-center gap-3 px-4 py-3.5 text-slate-400 hover:bg-white/5 hover:text-white rounded-xl font-medium transition-all"><span class="material-symbols-outlined">dashboard</span> ภาพรวมระบบ</a>
-            <a href="admin_resources.html" class="flex items-center gap-3 px-4 py-3.5 text-slate-400 hover:bg-white/5 hover:text-white rounded-xl font-medium transition-all"><span class="material-symbols-outlined">inventory_2</span> บริหารทรัพยากร</a>
-            <a href="admin_datacenter.html" class="flex items-center justify-between px-4 py-3.5 bg-white/10 text-amber-400 rounded-xl font-bold transition-all"><span class="flex items-center gap-3"><span class="material-symbols-outlined">folder_shared</span> ศูนย์ข้อมูลผู้ป่วย</span><span class="w-1.5 h-1.5 rounded-full bg-amber-400"></span></a>
-            <a href="admin_delegation.html" class="flex items-center gap-3 px-4 py-3.5 text-slate-400 hover:bg-white/5 hover:text-white rounded-xl font-medium transition-all"><span class="material-symbols-outlined">assignment_ind</span> มอบหมายงาน อสม.</a>
-            <a href="admin_reports.html" class="flex items-center gap-3 px-4 py-3.5 text-slate-400 hover:bg-white/5 hover:text-white rounded-xl font-medium transition-all"><span class="material-symbols-outlined">summarize</span> รายงาน (Export)</a>
-            <a href="admin_settings.html" class="flex items-center gap-3 px-4 py-3.5 text-slate-400 hover:bg-white/5 hover:text-white rounded-xl font-medium transition-all"><span class="material-symbols-outlined">settings</span> ตั้งค่าระบบ</a>
+            <a href="admin_dashboard.html" class="flex items-center gap-3 px-4 py-3.5 text-slate-400 hover:bg-white/5 hover:text-white rounded-xl font-medium transition-all">
+                <span class="material-symbols-outlined">dashboard</span> ภาพรวมระบบ
+            </a>
+            <a href="admin_resources.html" class="flex items-center gap-3 px-4 py-3.5 text-slate-400 hover:bg-white/5 hover:text-white rounded-xl font-medium transition-all">
+                <span class="material-symbols-outlined">inventory_2</span> บริหารทรัพยากร
+            </a>
+            <a href="admin_datacenter.html" class="flex items-center justify-between px-4 py-3.5 bg-white/10 text-amber-400 rounded-xl font-bold transition-all">
+                <span class="flex items-center gap-3"><span class="material-symbols-outlined">folder_shared</span> ศูนย์ข้อมูลผู้ป่วย</span>
+                <span class="w-1.5 h-1.5 rounded-full bg-amber-400"></span>
+            </a>
+            <a href="admin_delegation.html" class="flex items-center gap-3 px-4 py-3.5 text-slate-400 hover:bg-white/5 hover:text-white rounded-xl font-medium transition-all">
+                <span class="material-symbols-outlined">assignment_ind</span> มอบหมายงาน อสม.
+            </a>
+            <a href="admin_reports.html" class="flex items-center gap-3 px-4 py-3.5 text-slate-400 hover:bg-white/5 hover:text-white rounded-xl font-medium transition-all">
+                <span class="material-symbols-outlined">summarize</span> รายงาน (Export)
+            </a>
+            <a href="admin_settings.html" class="flex items-center gap-3 px-4 py-3.5 text-slate-400 hover:bg-white/5 hover:text-white rounded-xl font-medium transition-all" id="nav-settings">
+                <span class="material-symbols-outlined">settings</span> ตั้งค่าระบบ
+            </a>
         </nav>
     </aside>
 
-    <main class="flex-1 flex flex-col min-h-0 bg-slate-50 overflow-y-auto overflow-x-hidden w-full max-w-full">
+    <main class="flex-1 flex flex-col min-h-0 bg-slate-50">
         <header class="h-20 min-h-[80px] bg-white shadow-sm flex items-center justify-between px-6 lg:px-8 z-10 flex-shrink-0 border-b border-slate-100">
-            <div class="flex items-center min-w-0 w-full">
-                <button onclick="toggleSidebar()" class="lg:hidden p-2.5 -ml-2 mr-3 text-slate-600 hover:bg-slate-100 rounded-xl transition-colors flex-shrink-0"><span class="material-symbols-outlined text-[26px]">menu</span></button>
-                <div class="min-w-0 flex-1">
-                    <h2 class="text-base lg:text-lg font-bold text-slate-900 leading-tight truncate">ศูนย์ข้อมูลผู้ป่วย (Data Center)</h2>
-                    <p id="header-hospital-name" class="text-[11px] lg:text-xs text-slate-400 font-medium mt-0.5 truncate">ฐานข้อมูลผู้ป่วยทั้งหมดในความดูแล</p>
+            <div class="flex items-center">
+                <button onclick="toggleSidebar()" class="lg:hidden p-2.5 -ml-2 mr-3 text-slate-600 hover:bg-slate-100 rounded-xl transition-colors"><span class="material-symbols-outlined text-[26px]">menu</span></button>
+                <div>
+                    <h2 class="text-base lg:text-lg font-bold text-slate-900 leading-tight">ศูนย์ข้อมูลผู้ป่วย</h2>
+                    <p id="header-hospital-name" class="text-[11px] lg:text-xs text-slate-400 font-medium mt-0.5">Master Data Center</p>
                 </div>
             </div>
+            <button onclick="window.location.href='admin_settings.html'" class="hidden md:flex items-center gap-2 bg-slate-100 hover:bg-slate-200 text-slate-700 px-4 py-2 rounded-xl text-sm font-bold transition-colors">
+                <span class="material-symbols-outlined text-[18px]">manage_accounts</span> ข้อมูลส่วนตัว
+            </button>
         </header>
 
-        <div class="bg-white border-b border-slate-200 grid grid-cols-2 shadow-sm z-10 sticky top-0 flex-shrink-0 w-full">
-            <button class="tab-btn active border-r border-slate-100 flex flex-col items-center justify-center py-3 leading-tight" id="tab-active" onclick="switchTab('active')">
-                <span class="flex items-center gap-1.5">🟢 กำลังดูแล <span id="badge-active" class="bg-blue-100 text-blue-700 px-1.5 py-0.5 rounded-md text-[10px]">0</span></span>
-            </button>
-            <button class="tab-btn flex flex-col items-center justify-center py-3 leading-tight text-[12px] sm:text-[14px]" id="tab-inactive" onclick="switchTab('inactive')">
-                <span class="flex items-center gap-1.5">🔴 ยุติการดูแล <span id="badge-inactive" class="bg-slate-100 text-slate-600 px-1.5 py-0.5 rounded-md text-[10px]">0</span></span>
-            </button>
-        </div>
-
-        <div class="w-full p-4 lg:p-6 pb-20 lg:pb-8 flex-1 flex flex-col min-w-0 overflow-hidden">
-            <div class="bg-white p-4 rounded-t-[20px] border border-slate-200 border-b-0 flex flex-col md:flex-row md:items-center justify-between gap-4 w-full flex-shrink-0">
-                <div class="flex flex-col md:flex-row gap-3 w-full min-w-0">
-                    <div class="relative w-full">
-                        <span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-[20px]">search</span>
-                        <input type="text" id="search-input" oninput="filterTable()" class="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-navy" placeholder="ค้นหาชื่อ, บ้านเลขที่...">
-                    </div>
-                    <div class="relative w-full md:w-48 flex-shrink-0">
-                        <select id="village-filter" onchange="filterTable()" class="w-full pl-4 pr-8 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-navy appearance-none">
-                            <option value="">ทุกหมู่ (ทั้งหมด)</option>
-                        </select>
-                        <span class="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none">expand_more</span>
-                    </div>
+        <div class="p-4 lg:p-6 pb-2 z-10 flex-shrink-0 sticky top-0 bg-slate-50 shadow-sm border-b border-slate-200">
+            <div class="flex flex-col md:flex-row gap-3">
+                <div class="relative flex-1">
+                    <span class="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-slate-400">search</span>
+                    <input type="text" id="search-input" oninput="filterPatients()" class="w-full pl-12 pr-4 py-3 bg-white border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 shadow-sm" placeholder="ค้นหา HN, เลขบัตร, ชื่อ-นามสกุล, หรือบ้านเลขที่...">
                 </div>
-
-                <div class="flex flex-col sm:flex-row gap-2 w-full md:w-auto flex-shrink-0">
-                    <button onclick="window.location.href='patient_register.html'" class="w-full sm:w-auto bg-[#00694a] hover:bg-[#005239] text-white px-4 py-2.5 rounded-xl font-bold text-sm flex items-center justify-center gap-2 shadow-sm transition-all active:scale-95">
-                        <span class="material-symbols-outlined text-[20px]">person_add</span> เพิ่มรายคน
-                    </button>
-                    <button onclick="downloadTemplate()" class="w-full sm:w-auto bg-slate-100 hover:bg-slate-200 text-slate-700 px-4 py-2.5 rounded-xl font-bold text-sm flex items-center justify-center gap-2 shadow-sm transition-all active:scale-95 border border-slate-200">
-                        <span class="material-symbols-outlined text-[20px]">download</span> โหลดฟอร์ม
-                    </button>
-                    <input type="file" id="import-excel-file" accept=".xlsx, .xls" class="hidden" onchange="handleImportExcel(event)">
-                    <button onclick="document.getElementById('import-excel-file').click()" class="w-full sm:w-auto bg-amber-500 hover:bg-amber-600 text-white px-4 py-2.5 rounded-xl font-bold text-sm flex items-center justify-center gap-2 shadow-sm transition-all active:scale-95">
-                        <span class="material-symbols-outlined text-[20px]">upload_file</span> นำเข้า
-                    </button>
+                <div class="flex gap-2">
+                    <select id="village-filter" onchange="filterPatients()" class="px-4 py-3 bg-white border border-slate-200 rounded-xl text-sm font-bold text-slate-600 focus:ring-2 focus:ring-emerald-500 shadow-sm outline-none">
+                        <option value="">ดูทุกหมู่ (ทั้งหมด)</option>
+                        <!-- โค้ดจะนำตัวเลือกหมู่มาใส่ตรงนี้ (กรองตามสิทธิ์) -->
+                    </select>
+                    <select id="status-filter" onchange="filterPatients()" class="px-4 py-3 bg-white border border-slate-200 rounded-xl text-sm font-bold text-slate-600 focus:ring-2 focus:ring-emerald-500 shadow-sm outline-none">
+                        <option value="Active">🟢 สถานะ: Active</option>
+                        <option value="Inactive">🔴 สถานะ: ยุติการดูแล</option>
+                    </select>
                 </div>
             </div>
+        </div>
 
-            <div class="bg-white border border-slate-200 rounded-b-[20px] shadow-sm w-full flex-1 flex flex-col min-h-0 overflow-hidden relative">
-                <div id="loading-state" class="flex-1 flex flex-col items-center justify-center py-20 space-y-3">
-                    <div class="loader-small"></div><p class="text-sm text-slate-400 animate-pulse">กำลังโหลดฐานข้อมูลจาก Firebase...</p>
-                </div>
-                
-                <div class="table-container w-full overflow-x-auto flex-1 hidden" id="table-container">
-                    <table class="w-full text-left border-collapse whitespace-nowrap min-w-[800px]">
-                        <thead class="bg-slate-50 sticky top-0 z-10 shadow-[0_1px_2px_rgba(0,0,0,0.05)]">
-                            <tr>
-                                <th class="px-6 py-4 text-[12px] font-bold text-slate-500">ชื่อ - นามสกุล</th>
-                                <th class="px-6 py-4 text-[12px] font-bold text-slate-500">ที่อยู่ (หมู่ / บ้านเลขที่)</th>
-                                <th class="px-6 py-4 text-[12px] font-bold text-slate-500">กลุ่ม (ADL)</th>
-                                <th class="px-6 py-4 text-[12px] font-bold text-slate-500" id="col-status">สถานะ / อัปเดตล่าสุด</th>
-                                <th class="px-6 py-4 text-[12px] font-bold text-slate-500 text-center">แฟ้มประวัติ</th>
-                            </tr>
-                        </thead>
-                        <tbody id="patient-table-body" class="divide-y divide-slate-100"></tbody>
-                    </table>
-                </div>
-
-                <div id="empty-state" class="hidden flex-1 flex flex-col items-center justify-center py-20">
-                    <span class="material-symbols-outlined text-5xl text-slate-300 mb-3">search_off</span>
-                    <h3 class="text-slate-500 font-bold">ไม่พบข้อมูล</h3>
-                </div>
-                
-                <div class="bg-slate-50 px-6 py-3 border-t border-slate-200 text-xs text-slate-500 font-medium flex justify-between items-center w-full flex-shrink-0">
-                    <span>แสดงผลรวม: <strong id="total-rows" class="text-navy">0</strong> รายการ</span>
-                </div>
+        <div class="flex-1 overflow-y-auto p-4 lg:p-6 relative">
+            <div id="loading-state" class="absolute inset-0 flex flex-col items-center justify-center bg-slate-50 z-20">
+                <div class="loader-small mb-3"></div><p class="text-sm text-slate-400 animate-pulse">กำลังโหลดข้อมูลผู้ป่วยจากฐานข้อมูล...</p>
+            </div>
+            
+            <div id="patient-list" class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5 hidden"></div>
+            
+            <div id="empty-state" class="hidden text-center py-20 flex flex-col items-center justify-center">
+                <span class="material-symbols-outlined text-[60px] text-slate-300 mb-4">search_off</span>
+                <h3 class="text-lg font-bold text-slate-600">ไม่พบข้อมูลผู้ป่วย</h3>
+                <p class="text-sm text-slate-400 mt-1">ลองเปลี่ยนคำค้นหา หรือเปลี่ยนตัวกรองดูนะครับ</p>
             </div>
         </div>
     </main>
@@ -128,25 +113,26 @@
     <script>
         firebase.initializeApp(firebaseConfig);
         const db = firebase.firestore();
-        
-        let allPatients = [];
-        let currentTab = 'active';
 
-        function toggleSidebar() {
-            document.getElementById('sidebar').classList.toggle('-translate-x-full');
-            document.getElementById('sidebar-overlay').classList.toggle('hidden');
-        }
+        let allPatients = []; 
+        let currentUserRole = "ADMIN";
+        let assignedVillages = [];
 
-        function safeGet(obj, keys, defaultVal = '') {
-            for (let k of keys) { if (obj[k] !== undefined && obj[k] !== null) return String(obj[k]).trim(); }
-            return defaultVal;
-        }
+        function toggleSidebar() { document.getElementById('sidebar').classList.toggle('-translate-x-full'); }
 
         document.addEventListener("DOMContentLoaded", () => {
+            document.getElementById('sidebar-hospital-name').innerText = DEFAULT_CONFIGS.HOSPITAL_NAME;
+            document.getElementById('sidebar-system-name').innerText = DEFAULT_CONFIGS.SYSTEM_NAME;
+
             liff.init({ liffId: LIFF_ID }).then(() => {
-                if (liff.isLoggedIn()) { 
-                    liff.getProfile().then(p => verifyAdminAccess(p.userId)).catch(()=>bounceToLogin()); 
-                } else bounceToLogin();
+                // ระบบสับขาหลอกสำหรับโหมดทดสอบ (Developer Mode)
+                const mockUid = localStorage.getItem('dev_mock_uid');
+                
+                if (mockUid) {
+                    verifyAdminAccess(mockUid); // ใช้สิทธิ์จำลองทันที
+                } else if (liff.isLoggedIn()) {
+                    liff.getProfile().then(p => verifyAdminAccess(p.userId)).catch(() => bounceToLogin());
+                } else { bounceToLogin(); }
             }).catch(() => bounceToLogin());
         });
 
@@ -155,220 +141,177 @@
         async function verifyAdminAccess(uid) {
             try {
                 const userDoc = await db.collection('VHVs').doc(String(uid)).get();
-                let isAdmin = false; let hospital = 'เทศบาลเมืองบางแก้ว'; let vCount = 15;
+                let hasAccess = false;
+                let hospital = DEFAULT_CONFIGS.HOSPITAL_NAME;
+                let vCount = DEFAULT_CONFIGS.VILLAGE_COUNT;
 
-                // ดึงข้อมูลการตั้งค่าชื่อหน่วยงานและจำนวนหมู่จาก SystemConfig
+                // ดึง Config ส่วนกลาง (เผื่อมีการตั้งชื่อหรือจำนวนหมู่ใหม่)
                 try {
-                    const sysSnap = await db.collection('SystemConfig').doc('HOSPITAL_NAME').get();
-                    if(sysSnap.exists) hospital = sysSnap.data().value || hospital;
-                    const sysCountSnap = await db.collection('SystemConfig').doc('VILLAGE_COUNT').get();
-                    if(sysCountSnap.exists) vCount = parseInt(sysCountSnap.data().value) || vCount;
+                    const sysSnapHospital = await db.collection('SystemConfig').doc('HOSPITAL_NAME').get();
+                    if(sysSnapHospital.exists) hospital = sysSnapHospital.data().value || hospital;
+                    
+                    const sysSnapVCount = await db.collection('SystemConfig').doc('VILLAGE_COUNT').get();
+                    if(sysSnapVCount.exists) vCount = parseInt(sysSnapVCount.data().value) || vCount;
                 } catch(e) {}
 
                 if (userDoc.exists) {
                     const userData = userDoc.data();
-                    const role = String(userData.role || userData.Role || '').toUpperCase();
+                    const role = String(userData.role || '').toUpperCase();
+                    
                     if (role === 'ADMIN') {
-                        isAdmin = true;
+                        hasAccess = true;
+                        currentUserRole = 'ADMIN';
                         hospital = userData.hospital_name || hospital;
-                        vCount = parseInt(userData.village_count) || vCount;
+                    } else if (role === 'SUB_ADMIN') {
+                        hasAccess = true;
+                        currentUserRole = 'SUB_ADMIN';
+                        hospital = userData.hospital_name || hospital;
+                        assignedVillages = userData.assigned_villages || [];
                     }
                 }
 
-                if (isAdmin) {
+                if (hasAccess) {
                     document.getElementById('sidebar-hospital-name').innerText = hospital;
-                    document.getElementById('header-hospital-name').innerText = 'ฐานข้อมูลผู้ป่วยทั้งหมด • ' + hospital;
+                    
+                    // ปรับแต่ง UI ตามสิทธิ์
                     const villageSelect = document.getElementById('village-filter');
-                    villageSelect.innerHTML = '<option value="">ทุกหมู่ (ทั้งหมด)</option>';
-                    for(let i = 1; i <= vCount; i++){ villageSelect.insertAdjacentHTML('beforeend', `<option value="${i}">หมู่ที่ ${i}</option>`); }
-                    loadDataCenter(); 
-                } else { window.location.href = 'dashboard.html'; }
+                    if (currentUserRole === 'SUB_ADMIN') {
+                        document.getElementById('nav-settings').style.display = 'none'; // ซ่อนเมนูตั้งค่าสำหรับ รพ.สต.
+                        // แสดงเฉพาะหมู่ที่ตัวเองรับผิดชอบ
+                        assignedVillages.forEach(v => {
+                            villageSelect.insertAdjacentHTML('beforeend', `<option value="${v}">หมู่ที่ ${v}</option>`);
+                        });
+                    } else {
+                        // แอดมินหลักเห็นครบทุกหมู่
+                        for(let i=1; i<=vCount; i++){ 
+                            villageSelect.insertAdjacentHTML('beforeend', `<option value="${i}">หมู่ที่ ${i}</option>`); 
+                        }
+                    }
+
+                    loadPatientData(); 
+                } else {
+                    window.location.href = 'dashboard.html'; 
+                }
             } catch (error) { bounceToLogin(); }
         }
 
-        async function loadDataCenter() {
+        async function loadPatientData() {
             try {
                 const snapshot = await db.collection('Patients').get();
-                allPatients = [];
-                snapshot.forEach(doc => { allPatients.push(doc.data()); });
-                updateBadges(); filterTable();
+                const tempPatients = [];
+
+                snapshot.forEach(doc => {
+                    const data = doc.data();
+                    
+                    // กรองข้อมูล: ถ้าเป็น รพ.สต. ให้เห็นเฉพาะหมู่ของตัวเอง
+                    let hasPermissionToView = true;
+                    if (currentUserRole === 'SUB_ADMIN') {
+                        hasPermissionToView = assignedVillages.includes(String(data.village_no).trim());
+                    }
+
+                    if (hasPermissionToView) {
+                        tempPatients.push(data);
+                    }
+                });
+
+                allPatients = tempPatients.sort((a, b) => parseInt(a.village_no) - parseInt(b.village_no));
                 document.getElementById('loading-state').classList.add('hidden');
-            } catch (error) { alert("โหลดข้อมูลล้มเหลว"); }
-        }
-
-        function switchTab(tab) {
-            document.getElementById('tab-active').classList.remove('active');
-            document.getElementById('tab-inactive').classList.remove('active');
-            document.getElementById(`tab-${tab}`).classList.add('active');
-            currentTab = tab;
-            document.getElementById('col-status').innerText = tab === 'active' ? 'สถานะ / อัปเดตล่าสุด' : 'สาเหตุยุติการดูแล';
-            filterTable();
-        }
-
-        function isPatientActive(p) {
-            const rawStatus = safeGet(p, ['status', 'Status', 'STATUS', 'สถานะ'], 'Active').toLowerCase();
-            return rawStatus === 'active';
-        }
-
-        function updateBadges() {
-            document.getElementById('badge-active').innerText = allPatients.filter(p => isPatientActive(p)).length;
-            document.getElementById('badge-inactive').innerText = allPatients.filter(p => !isPatientActive(p)).length;
-        }
-
-        function filterTable() {
-            const keyword = document.getElementById('search-input').value.toLowerCase();
-            const villageFilter = document.getElementById('village-filter').value;
-            const filteredData = allPatients.filter(p => {
-                const isActiveTab = currentTab === 'active';
-                const userActive = isPatientActive(p);
-                if (isActiveTab !== userActive) return false;
-                const name = safeGet(p, ['name', 'Name', 'NAME']).toLowerCase();
-                const house = safeGet(p, ['house_no', 'House_No', 'HOUSE_NO']).toLowerCase();
-                const village = safeGet(p, ['village_no', 'Village_No', 'VILLAGE_NO']);
-                return (name.includes(keyword) || house.includes(keyword)) && (villageFilter === '' || village === villageFilter);
-            });
-            renderTable(filteredData);
-        }
-
-        function renderTable(dataArray) {
-            const tbody = document.getElementById('patient-table-body');
-            const emptyState = document.getElementById('empty-state');
-            const tableContainer = document.getElementById('table-container');
-            
-            tbody.innerHTML = '';
-            document.getElementById('total-rows').innerText = dataArray.length;
-
-            if (dataArray.length === 0) {
-                tableContainer.classList.add('hidden');
-                emptyState.classList.remove('hidden');
-                return;
+                document.getElementById('patient-list').classList.remove('hidden');
+                filterPatients();
+            } catch (error) {
+                alert("ดึงฐานข้อมูลล้มเหลว");
             }
+        }
 
-            emptyState.classList.add('hidden'); tableContainer.classList.remove('hidden');
+        function filterPatients() {
+            const searchKeyword = document.getElementById('search-input').value.trim().toLowerCase();
+            const villageFilter = document.getElementById('village-filter').value;
+            const statusFilter = document.getElementById('status-filter').value;
 
-            dataArray.forEach(p => {
-                const name = safeGet(p, ['name', 'Name', 'NAME'], 'ไม่ระบุชื่อ');
-                const village = safeGet(p, ['village_no', 'Village_No', 'VILLAGE_NO'], '-');
-                const house = safeGet(p, ['house_no', 'House_No', 'HOUSE_NO'], '-');
-                const group = safeGet(p, ['group', 'Group', 'GROUP'], 'ยังไม่ประเมิน');
-                const lastAssess = safeGet(p, ['last_assess', 'Last_Assess'], '-');
-                const rawStatus = safeGet(p, ['status', 'Status', 'STATUS'], 'Active');
+            const container = document.getElementById('patient-list');
+            const emptyState = document.getElementById('empty-state');
+            container.innerHTML = '';
+            let displayCount = 0;
 
-                let badgeGroup = 'bg-slate-100 text-slate-600';
-                if (group === 'ติดสังคม') badgeGroup = 'bg-emerald-100 text-emerald-700';
-                else if (group === 'ติดบ้าน') badgeGroup = 'bg-amber-100 text-amber-700';
-                else if (group === 'ติดเตียง') badgeGroup = 'bg-red-100 text-red-700';
+            allPatients.forEach(p => {
+                const pStatus = String(p.status || 'Active').trim().toLowerCase();
+                const targetStatus = statusFilter.toLowerCase();
                 
-                let statusHtml = '';
-                if(currentTab === 'active') {
-                    statusHtml = `<span class="px-2.5 py-1 text-[11px] font-bold rounded-md bg-blue-50 text-blue-600 border border-blue-100">กำลังดูแล</span><span class="text-xs text-slate-400 ml-2">${lastAssess}</span>`;
-                } else {
-                    statusHtml = `<span class="px-2.5 py-1 text-[11px] font-bold rounded-md bg-slate-100 text-slate-700 border border-slate-200">${rawStatus}</span>`;
+                if (pStatus !== targetStatus) return;
+                if (villageFilter !== '' && String(p.village_no) !== villageFilter) return;
+
+                const matchHN = p.id ? String(p.id).toLowerCase().includes(searchKeyword) : false;
+                const matchID = p.id_card ? String(p.id_card).toLowerCase().includes(searchKeyword) : false;
+                const matchName = p.name ? String(p.name).toLowerCase().includes(searchKeyword) : false;
+                const matchHouse = p.house_no ? String(p.house_no).toLowerCase().includes(searchKeyword) : false;
+
+                if (searchKeyword && !matchHN && !matchID && !matchName && !matchHouse) return;
+
+                displayCount++;
+
+                let badgeColor = 'bg-slate-100 text-slate-600';
+                if (p.group === 'ติดสังคม') badgeColor = 'bg-emerald-50 text-emerald-700 border-emerald-200';
+                else if (p.group === 'ติดบ้าน') badgeColor = 'bg-amber-50 text-amber-700 border-amber-200';
+                else if (p.group === 'ติดเตียง') badgeColor = 'bg-red-50 text-red-700 border-red-200';
+                const groupDisplay = (p.group && p.group !== '-' && p.group !== 'ยังไม่ประเมิน') ? p.group : 'ยังไม่ประเมิน';
+
+                // จัดการรูปภาพให้อ่านจาก Base64
+                let avatarHtml = `<div class="w-14 h-14 rounded-full bg-slate-100 text-slate-400 font-bold text-xl flex items-center justify-center flex-shrink-0 border-2 border-white shadow-sm">${p.name ? p.name.substring(0,1) : '?'}</div>`;
+                if(p.profile_pic) {
+                    if (p.profile_pic.startsWith('data:image')) {
+                        avatarHtml = `<img src="${p.profile_pic}" class="w-14 h-14 rounded-full object-cover flex-shrink-0 border-2 border-white shadow-sm">`;
+                    } else if (p.profile_pic.startsWith('http')) {
+                        avatarHtml = `<img src="${p.profile_pic}" class="w-14 h-14 rounded-full object-cover flex-shrink-0 border-2 border-white shadow-sm">`;
+                    }
                 }
 
-                const tr = document.createElement('tr');
-                tr.className = 'hover:bg-slate-50 transition-colors group cursor-pointer';
-                tr.onclick = (e) => { if(!e.target.closest('button')) window.location.href = `patient_profile.html?id=${p.id}`; };
-
-                tr.innerHTML = `
-                    <td class="px-6 py-4">
-                        <div class="flex items-center gap-3">
-                            <div class="w-8 h-8 rounded-full ${currentTab === 'active' ? 'bg-navy/5 text-navy' : 'bg-slate-100 text-slate-400'} font-bold flex items-center justify-center text-xs">
-                                ${name.substring(0,1)}
+                container.insertAdjacentHTML('beforeend', `
+                    <div class="bg-white rounded-[24px] p-5 shadow-sm border border-slate-200 relative hover:shadow-md transition-shadow group">
+                        <div class="flex items-center gap-4 border-b border-slate-100 pb-4 mb-4">
+                            ${avatarHtml}
+                            <div class="flex-1 min-w-0">
+                                <h3 class="font-bold text-slate-800 text-[15px] truncate">${p.prefix || ''}${p.name || 'ไม่ระบุชื่อ'}</h3>
+                                <p class="text-xs text-slate-500 truncate mt-0.5"><span class="font-medium text-slate-400">HN:</span> ${p.id || '-'}</p>
                             </div>
-                            <span class="font-bold ${currentTab === 'active' ? 'text-slate-800' : 'text-slate-500'} text-sm group-hover:text-navy">${name}</span>
+                            <span class="${badgeColor} text-[10px] font-bold px-3 py-1 rounded-full border shadow-sm flex-shrink-0">${groupDisplay}</span>
                         </div>
-                    </td>
-                    <td class="px-6 py-4 text-sm text-slate-600">หมู่ ${village} <span class="text-slate-300 mx-1">|</span> เลขที่ ${house}</td>
-                    <td class="px-6 py-4"><span class="px-2.5 py-1 text-[11px] font-bold rounded-md ${badgeGroup}">${group !== 'ยังไม่ประเมิน' ? group : 'รอประเมิน'}</span></td>
-                    <td class="px-6 py-4">${statusHtml}</td>
-                    <td class="px-6 py-4 text-center">
-                        <button class="text-slate-400 hover:text-navy transition-colors p-1" title="เปิดแฟ้มประวัติ">
-                            <span class="material-symbols-outlined text-[20px]">visibility</span>
-                        </button>
-                    </td>
-                `;
-                tbody.appendChild(tr);
+                        <div class="space-y-2 mb-5">
+                            <div class="flex items-start gap-2 text-xs">
+                                <span class="material-symbols-outlined text-[16px] text-slate-400">home</span>
+                                <span class="text-slate-600">บ้านเลขที่ <strong class="text-slate-800">${p.house_no || '-'}</strong> หมู่ที่ <strong class="text-slate-800">${p.village_no || '-'}</strong></span>
+                            </div>
+                            <div class="flex items-start gap-2 text-xs">
+                                <span class="material-symbols-outlined text-[16px] text-slate-400">call</span>
+                                <span class="text-slate-600">เบอร์ญาติ: <strong class="text-slate-800">${p.caregiver_phone || '-'}</strong></span>
+                            </div>
+                        </div>
+                        <div class="flex gap-2">
+                            <button onclick="window.open('patient_profile.html?id=${p.id}', '_blank')" class="flex-1 py-2.5 bg-slate-100 text-slate-600 text-xs font-bold rounded-xl hover:bg-slate-200 transition-colors flex items-center justify-center gap-1.5"><span class="material-symbols-outlined text-[16px]">folder_open</span> ดูแฟ้ม</button>
+                            ${pStatus === 'active' ? `<button onclick="updatePatientStatus('${p.id}', 'Inactive')" class="px-4 py-2.5 bg-white border border-red-200 text-red-500 text-xs font-bold rounded-xl hover:bg-red-50 transition-colors flex items-center justify-center gap-1.5" title="ยุติการดูแล"><span class="material-symbols-outlined text-[16px]">cancel</span></button>` : `<button onclick="updatePatientStatus('${p.id}', 'Active')" class="px-4 py-2.5 bg-white border border-emerald-200 text-emerald-600 text-xs font-bold rounded-xl hover:bg-emerald-50 transition-colors flex items-center justify-center gap-1.5" title="นำกลับมาดูแล (Active)"><span class="material-symbols-outlined text-[16px]">replay</span></button>`}
+                        </div>
+                    </div>
+                `);
             });
+
+            if (displayCount === 0) emptyState.classList.remove('hidden');
+            else emptyState.classList.add('hidden');
         }
 
-        function downloadTemplate() {
-            const templateData = [
-                ["ชื่อ-นามสกุล", "เลขประจำตัวประชาชน", "คำนำหน้า", "บ้านเลขที่", "หมู่ที่", "วันเกิด", "อายุ", "โรคประจำตัว", "ชื่อผู้ดูแล", "เบอร์โทรผู้ดูแล", "ขนาดผ้าอ้อม", "คะแนน ADL"],
-                ["*** (ต้องมี) ***", "** (ควรมี) **", "** (ควรมี) **", "** (ควรมี) **", "** (ควรมี) **", "* (ไม่จำเป็น) *", "* (ไม่จำเป็น) *", "* (ไม่จำเป็น) *", "* (ไม่จำเป็น) *", "* (ไม่จำเป็น) *", "* (ไม่จำเป็น) *", "* (ไม่จำเป็น) *"],
-                ["สมชาย ใจดี", "3100900000000", "นาย", "123/45", "1", "15/04/2499", "70", "เบาหวาน, ความดัน", "นางสมหญิง ใจดี", "0812345678", "L", "14"]
-            ];
-            const worksheet = XLSX.utils.aoa_to_sheet(templateData);
-            worksheet['!cols'] = [ { wch: 20 }, { wch: 20 }, { wch: 10 }, { wch: 12 }, { wch: 10 }, { wch: 15 }, { wch: 10 }, { wch: 25 }, { wch: 20 }, { wch: 18 }, { wch: 15 }, { wch: 12 } ];
-            const workbook = XLSX.utils.book_new();
-            XLSX.utils.book_append_sheet(workbook, worksheet, "ข้อมูลผู้ป่วย");
-            XLSX.writeFile(workbook, `ฟอร์มเตรียมข้อมูลผู้ป่วย.xlsx`);
-        }
-
-        function handleImportExcel(event) {
-            const file = event.target.files[0];
-            if (!file) return;
-            const reader = new FileReader();
-            reader.onload = function(e) {
-                try {
-                    const data = new Uint8Array(e.target.result);
-                    const workbook = XLSX.read(data, { type: 'array' });
-                    const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
-                    const jsonData = XLSX.utils.sheet_to_json(firstSheet, { defval: "" });
-
-                    if (jsonData.length === 0) return alert('ไม่พบข้อมูลในไฟล์ Excel ครับ');
-
-                    const patientsToImport = jsonData.map(row => {
-                        return {
-                            id_card: row['เลขประจำตัวประชาชน'] || row['เลขบัตรประชาชน'] || '', prefix: row['คำนำหน้า'] || row['คำนำหน้าชื่อ'] || '',
-                            name: row['ชื่อ-นามสกุล'] || row['ชื่อ-สกุล'] || row['ชื่อ'] || '', dob: row['วันเกิด'] || row['ปีเกิด'] || '',
-                            age: row['อายุ'] || '', house_no: row['บ้านเลขที่'] || '', village_no: row['หมู่ที่'] || row['หมู่'] || '',
-                            disease: row['โรคประจำตัว'] || '', caregiver_name: row['ชื่อผู้ดูแล'] || row['ชื่อญาติ'] || '',
-                            caregiver_phone: row['เบอร์โทรผู้ดูแล'] || row['เบอร์โทรศัพท์'] || '', diaper: row['ขนาดผ้าอ้อม'] || row['ไซส์ผ้าอ้อม'] || '',
-                            adl: row['คะแนน ADL'] || row['คะแนนADL'] || row['adl'] || ''
-                        };
-                    });
-
-                    const validPatients = patientsToImport.filter(p => {
-                        const cleanName = String(p.name).trim();
-                        return cleanName !== '' && !cleanName.includes('*** (ต้องมี) ***') && cleanName !== 'สมชาย ใจดี';
-                    });
-                    
-                    if (validPatients.length > 0) {
-                        if (confirm(`พบข้อมูลผู้ป่วย ${validPatients.length} รายการ\nต้องการนำเข้าสู่ Firebase ใช่หรือไม่?`)) {
-                            sendImportDataToBackend(validPatients);
-                        }
-                    } else { alert('ไม่พบข้อมูลผู้ป่วยใหม่ในไฟล์ Excel กรุณาตรวจสอบข้อมูลครับ'); }
-                } catch (error) { alert('เกิดข้อผิดพลาดในการอ่านไฟล์ Excel'); }
-                event.target.value = ''; 
-            };
-            reader.readAsArrayBuffer(file);
-        }
-
-        async function sendImportDataToBackend(patients) {
-            const loadingOverlay = document.createElement('div');
-            loadingOverlay.className = 'fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-[100] flex flex-col items-center justify-center';
-            loadingOverlay.innerHTML = '<div class="loader-small mb-4" style="border-top-color:white;"></div><p class="text-white font-bold">กำลังบันทึกลง Firebase...</p>';
-            document.body.appendChild(loadingOverlay);
+        async function updatePatientStatus(patientId, newStatus) {
+            const actionText = newStatus === 'Inactive' ? 'ยุติการดูแล (Soft Delete)' : 'นำกลับมาดูแล (Active)';
+            if (!confirm(`คุณต้องการ ${actionText} ผู้ป่วยรหัส ${patientId} ใช่หรือไม่?`)) return;
 
             try {
-                const batch = db.batch();
-                patients.forEach(p => {
-                    const docRef = db.collection('Patients').doc();
-                    p.id = docRef.id; 
-                    p.status = 'Active';
-                    p.group = 'ยังไม่ประเมิน';
-                    // ทำการแปลงค่าให้รองรับโครงสร้างใหม่ที่ไม่ได้พึ่งพา GAS
-                    Object.keys(p).forEach(key => p[key] === undefined ? delete p[key] : {});
-                    batch.set(docRef, p);
-                });
-                await batch.commit(); 
-                document.body.removeChild(loadingOverlay);
-                alert(`นำเข้าข้อมูลผู้ป่วยสำเร็จ ${patients.length} รายการ!`);
-                loadDataCenter(); 
+                await db.collection('Patients').doc(String(patientId)).update({ status: newStatus });
+                
+                // อัปเดตใน Array ตัวแปรชั่วคราวให้หน้าเว็บเปลี่ยนตามทันที
+                const index = allPatients.findIndex(p => p.id === patientId);
+                if(index > -1) allPatients[index].status = newStatus;
+
+                alert('อัปเดตสถานะสำเร็จ!');
+                filterPatients(); 
             } catch (error) {
-                document.body.removeChild(loadingOverlay);
-                alert('การบันทึกข้อมูลล้มเหลว กรุณาลองใหม่');
+                alert('เกิดข้อผิดพลาดในการเชื่อมต่อฐานข้อมูล');
             }
         }
     </script>
