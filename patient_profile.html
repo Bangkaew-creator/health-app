@@ -148,13 +148,11 @@
                     </div>
                     <div class="flex flex-col gap-1 pt-1">
                         <span class="text-xs text-[#526069] font-bold mb-1">รายการยาที่ใช้ประจำ</span>
-                        <!-- ปรับปรุงจุดแสดงผลรายการยา -->
                         <div id="profile-medication" class="mt-2">-</div>
                     </div>
                 </div>
             </div>
 
-            <!-- กราฟและประวัติรายข้อ -->
             <div class="bg-white rounded-[20px] p-5 shadow-sm border border-[#bdcac1]/30">
                 <div class="flex justify-between items-center mb-4 border-b border-gray-50 pb-3">
                     <h3 class="text-sm font-bold flex items-center gap-2 text-[#F59E0B]">
@@ -185,7 +183,6 @@
                     <h3 class="text-sm font-bold flex items-center gap-2 text-[#2563eb]">
                         <span class="material-symbols-outlined text-[18px]">wc</span> สิทธิ์ผ้าอ้อม & อุปกรณ์
                     </h3>
-                    <!-- ปุ่มพิมพ์สิทธิ์ผ้าอ้อม -->
                     <button onclick="printForm('DIAPER')" class="text-[10px] bg-blue-50 text-blue-600 hover:bg-blue-100 px-3 py-1.5 rounded-full font-bold flex items-center gap-1 transition-colors">
                         <span class="material-symbols-outlined text-[14px]">print</span> พิมพ์ฟอร์ม
                     </button>
@@ -223,7 +220,6 @@
         </div>
     </main>
 
-    <!-- Modal เปลี่ยนสถานะ -->
     <div id="status-modal" class="fixed inset-0 bg-black/50 z-[100] hidden flex items-center justify-center opacity-0 transition-opacity duration-300">
         <div id="status-modal-content" class="bg-white rounded-[24px] w-[90%] max-w-sm p-6 transform scale-95 transition-transform duration-300">
             <h3 class="text-lg font-bold text-[#ba1a1a] mb-2 flex items-center gap-2">
@@ -249,7 +245,7 @@
         </div>
     </div>
 
-    <!-- 🌟 Modal รายละเอียดรายการยา 🌟 -->
+    <!-- Modal รายละเอียดรายการยา -->
     <div id="med-detail-modal" class="fixed inset-0 bg-black/60 z-[100] hidden flex-col items-center justify-center opacity-0 transition-opacity duration-300 p-4">
         <div id="med-detail-content" class="bg-white rounded-[24px] w-full max-w-sm overflow-hidden shadow-2xl transform scale-95 transition-transform duration-300">
             <div class="p-4 border-b border-gray-100 flex justify-between items-center bg-gray-50">
@@ -288,12 +284,11 @@
                 <button onclick="closeHistoryModal()" class="text-gray-400 hover:text-gray-600 bg-gray-200 rounded-full w-8 h-8 flex justify-center items-center"><span class="material-symbols-outlined text-[18px]">close</span></button>
             </div>
             <div id="history-list" class="p-5 overflow-y-auto flex-1 space-y-4 bg-slate-50">
-                <!-- โค้ดประวัติจะถูกแทรกที่นี่ -->
             </div>
         </div>
     </div>
 
-    <!-- Modal ดูรูปภาพขยาย (ปรับ Z-index ให้ซ้อนทับ Med Modal ได้) -->
+    <!-- Modal ดูรูปภาพขยาย -->
     <div id="imageModal" class="fixed inset-0 bg-black/90 z-[110] hidden flex-col items-center justify-center opacity-0 transition-opacity duration-300">
         <button onclick="closeModal()" class="absolute top-4 right-4 text-white p-3 bg-white/10 rounded-full hover:bg-white/20"><span class="material-symbols-outlined">close</span></button>
         <img id="modalImage" src="" class="max-w-[95%] max-h-[90%] object-contain rounded-lg shadow-2xl">
@@ -381,9 +376,6 @@
             setTimeout(() => modal.classList.add('hidden'), 300);
         }
 
-        // ==========================================
-        // ระบบยา: เปิด/ปิด Modal ข้อมูลยาแบบละเอียด
-        // ==========================================
         function openMedDetailModal(medDataStr) {
             const med = JSON.parse(decodeURIComponent(medDataStr));
             document.getElementById('med-detail-name').innerText = med.name || 'ไม่ได้ระบุชื่อยา';
@@ -410,19 +402,11 @@
             if(currentMedImageToExpand) openModal(currentMedImageToExpand);
         }
 
-        // ==========================================
-        // ฟังก์ชันเตรียมพิมพ์แบบฟอร์ม (Print Form)
-        // ==========================================
         function printForm(type, recordDate = '') {
             let msg = `เตรียมพิมพ์แบบฟอร์ม: ${type}`;
             if (recordDate) msg += `\n(ข้อมูลการประเมินวันที่: ${recordDate})`;
             msg += `\n\nระบบกำลังรอการอัปเดตโค้ดแบบฟอร์ม HTML จากผู้พัฒนาครับ 🖨️`;
             alert(msg);
-            
-            // หมายเหตุสำหรับผู้พัฒนา: 
-            // เมื่อคุณส่งไฟล์ฟอร์ม ADL/2Q9Q/Diaper มาให้ 
-            // เราจะเปลี่ยน alert() ตรงนี้ให้เป็นการเปิดแท็บใหม่ (window.open) 
-            // แล้วโยนข้อมูล patientId และ recordDate ไปให้หน้าพิมพ์แสดงผลครับ
         }
 
         function openHistoryModal() {
@@ -443,7 +427,6 @@
                     let printBtnHtml = '';
 
                     if(a.answers && Array.isArray(a.answers) && a.answers.length > 0) {
-                        // เพิ่มปุ่มพิมพ์ในประวัติที่มีการบันทึกรายข้อ
                         printBtnHtml = `
                             <button onclick="printForm('${a.type}', '${a.date}')" class="text-[10px] bg-indigo-50 text-indigo-600 px-2 py-1 rounded border border-indigo-200 hover:bg-indigo-100 flex items-center gap-1 transition-colors shadow-sm">
                                 <span class="material-symbols-outlined text-[12px]">print</span> พิมพ์
@@ -505,6 +488,15 @@
             document.getElementById(id).classList.toggle('hidden');
         }
 
+        // 🌟 ฟังก์ชันจัดการข้อมูล (แก้ไขบั๊กการอ่าน Array) 🌟
+        function cleanAndParseJSON(rawStr) {
+            if (!rawStr || String(rawStr).trim() === '') return null;
+            let cleanStr = String(rawStr).trim();
+            if (cleanStr.includes('""')) { cleanStr = cleanStr.replace(/""/g, '"'); }
+            if (cleanStr.startsWith('"') && cleanStr.endsWith('"')) { cleanStr = cleanStr.substring(1, cleanStr.length - 1); }
+            try { return JSON.parse(cleanStr); } catch(e) { return null; }
+        }
+
         async function loadPatientProfile() {
             if (!patientId) { goBackToList(); return; }
             try {
@@ -550,58 +542,60 @@
 
                 document.getElementById('profile-disease').innerText = data.disease || '-';
                 
-                // 🌟 ระบบแสดงผลรายการยาอัจฉริยะ (รองรับทั้ง Text และ Image) 🌟
+                // 🌟 อัปเกรดระบบอ่านข้อมูลยา (รองรับแบบ Array) 🌟
                 const medContainer = document.getElementById('profile-medication');
-                if (data.medication && typeof data.medication === 'string' && data.medication.startsWith('[')) {
-                    try {
-                        let cleanMedStr = data.medication.replace(/""/g, '"');
-                        if (cleanMedStr.startsWith('"') && cleanMedStr.endsWith('"')) { cleanMedStr = cleanMedStr.substring(1, cleanMedStr.length - 1); }
-                        const meds = JSON.parse(cleanMedStr);
-                        
-                        if (meds.length === 0) {
-                            medContainer.innerHTML = '-';
-                        } else {
-                            let medHtml = '<div class="space-y-2">'; 
-                            meds.forEach(m => {
-                                const hasText = m.name || m.dose || m.usage;
-                                const hasImage = m.image && String(m.image).startsWith('data:image');
+                let meds = [];
+                
+                if (Array.isArray(data.medication)) {
+                    meds = data.medication; // ถ้าเป็น Array อยู่แล้ว (ระบบใหม่)
+                } else if (typeof data.medication === 'string') {
+                    const parsedMed = cleanAndParseJSON(data.medication);
+                    if (Array.isArray(parsedMed)) meds = parsedMed; // ถ้าเป็น JSON String (ระบบเดิม)
+                    else if (data.medication && data.medication !== '-') meds = [{ name: data.medication }];
+                }
 
-                                if (hasImage && hasText) {
-                                    const medDataStr = encodeURIComponent(JSON.stringify(m));
-                                    medHtml += `
-                                        <div class="flex items-center gap-3 p-2 bg-white rounded-xl border border-gray-200 shadow-sm cursor-pointer hover:border-blue-300 transition-colors group" onclick="openMedDetailModal('${medDataStr}')">
-                                            <img src="${m.image}" class="w-12 h-12 rounded-lg object-cover border border-gray-100 flex-shrink-0">
-                                            <div class="flex-1 min-w-0">
-                                                <p class="text-sm font-bold text-[#0284c7] truncate">${m.name || 'ยา (มีรูปภาพ)'}</p>
-                                                <p class="text-[10px] text-gray-500 truncate group-hover:text-blue-500 transition-colors">คลิกเพื่อดูรายละเอียดขยาย</p>
-                                            </div>
-                                            <span class="material-symbols-outlined text-gray-300 text-sm group-hover:text-blue-400">open_in_new</span>
-                                        </div>
-                                    `;
-                                } else if (hasImage && !hasText) {
-                                    medHtml += `
-                                        <div class="flex items-center gap-3 p-2 bg-white rounded-xl border border-gray-200 shadow-sm cursor-pointer hover:border-blue-300 transition-colors group" onclick="openModal('${m.image}')">
-                                            <img src="${m.image}" class="w-12 h-12 rounded-lg object-cover border border-gray-100 flex-shrink-0">
-                                            <div class="flex-1 min-w-0">
-                                                <p class="text-sm font-bold text-gray-600 truncate">รูปภาพซองยา</p>
-                                                <p class="text-[10px] text-blue-500">คลิกเพื่อดูรูปภาพแบบเต็มจอ</p>
-                                            </div>
-                                        </div>
-                                    `;
-                                } else if (!hasImage && hasText) {
-                                    medHtml += `
-                                        <div class="p-3 bg-gray-50 rounded-xl border border-gray-100">
-                                            <p class="text-sm font-bold text-[#0284c7]">${m.name || '-'}</p>
-                                            <p class="text-[11px] text-gray-600 mt-0.5">${m.dose || ''} <span class="text-gray-400">(${m.usage || ''})</span></p>
-                                        </div>
-                                    `;
-                                }
-                            });
-                            medHtml += '</div>';
-                            medContainer.innerHTML = medHtml;
+                if (meds.length === 0) {
+                    medContainer.innerHTML = '-';
+                } else {
+                    let medHtml = '<div class="space-y-2">'; 
+                    meds.forEach(m => {
+                        const hasText = m.name || m.dose || m.usage;
+                        const hasImage = m.image && String(m.image).startsWith('data:image');
+
+                        if (hasImage && hasText) {
+                            const medDataStr = encodeURIComponent(JSON.stringify(m));
+                            medHtml += `
+                                <div class="flex items-center gap-3 p-2 bg-white rounded-xl border border-gray-200 shadow-sm cursor-pointer hover:border-blue-300 transition-colors group" onclick="openMedDetailModal('${medDataStr}')">
+                                    <img src="${m.image}" class="w-12 h-12 rounded-lg object-cover border border-gray-100 flex-shrink-0">
+                                    <div class="flex-1 min-w-0">
+                                        <p class="text-sm font-bold text-[#0284c7] truncate">${m.name || 'ยา (มีรูปภาพ)'}</p>
+                                        <p class="text-[10px] text-gray-500 truncate group-hover:text-blue-500 transition-colors">คลิกเพื่อดูรายละเอียดขยาย</p>
+                                    </div>
+                                    <span class="material-symbols-outlined text-gray-300 text-sm group-hover:text-blue-400">open_in_new</span>
+                                </div>
+                            `;
+                        } else if (hasImage && !hasText) {
+                            medHtml += `
+                                <div class="flex items-center gap-3 p-2 bg-white rounded-xl border border-gray-200 shadow-sm cursor-pointer hover:border-blue-300 transition-colors group" onclick="openModal('${m.image}')">
+                                    <img src="${m.image}" class="w-12 h-12 rounded-lg object-cover border border-gray-100 flex-shrink-0">
+                                    <div class="flex-1 min-w-0">
+                                        <p class="text-sm font-bold text-gray-600 truncate">รูปภาพซองยา</p>
+                                        <p class="text-[10px] text-blue-500">คลิกเพื่อดูรูปภาพแบบเต็มจอ</p>
+                                    </div>
+                                </div>
+                            `;
+                        } else if (!hasImage && hasText) {
+                            medHtml += `
+                                <div class="p-3 bg-gray-50 rounded-xl border border-gray-100">
+                                    <p class="text-sm font-bold text-[#0284c7]">${m.name || '-'}</p>
+                                    <p class="text-[11px] text-gray-600 mt-0.5">${m.dose || ''} <span class="text-gray-400">(${m.usage || ''})</span></p>
+                                </div>
+                            `;
                         }
-                    } catch(e) { medContainer.innerText = data.medication; }
-                } else medContainer.innerText = data.medication || '-';
+                    });
+                    medHtml += '</div>';
+                    medContainer.innerHTML = medHtml;
+                }
 
                 const diaperStatus = document.getElementById('profile-diaper-status');
                 const diaperItems = document.getElementById('profile-diaper-items');
