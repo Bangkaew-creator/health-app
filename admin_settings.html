@@ -144,11 +144,13 @@
                             <!-- จัดการหน่วยงานย่อย (รพ.สต.) -->
                             <div class="pt-4 border-t border-slate-200 mt-4">
                                 <div class="flex items-center justify-between mb-2">
-                                    <label class="block text-[12px] font-bold text-slate-700">จัดการหน่วยงานย่อย (Sub-Centers)</label>
-                                    <button onclick="addSubCenter()" class="text-[10px] bg-amber-100 text-amber-700 font-bold px-2 py-1 rounded hover:bg-amber-200">+ เพิ่มหน่วยงาน</button>
+                                    <label class="block text-[13px] font-bold text-slate-800">จัดการหน่วยงานย่อย (Sub-Centers)</label>
+                                    <button onclick="addSubCenter()" class="text-[11px] bg-amber-100 text-amber-700 font-bold px-3 py-1.5 rounded-md hover:bg-amber-200 shadow-sm flex items-center gap-1">
+                                        <span class="material-symbols-outlined text-[14px]">add</span> เพิ่มหน่วยงาน
+                                    </button>
                                 </div>
-                                <p class="text-[10px] text-slate-500 mb-3">ใช้สำหรับสร้างสิทธิ์ให้ รพ.สต. ย่อย สามารถลงทะเบียนและเห็นข้อมูลเฉพาะหมู่บ้านตัวเองได้</p>
-                                <div id="sub-center-list" class="space-y-3">
+                                <p class="text-[11px] text-slate-500 mb-4 leading-relaxed">ใช้สำหรับสร้างสิทธิ์ให้ รพ.สต. ย่อย สามารถลงทะเบียนและเห็นข้อมูลเฉพาะหมู่บ้านตัวเองได้</p>
+                                <div id="sub-center-list" class="space-y-4">
                                     <!-- ตัวอย่าง UI ที่จะถูกสร้างด้วย JS -->
                                 </div>
                             </div>
@@ -172,7 +174,7 @@
         let currentUserUid = "";
         let originalConfigs = [];
         let globalHospitalName = DEFAULT_CONFIGS.HOSPITAL_NAME;
-        let subCentersArray = []; // เก็บ Array ของ รพ.สต. ย่อย
+        let subCentersArray = []; 
 
         function toggleSidebar() { 
             document.getElementById('sidebar').classList.toggle('-translate-x-full'); 
@@ -180,7 +182,6 @@
         }
 
         document.addEventListener("DOMContentLoaded", () => {
-            // เซ็ตชื่อ Default ไปก่อน
             document.getElementById('sidebar-hospital-name').innerText = DEFAULT_CONFIGS.HOSPITAL_NAME;
             document.getElementById('sidebar-system-name').innerText = DEFAULT_CONFIGS.SYSTEM_NAME;
             
@@ -197,7 +198,6 @@
         async function verifyAdminAccess(uid) {
             try {
                 const userDoc = await db.collection('VHVs').doc(String(uid)).get();
-                // อนุญาตให้เข้าได้เฉพาะ ADMIN หลัก (Super Admin)
                 if (userDoc.exists && String(userDoc.data().role).toUpperCase() === 'ADMIN') {
                     globalHospitalName = userDoc.data().hospital_name || DEFAULT_CONFIGS.HOSPITAL_NAME;
                     document.getElementById('sidebar-hospital-name').innerText = globalHospitalName;
@@ -258,7 +258,6 @@
             try {
                 const snapshot = await db.collection('SystemConfig').get();
                 
-                // ใช้ค่า Default หากยังไม่มีใน Firebase
                 document.getElementById('config-HOSPITAL_NAME').value = DEFAULT_CONFIGS.HOSPITAL_NAME;
                 document.getElementById('config-VILLAGE_COUNT').value = DEFAULT_CONFIGS.VILLAGE_COUNT;
                 document.getElementById('config-DIAPER_PRICE').value = DEFAULT_CONFIGS.DIAPER_PRICE;
@@ -278,39 +277,48 @@
             } catch (error) { alert("โหลดข้อมูลตั้งค่าล้มเหลว"); }
         }
 
-        // วาด UI สำหรับหน่วยงานย่อย
+        // วาด UI สำหรับหน่วยงานย่อย (ปรับปรุง UI ให้ชัดเจนขึ้น)
         function renderSubCenters() {
             const container = document.getElementById('sub-center-list');
             container.innerHTML = '';
             subCentersArray.forEach((sc, index) => {
                 container.insertAdjacentHTML('beforeend', `
-                    <div class="p-3 bg-white border border-slate-200 rounded-lg relative">
-                        <button onclick="removeSubCenter(${index})" class="absolute top-2 right-2 text-red-400 hover:text-red-600"><span class="material-symbols-outlined text-[16px]">delete</span></button>
-                        <input type="text" id="sc-name-${index}" value="${sc.name}" placeholder="ชื่อ รพ.สต. ย่อย" class="w-full text-xs font-bold text-slate-800 border-none p-0 focus:ring-0 mb-2">
-                        <div class="grid grid-cols-2 gap-2 mt-1">
+                    <div class="p-4 bg-slate-50 border border-slate-200 rounded-xl relative shadow-sm">
+                        <button onclick="removeSubCenter(${index})" class="absolute top-3 right-3 text-red-400 hover:text-red-600 bg-red-50 p-1.5 rounded-lg transition-colors" title="ลบหน่วยงานนี้">
+                            <span class="material-symbols-outlined text-[18px]">delete</span>
+                        </button>
+                        
+                        <div class="mb-3 pr-10">
+                            <label class="block text-[11px] font-bold text-slate-500 mb-1">ชื่อหน่วยงานย่อย (รพ.สต.)</label>
+                            <input type="text" id="sc-name-${index}" value="${sc.name}" placeholder="เช่น รพ.สต. บ้านใหม่" class="w-full text-sm font-bold text-slate-800 border border-slate-300 rounded-lg p-2.5 focus:ring-2 focus:ring-amber-500">
+                        </div>
+                        
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-1">
                             <div>
-                                <label class="text-[9px] text-slate-500">หมู่ที่รับผิดชอบ (คั่นด้วยคอมม่า)</label>
-                                <input type="text" id="sc-villages-${index}" value="${sc.villages.join(',')}" placeholder="เช่น 1,2,3,4" class="w-full text-[11px] border border-slate-200 rounded p-1">
+                                <label class="block text-[11px] font-bold text-slate-500 mb-1">หมู่ที่รับผิดชอบ (คั่นด้วย , )</label>
+                                <input type="text" id="sc-villages-${index}" value="${sc.villages.join(',')}" placeholder="เช่น 1,2,3" class="w-full text-xs border border-slate-300 rounded-lg p-2 focus:ring-2 focus:ring-amber-500">
                             </div>
                             <div>
-                                <label class="text-[9px] text-slate-500">รหัสลับ (สำหรับสมัครสิทธิ์นี้)</label>
-                                <input type="text" id="sc-code-${index}" value="${sc.secret_code}" placeholder="เช่น SUB01" class="w-full text-[11px] border border-slate-200 rounded p-1 text-amber-700 font-mono">
+                                <label class="block text-[11px] font-bold text-slate-500 mb-1">รหัสลับ (Secret Code)</label>
+                                <input type="text" id="sc-code-${index}" value="${sc.secret_code}" placeholder="เช่น SUB01" class="w-full text-xs font-mono text-amber-800 bg-amber-50 border border-amber-300 rounded-lg p-2 focus:ring-2 focus:ring-amber-500">
                             </div>
                         </div>
                     </div>
                 `);
             });
-            if(subCentersArray.length === 0) container.innerHTML = '<p class="text-xs text-slate-400 italic text-center py-2">ยังไม่มีการตั้งค่าหน่วยงานย่อย</p>';
+            if(subCentersArray.length === 0) container.innerHTML = '<div class="text-center p-6 bg-slate-50 border border-dashed border-slate-300 rounded-xl"><p class="text-xs text-slate-400 italic">ยังไม่มีการตั้งค่าหน่วยงานย่อยในระบบ</p></div>';
         }
 
         function addSubCenter() {
-            subCentersArray.push({ name: "รพ.สต. แห่งใหม่", villages: [], secret_code: "SUB_" + Math.floor(Math.random() * 1000) });
+            subCentersArray.push({ name: "", villages: [], secret_code: "SUB_" + Math.floor(Math.random() * 1000) });
             renderSubCenters();
         }
 
         function removeSubCenter(index) {
-            subCentersArray.splice(index, 1);
-            renderSubCenters();
+            if(confirm('ต้องการลบหน่วยงานย่อยนี้ใช่หรือไม่?')) {
+                subCentersArray.splice(index, 1);
+                renderSubCenters();
+            }
         }
 
         async function saveSystemConfigs() {
@@ -336,7 +344,6 @@
                 }
             });
 
-            // บันทึก Array ของ รพ.สต. ย่อยเป็น JSON String
             batch.set(db.collection('SystemConfig').doc('SUB_CENTERS'), { value: JSON.stringify(subCentersArray) }, { merge: true });
 
             const btn = document.getElementById('btn-save-config');
@@ -345,7 +352,6 @@
             try {
                 await batch.commit();
                 
-                // อัปเดตชื่อหน่วยงานให้ Profile ของ Admin คนนี้ด้วย เพื่อความสมบูรณ์
                 if(updatedHospitalName) {
                     await db.collection('VHVs').doc(String(currentUserUid)).set({ hospital_name: updatedHospitalName }, { merge: true });
                     document.getElementById('sidebar-hospital-name').innerText = updatedHospitalName;
