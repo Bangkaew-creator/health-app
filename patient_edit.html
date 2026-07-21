@@ -79,7 +79,6 @@
                 </div>
             </div>
 
-            <!-- หมวดผ้าอ้อม อุปกรณ์ โรคประจำตัว (คงเดิมตามที่คุณอัปเดตไว้ล่าสุด) -->
             <div id="sec-diaper" class="bg-white rounded-[20px] p-5 shadow-sm border border-blue-100">
                 <h3 class="font-bold text-[#2563eb] flex items-center gap-2 border-b border-blue-50 pb-2 mb-4">
                     <span class="material-symbols-outlined">wc</span> แบบประเมินสิทธิ์ผ้าอ้อม
@@ -149,7 +148,6 @@
                 </div>
             </div>
 
-            <!-- 🌟 อัปเกรดหมวดยา: ถ่ายรูป/แนบรูปภาพยาได้แล้ว 🌟 -->
             <div id="sec-medication" class="bg-white rounded-[20px] p-5 shadow-sm border border-[#bdcac1]/30">
                 <div class="flex justify-between items-center border-b pb-2 mb-4">
                     <h3 class="font-bold text-[#0284c7] flex items-center gap-2"><span class="material-symbols-outlined">medication</span> รายการยา</h3>
@@ -250,9 +248,6 @@
             });
         }
 
-        // =====================================
-        // ระบบอัปโหลดและบีบอัดรูปภาพยา (Base64)
-        // =====================================
         function compressImage(file, callback) {
             const reader = new FileReader();
             reader.readAsDataURL(file);
@@ -262,7 +257,7 @@
                 img.onload = () => {
                     const canvas = document.createElement('canvas');
                     let width = img.width; let height = img.height;
-                    const max_size = 600; // บีบอัดให้ไม่เกิน 600px เพื่อประหยัดพื้นที่ DB
+                    const max_size = 600;
 
                     if (width > height && width > max_size) {
                         height *= max_size / width; width = max_size;
@@ -273,7 +268,7 @@
                     canvas.width = width; canvas.height = height;
                     const ctx = canvas.getContext('2d');
                     ctx.drawImage(img, 0, 0, width, height);
-                    const dataUrl = canvas.toDataURL('image/jpeg', 0.6); // บีบอัดคุณภาพ 60%
+                    const dataUrl = canvas.toDataURL('image/jpeg', 0.6); 
                     callback(dataUrl);
                 }
             };
@@ -287,42 +282,56 @@
                 
                 compressImage(file, (base64Str) => {
                     document.getElementById(`b64_${rowId}`).value = base64Str;
-                    previewDiv.innerHTML = `<img src="${base64Str}" class="w-full h-full object-cover">`;
+                    document.getElementById(`img_tag_${rowId}`).src = base64Str;
+                    document.getElementById(`img_tag_${rowId}`).classList.remove('hidden');
+                    document.getElementById(`img_icon_${rowId}`).classList.add('hidden');
                 });
             }
         }
 
+        // 🌟 อัปเกรดฟังก์ชันสร้างช่องรายการยาให้ปลอดภัยจากการถูกตัดข้อความ 🌟
         function addMedRow(name = '', dose = '', usage = '', imageBase64 = '') {
             const container = document.getElementById('med-list-container');
             const rowId = 'med_' + Date.now() + Math.floor(Math.random() * 100);
             
-            const imgPreview = imageBase64 
-                ? `<img src="${imageBase64}" class="w-full h-full object-cover">` 
-                : `<div class="w-full h-full bg-gray-100 flex items-center justify-center text-gray-400 hover:text-blue-500 transition-colors"><span class="material-symbols-outlined text-2xl">add_a_photo</span></div>`;
-
+            // สร้าง HTML เปล่าๆ ไม่เอาข้อมูลไปต่อ String โดยตรง เพื่อป้องกัน HTML พัง
             const html = `
                 <div id="${rowId}" class="bg-gray-50 p-3 rounded-2xl border border-gray-200 relative shadow-sm flex gap-3 items-stretch">
                     <button type="button" onclick="document.getElementById('${rowId}').remove()" class="absolute -top-2 -right-2 bg-red-100 text-red-600 rounded-full w-6 h-6 flex justify-center items-center hover:bg-red-200 transition-colors shadow-sm z-10">
                         <span class="material-symbols-outlined text-[14px]">close</span>
                     </button>
                     
-                    <div class="w-20 sm:w-24 flex-shrink-0 cursor-pointer border-2 border-dashed border-gray-300 rounded-xl overflow-hidden relative group" onclick="document.getElementById('img_${rowId}').click()">
-                        <input type="file" id="img_${rowId}" accept="image/*" capture="environment" class="hidden" onchange="handleMedImageUpload(this, '${rowId}')">
-                        <div id="preview_${rowId}" class="w-full h-full absolute inset-0">
-                            ${imgPreview}
+                    <div class="w-20 sm:w-24 flex-shrink-0 cursor-pointer border-2 border-dashed border-gray-300 rounded-xl overflow-hidden relative group bg-gray-100 hover:bg-gray-200 transition-colors" onclick="document.getElementById('img_input_${rowId}').click()">
+                        <input type="file" id="img_input_${rowId}" accept="image/*" capture="environment" class="hidden" onchange="handleMedImageUpload(this, '${rowId}')">
+                        <div id="preview_${rowId}" class="w-full h-full absolute inset-0 flex items-center justify-center">
+                            <img id="img_tag_${rowId}" src="" class="w-full h-full object-cover hidden">
+                            <span id="img_icon_${rowId}" class="material-symbols-outlined text-2xl text-gray-400">add_a_photo</span>
                         </div>
-                        <textarea id="b64_${rowId}" class="hidden med-base64">${imageBase64}</textarea>
+                        <textarea id="b64_${rowId}" class="hidden med-base64"></textarea>
                     </div>
 
                     <div class="flex-1 flex flex-col gap-2 justify-center">
-                        <input type="text" class="med-name input-field bg-white py-1.5 px-3 text-sm border-gray-200 w-full" placeholder="ชื่อยา (เว้นว่างถ้ามีรูป)" value="${name}">
+                        <input type="text" id="name_${rowId}" class="med-name input-field bg-white py-1.5 px-3 text-sm border-gray-200 w-full" placeholder="ชื่อยา (เว้นว่างถ้ามีรูป)">
                         <div class="grid grid-cols-2 gap-2">
-                            <input type="text" class="med-dose input-field bg-white py-1.5 px-3 text-sm border-gray-200" placeholder="ขนาด" value="${dose}">
-                            <input type="text" class="med-usage input-field bg-white py-1.5 px-3 text-sm border-gray-200" placeholder="วิธีใช้" value="${usage}">
+                            <input type="text" id="dose_${rowId}" class="med-dose input-field bg-white py-1.5 px-3 text-sm border-gray-200" placeholder="ขนาด">
+                            <input type="text" id="usage_${rowId}" class="med-usage input-field bg-white py-1.5 px-3 text-sm border-gray-200" placeholder="วิธีใช้">
                         </div>
                     </div>
                 </div>`;
+            
             container.insertAdjacentHTML('beforeend', html);
+
+            // 🌟 นำข้อมูลไปใส่ผ่าน DOM Property เพื่อความปลอดภัย 100% 🌟
+            document.getElementById(`b64_${rowId}`).value = imageBase64 || '';
+            document.getElementById(`name_${rowId}`).value = name || '';
+            document.getElementById(`dose_${rowId}`).value = dose || '';
+            document.getElementById(`usage_${rowId}`).value = usage || '';
+            
+            if(imageBase64) {
+                document.getElementById(`img_tag_${rowId}`).src = imageBase64;
+                document.getElementById(`img_tag_${rowId}`).classList.remove('hidden');
+                document.getElementById(`img_icon_${rowId}`).classList.add('hidden');
+            }
         }
 
         function getLocation() {
@@ -378,14 +387,24 @@
                     document.getElementById('disease_other').value = otherDiseases.join(', ');
                 }
 
-                // โหลดประวัติการใช้ยา (รองรับแบบมีรูปและไม่มีรูป)
-                const cleanMed = cleanAndParseJSON(data.medication);
-                if (cleanMed && Array.isArray(cleanMed)) {
-                    if (cleanMed.length === 0) addMedRow();
-                    else cleanMed.forEach(med => addMedRow(med.name, med.dose, med.usage, med.image || ''));
-                } else if (data.medication && data.medication !== '-') { 
-                    addMedRow(data.medication, '', ''); 
-                } else { addMedRow(); }
+                // 🌟 โหลดข้อมูลยา (รองรับทั้งระบบเก่าที่เป็น JSON String และระบบใหม่ที่เป็น Native Array) 🌟
+                let medList = [];
+                if (Array.isArray(data.medication)) {
+                    medList = data.medication; // ระบบใหม่: เป็น Array อยู่แล้ว
+                } else if (typeof data.medication === 'string') {
+                    const parsedMed = cleanAndParseJSON(data.medication);
+                    if (Array.isArray(parsedMed)) {
+                        medList = parsedMed; // ระบบเดิม: เป็น JSON String
+                    } else if (data.medication && data.medication !== '-') {
+                        medList = [{ name: data.medication, dose: '', usage: '', image: '' }]; // เก่ามากๆ เป็นแค่ Text
+                    }
+                }
+
+                if (medList.length === 0) {
+                    addMedRow();
+                } else {
+                    medList.forEach(med => addMedRow(med.name, med.dose, med.usage, med.image || ''));
+                }
 
                 const dp = cleanAndParseJSON(data.diaper);
                 if(dp) {
@@ -460,13 +479,13 @@
             document.querySelectorAll('.disease-cb:checked').forEach(cb => finalDiseases.push(cb.value));
             if (document.getElementById('disease_other').value.trim()) finalDiseases.push(document.getElementById('disease_other').value.trim());
 
-            // บันทึกยาพร้อมรูปภาพ
+            // 🌟 รวบรวมข้อมูลยาเก็บเป็น Array Object 🌟
             let medArray = [];
             document.querySelectorAll('[id^="med_"]').forEach(row => {
                 const name = row.querySelector('.med-name').value.trim();
                 const dose = row.querySelector('.med-dose').value.trim();
                 const usage = row.querySelector('.med-usage').value.trim();
-                const image = row.querySelector('.med-base64').value; // ดึง Base64 รูปภาพยา
+                const image = row.querySelector('.med-base64').value;
                 if (name || dose || usage || image) {
                     medArray.push({ name: name, dose: dose, usage: usage, image: image });
                 }
@@ -511,7 +530,7 @@
                 village_no: document.getElementById('village_no').value.trim(),
                 lat_long: document.getElementById('lat_long').value.trim(), 
                 disease: finalDiseases.length > 0 ? finalDiseases.join(', ') : '-',
-                medication: JSON.stringify(medArray), 
+                medication: medArray, // 🌟 ส่ง Array ตรงเข้า Firestore โดยไม่ต้อง JSON.stringify 🌟
                 caregiver_name: document.getElementById('caregiver_name').value.trim(), 
                 caregiver_phone: document.getElementById('caregiver_phone').value.trim(),
                 diaper: JSON.stringify(diaperObj), 
