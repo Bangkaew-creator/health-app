@@ -56,7 +56,6 @@
     </div>
 
     <script>
-        // เริ่มต้นการใช้งาน Firebase
         firebase.initializeApp(firebaseConfig);
         const db = firebase.firestore();
      
@@ -64,11 +63,13 @@
         const patientId = urlParams.get('id');
         document.getElementById('patient-id-display').innerText = `รหัส: ${patientId || 'ไม่ระบุ'}`;
 
-        // เพิ่มการเรียกใช้งาน LIFF เพื่อดึง UID ของ อสม. 🌟
         let currentUserUid = "";
         document.addEventListener("DOMContentLoaded", () => {
             liff.init({ liffId: LIFF_ID }).then(() => {
-                if (liff.isLoggedIn()) {
+                const mockUid = localStorage.getItem('dev_mock_uid');
+                if (mockUid) {
+                    currentUserUid = mockUid;
+                } else if (liff.isLoggedIn()) {
                     liff.getProfile().then(p => { currentUserUid = p.userId; });
                 } else { liff.login(); }
             });
@@ -181,15 +182,21 @@
             if (!patientId) return alert("ไม่พบข้อมูลผู้ป่วย กรุณากลับไปหน้ารายชื่อ");
 
             let answered = 0;
-            let rawScores = []; // 🌟 เก็บค่าดิบ 10 ข้อ
+            let answersDetail = []; 
             
             adlQuestions.forEach(q => { 
                 const selected = document.querySelector(`input[name="${q.id}"]:checked`);
                 if(selected) {
                     answered++;
-                    rawScores.push(parseInt(selected.value));
-                } else {
-                    rawScores.push(null);
+                    const scoreVal = parseInt(selected.value);
+                    const choiceObj = q.choices.find(c => c.score === scoreVal);
+                    
+                    // แปลงรูปแบบคำตอบเพื่อเก็บเข้า Firebase
+                    answersDetail.push({
+                        q: q.title,
+                        a: choiceObj ? choiceObj.label.split(':')[1].trim() : String(scoreVal),
+                        score: scoreVal
+                    });
                 }
             });
             
@@ -209,32 +216,25 @@
                 const yyyy = now.getFullYear() + 543;
                 const formattedDate = `${dd}/${mm}/${yyyy}`;
 
-                // 1. อัปเดตข้อมูลผู้ป่วยในคอลเลกชัน Patients
+                // 1. อัปเดตข้อมูลผู้ป่วย
                 await db.collection('Patients').doc(String(patientId)).update({
                     adl: String(score),
                     group: group,
                     last_assess: formattedDate,
                 });
 
-                // 2. บันทึกประวัติการประเมินลงคอลเลกชัน Assessments (🌟 โยน raw_scores และ assessor_uid เข้าไป 🌟)
+                // 2. บันทึกประวัติพร้อมคำตอบแบบละเอียด
                 await db.collection('Assessments').add({
                     patient_id: String(patientId),
                     type: 'ADL',
                     score1: score,
                     score2: 0,
                     result: group,
-                    raw_scores: rawScores,      // <--- คะแนนรายข้อ
-                    assessor_uid: currentUserUid, // <--- รหัส อสม.
+                    answers: answersDetail, // เก็บอาร์เรย์คำตอบเพื่อใช้โชว์ในหน้า Profile
+                    assessor_uid: currentUserUid, 
                     date: formattedDate,
                     timestamp: firebase.firestore.FieldValue.serverTimestamp()
                 });
-
-                // 3. แอบส่งข้อมูลให้ระบบเก่า (Google Sheets)
-                fetch(API_URL, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-                    body: JSON.stringify({ action: 'saveADLScore', id: patientId, score: score, group: group })
-                }).catch(e => console.log('Silent sync completed.'));
 
                 alert('บันทึกผลการประเมินสำเร็จ!');
                 window.location.href = `patient_profile.html?id=${patientId}`;
