@@ -79,6 +79,7 @@
                 </div>
             </div>
 
+            <!-- หมวดผ้าอ้อม อุปกรณ์ โรคประจำตัว (คงเดิมตามที่คุณอัปเดตไว้ล่าสุด) -->
             <div id="sec-diaper" class="bg-white rounded-[20px] p-5 shadow-sm border border-blue-100">
                 <h3 class="font-bold text-[#2563eb] flex items-center gap-2 border-b border-blue-50 pb-2 mb-4">
                     <span class="material-symbols-outlined">wc</span> แบบประเมินสิทธิ์ผ้าอ้อม
@@ -95,7 +96,7 @@
                 </div>
 
                 <div class="mb-5 bg-blue-50/50 p-4 rounded-xl border border-blue-50">
-                    <span class="text-sm font-bold text-gray-700 block mb-2">2. ข้อบ่งชี้ทางการแพทย์ <span class="text-xs font-normal text-red-500">(ควรมีอย่างน้อย 2 ข้อ)</span></span>
+                    <span class="text-sm font-bold text-gray-700 block mb-2">2. ข้อบ่งชี้ทางการแพทย์</span>
                     <div class="space-y-2">
                         <label class="flex items-start gap-2 text-sm"><input type="checkbox" value="มีประวัติกลั้นไม่ได้" class="diaper-ind mt-1 text-blue-600 rounded"> มีประวัติกลั้นปัสสาวะหรืออุจจาระไม่อยู่</label>
                         <label class="flex items-start gap-2 text-sm"><input type="checkbox" value="ระบบประสาทบกพร่อง" class="diaper-ind mt-1 text-blue-600 rounded"> ตรวจร่างกายพบระบบประสาทบกพร่อง/อุ้งเชิงกรานหย่อน</label>
@@ -105,7 +106,6 @@
 
                 <div>
                     <span class="text-sm font-bold text-gray-700 block mb-2">3. ความเห็นผู้ประเมินควรได้รับการสนับสนุน</span>
-                    
                     <div class="border border-gray-200 rounded-xl p-3 mb-2 bg-gray-50">
                         <label class="flex items-center gap-2 font-bold text-sm mb-2 text-[#0284c7]">
                             <input type="checkbox" id="req_diaper" class="w-4 h-4 text-[#0284c7] rounded"> ผ้าอ้อมผู้ใหญ่
@@ -121,7 +121,6 @@
                             </select>
                         </div>
                     </div>
-
                     <div class="border border-gray-200 rounded-xl p-3 bg-gray-50">
                         <label class="flex items-center gap-2 font-bold text-sm text-[#00694a]">
                             <input type="checkbox" id="req_underpad" class="w-4 h-4 text-[#00694a] rounded"> แผ่นรองซับการขับถ่าย
@@ -150,11 +149,17 @@
                 </div>
             </div>
 
+            <!-- 🌟 อัปเกรดหมวดยา: ถ่ายรูป/แนบรูปภาพยาได้แล้ว 🌟 -->
             <div id="sec-medication" class="bg-white rounded-[20px] p-5 shadow-sm border border-[#bdcac1]/30">
                 <div class="flex justify-between items-center border-b pb-2 mb-4">
                     <h3 class="font-bold text-[#0284c7] flex items-center gap-2"><span class="material-symbols-outlined">medication</span> รายการยา</h3>
                 </div>
-                <div id="med-list-container" class="space-y-3 mb-3"></div>
+                <p class="text-[11px] text-gray-500 mb-3 bg-blue-50 p-2 rounded-lg border border-blue-100">
+                    <span class="font-bold text-blue-600">💡 เคล็ดลับ:</span> สามารถกดที่รูปกล้องเพื่อถ่ายภาพซองยา แทนการพิมพ์ชื่อยาวๆ ได้ครับ!
+                </p>
+                
+                <div id="med-list-container" class="space-y-4 mb-4"></div>
+                
                 <button type="button" onclick="addMedRow()" class="w-full py-3 border-2 border-dashed border-[#bae6fd] text-[#0284c7] rounded-xl font-medium hover:bg-[#f0f9ff] transition-colors flex justify-center items-center gap-1 text-sm">
                     <span class="material-symbols-outlined text-sm">add</span> เพิ่มรายการยา
                 </button>
@@ -193,16 +198,14 @@
             try { return JSON.parse(cleanStr); } catch(e) { return null; }
         }
 
-        // แปลงรูปแบบวันที่จาก Firebase (dd/mm/yyyy พ.ศ.) กลับมาเป็น HTML Date Input (yyyy-mm-dd ค.ศ.)
         function convertThaiDateToInputFormat(thaiDateStr) {
             if(!thaiDateStr || thaiDateStr === '-') return '';
             try {
-                // ถ้ามีเวลาติดมาด้วย ให้เอาแค่วันที่
                 const datePart = thaiDateStr.split(' ')[0];
                 const parts = datePart.split('/');
                 if(parts.length === 3) {
                     let year = parseInt(parts[2]);
-                    if(year > 2400) year -= 543; // แปลง พ.ศ. เป็น ค.ศ.
+                    if(year > 2400) year -= 543;
                     const month = parts[1].padStart(2, '0');
                     const day = parts[0].padStart(2, '0');
                     return `${year}-${month}-${day}`;
@@ -211,13 +214,12 @@
             } catch(e) { return ''; }
         }
 
-        // แปลงวันที่จาก Input (yyyy-mm-dd ค.ศ.) กลับเป็นรูปแบบเก็บเข้าฐานข้อมูล (dd/mm/yyyy พ.ศ.)
         function convertInputDateToThaiFormat(inputDateStr) {
             if(!inputDateStr) return '';
             try {
                 const parts = inputDateStr.split('-');
                 if(parts.length === 3) {
-                    const year = parseInt(parts[0]) + 543; // แปลง ค.ศ. เป็น พ.ศ.
+                    const year = parseInt(parts[0]) + 543;
                     const month = parts[1];
                     const day = parts[2];
                     return `${day}/${month}/${year}`;
@@ -248,16 +250,76 @@
             });
         }
 
-        function addMedRow(name = '', dose = '', usage = '') {
+        // =====================================
+        // ระบบอัปโหลดและบีบอัดรูปภาพยา (Base64)
+        // =====================================
+        function compressImage(file, callback) {
+            const reader = new FileReader();
+            reader.readAsDataURL(file);
+            reader.onload = event => {
+                const img = new Image();
+                img.src = event.target.result;
+                img.onload = () => {
+                    const canvas = document.createElement('canvas');
+                    let width = img.width; let height = img.height;
+                    const max_size = 600; // บีบอัดให้ไม่เกิน 600px เพื่อประหยัดพื้นที่ DB
+
+                    if (width > height && width > max_size) {
+                        height *= max_size / width; width = max_size;
+                    } else if (height > max_size) {
+                        width *= max_size / height; height = max_size;
+                    }
+
+                    canvas.width = width; canvas.height = height;
+                    const ctx = canvas.getContext('2d');
+                    ctx.drawImage(img, 0, 0, width, height);
+                    const dataUrl = canvas.toDataURL('image/jpeg', 0.6); // บีบอัดคุณภาพ 60%
+                    callback(dataUrl);
+                }
+            };
+        }
+
+        function handleMedImageUpload(input, rowId) {
+            const file = input.files[0];
+            if (file) {
+                const previewDiv = document.getElementById(`preview_${rowId}`);
+                previewDiv.innerHTML = '<div class="w-full h-full flex items-center justify-center"><div class="loader-small"></div></div>';
+                
+                compressImage(file, (base64Str) => {
+                    document.getElementById(`b64_${rowId}`).value = base64Str;
+                    previewDiv.innerHTML = `<img src="${base64Str}" class="w-full h-full object-cover">`;
+                });
+            }
+        }
+
+        function addMedRow(name = '', dose = '', usage = '', imageBase64 = '') {
             const container = document.getElementById('med-list-container');
             const rowId = 'med_' + Date.now() + Math.floor(Math.random() * 100);
+            
+            const imgPreview = imageBase64 
+                ? `<img src="${imageBase64}" class="w-full h-full object-cover">` 
+                : `<div class="w-full h-full bg-gray-100 flex items-center justify-center text-gray-400 hover:text-blue-500 transition-colors"><span class="material-symbols-outlined text-2xl">add_a_photo</span></div>`;
+
             const html = `
-                <div id="${rowId}" class="bg-gray-50 p-3 rounded-xl border border-gray-100 relative shadow-sm">
-                    <button type="button" onclick="document.getElementById('${rowId}').remove()" class="absolute top-2 right-2 text-gray-400 hover:text-red-500 transition-colors"><span class="material-symbols-outlined text-lg">delete</span></button>
-                    <div class="grid grid-cols-2 gap-2 mt-2">
-                        <div class="col-span-2"><input type="text" class="med-name input-field bg-white py-2 text-sm border-gray-200" placeholder="ชื่อยา (เช่น พาราเซตามอล)" value="${name}"></div>
-                        <div><input type="text" class="med-dose input-field bg-white py-2 text-sm border-gray-200" placeholder="ขนาด (เช่น 500mg)" value="${dose}"></div>
-                        <div><input type="text" class="med-usage input-field bg-white py-2 text-sm border-gray-200" placeholder="วิธีใช้ (เช่น ครั้งละ 1 เม็ด)" value="${usage}"></div>
+                <div id="${rowId}" class="bg-gray-50 p-3 rounded-2xl border border-gray-200 relative shadow-sm flex gap-3 items-stretch">
+                    <button type="button" onclick="document.getElementById('${rowId}').remove()" class="absolute -top-2 -right-2 bg-red-100 text-red-600 rounded-full w-6 h-6 flex justify-center items-center hover:bg-red-200 transition-colors shadow-sm z-10">
+                        <span class="material-symbols-outlined text-[14px]">close</span>
+                    </button>
+                    
+                    <div class="w-20 sm:w-24 flex-shrink-0 cursor-pointer border-2 border-dashed border-gray-300 rounded-xl overflow-hidden relative group" onclick="document.getElementById('img_${rowId}').click()">
+                        <input type="file" id="img_${rowId}" accept="image/*" capture="environment" class="hidden" onchange="handleMedImageUpload(this, '${rowId}')">
+                        <div id="preview_${rowId}" class="w-full h-full absolute inset-0">
+                            ${imgPreview}
+                        </div>
+                        <textarea id="b64_${rowId}" class="hidden med-base64">${imageBase64}</textarea>
+                    </div>
+
+                    <div class="flex-1 flex flex-col gap-2 justify-center">
+                        <input type="text" class="med-name input-field bg-white py-1.5 px-3 text-sm border-gray-200 w-full" placeholder="ชื่อยา (เว้นว่างถ้ามีรูป)" value="${name}">
+                        <div class="grid grid-cols-2 gap-2">
+                            <input type="text" class="med-dose input-field bg-white py-1.5 px-3 text-sm border-gray-200" placeholder="ขนาด" value="${dose}">
+                            <input type="text" class="med-usage input-field bg-white py-1.5 px-3 text-sm border-gray-200" placeholder="วิธีใช้" value="${usage}">
+                        </div>
                     </div>
                 </div>`;
             container.insertAdjacentHTML('beforeend', html);
@@ -265,7 +327,6 @@
 
         function getLocation() {
             if (!navigator.geolocation) return alert("อุปกรณ์ของคุณไม่รองรับการดึงพิกัด GPS");
-            
             const btnLocation = document.querySelector('button[onclick="getLocation()"]');
             const originalIcon = btnLocation.innerHTML;
             btnLocation.innerHTML = '<div class="loader-small" style="width:16px;height:16px;border-color:white;border-bottom-color:transparent"></div>';
@@ -278,8 +339,7 @@
                 (err) => {
                     alert("ไม่สามารถดึงพิกัดได้ กรุณาตรวจสอบการตั้งค่า Location ในโทรศัพท์ของคุณ");
                     btnLocation.innerHTML = originalIcon;
-                }, 
-                { enableHighAccuracy: true, timeout: 10000 }
+                }, { enableHighAccuracy: true, timeout: 10000 }
             );
         }
 
@@ -293,15 +353,10 @@
 
             try {
                 const docSnap = await db.collection('Patients').doc(String(patientId)).get();
-                if(!docSnap.exists) {
-                    alert("ไม่พบข้อมูลผู้ป่วยในระบบ");
-                    window.location.href = 'admin_datacenter.html';
-                    return;
-                }
+                if(!docSnap.exists) { alert("ไม่พบข้อมูลผู้ป่วยในระบบ"); window.location.href = 'admin_datacenter.html'; return; }
 
                 const data = docSnap.data();
                 
-                // ข้อมูลส่วนตัว
                 document.getElementById('prefix').value = data.prefix || 'นาย';
                 document.getElementById('fullname').value = data.name || '';
                 document.getElementById('id_card').value = data.id_card || '';
@@ -309,12 +364,9 @@
                 document.getElementById('house_no').value = data.house_no || '';
                 document.getElementById('village_no').value = data.village_no || '';
                 document.getElementById('lat_long').value = data.lat_long || '';
-                
-                // ข้อมูลผู้ดูแล
                 document.getElementById('caregiver_name').value = data.caregiver_name || '';
                 document.getElementById('caregiver_phone').value = data.caregiver_phone || '';
 
-                // โรคประจำตัว
                 if (data.disease) {
                     const savedDiseases = data.disease.split(',').map(item => item.trim());
                     let otherDiseases = [];
@@ -326,18 +378,15 @@
                     document.getElementById('disease_other').value = otherDiseases.join(', ');
                 }
 
-                // ประวัติการใช้ยา
+                // โหลดประวัติการใช้ยา (รองรับแบบมีรูปและไม่มีรูป)
                 const cleanMed = cleanAndParseJSON(data.medication);
                 if (cleanMed && Array.isArray(cleanMed)) {
                     if (cleanMed.length === 0) addMedRow();
-                    else cleanMed.forEach(med => addMedRow(med.name, med.dose, med.usage));
+                    else cleanMed.forEach(med => addMedRow(med.name, med.dose, med.usage, med.image || ''));
                 } else if (data.medication && data.medication !== '-') { 
                     addMedRow(data.medication, '', ''); 
-                } else { 
-                    addMedRow(); 
-                }
+                } else { addMedRow(); }
 
-                // การประเมินผ้าอ้อม
                 const dp = cleanAndParseJSON(data.diaper);
                 if(dp) {
                     if(dp.result) {
@@ -354,7 +403,6 @@
                     document.getElementById('req_underpad').checked = dp.req_underpad || false;
                 }
 
-                // อุปกรณ์การแพทย์
                 if(data.equipment) {
                     const savedEq = data.equipment.split(',').map(item => item.trim());
                     let otherEq = [];
@@ -369,18 +417,15 @@
                 btnSave.innerHTML = 'บันทึกการเปลี่ยนแปลง <span class="material-symbols-outlined text-sm">save</span>'; 
                 btnSave.disabled = false;
 
-                // ระบบเลื่อนหน้าจออัตโนมัติหากมี Hash แนบมาใน URL
                 if (window.location.hash) {
                     setTimeout(() => {
                         const targetId = window.location.hash.substring(1);
                         let targetElement = document.getElementById(targetId);
-                        
                         if (targetElement) {
                             const headerOffset = 80;
                             const elementPosition = targetElement.getBoundingClientRect().top;
                             const offsetPosition = elementPosition + window.pageYOffset - headerOffset;
                             window.scrollTo({ top: offsetPosition, behavior: 'smooth' });
-                            
                             targetElement.style.transition = "box-shadow 0.5s ease-in-out";
                             targetElement.style.boxShadow = "0 0 0 4px rgba(2, 132, 199, 0.3)";
                             setTimeout(() => targetElement.style.boxShadow = "none", 2500);
@@ -388,13 +433,9 @@
                     }, 400);
                 }
 
-            } catch (error) { 
-                console.error(error);
-                alert("โหลดข้อมูลล้มเหลว กรุณาตรวจสอบอินเทอร์เน็ต"); 
-            }
+            } catch (error) { alert("โหลดข้อมูลล้มเหลว กรุณาตรวจสอบอินเทอร์เน็ต"); }
         }
 
-        // ฟังก์ชันช่วยคำนวณอายุจากปีเกิด
         function calculateAgeFromDOB(dobString) {
             if(!dobString) return '';
             try {
@@ -415,35 +456,33 @@
             btn.innerHTML = '<div class="loader-small" style="border-color:white;border-bottom-color:transparent"></div> กำลังบันทึกข้อมูล...'; 
             btn.disabled = true;
 
-            // รวบรวมข้อมูลโรคประจำตัว
             let finalDiseases = [];
             document.querySelectorAll('.disease-cb:checked').forEach(cb => finalDiseases.push(cb.value));
             if (document.getElementById('disease_other').value.trim()) finalDiseases.push(document.getElementById('disease_other').value.trim());
 
-            // รวบรวมรายการยา
+            // บันทึกยาพร้อมรูปภาพ
             let medArray = [];
             document.querySelectorAll('[id^="med_"]').forEach(row => {
                 const name = row.querySelector('.med-name').value.trim();
                 const dose = row.querySelector('.med-dose').value.trim();
                 const usage = row.querySelector('.med-usage').value.trim();
-                if (name || dose || usage) medArray.push({ name, dose, usage });
+                const image = row.querySelector('.med-base64').value; // ดึง Base64 รูปภาพยา
+                if (name || dose || usage || image) {
+                    medArray.push({ name: name, dose: dose, usage: usage, image: image });
+                }
             });
 
-            // รวบรวมข้อมูลการประเมินผ้าอ้อม
             const diaperResult = document.querySelector('input[name="diaper_result"]:checked');
             const indications = Array.from(document.querySelectorAll('.diaper-ind:checked')).map(cb => cb.value);
             
-            // ตรวจสอบข้อมูลผ้าอ้อมเดิม เผื่อมีสถานะการอนุมัติอยู่แล้ว จะได้ไม่เซ็ตทับ
             let existingDiaperObj = {};
             try {
                 const pDoc = await db.collection('Patients').doc(String(patientId)).get();
-                if(pDoc.exists) {
-                    existingDiaperObj = cleanAndParseJSON(pDoc.data().diaper) || {};
-                }
+                if(pDoc.exists) existingDiaperObj = cleanAndParseJSON(pDoc.data().diaper) || {};
             } catch(err) {}
 
             const diaperObj = {
-                ...existingDiaperObj, // นำข้อมูลเก่ามารวมด้วย เผื่อมี approve_status ค้างอยู่
+                ...existingDiaperObj, 
                 result: diaperResult ? diaperResult.value : '',
                 indications: indications,
                 req_diaper: document.getElementById('req_diaper').checked,
@@ -451,16 +490,13 @@
                 req_underpad: document.getElementById('req_underpad').checked
             };
 
-            // หากติ๊กว่ามีความต้องการ ให้เปลี่ยนสถานะกลับเป็น รออนุมัติ (เพื่อให้แอดมินเห็น)
             if((diaperObj.req_diaper || diaperObj.req_underpad) && diaperObj.approve_status !== 'อนุมัติแล้ว') {
                 diaperObj.approve_status = "รออนุมัติ";
             }
 
-            // รวบรวมข้อมูลอุปกรณ์ทางการแพทย์
             let eqArray = Array.from(document.querySelectorAll('.eq-cb:checked')).map(cb => cb.value);
             if (document.getElementById('equip_other').value.trim()) eqArray.push(document.getElementById('equip_other').value.trim());
 
-            // แปลงรูปแบบวันที่เกิด
             const dobInputStr = document.getElementById('dob').value;
             const dobThaiFormat = convertInputDateToThaiFormat(dobInputStr);
             const calculatedAge = calculateAgeFromDOB(dobThaiFormat);
@@ -483,14 +519,10 @@
             };
 
             try {
-                // อัปเดตข้อมูลตรงเข้า Firebase อย่างเดียว
                 await db.collection('Patients').doc(String(patientId)).update(updateData);
-
                 alert('อัปเดตข้อมูลเรียบร้อยแล้ว!');
                 window.location.href = `patient_profile.html?id=${patientId}`;
-
             } catch (err) { 
-                console.error(err);
                 alert('การบันทึกข้อมูลขัดข้อง กรุณาลองใหม่'); 
                 btn.innerHTML = 'บันทึกการเปลี่ยนแปลง <span class="material-symbols-outlined text-sm">save</span>'; 
                 btn.disabled = false;
