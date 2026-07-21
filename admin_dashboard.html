@@ -206,7 +206,14 @@
             document.getElementById('sidebar-system-name').innerText = DEFAULT_CONFIGS.SYSTEM_NAME;
             
             liff.init({ liffId: LIFF_ID }).then(() => {
-                if (liff.isLoggedIn()) {
+                // ระบบสับขาหลอกสำหรับโหมดทดสอบ (Developer Mode)
+                const mockUid = localStorage.getItem('dev_mock_uid');
+                
+                if (mockUid) {
+                    // สร้าง Profile ปลอมส่งเข้าไปหลอกระบบ
+                    const mockProfile = { displayName: "บัญชีทดสอบ (Dev Mode)", pictureUrl: "https://via.placeholder.com/150" };
+                    verifyAdminAccess(mockUid, mockProfile);
+                } else if (liff.isLoggedIn()) {
                     liff.getProfile().then(profile => {
                         verifyAdminAccess(profile.userId, profile);
                     }).catch(() => bounceToLogin());
