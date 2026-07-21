@@ -3,7 +3,7 @@
 <head>
     <meta charset="utf-8"/>
     <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-    <title>แดชบอร์ดผู้บริหาร - อสม.สามารถ (Orsomo Smart)</title>
+    <title>แดชบอร์ดผู้บริหาร - จัดการระบบ</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700&display=swap" rel="stylesheet"/>
     <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
@@ -26,14 +26,13 @@
         .neo-card:hover { transform: translateY(-2px); box-shadow: 8px 8px 20px #cbd5e1, -8px -8px 20px #ffffff; }
         .bg-navy { background-color: #0f172a; }
         .text-navy { color: #0f172a; }
-        .text-gold { color: #d97706; }
     </style>
 </head>
 <body class="flex h-[100dvh] overflow-hidden text-slate-800 relative">
 
     <div id="sidebar-overlay" class="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-40 hidden lg:hidden" onclick="toggleSidebar()"></div>
 
-    <aside id="sidebar" class="fixed inset-y-0 left-0 w-72 bg-navy text-white flex flex-col z-50 transform -translate-x-full lg:translate-x-0 lg:static transition-transform duration-300 ease-in-out shadow-2xl lg:shadow-none">
+    <aside id="sidebar" class="fixed inset-y-0 left-0 w-72 bg-navy text-white flex flex-col z-50 transform -translate-x-full lg:translate-x-0 lg:static transition-transform duration-300 ease-in-out">
         <div class="p-6 flex items-center justify-between border-b border-slate-700/40">
             <div class="flex items-center gap-3">
                 <div class="w-11 h-11 rounded-xl bg-white/10 flex items-center justify-center border border-amber-400/30">
@@ -41,12 +40,10 @@
                 </div>
                 <div>
                     <h1 id="sidebar-hospital-name" class="font-bold text-[15px] tracking-wide text-white">กำลังโหลด...</h1>
-                    <p class="text-[10px] text-amber-400 font-medium">อสม.สามารถ (Orsomo Smart)</p>
+                    <p id="sidebar-system-name" class="text-[10px] text-amber-400 font-medium">ระบบบริหารจัดการ</p>
                 </div>
             </div>
-            <button onclick="toggleSidebar()" class="lg:hidden text-slate-400 hover:text-white p-1">
-                <span class="material-symbols-outlined">close</span>
-            </button>
+            <button onclick="toggleSidebar()" class="lg:hidden text-slate-400 p-1"><span class="material-symbols-outlined">close</span></button>
         </div>
 
         <nav class="flex-1 px-4 py-6 space-y-2 overflow-y-auto">
@@ -66,7 +63,7 @@
             <a href="admin_reports.html" class="flex items-center gap-3 px-4 py-3.5 text-slate-400 hover:bg-white/5 hover:text-white rounded-xl font-medium transition-all">
                 <span class="material-symbols-outlined">summarize</span> รายงาน (Export)
             </a>
-            <a href="admin_settings.html" class="flex items-center gap-3 px-4 py-3.5 text-slate-400 hover:bg-white/5 hover:text-white rounded-xl font-medium transition-all">
+            <a href="admin_settings.html" class="flex items-center gap-3 px-4 py-3.5 text-slate-400 hover:bg-white/5 hover:text-white rounded-xl font-medium transition-all" id="nav-settings">
                 <span class="material-symbols-outlined">settings</span> ตั้งค่าระบบ
             </a>
         </nav>
@@ -77,11 +74,6 @@
                 <span class="text-sm font-bold">ออกจากระบบ</span>
             </div>
         </div>
-        <div class="px-4 py-4 bg-slate-900/50 text-center">
-            <p class="text-[8px] text-slate-500 font-medium tracking-widest uppercase mb-1">System Developed By</p>
-            <p class="text-[11px] text-amber-500/90 font-bold tracking-wide">Suppawut Asunee</p>
-            <p class="text-[9px] text-slate-400 mt-0.5">Public Health Technical Officer</p>
-        </div>
     </aside>
 
     <main class="flex-1 flex flex-col min-h-0">
@@ -91,14 +83,14 @@
                 <button onclick="toggleSidebar()" class="lg:hidden p-2.5 -ml-2 mr-3 text-slate-600 hover:bg-slate-100 rounded-xl transition-colors"><span class="material-symbols-outlined text-[26px]">menu</span></button>
                 <div>
                     <h2 class="text-base lg:text-lg font-bold text-slate-900 leading-tight">ภาพรวมระบบ (Dashboard)</h2>
-                    <p id="header-hospital-name" class="text-[11px] lg:text-xs text-slate-400 font-medium mt-0.5">ระบบสนับสนุนการดูแลผู้ป่วย</p>
+                    <p id="header-hospital-name" class="text-[11px] lg:text-xs text-slate-400 font-medium mt-0.5">กำลังโหลด...</p>
                 </div>
             </div>
             
             <div class="flex items-center gap-3 pl-4 border-l border-slate-100 cursor-pointer hover:opacity-80 transition-opacity" onclick="window.location.href='admin_settings.html'" title="ไปที่หน้าตั้งค่าระบบ">
                 <div class="text-right hidden sm:block">
                     <p id="admin-name-display" class="text-xs font-bold text-slate-800 leading-none">ผู้ดูแลระบบ</p>
-                    <p class="text-[10px] text-amber-500 font-bold mt-1">Administrator</p>
+                    <p id="admin-role-display" class="text-[10px] text-amber-500 font-bold mt-1">Administrator</p>
                 </div>
                 <img id="admin-profile-pic" src="https://via.placeholder.com/150" alt="Admin Profile" class="w-10 h-10 rounded-full object-cover border-2 border-slate-200 shadow-sm bg-slate-50">
             </div>
@@ -110,7 +102,7 @@
                 <div class="neo-card p-6 border-l-4 border-blue-500">
                     <div class="flex justify-between items-start">
                         <div>
-                            <p class="text-[11px] font-bold text-slate-400 uppercase tracking-wider">ผู้ป่วยในระบบทั้งหมด</p>
+                            <p class="text-[11px] font-bold text-slate-400 uppercase tracking-wider">ผู้ป่วยในพื้นที่ดูแล</p>
                             <h3 class="text-3xl font-bold text-slate-900 mt-2" id="total-all">-</h3>
                         </div>
                         <div class="w-10 h-10 rounded-xl bg-blue-50 flex items-center justify-center text-blue-500 shadow-sm"><span class="material-symbols-outlined text-[22px]">groups</span></div>
@@ -146,6 +138,7 @@
             </div>
 
             <div class="grid grid-cols-1 xl:grid-cols-2 gap-6">
+                <!-- คงส่วนการ์ดวัสดุและ SLA Alert ไว้เหมือนเดิม โค้ดดึงข้อมูลจะกรองตามสิทธิ์อัตโนมัติ -->
                 <div class="neo-card p-6 flex flex-col justify-between">
                     <div>
                         <div class="flex justify-between items-center mb-5 border-b border-slate-100 pb-3">
@@ -155,26 +148,18 @@
                             </h3>
                             <span class="bg-amber-50 text-amber-700 text-[10px] font-bold px-2 py-0.5 rounded-md border border-amber-200">ตรวจสอบด่วน</span>
                         </div>
-                        <p class="text-xs text-slate-500 mb-4 leading-relaxed">
-                            รายการคำขอที่ได้รับการชี้เป้าและคัดกรองขนาดจาก อสม. ในพื้นที่เรียบร้อยแล้ว รอเจ้าหน้าที่สาธารณสุขตรวจสอบเพื่อระบุจำนวนชิ้นจัดสรรและกดอนุมัติการเบิกจ่าย
-                        </p>
+                        <p class="text-xs text-slate-500 mb-4 leading-relaxed">คำขอที่ได้รับการชี้เป้าจากพื้นที่เรียบร้อยแล้ว รอตรวจสอบเพื่ออนุมัติการเบิกจ่าย</p>
                         <div class="p-4 bg-slate-50 border border-slate-100 rounded-2xl flex items-center justify-between mb-2">
                             <div class="flex items-center gap-3">
                                 <div class="w-9 h-9 rounded-lg bg-amber-500/10 text-amber-600 flex items-center justify-center"><span class="material-symbols-outlined text-[20px]">package_2</span></div>
-                                <div>
-                                    <h4 class="text-sm font-bold text-slate-800">เคสที่ยื่นคำขอสนับสนุนผ้าอ้อม / แผ่นรองซับ</h4>
-                                    <p class="text-[11px] text-slate-400">รอเจ้าหน้าที่กำหนดปริมาณเบิกจ่ายจริงรายเดือน</p>
-                                </div>
+                                <div><h4 class="text-sm font-bold text-slate-800">คำขอสนับสนุนผ้าอ้อม/แผ่นรอง</h4></div>
                             </div>
                             <div class="text-right">
-                                <span class="text-2xl font-black text-amber-600" id="count-pending-diaper">-</span>
-                                <p class="text-[10px] font-bold text-slate-400">ราย</p>
+                                <span class="text-2xl font-black text-amber-600" id="count-pending-diaper">-</span><p class="text-[10px] font-bold text-slate-400">ราย</p>
                             </div>
                         </div>
                     </div>
-                    <button onclick="window.location.href='admin_resources.html'" class="w-full mt-4 py-3 bg-navy text-white text-xs font-bold rounded-xl hover:bg-opacity-90 transition-all flex items-center justify-center gap-1.5 shadow-md">
-                        เปิดหน้าบริหารจัดการทรัพยากร <span class="material-symbols-outlined text-[14px]">arrow_forward</span>
-                    </button>
+                    <button onclick="window.location.href='admin_resources.html'" class="w-full mt-4 py-3 bg-navy text-white text-xs font-bold rounded-xl hover:bg-opacity-90 transition-all flex items-center justify-center gap-1.5 shadow-md">เปิดหน้าบริหารจัดการทรัพยากร <span class="material-symbols-outlined text-[14px]">arrow_forward</span></button>
                 </div>
 
                 <div class="neo-card p-6 flex flex-col justify-between">
@@ -186,49 +171,18 @@
                             </h3>
                             <span class="bg-red-50 text-red-700 text-[10px] font-bold px-2 py-0.5 rounded-md border border-red-200">ระวัง</span>
                         </div>
-                        <p class="text-xs text-slate-500 mb-4 leading-relaxed">
-                            ระบบตรวจจับเวลาอัตโนมัติสำหรับผู้ป่วยวิกฤต (กลุ่มติดเตียง) ที่ไม่มีบันทึกข้อมูลการตรวจวัดสัญญาณชีพหรือประเมินซ้ำจาก อสม. เกินกำหนดรอบระยะเวลา 30 วัน
-                        </p>
+                        <p class="text-xs text-slate-500 mb-4 leading-relaxed">ระบบตรวจจับอัตโนมัติสำหรับผู้ป่วยวิกฤตที่ไม่มีข้อมูลการตรวจจาก อสม. เกิน 30 วัน</p>
                         <div class="p-4 bg-red-50/50 border border-red-100 rounded-2xl flex items-center justify-between mb-2">
                             <div class="flex items-center gap-3">
                                 <div class="w-9 h-9 rounded-lg bg-red-500/10 text-red-600 flex items-center justify-center"><span class="material-symbols-outlined text-[20px]">running_with_errors</span></div>
-                                <div>
-                                    <h4 class="text-sm font-bold text-slate-800">ผู้ป่วยติดเตียงค้างการเยี่ยมเกิน 30 วัน</h4>
-                                    <p class="text-[11px] text-red-600 font-medium">ควรเร่งประสานงานติดต่อ อสม. ผู้รับผิดชอบ</p>
-                                </div>
+                                <div><h4 class="text-sm font-bold text-slate-800">ติดเตียงค้างการเยี่ยมเกิน 30 วัน</h4></div>
                             </div>
                             <div class="text-right">
-                                <span class="text-2xl font-black text-red-600" id="count-sla-alert">-</span>
-                                <p class="text-[10px] font-bold text-slate-400">ราย</p>
+                                <span class="text-2xl font-black text-red-600" id="count-sla-alert">-</span><p class="text-[10px] font-bold text-slate-400">ราย</p>
                             </div>
                         </div>
                     </div>
-                    <button onclick="window.location.href='admin_delegation.html'" class="w-full mt-4 py-3 bg-white border-2 border-red-200 text-red-600 text-xs font-bold rounded-xl hover:bg-red-50 transition-all flex items-center justify-center gap-1.5">
-                        ตรวจสอบรายงานกระดานติดตามงาน <span class="material-symbols-outlined text-[14px]">arrow_forward</span>
-                    </button>
-                </div>
-            </div>
-
-            <div class="neo-card p-6">
-                <div class="mb-4 border-b border-slate-100 pb-3">
-                    <h3 class="font-bold text-slate-900 flex items-center gap-2 text-[15px]">
-                        <span class="material-symbols-outlined text-purple-600">psychology</span>
-                        สรุปสัดส่วนคัดกรองความเสี่ยงภาวะซึมเศร้า (2Q / 9Q Summary)
-                    </h3>
-                </div>
-                <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 text-center">
-                    <div class="p-4 bg-purple-50/40 border border-purple-100 rounded-2xl">
-                        <span class="text-[11px] font-bold text-purple-700 block mb-1">ปกติ (ปลอดภัย)</span>
-                        <span class="text-2xl font-black text-slate-800" id="depression-normal">-</span>
-                    </div>
-                    <div class="p-4 bg-amber-50/40 border border-amber-100 rounded-2xl">
-                        <span class="text-[11px] font-bold text-amber-700 block mb-1">เสี่ยงซึมเศร้า (เฝ้าระวัง)</span>
-                        <span class="text-2xl font-black text-slate-800" id="depression-risk">-</span>
-                    </div>
-                    <div class="p-4 bg-red-50/40 border border-red-100 rounded-2xl">
-                        <span class="text-[11px] font-bold text-red-700 block mb-1">เสี่ยงสูง / มีแนวโน้มรุนแรง</span>
-                        <span class="text-2xl font-black text-slate-800" id="depression-high">-</span>
-                    </div>
+                    <button onclick="window.location.href='admin_delegation.html'" class="w-full mt-4 py-3 bg-white border-2 border-red-200 text-red-600 text-xs font-bold rounded-xl hover:bg-red-50 transition-all flex items-center justify-center gap-1.5">ตรวจสอบกระดานติดตามงาน <span class="material-symbols-outlined text-[14px]">arrow_forward</span></button>
                 </div>
             </div>
 
@@ -236,39 +190,37 @@
     </main>
 
     <script>
-        // ---------------------------------------------------
-        // เชื่อมต่อ Firebase
-        // ---------------------------------------------------
         firebase.initializeApp(firebaseConfig);
         const db = firebase.firestore();
+        
+        let currentUserRole = "ADMIN";
+        let assignedVillages = []; // อาร์เรย์เก็บหมู่บ้านที่ รพ.สต.ดูแล
 
         function toggleSidebar() {
-            const sidebar = document.getElementById('sidebar');
-            const overlay = document.getElementById('sidebar-overlay');
-            sidebar.classList.toggle('-translate-x-full');
-            overlay.classList.toggle('hidden');
+            document.getElementById('sidebar').classList.toggle('-translate-x-full');
+            document.getElementById('sidebar-overlay').classList.toggle('hidden');
         }
 
         document.addEventListener("DOMContentLoaded", () => {
+            document.getElementById('sidebar-hospital-name').innerText = DEFAULT_CONFIGS.HOSPITAL_NAME;
+            document.getElementById('sidebar-system-name').innerText = DEFAULT_CONFIGS.SYSTEM_NAME;
+            
             liff.init({ liffId: LIFF_ID }).then(() => {
                 if (liff.isLoggedIn()) {
                     liff.getProfile().then(profile => {
                         verifyAdminAccess(profile.userId, profile);
                     }).catch(() => bounceToLogin());
-                } else {
-                    bounceToLogin();
-                }
+                } else bounceToLogin();
             }).catch(() => bounceToLogin());
         });
 
-        // [อัปเดตระบบตรวจสอบสิทธิ์] Firebase Only (ตัดระบบลูกผสม Hybrid Auth)
         async function verifyAdminAccess(uid, profile) {
             try {
                 const userDoc = await db.collection('VHVs').doc(String(uid)).get();
-                let isAdmin = false;
-                let hospital = 'เทศบาลเมืองบางแก้ว';
+                let hasAccess = false;
+                let hospital = DEFAULT_CONFIGS.HOSPITAL_NAME;
 
-                // ดึงข้อมูลการตั้งค่าชื่อหน่วยงานจาก SystemConfig
+                // ตรวจสอบชื่อใน SystemConfig เสมอ
                 try {
                     const sysSnap = await db.collection('SystemConfig').doc('HOSPITAL_NAME').get();
                     if(sysSnap.exists) hospital = sysSnap.data().value || hospital;
@@ -276,30 +228,42 @@
 
                 if (userDoc.exists) {
                     const userData = userDoc.data();
-                    if (String(userData.role || userData.Role || '').toUpperCase() === 'ADMIN') {
-                        isAdmin = true;
+                    const role = String(userData.role || '').toUpperCase();
+                    
+                    if (role === 'ADMIN') {
+                        hasAccess = true;
+                        currentUserRole = 'ADMIN';
                         hospital = userData.hospital_name || hospital;
+                    } else if (role === 'SUB_ADMIN') {
+                        hasAccess = true;
+                        currentUserRole = 'SUB_ADMIN';
+                        hospital = userData.hospital_name || hospital;
+                        assignedVillages = userData.assigned_villages || [];
                     }
                 }
 
-                if (isAdmin) {
-                    if (document.getElementById('sidebar-hospital-name')) document.getElementById('sidebar-hospital-name').innerText = hospital;
-                    if (document.getElementById('header-hospital-name')) document.getElementById('header-hospital-name').innerText = hospital;
-                    if (document.getElementById('admin-name-display')) document.getElementById('admin-name-display').innerText = profile.displayName || 'ผู้ดูแลระบบ';
-                    if (document.getElementById('admin-profile-pic')) document.getElementById('admin-profile-pic').src = profile.pictureUrl || 'https://via.placeholder.com/150';
+                if (hasAccess) {
+                    document.getElementById('sidebar-hospital-name').innerText = hospital;
+                    document.getElementById('header-hospital-name').innerText = 'ภาพรวมข้อมูล ' + hospital;
+                    document.getElementById('admin-name-display').innerText = profile.displayName || 'ผู้ดูแลระบบ';
+                    document.getElementById('admin-profile-pic').src = profile.pictureUrl || 'https://via.placeholder.com/150';
+                    
+                    if(currentUserRole === 'SUB_ADMIN') {
+                        document.getElementById('admin-role-display').innerText = 'รพ.สต. ส่วนขยาย';
+                        document.getElementById('admin-role-display').classList.replace('text-amber-500', 'text-emerald-500');
+                        // ซ่อนปุ่มตั้งค่าระบบจากหน้า Sidebar เพราะ รพ.สต. ย่อย ไม่ควรเข้าหน้าตั้งค่ารวม
+                        document.getElementById('nav-settings').style.display = 'none';
+                    }
                     
                     loadDashboardData(); 
                 } else {
-                    window.location.href = 'dashboard.html';
+                    window.location.href = 'dashboard.html'; // ถ้าไม่ใช่แอดมิน ให้กลับไปหน้า อสม.
                 }
-            } catch (error) { 
-                window.location.href = 'index.html'; 
-            }
+            } catch (error) { bounceToLogin(); }
         }
 
         function bounceToLogin() { window.location.href = 'index.html'; }
 
-        // ดึงสถิติทั้งหมดจาก Firebase โดยตรง
         async function loadDashboardData() {
             try {
                 const snapshot = await db.collection('Patients').get();
@@ -307,8 +271,15 @@
                 
                 snapshot.forEach(doc => {
                     const data = doc.data();
-                    // ประมวลผลเฉพาะคนที่สถานะกำลังดูแล (Active)
-                    if (String(data.status || 'Active').trim().toLowerCase() === 'active') {
+                    const isActive = String(data.status || 'Active').trim().toLowerCase() === 'active';
+                    
+                    // ระบบกรองข้อมูลตามสิทธิ์: ถ้าเป็น SUB_ADMIN ให้ดึงเฉพาะข้อมูลหมู่ตัวเอง
+                    let hasPermissionToView = true;
+                    if (currentUserRole === 'SUB_ADMIN') {
+                        hasPermissionToView = assignedVillages.includes(String(data.village_no).trim());
+                    }
+
+                    if (isActive && hasPermissionToView) {
                         patients.push(data);
                     }
                 });
@@ -334,7 +305,7 @@
                 });
                 document.getElementById('count-pending-diaper').innerText = pendingDiaper;
 
-                // ค้นหาค้างเยี่ยม (SLA) อิงจากวันที่ใน Firebase
+                // ค้นหาค้างเยี่ยม (SLA)
                 let slaAlertCount = 0;
                 const today = new Date();
                 
@@ -344,7 +315,6 @@
                     
                     if (dateStr !== '' && dateStr !== '-') {
                         if (dateStr.includes('/')) {
-                            // ตัดเอาเฉพาะวันที่ (ทิ้งเวลา) เพื่อป้องกันบั๊ก
                             const parts = dateStr.split(' ')[0].split('/');
                             lastAssessDate = new Date(parts[2], parts[1] - 1, parts[0]);
                         } else {
@@ -357,23 +327,10 @@
                         const diffDays = Math.floor(timeDiff / (1000 * 3600 * 24));
                         if (diffDays > 30) slaAlertCount++;
                     } else {
-                        slaAlertCount++; // ไม่มีประวัติให้ถือว่าค้าง
+                        slaAlertCount++; 
                     }
                 });
                 document.getElementById('count-sla-alert').innerText = slaAlertCount;
-
-                // นับสถิติซึมเศร้า
-                let depNormal = 0, depRisk = 0, depHigh = 0;
-                patients.forEach(p => {
-                    const dep = String(p.dep_status || '').trim();
-                    if (dep === 'ปกติ') depNormal++;
-                    else if (dep === 'เสี่ยงซึมเศร้า') depRisk++;
-                    else if (dep === 'เสี่ยงสูง') depHigh++;
-                });
-
-                document.getElementById('depression-normal').innerText = depNormal;
-                document.getElementById('depression-risk').innerText = depRisk;
-                document.getElementById('depression-high').innerText = depHigh;
 
             } catch (error) {
                 console.error("โหลดข้อมูลล้มเหลว:", error);
