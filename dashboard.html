@@ -165,7 +165,13 @@
 
         document.addEventListener("DOMContentLoaded", () => {
             liff.init({ liffId: LIFF_ID }).then(() => {
-                if (liff.isLoggedIn()) {
+                // ระบบสับขาหลอกสำหรับโหมดทดสอบ
+                const mockUid = localStorage.getItem('dev_mock_uid');
+                
+                if (mockUid) {
+                    vhvCurrentUid = mockUid;
+                    fetchVHVProfile(mockUid).then(() => fetchPatients());
+                } else if (liff.isLoggedIn()) {
                     liff.getProfile().then(async profile => {
                         vhvCurrentUid = profile.userId;
                         await fetchVHVProfile(profile.userId); 
