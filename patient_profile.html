@@ -153,10 +153,16 @@
                 </div>
             </div>
 
+            <!-- เพิ่มปุ่ม "ประวัติรายข้อ" ไว้ที่ส่วนกราฟ -->
             <div class="bg-white rounded-[20px] p-5 shadow-sm border border-[#bdcac1]/30">
-                <h3 class="text-sm font-bold flex items-center gap-2 mb-4 text-[#F59E0B]">
-                    <span class="material-symbols-outlined text-[18px]">timeline</span> กราฟประเมินสุขภาพ (ADL & 2Q9Q)
-                </h3>
+                <div class="flex justify-between items-center mb-4 border-b border-gray-50 pb-3">
+                    <h3 class="text-sm font-bold flex items-center gap-2 text-[#F59E0B]">
+                        <span class="material-symbols-outlined text-[18px]">timeline</span> กราฟประเมินสุขภาพ
+                    </h3>
+                    <button onclick="openHistoryModal()" class="text-[10px] bg-slate-100 text-slate-600 hover:bg-slate-200 px-3 py-1.5 rounded-full font-bold flex items-center gap-1 transition-colors">
+                        <span class="material-symbols-outlined text-[14px]">history</span> ประวัติรายข้อ
+                    </button>
+                </div>
                 <div class="mb-5"><canvas id="adlChart" height="120"></canvas></div>
                 <div><canvas id="depChart" height="120"></canvas></div>
             </div>
@@ -235,6 +241,21 @@
         </div>
     </div>
 
+    <!-- Modal ประวัติประเมินรายข้อ (เพิ่มใหม่) -->
+    <div id="history-modal" class="fixed inset-0 bg-black/50 z-[100] hidden flex-col items-center justify-center opacity-0 transition-opacity duration-300 p-4">
+        <div id="history-modal-content" class="bg-white rounded-[24px] w-full max-w-lg max-h-[85vh] flex flex-col transform scale-95 transition-transform duration-300 overflow-hidden shadow-2xl">
+            <div class="p-5 border-b border-gray-100 flex justify-between items-center bg-gray-50">
+                <h3 class="text-base font-bold text-[#00694a] flex items-center gap-2">
+                    <span class="material-symbols-outlined text-[20px]">history</span> ประวัติประเมินย้อนหลัง
+                </h3>
+                <button onclick="closeHistoryModal()" class="text-gray-400 hover:text-gray-600 bg-gray-200 rounded-full w-8 h-8 flex justify-center items-center"><span class="material-symbols-outlined text-[18px]">close</span></button>
+            </div>
+            <div id="history-list" class="p-5 overflow-y-auto flex-1 space-y-4 bg-slate-50">
+                <!-- โค้ดประวัติจะถูกแทรกที่นี่ -->
+            </div>
+        </div>
+    </div>
+
     <!-- Modal ดูรูปภาพขยาย -->
     <div id="imageModal" class="fixed inset-0 bg-black/90 z-[100] hidden flex-col items-center justify-center opacity-0 transition-opacity duration-300">
         <button onclick="closeModal()" class="absolute top-4 right-4 text-white p-3 bg-black/50 rounded-full hover:bg-white/20"><span class="material-symbols-outlined">close</span></button>
@@ -250,6 +271,7 @@
         let currentUserRole = 'VHV';
         
         let currentPatientData = null;
+        let globalAssessments = []; // เก็บข้อมูลประวัติแบบละเอียด
         let latestADLDate = 0;
         let latestDEPDate = 0;
         let latestVitalDate = 0;
@@ -269,7 +291,8 @@
         };
 
         function goBackToList() {
-            if (currentUserRole === 'ADMIN') {
+            // ระบบย้อนกลับอัจฉริยะ (รวมสิทธิ์ SUB_ADMIN)
+            if (currentUserRole === 'ADMIN' || currentUserRole === 'SUB_ADMIN') {
                 if (document.referrer.includes('admin_delegation.html')) {
                     window.location.href = 'admin_delegation.html';
                 } else {
@@ -282,7 +305,10 @@
         
         document.addEventListener("DOMContentLoaded", () => {
             liff.init({ liffId: LIFF_ID }).then(() => {
-                if (liff.isLoggedIn()) {
+                const mockUid = localStorage.getItem('dev_mock_uid');
+                if (mockUid) {
+                    checkUserRole(mockUid);
+                } else if (liff.isLoggedIn()) {
                     liff.getProfile().then(profile => {
                         checkUserRole(profile.userId);
                     }).catch(err => console.error(err));
@@ -290,7 +316,6 @@
             });
         });
 
-        // ดึง Role จาก Firebase อย่างเดียว (ตัด Fallback กลับไปหา GAS)
         async function checkUserRole(uid) {
             try {
                 const userDoc = await db.collection('VHVs').doc(String(uid)).get();
@@ -300,8 +325,10 @@
             } catch(e) { console.error(e); }
         }
 
+        // ฟังก์ชันดึงรูปภาพ (รองรับ Base64 จาก Firebase เต็มรูปแบบ)
         const getDriveImageUrl = (url) => {
             if(!url) return null;
+            if(String(url).startsWith('data:image')) return url; // คืนค่า Base64 กลับไปตรงๆ
             const match = url.match(/d\/([a-zA-Z0-9_-]+)/) || url.match(/id=([a-zA-Z0-9_-]+)/);
             return match ? `https://drive.google.com/thumbnail?id=${match[1]}&sz=w1000` : url;
         };
@@ -316,6 +343,79 @@
             const modal = document.getElementById('imageModal');
             modal.classList.add('opacity-0');
             setTimeout(() => modal.classList.add('hidden'), 300);
+        }
+
+        // ==========================================
+        // ระบบประวัติรายข้อ (History Modal)
+        // ==========================================
+        function openHistoryModal() {
+            const modal = document.getElementById('history-modal');
+            const content = document.getElementById('history-modal-content');
+            const list = document.getElementById('history-list');
+            list.innerHTML = '';
+            
+            if(globalAssessments.length === 0) {
+                list.innerHTML = '<p class="text-center text-gray-400 py-8">ไม่มีประวัติการประเมินในระบบ</p>';
+            } else {
+                globalAssessments.forEach((a, index) => {
+                    const isADL = a.type === 'ADL';
+                    const badgeColor = isADL ? 'bg-amber-100 text-amber-700 border-amber-200' : 'bg-blue-100 text-blue-700 border-blue-200';
+                    const title = isADL ? 'ประเมิน ADL' : 'คัดกรองซึมเศร้า 2Q/9Q';
+                    
+                    let detailsHtml = '';
+                    // หากในอนาคตมีการบันทึกคำตอบรายข้อ (answers) มาด้วย จะโชว์ปุ่มตรงนี้
+                    if(a.answers && Array.isArray(a.answers) && a.answers.length > 0) {
+                        const ansList = a.answers.map(ans => `
+                            <div class="flex justify-between items-start border-b border-gray-200 py-2 last:border-0">
+                                <span class="text-[12px] text-gray-700 flex-1 pr-3 leading-tight">${ans.q}</span>
+                                <span class="text-[12px] font-bold text-[#00694a] text-right w-1/3 flex-shrink-0">${ans.a} <span class="text-gray-400 font-normal">(${ans.score})</span></span>
+                            </div>
+                        `).join('');
+                        
+                        detailsHtml = `
+                            <div class="mt-3 pt-3 border-t border-gray-100">
+                                <button onclick="toggleHistoryDetails('det-${index}')" class="text-[11px] text-blue-600 bg-blue-50 px-3 py-1.5 rounded-lg font-bold flex items-center gap-1 hover:bg-blue-100 transition-colors w-full justify-center">
+                                    <span class="material-symbols-outlined text-[16px]">expand_more</span> ดูคำตอบรายข้อแบบละเอียด
+                                </button>
+                                <div id="det-${index}" class="hidden mt-3 bg-white p-3 rounded-xl border border-gray-200 shadow-inner">
+                                    ${ansList}
+                                </div>
+                            </div>
+                        `;
+                    } else {
+                        detailsHtml = `<div class="mt-3 pt-2 border-t border-gray-100 text-center"><p class="text-[10px] text-gray-400 italic">การประเมินครั้งนี้ไม่มีการบันทึกคำตอบรายข้อไว้</p></div>`;
+                    }
+
+                    list.insertAdjacentHTML('beforeend', `
+                        <div class="bg-white border border-gray-200 p-4 rounded-2xl shadow-sm relative overflow-hidden">
+                            <div class="absolute left-0 top-0 bottom-0 w-1 ${isADL ? 'bg-amber-500' : 'bg-blue-600'}"></div>
+                            <div class="flex justify-between items-center mb-3">
+                                <span class="${badgeColor} text-[10px] font-bold px-2 py-0.5 rounded border">${title}</span>
+                                <span class="text-[11px] text-gray-500 font-medium">${a.date}</span>
+                            </div>
+                            <p class="text-sm font-bold text-gray-800">ผลประเมิน: <span class="${isADL ? 'text-amber-600' : 'text-blue-600'}">${a.result}</span></p>
+                            <p class="text-[12px] text-gray-600 mt-1">คะแนนรวม: <strong class="text-gray-900">${a.score1}</strong> ${a.score2 ? `และ <strong class="text-gray-900">${a.score2}</strong>` : ''}</p>
+                            ${detailsHtml}
+                        </div>
+                    `);
+                });
+            }
+
+            modal.classList.remove('hidden');
+            setTimeout(() => { modal.classList.remove('opacity-0'); content.classList.remove('scale-95'); }, 10);
+        }
+
+        function closeHistoryModal() {
+            const modal = document.getElementById('history-modal');
+            const content = document.getElementById('history-modal-content');
+            modal.classList.add('opacity-0');
+            content.classList.add('scale-95');
+            setTimeout(() => modal.classList.add('hidden'), 300);
+        }
+
+        function toggleHistoryDetails(id) {
+            const el = document.getElementById(id);
+            el.classList.toggle('hidden');
         }
 
         async function loadPatientProfile() {
@@ -339,7 +439,7 @@
                 document.getElementById('profile-name').innerText = (data.prefix || '') + (data.name || '');
                 document.getElementById('profile-age').innerText = `อายุ ${data.age || '-'} ปี`;
                 document.getElementById('profile-idcard').innerText = data.id_card || '-';
-                document.getElementById('profile-dob').innerText = data.dob || '-';
+                document.getElementById('profile-dob').innerText = data.dob || '-'; // แสดง DOB
                 document.getElementById('profile-address').innerText = `บ้านเลขที่ ${data.house_no || '-'} หมู่ ${data.village_no || '-'}`;
                 
                 document.getElementById('profile-gps').innerText = data.lat_long || 'ยังไม่มีข้อมูล';
@@ -463,6 +563,9 @@
 
                 vitals.sort((a,b) => parseThaiDate(a.date) - parseThaiDate(b.date));
                 assessments.sort((a,b) => parseThaiDate(a.date) - parseThaiDate(b.date));
+                
+                // เก็บประวัติไว้ในตัวแปรสำหรับ History Modal (เรียงจากล่าสุดไปเก่าสุด)
+                globalAssessments = [...assessments].sort((a,b) => parseThaiDate(b.date) - parseThaiDate(a.date));
 
                 const formatLabel = (dateStr) => {
                     if (!dateStr) return '';
@@ -602,7 +705,6 @@
             btn.disabled = true;
 
             try {
-                // บันทึกสถานะลง Firebase เท่านั้น
                 await db.collection('Patients').doc(String(patientId)).update({ 
                     status: newStatus 
                 });
