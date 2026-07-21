@@ -76,22 +76,26 @@
             </button>
         </header>
 
-        <div class="p-4 lg:p-6 pb-2 z-10 flex-shrink-0 sticky top-0 bg-slate-50 shadow-sm border-b border-slate-200">
+        <!-- ส่วนของแถบค้นหาและเพิ่มผู้ป่วยใหม่ -->
+        <div class="p-4 lg:p-6 pb-4 z-10 flex-shrink-0 sticky top-0 bg-slate-50 shadow-sm border-b border-slate-200 space-y-3">
             <div class="flex flex-col md:flex-row gap-3">
                 <div class="relative flex-1">
                     <span class="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-slate-400">search</span>
                     <input type="text" id="search-input" oninput="filterPatients()" class="w-full pl-12 pr-4 py-3 bg-white border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 shadow-sm" placeholder="ค้นหา HN, เลขบัตร, ชื่อ-นามสกุล, หรือบ้านเลขที่...">
                 </div>
-                <div class="flex gap-2">
-                    <select id="village-filter" onchange="filterPatients()" class="px-4 py-3 bg-white border border-slate-200 rounded-xl text-sm font-bold text-slate-600 focus:ring-2 focus:ring-emerald-500 shadow-sm outline-none">
-                        <option value="">ดูทุกหมู่ (ทั้งหมด)</option>
-                        <!-- โค้ดจะนำตัวเลือกหมู่มาใส่ตรงนี้ (กรองตามสิทธิ์) -->
-                    </select>
-                    <select id="status-filter" onchange="filterPatients()" class="px-4 py-3 bg-white border border-slate-200 rounded-xl text-sm font-bold text-slate-600 focus:ring-2 focus:ring-emerald-500 shadow-sm outline-none">
-                        <option value="Active">🟢 สถานะ: Active</option>
-                        <option value="Inactive">🔴 สถานะ: ยุติการดูแล</option>
-                    </select>
-                </div>
+                <!-- 🌟 ปุ่มเพิ่มผู้ป่วยใหม่ 🌟 -->
+                <button onclick="addNewPatient()" class="bg-[#00694a] hover:bg-[#005239] text-white px-5 py-3 rounded-xl text-sm font-bold shadow-sm transition-all flex justify-center items-center gap-2 active:scale-95 whitespace-nowrap">
+                    <span class="material-symbols-outlined text-[18px]">person_add</span> เพิ่มผู้ป่วยใหม่
+                </button>
+            </div>
+            <div class="flex gap-2">
+                <select id="village-filter" onchange="filterPatients()" class="flex-1 px-4 py-3 bg-white border border-slate-200 rounded-xl text-sm font-bold text-slate-600 focus:ring-2 focus:ring-emerald-500 shadow-sm outline-none">
+                    <option value="">ดูทุกหมู่ (ทั้งหมด)</option>
+                </select>
+                <select id="status-filter" onchange="filterPatients()" class="flex-1 px-4 py-3 bg-white border border-slate-200 rounded-xl text-sm font-bold text-slate-600 focus:ring-2 focus:ring-emerald-500 shadow-sm outline-none">
+                    <option value="Active">🟢 สถานะ: Active</option>
+                    <option value="Inactive">🔴 สถานะ: ยุติการดูแล</option>
+                </select>
             </div>
         </div>
 
@@ -125,11 +129,10 @@
             document.getElementById('sidebar-system-name').innerText = DEFAULT_CONFIGS.SYSTEM_NAME;
 
             liff.init({ liffId: LIFF_ID }).then(() => {
-                // ระบบสับขาหลอกสำหรับโหมดทดสอบ (Developer Mode)
                 const mockUid = localStorage.getItem('dev_mock_uid');
                 
                 if (mockUid) {
-                    verifyAdminAccess(mockUid); // ใช้สิทธิ์จำลองทันที
+                    verifyAdminAccess(mockUid); 
                 } else if (liff.isLoggedIn()) {
                     liff.getProfile().then(p => verifyAdminAccess(p.userId)).catch(() => bounceToLogin());
                 } else { bounceToLogin(); }
@@ -145,7 +148,6 @@
                 let hospital = DEFAULT_CONFIGS.HOSPITAL_NAME;
                 let vCount = DEFAULT_CONFIGS.VILLAGE_COUNT;
 
-                // ดึง Config ส่วนกลาง (เผื่อมีการตั้งชื่อหรือจำนวนหมู่ใหม่)
                 try {
                     const sysSnapHospital = await db.collection('SystemConfig').doc('HOSPITAL_NAME').get();
                     if(sysSnapHospital.exists) hospital = sysSnapHospital.data().value || hospital;
@@ -173,16 +175,13 @@
                 if (hasAccess) {
                     document.getElementById('sidebar-hospital-name').innerText = hospital;
                     
-                    // ปรับแต่ง UI ตามสิทธิ์
                     const villageSelect = document.getElementById('village-filter');
                     if (currentUserRole === 'SUB_ADMIN') {
-                        document.getElementById('nav-settings').style.display = 'none'; // ซ่อนเมนูตั้งค่าสำหรับ รพ.สต.
-                        // แสดงเฉพาะหมู่ที่ตัวเองรับผิดชอบ
+                        document.getElementById('nav-settings').style.display = 'none'; 
                         assignedVillages.forEach(v => {
                             villageSelect.insertAdjacentHTML('beforeend', `<option value="${v}">หมู่ที่ ${v}</option>`);
                         });
                     } else {
-                        // แอดมินหลักเห็นครบทุกหมู่
                         for(let i=1; i<=vCount; i++){ 
                             villageSelect.insertAdjacentHTML('beforeend', `<option value="${i}">หมู่ที่ ${i}</option>`); 
                         }
@@ -195,6 +194,39 @@
             } catch (error) { bounceToLogin(); }
         }
 
+        // 🌟 ฟังก์ชันเพิ่มผู้ป่วยใหม่ 🌟
+        async function addNewPatient() {
+            if(!confirm("ต้องการสร้างแฟ้มประวัติผู้ป่วยรายใหม่ใช่หรือไม่?")) return;
+            
+            try {
+                const now = new Date();
+                const year = now.getFullYear();
+                const month = String(now.getMonth() + 1).padStart(2, '0');
+                const day = String(now.getDate()).padStart(2, '0');
+                const hh = String(now.getHours()).padStart(2, '0');
+                const mm = String(now.getMinutes()).padStart(2, '0');
+                const ss = String(now.getSeconds()).padStart(2, '0');
+                
+                const newId = `HN-${year}${month}${day}-${hh}${mm}${ss}`;
+                
+                // สร้างเอกสารเปล่าใน Firebase ก่อน
+                await db.collection('Patients').doc(newId).set({
+                    id: newId,
+                    status: 'Active',
+                    group: 'ยังไม่ประเมิน',
+                    adl: '-',
+                    dep_status: '-',
+                    timestamp: firebase.firestore.FieldValue.serverTimestamp()
+                });
+                
+                // เปลี่ยนหน้าไปยังหน้าแก้ไข เพื่อให้กรอกข้อมูลต่อได้เลย
+                window.location.href = `patient_edit.html?id=${newId}`;
+                
+            } catch (error) {
+                alert('ไม่สามารถสร้างข้อมูลได้: ' + error.message);
+            }
+        }
+
         async function loadPatientData() {
             try {
                 const snapshot = await db.collection('Patients').get();
@@ -202,8 +234,6 @@
 
                 snapshot.forEach(doc => {
                     const data = doc.data();
-                    
-                    // กรองข้อมูล: ถ้าเป็น รพ.สต. ให้เห็นเฉพาะหมู่ของตัวเอง
                     let hasPermissionToView = true;
                     if (currentUserRole === 'SUB_ADMIN') {
                         hasPermissionToView = assignedVillages.includes(String(data.village_no).trim());
@@ -255,7 +285,6 @@
                 else if (p.group === 'ติดเตียง') badgeColor = 'bg-red-50 text-red-700 border-red-200';
                 const groupDisplay = (p.group && p.group !== '-' && p.group !== 'ยังไม่ประเมิน') ? p.group : 'ยังไม่ประเมิน';
 
-                // จัดการรูปภาพให้อ่านจาก Base64
                 let avatarHtml = `<div class="w-14 h-14 rounded-full bg-slate-100 text-slate-400 font-bold text-xl flex items-center justify-center flex-shrink-0 border-2 border-white shadow-sm">${p.name ? p.name.substring(0,1) : '?'}</div>`;
                 if(p.profile_pic) {
                     if (p.profile_pic.startsWith('data:image')) {
@@ -304,7 +333,6 @@
             try {
                 await db.collection('Patients').doc(String(patientId)).update({ status: newStatus });
                 
-                // อัปเดตใน Array ตัวแปรชั่วคราวให้หน้าเว็บเปลี่ยนตามทันที
                 const index = allPatients.findIndex(p => p.id === patientId);
                 if(index > -1) allPatients[index].status = newStatus;
 
