@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="utf-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title>เครื่องมือนักพัฒนา (Dev Tools)</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700&display=swap" rel="stylesheet"/>
+    <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore-compat.js"></script>
+    <script src="config.js"></script>
+    <style>body { font-family: 'Sarabun', sans-serif; background-color: #f1f5f9; }</style>
+</head>
+<body class="p-6 md:p-12">
+    <div class="max-w-2xl mx-auto bg-white rounded-3xl shadow-xl p-8 border border-slate-200">
+        <h1 class="text-2xl font-black text-slate-800 mb-2">🛠️ เครื่องมือนักพัฒนา (Developer Tools)</h1>
+        <p class="text-sm text-slate-500 mb-8">ใช้สำหรับสร้างข้อมูลจำลองและสลับบทบาทเพื่อทดสอบระบบ โดยไม่ต้องใช้หลายบัญชี LINE</p>
+
+        <!-- โซนที่ 1: สร้างข้อมูล -->
+        <div class="bg-blue-50 p-5 rounded-2xl mb-8 border border-blue-100">
+            <h2 class="font-bold text-blue-800 mb-2">1. สร้างบัญชีผู้ใช้จำลอง (Mock Accounts)</h2>
+            <p class="text-xs text-blue-600 mb-4">กดปุ่มนี้ครั้งเดียว ระบบจะสร้างบัญชีจำลอง 4 บัญชีเข้าไปใน Firebase เพื่อใช้ทดสอบ</p>
+            <button onclick="createMockAccounts()" class="bg-blue-600 text-white font-bold px-6 py-2.5 rounded-xl hover:bg-blue-700 active:scale-95 transition-all text-sm">
+                เสกบัญชีจำลองเข้าระบบ
+            </button>
+        </div>
+
+        <!-- โซนที่ 2: สลับบทบาท -->
+        <h2 class="font-bold text-slate-800 mb-4">2. สลับบทบาทการเข้าสู่ระบบ (Role Switcher)</h2>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
+            <button onclick="loginAs('MOCK_ADMIN', 'admin_dashboard.html')" class="p-4 bg-white border-2 border-slate-200 hover:border-amber-500 rounded-xl text-left transition-colors group">
+                <span class="block text-xs font-bold text-amber-500 mb-1">สิทธิ์: ADMIN</span>
+                <span class="block font-bold text-slate-800 group-hover:text-amber-600">แอดมินหลักส่วนกลาง</span>
+            </button>
+            <button onclick="loginAs('MOCK_SUB', 'admin_dashboard.html')" class="p-4 bg-white border-2 border-slate-200 hover:border-emerald-500 rounded-xl text-left transition-colors group">
+                <span class="block text-xs font-bold text-emerald-500 mb-1">สิทธิ์: SUB_ADMIN (หมู่ 1,2)</span>
+                <span class="block font-bold text-slate-800 group-hover:text-emerald-600">รพ.สต. ย่อย (ทดสอบ)</span>
+            </button>
+            <button onclick="loginAs('MOCK_VHV1', 'dashboard.html')" class="p-4 bg-white border-2 border-slate-200 hover:border-blue-500 rounded-xl text-left transition-colors group">
+                <span class="block text-xs font-bold text-blue-500 mb-1">สิทธิ์: VHV (อสม. หมู่ 1)</span>
+                <span class="block font-bold text-slate-800 group-hover:text-blue-600">อสม. สมชาย (จำลอง)</span>
+            </button>
+            <button onclick="loginAs('MOCK_VHV2', 'dashboard.html')" class="p-4 bg-white border-2 border-slate-200 hover:border-blue-500 rounded-xl text-left transition-colors group">
+                <span class="block text-xs font-bold text-blue-500 mb-1">สิทธิ์: VHV (อสม. หมู่ 2)</span>
+                <span class="block font-bold text-slate-800 group-hover:text-blue-600">อสม. สมหญิง (จำลอง)</span>
+            </button>
+        </div>
+
+        <!-- โซนที่ 3: รีเซ็ตระบบ -->
+        <div class="border-t border-slate-200 pt-6">
+            <button onclick="clearTestMode()" class="w-full bg-slate-100 text-slate-600 font-bold px-6 py-3 rounded-xl hover:bg-slate-200 active:scale-95 transition-all text-sm flex justify-center items-center gap-2">
+                ❌ ออกจากโหมดทดสอบ (กลับไปใช้ LINE ปัจจุบัน)
+            </button>
+        </div>
+    </div>
+
+    <script>
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.firestore();
+
+        async function createMockAccounts() {
+            try {
+                const batch = db.batch();
+                // 1. แอดมินหลัก
+                batch.set(db.collection('VHVs').doc('MOCK_ADMIN'), { name: 'แอดมินใหญ่ (จำลอง)', role: 'ADMIN', status: 'Active', phone: '0800000000' });
+                // 2. รพ.สต. ย่อย (สมมติให้ดูแลหมู่ 1 และ 2)
+                batch.set(db.collection('VHVs').doc('MOCK_SUB'), { name: 'รพ.สต. จำลอง', role: 'SUB_ADMIN', status: 'Active', assigned_villages: ['1', '2'], phone: '0811111111' });
+                // 3. อสม. หมู่ 1
+                batch.set(db.collection('VHVs').doc('MOCK_VHV1'), { name: 'อสม. สมชาย (หมู่ 1)', role: 'VHV', status: 'Active', village_no: '1', phone: '0822222222' });
+                // 4. อสม. หมู่ 2
+                batch.set(db.collection('VHVs').doc('MOCK_VHV2'), { name: 'อสม. สมหญิง (หมู่ 2)', role: 'VHV', status: 'Active', village_no: '2', phone: '0833333333' });
+                
+                await batch.commit();
+                alert('สร้างบัญชีจำลองทั้ง 4 บัญชีสำเร็จแล้ว! ลองกดสลับบทบาทด้านล่างได้เลยครับ');
+            } catch(e) { alert('เกิดข้อผิดพลาด: ' + e.message); }
+        }
+
+        function loginAs(uid, targetUrl) {
+            // เซ็ตค่าลง LocalStorage เพื่อให้หน้าอื่นๆ สับขาหลอกเอา UID นี้ไปใช้
+            localStorage.setItem('dev_mock_uid', uid);
+            alert('สลับบทบาทสำเร็จ! กำลังพาคุณไปที่หน้าเว็บ...');
+            window.location.href = targetUrl;
+        }
+
+        function clearTestMode() {
+            localStorage.removeItem('dev_mock_uid');
+            alert('ออกจากโหมดทดสอบแล้ว ระบบจะดึงข้อมูลบัญชีจากแอป LINE ของคุณตามปกติ');
+            window.location.href = 'index.html';
+        }
+    </script>
+</body>
+</html>
