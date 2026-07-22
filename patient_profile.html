@@ -72,7 +72,6 @@
                     <span id="profile-depression" class="bg-gray-100 text-gray-600 px-3 py-1 rounded-full text-xs font-bold inline-block mt-1 shadow-sm">-</span>
                 </div>
 
-                <!-- 🌟 เพิ่มปุ่มพิมพ์แฟ้มประวัติ 🌟 -->
                 <button onclick="printForm('SUMMARY')" class="w-full bg-[#f0fdf4] text-[#00694a] border border-[#bbf7d0] py-2.5 rounded-xl text-sm font-bold shadow-sm hover:bg-[#dcfce7] active:scale-95 transition-all flex items-center justify-center gap-2 mt-4">
                     <span class="material-symbols-outlined text-[18px]">print</span> พิมพ์สรุปแฟ้มประวัติผู้ป่วย
                 </button>
@@ -153,7 +152,6 @@
                     </div>
                     <div class="flex flex-col gap-1 pt-1">
                         <span class="text-xs text-[#526069] font-bold mb-1">รายการยาที่ใช้ประจำ</span>
-                        <!-- จุดแสดงผลรายการยาที่จะถูกเติมด้วย JS ด้านล่าง -->
                         <div id="profile-medication" class="mt-2">-</div>
                     </div>
                 </div>
@@ -331,13 +329,30 @@
             return 0;
         };
 
+        // 🌟 อัปเกรดปุ่มย้อนกลับให้กลับไปเปิดการ์ดค้างไว้ 🌟
         function goBackToList() {
+            if (document.referrer.includes('admin_datacenter.html')) {
+                sessionStorage.removeItem('return_to');
+                window.location.href = 'admin_datacenter.html';
+                return;
+            }
+            if (document.referrer.includes('admin_delegation.html')) {
+                sessionStorage.removeItem('return_to');
+                window.location.href = 'admin_delegation.html';
+                return;
+            }
+            
+            const returnTo = sessionStorage.getItem('return_to');
+            const returnGroup = sessionStorage.getItem('return_group');
+
+            if (returnTo === 'dashboard') {
+                sessionStorage.removeItem('return_to');
+                window.location.href = `admin_dashboard.html?openGroup=${encodeURIComponent(returnGroup || 'ทั้งหมด')}`;
+                return;
+            }
+
             if (currentUserRole === 'ADMIN' || currentUserRole === 'SUB_ADMIN') {
-                if (document.referrer.includes('admin_delegation.html')) {
-                    window.location.href = 'admin_delegation.html';
-                } else {
-                    window.location.href = 'admin_datacenter.html'; 
-                }
+                window.location.href = 'admin_datacenter.html'; 
             } else {
                 window.location.href = 'dashboard.html'; 
             }
@@ -420,9 +435,6 @@
             return `${dd}/${mm}/${yyyy}`;
         }
 
-        // ==========================================
-        // 🌟 อัปเกรดฟังก์ชันสร้างและสั่งพิมพ์ PDF 🌟
-        // ==========================================
         function printForm(type, recordDate = '') {
             if (!currentPatientData) return alert("ข้อมูลผู้ป่วยยังโหลดไม่เสร็จ");
 
@@ -435,7 +447,6 @@
             const pDob = p.dob || '-';
             const hospitalName = DEFAULT_CONFIGS.HOSPITAL_NAME;
 
-            // ตั้งค่า CSS ให้พิมพ์พอดี 1 หน้ากระดาษ A4
             let htmlContent = `
             <html>
             <head>
@@ -461,9 +472,6 @@
             <body onload="setTimeout(function(){ window.print(); window.close(); }, 800);">
             `;
 
-            // -----------------------------------------------------
-            // หมวดพิมพ์ Summary (สรุปแฟ้มประวัติผู้ป่วย)
-            // -----------------------------------------------------
             if (type === 'SUMMARY') {
                 let medPrintHtml = '-';
                 if (Array.isArray(p.medication) && p.medication.length > 0) {
@@ -516,9 +524,6 @@
                 </div>
                 `;
 
-            // -----------------------------------------------------
-            // หมวดพิมพ์ DIAPER (สิทธิ์ผ้าอ้อม)
-            // -----------------------------------------------------
             } else if (type === 'DIAPER') {
                 let d = {};
                 try { if (typeof p.diaper === 'string') d = JSON.parse(p.diaper); else if (p.diaper) d = p.diaper; } catch(e) {}
@@ -532,7 +537,6 @@
                 const ind2 = (d.indications || []).some(x => x.includes('ระบบประสาทบกพร่อง')) ? '☑' : '☐';
                 const ind3 = (d.indications || []).some(x => x.includes('มีใบรับรองแพทย์')) ? '☑' : '☐';
 
-                // ตรรกะคำนวณจำนวนชิ้นผ้าอ้อมรายวัน (ตามเงื่อนไขเป๊ะๆ)
                 let diaperDaily = '____';
                 let underpadDaily = '____';
 
@@ -606,9 +610,6 @@
                     </tr>
                 </table>`;
                 
-            // -----------------------------------------------------
-            // หมวดพิมพ์ ADL 
-            // -----------------------------------------------------
             } else if (type === 'ADL') {
                 const assess = globalAssessments.find(a => a.type === 'ADL' && a.date === recordDate);
                 if(!assess) return alert('ไม่พบข้อมูลการประเมินในระบบ');
@@ -654,9 +655,6 @@
                     </tr>
                 </table>`;
 
-            // -----------------------------------------------------
-            // หมวดพิมพ์ DEP (ซึมเศร้า)
-            // -----------------------------------------------------
             } else if (type === 'DEP') {
                 const assess = globalAssessments.find(a => a.type === 'DEP' && a.date === recordDate);
                 if(!assess) return alert('ไม่พบข้อมูลการประเมินในระบบ');
@@ -728,9 +726,6 @@
             printWin.document.close();
         }
 
-        // ==========================================
-        // อัปเกรด History Modal ให้มีปุ่มพิมพ์
-        // ==========================================
         function openHistoryModal() {
             const modal = document.getElementById('history-modal');
             const content = document.getElementById('history-modal-content');
@@ -768,7 +763,6 @@
                             
                             let ansListHtml = `<div class="mb-3"><p class="text-xs font-bold text-amber-600 border-b pb-1 mb-1">ส่วนที่ 1: แบบคัดกรอง 2Q</p>${q2List}</div>`;
                             if(q9List) {
-                                // 🌟 แก้ปัญหาคะแนน 9Q ผิด โดยบวกสดๆ จาก Array ทันที 🌟
                                 let true9QScore = 0;
                                 a.answers.forEach(ans => { if(!ans.q.includes('ท่านรู้สึกหดหู่') && !ans.q.includes('ท่านรู้สึกเบื่อ')) true9QScore += Number(ans.score); });
                                 ansListHtml += `<div><p class="text-xs font-bold text-red-600 border-b pb-1 mb-1">ส่วนที่ 2: แบบประเมิน 9Q (รวม ${true9QScore} คะแนน)</p>${q9List}</div>`;
@@ -840,7 +834,6 @@
             document.getElementById(id).classList.toggle('hidden');
         }
 
-        // 🌟 แก้ไขบั๊กการแปลข้อมูลยา (Array/JSON/String) ให้สมบูรณ์แบบ 🌟
         function cleanAndParseJSON(rawStr) {
             if (!rawStr || String(rawStr).trim() === '') return null;
             let cleanStr = String(rawStr).trim();
@@ -894,12 +887,11 @@
 
                 document.getElementById('profile-disease').innerText = data.disease || '-';
                 
-                // 🌟 ระบบจัดการรายการยาแบบครบวงจร 🌟
                 const medContainer = document.getElementById('profile-medication');
                 let meds = [];
                 
                 if (Array.isArray(data.medication)) {
-                    meds = data.medication; // ถ้าระบบบันทึกมาเป็น Array ตรงๆ
+                    meds = data.medication; 
                 } else if (typeof data.medication === 'string') {
                     if (data.medication.startsWith('[')) {
                         try {
@@ -909,7 +901,7 @@
                             if (Array.isArray(parsedMed)) meds = parsedMed;
                         } catch(e) {}
                     } else if (data.medication && data.medication !== '-') {
-                        meds = [{ name: data.medication }]; // กรณีเก่ามากที่เป็นข้อความเฉยๆ
+                        meds = [{ name: data.medication }];
                     }
                 }
 
@@ -956,7 +948,6 @@
                     medContainer.innerHTML = medHtml;
                 }
                 
-                // นำข้อมูลเก็บกลับเข้าไปใน data.medication เพื่อให้ function Print ดึงไปใช้ต่อได้ง่ายๆ
                 data.medication = meds; 
 
                 const diaperStatus = document.getElementById('profile-diaper-status');
