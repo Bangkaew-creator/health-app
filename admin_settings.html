@@ -14,32 +14,54 @@
     <script src="config.js"></script>
     
     <style>
-        body { font-family: 'Sarabun', sans-serif; background-color: #f4f7fa; }
+        body { font-family: 'Sarabun', sans-serif; background-color: #f8fafc; }
         .material-symbols-outlined { font-variation-settings: 'FILL' 1, 'wght' 400, 'GRAD' 0, 'opsz' 24; }
         .bg-navy { background-color: #0f172a; } .text-navy { color: #0f172a; }
-        .loader-small { border: 2px solid #f3f3f3; border-bottom-color: #00694a; border-radius: 50%; width: 20px; height: 20px; animation: spin 1s linear infinite; }
+        .loader-small { border: 2px solid #f3f3f3; border-bottom-color: #00694a; border-radius: 50%; width: 24px; height: 24px; animation: spin 1s linear infinite; }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
     </style>
 </head>
 <body class="flex h-[100dvh] overflow-hidden text-slate-800 relative">
 
     <div id="sidebar-overlay" class="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-40 hidden lg:hidden" onclick="toggleSidebar()"></div>
-    
+
     <aside id="sidebar" class="fixed inset-y-0 left-0 w-72 bg-navy text-white flex flex-col z-50 transform -translate-x-full lg:translate-x-0 lg:static transition-transform duration-300 ease-in-out">
         <div class="p-6 flex items-center justify-between border-b border-slate-700/40">
             <div class="flex items-center gap-3">
-                <div class="w-11 h-11 rounded-xl bg-white/10 flex items-center justify-center border border-amber-400/30"><span class="material-symbols-outlined text-amber-400 text-[26px]">local_hospital</span></div>
-                <div><h1 id="sidebar-hospital-name" class="font-bold text-[15px] tracking-wide text-white">กำลังโหลด...</h1><p id="sidebar-system-name" class="text-[10px] text-amber-400 font-medium">ระบบบริหารจัดการ</p></div>
+                <div class="w-11 h-11 rounded-xl bg-white/10 flex items-center justify-center border border-amber-400/30">
+                    <span class="material-symbols-outlined text-amber-400 text-[26px]">local_hospital</span>
+                </div>
+                <div>
+                    <h1 id="sidebar-hospital-name" class="font-bold text-[15px] tracking-wide text-white">กำลังโหลด...</h1>
+                    <p id="sidebar-system-name" class="text-[10px] text-amber-400 font-medium">ระบบบริหารจัดการ</p>
+                </div>
             </div>
             <button onclick="toggleSidebar()" class="lg:hidden text-slate-400 p-1"><span class="material-symbols-outlined">close</span></button>
         </div>
+
         <nav class="flex-1 px-4 py-6 space-y-2 overflow-y-auto">
-            <a href="admin_dashboard.html" class="flex items-center gap-3 px-4 py-3.5 text-slate-400 hover:bg-white/5 hover:text-white rounded-xl font-medium transition-all"><span class="material-symbols-outlined">dashboard</span> ภาพรวมระบบ</a>
-            <a href="admin_resources.html" class="flex items-center gap-3 px-4 py-3.5 text-slate-400 hover:bg-white/5 hover:text-white rounded-xl font-medium transition-all"><span class="material-symbols-outlined">inventory_2</span> บริหารทรัพยากร</a>
-            <a href="admin_datacenter.html" class="flex items-center gap-3 px-4 py-3.5 text-slate-400 hover:bg-white/5 hover:text-white rounded-xl font-medium transition-all"><span class="material-symbols-outlined">folder_shared</span> ศูนย์ข้อมูลผู้ป่วย</a>
-            <a href="admin_delegation.html" class="flex items-center gap-3 px-4 py-3.5 text-slate-400 hover:bg-white/5 hover:text-white rounded-xl font-medium transition-all"><span class="material-symbols-outlined">assignment_ind</span> มอบหมายงาน อสม.</a>
-            <a href="admin_reports.html" class="flex items-center gap-3 px-4 py-3.5 text-slate-400 hover:bg-white/5 hover:text-white rounded-xl font-medium transition-all"><span class="material-symbols-outlined">summarize</span> ศูนย์รายงาน (Export)</a>
-            <a href="admin_settings.html" class="flex items-center justify-between px-4 py-3.5 bg-white/10 text-amber-400 rounded-xl font-bold transition-all"><span class="flex items-center gap-3"><span class="material-symbols-outlined">settings</span> ตั้งค่าระบบ</span><span class="w-1.5 h-1.5 rounded-full bg-amber-400"></span></a>
+            <a href="admin_dashboard.html" class="flex items-center gap-3 px-4 py-3.5 text-slate-400 hover:bg-white/5 hover:text-white rounded-xl font-medium transition-all">
+                <span class="material-symbols-outlined">dashboard</span> ภาพรวมระบบ
+            </a>
+            <a href="admin_resources.html" class="flex items-center gap-3 px-4 py-3.5 text-slate-400 hover:bg-white/5 hover:text-white rounded-xl font-medium transition-all">
+                <span class="material-symbols-outlined">inventory_2</span> บริหารทรัพยากร
+            </a>
+            <a href="admin_datacenter.html" class="flex items-center gap-3 px-4 py-3.5 text-slate-400 hover:bg-white/5 hover:text-white rounded-xl font-medium transition-all">
+                <span class="material-symbols-outlined">folder_shared</span> ศูนย์ข้อมูลผู้ป่วย
+            </a>
+            <a href="admin_map.html" class="flex items-center gap-3 px-4 py-3.5 text-slate-400 hover:bg-white/5 hover:text-white rounded-xl font-medium transition-all">
+                <span class="material-symbols-outlined">map</span> แผนที่พิกัดผู้ป่วย
+            </a>
+            <a href="admin_delegation.html" class="flex items-center gap-3 px-4 py-3.5 text-slate-400 hover:bg-white/5 hover:text-white rounded-xl font-medium transition-all">
+                <span class="material-symbols-outlined">assignment_ind</span> มอบหมายงาน อสม.
+            </a>
+            <a href="admin_reports.html" class="flex items-center gap-3 px-4 py-3.5 text-slate-400 hover:bg-white/5 hover:text-white rounded-xl font-medium transition-all">
+                <span class="material-symbols-outlined">summarize</span> รายงาน (Export)
+            </a>
+            <a href="admin_settings.html" class="flex items-center justify-between px-4 py-3.5 bg-white/10 text-amber-400 rounded-xl font-bold transition-all" id="nav-settings">
+                <span class="flex items-center gap-3"><span class="material-symbols-outlined">settings</span> ตั้งค่าระบบ</span>
+                <span class="w-1.5 h-1.5 rounded-full bg-amber-400"></span>
+            </a>
         </nav>
     </aside>
 
@@ -48,118 +70,70 @@
             <div class="flex items-center">
                 <button onclick="toggleSidebar()" class="lg:hidden p-2.5 -ml-2 mr-3 text-slate-600 hover:bg-slate-100 rounded-xl transition-colors"><span class="material-symbols-outlined text-[26px]">menu</span></button>
                 <div>
-                    <h2 class="text-base lg:text-lg font-bold text-slate-900 leading-tight">ตั้งค่าระบบ (Settings)</h2>
-                    <p class="text-[11px] lg:text-xs text-slate-400 font-medium mt-0.5">จัดการข้อมูลส่วนตัวและการตั้งค่าหลังบ้าน</p>
+                    <h2 class="text-base lg:text-lg font-bold text-slate-900 leading-tight">ตั้งค่าบัญชีและระบบ</h2>
+                    <p id="header-hospital-name" class="text-[11px] lg:text-xs text-slate-400 font-medium mt-0.5">Settings</p>
                 </div>
             </div>
         </header>
 
-        <div class="flex-1 overflow-y-auto p-4 lg:p-8 pb-20">
-            <div class="max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-6 lg:gap-8">
+        <div class="flex-1 overflow-y-auto p-4 lg:p-6 relative">
+            <div id="loading-state" class="absolute inset-0 flex flex-col items-center justify-center bg-slate-50 z-20">
+                <div class="loader-small mb-3"></div><p class="text-sm text-slate-400 animate-pulse">กำลังโหลดข้อมูลระบบ...</p>
+            </div>
+            
+            <div id="settings-content" class="hidden max-w-2xl mx-auto space-y-6">
                 
-                <!-- Profile Section -->
-                <div class="bg-white rounded-[24px] shadow-sm border border-slate-200 overflow-hidden">
-                    <div class="bg-slate-50 px-6 py-4 border-b border-slate-100 flex items-center gap-3">
-                        <span class="material-symbols-outlined text-blue-600">manage_accounts</span>
-                        <h3 class="font-bold text-slate-800">โปรไฟล์ส่วนตัว (Admin Profile)</h3>
+                <!-- 🌟 กล่องข้อมูลส่วนตัว (ทุกคนแก้ไขได้) 🌟 -->
+                <div class="bg-white rounded-[24px] p-6 shadow-sm border border-slate-200 relative overflow-hidden">
+                    <div class="absolute top-0 right-0 w-32 h-32 bg-blue-50 rounded-bl-full -z-10"></div>
+                    <div class="flex items-center gap-2 mb-6">
+                        <span class="material-symbols-outlined text-blue-500 text-[28px]">manage_accounts</span>
+                        <h3 class="text-lg font-bold text-slate-800">ข้อมูลส่วนตัว (Profile)</h3>
                     </div>
-                    <div class="p-6 lg:p-8 space-y-6">
-                        <div class="flex flex-col sm:flex-row items-center sm:items-start gap-6">
-                            <div class="relative">
-                                <img id="prof-img" src="https://via.placeholder.com/150" alt="Profile" class="w-24 h-24 rounded-2xl object-cover shadow-md border-4 border-white">
-                            </div>
-                            <div class="flex-1 w-full space-y-2 text-center sm:text-left">
-                                <label class="block text-xs font-bold text-slate-600">ลิงก์รูปภาพ (URL)</label>
-                                <input type="text" id="input-prof-url" class="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-blue-500" placeholder="วางลิงก์รูปภาพที่นี่">
-                                <button onclick="syncLineProfile()" class="text-[11px] font-bold text-[#00b900] bg-[#00b900]/10 px-3 py-1.5 rounded-lg hover:bg-[#00b900]/20 transition-colors flex items-center justify-center sm:justify-start gap-1 mx-auto sm:mx-0">
-                                    <span class="material-symbols-outlined text-[14px]">sync</span> ดึงรูปจากแอป LINE อัตโนมัติ
-                                </button>
-                            </div>
+                    
+                    <div class="space-y-4">
+                        <div>
+                            <label class="text-sm font-bold text-slate-600 mb-1 block">ชื่อ-นามสกุล เจ้าหน้าที่</label>
+                            <input type="text" id="profile-name" class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="ระบุชื่อ-นามสกุลของคุณ">
                         </div>
-
-                        <div class="space-y-4">
-                            <div>
-                                <label class="block text-xs font-bold text-slate-600 mb-1">ชื่อ-นามสกุล</label>
-                                <input type="text" id="input-prof-name" class="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-blue-500">
-                            </div>
-                            <div>
-                                <label class="block text-xs font-bold text-slate-600 mb-1">เบอร์โทรศัพท์มือถือ</label>
-                                <input type="tel" id="input-prof-phone" class="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-blue-500">
-                            </div>
+                        <div>
+                            <label class="text-sm font-bold text-slate-600 mb-1 block">เบอร์โทรศัพท์ติดต่อ</label>
+                            <input type="tel" id="profile-phone" class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="ระบุเบอร์โทรศัพท์">
                         </div>
-
-                        <button onclick="saveAdminProfile()" id="btn-save-profile" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-xl shadow-lg transition-all flex justify-center items-center gap-2">
-                            บันทึกข้อมูลส่วนตัว
-                        </button>
+                        <div class="pt-2 border-t border-slate-100 flex justify-between items-center">
+                            <div>
+                                <p class="text-xs font-bold text-slate-400">ระดับสิทธิ์ของคุณ</p>
+                                <span id="profile-role" class="bg-slate-100 text-slate-600 px-3 py-1 rounded-lg text-xs font-bold mt-1 inline-block">กำลังโหลด...</span>
+                            </div>
+                            <button onclick="saveProfile()" id="btn-save-profile" class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2.5 rounded-xl text-sm font-bold shadow-sm transition-all active:scale-95 flex items-center gap-2">
+                                บันทึกโปรไฟล์
+                            </button>
+                        </div>
                     </div>
                 </div>
 
-                <!-- System Config Section -->
-                <div class="bg-white rounded-[24px] shadow-sm border border-slate-200 overflow-hidden">
-                    <div class="bg-amber-50 px-6 py-4 border-b border-amber-100 flex items-center gap-3">
-                        <span class="material-symbols-outlined text-amber-600">admin_panel_settings</span>
-                        <h3 class="font-bold text-slate-800">ตั้งค่าระบบส่วนกลาง (System Config)</h3>
+                <!-- 🌟 กล่องตั้งค่าระบบ (เฉพาะ ADMIN เห็น) 🌟 -->
+                <div id="system-config-card" class="hidden bg-white rounded-[24px] p-6 shadow-sm border border-slate-200 relative overflow-hidden">
+                    <div class="absolute top-0 right-0 w-32 h-32 bg-amber-50 rounded-bl-full -z-10"></div>
+                    <div class="flex items-center gap-2 mb-6">
+                        <span class="material-symbols-outlined text-amber-500 text-[28px]">settings_system_daydream</span>
+                        <h3 class="text-lg font-bold text-slate-800">ตั้งค่าระดับองค์กร (System Config)</h3>
                     </div>
                     
-                    <div class="p-6 lg:p-8 relative">
-                        <div id="config-loading" class="absolute inset-0 bg-white/80 backdrop-blur-sm z-10 flex flex-col items-center justify-center">
-                            <div class="loader-small border-amber-600"></div>
-                            <p class="text-xs text-slate-500 mt-2 font-medium">กำลังโหลดข้อมูลการตั้งค่า...</p>
+                    <div class="space-y-4">
+                        <div>
+                            <label class="text-sm font-bold text-slate-600 mb-1 block">ชื่อหน่วยงาน (รพ.สต. / ท้องถิ่น)</label>
+                            <input type="text" id="sys-hospital" class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-amber-500">
                         </div>
-                        
-                        <div class="bg-blue-50 border border-blue-100 p-4 rounded-xl mb-6 flex items-start gap-3">
-                            <span class="material-symbols-outlined text-blue-500 mt-0.5 text-[18px]">info</span>
-                            <p class="text-[11px] text-blue-700 leading-relaxed">การเปลี่ยนแปลงข้อมูลจะส่งผลต่อการแสดงผลของทั้งระบบ เช่น ชื่อหน่วยงานที่จะปรากฏบนหน้าจอของ อสม. ทุกคน</p>
+                        <div>
+                            <label class="text-sm font-bold text-slate-600 mb-1 block">จำนวนหมู่บ้านที่รับผิดชอบ</label>
+                            <input type="number" id="sys-villages" class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-amber-500">
                         </div>
-
-                        <div id="config-container" class="space-y-4 mb-6">
-                            
-                            <div>
-                                <label class="block text-[12px] font-bold text-slate-700 mb-1">รหัสลับแอดมินหลัก (Super Admin Code)</label>
-                                <input type="text" id="config-ADMIN_SECRET_CODE" class="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-amber-500">
-                            </div>
-                            <div>
-                                <label class="block text-[12px] font-bold text-slate-700 mb-1">ชื่อหน่วยงาน (เช่น รพ.สต.บ้านใหม่ / เทศบาล...)</label>
-                                <input type="text" id="config-HOSPITAL_NAME" class="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-amber-500">
-                            </div>
-                            <div>
-                                <label class="block text-[12px] font-bold text-slate-700 mb-1">จำนวนหมู่บ้านที่ดูแลทั้งหมด</label>
-                                <input type="number" id="config-VILLAGE_COUNT" class="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-amber-500">
-                            </div>
-                            <div class="grid grid-cols-2 gap-3">
-                                <div>
-                                    <label class="block text-[12px] font-bold text-slate-700 mb-1">ราคาผ้าอ้อม/ชิ้น</label>
-                                    <input type="number" id="config-DIAPER_PRICE" class="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-amber-500" step="0.01">
-                                </div>
-                                <div>
-                                    <label class="block text-[12px] font-bold text-slate-700 mb-1">ราคาแผ่นรอง/ชิ้น</label>
-                                    <input type="number" id="config-UNDERPAD_PRICE" class="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-amber-500" step="0.01">
-                                </div>
-                            </div>
-                            <div>
-                                <label class="block text-[12px] font-bold text-slate-700 mb-1">LINE Channel Access Token</label>
-                                <input type="text" id="config-LINE_CHANNEL_ACCESS_TOKEN" class="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-amber-500">
-                            </div>
-                            
-                            <!-- จัดการหน่วยงานย่อย (รพ.สต.) -->
-                            <div class="pt-4 border-t border-slate-200 mt-4">
-                                <div class="flex items-center justify-between mb-2">
-                                    <label class="block text-[13px] font-bold text-slate-800">จัดการหน่วยงานย่อย (Sub-Centers)</label>
-                                    <button onclick="addSubCenter()" class="text-[11px] bg-amber-100 text-amber-700 font-bold px-3 py-1.5 rounded-md hover:bg-amber-200 shadow-sm flex items-center gap-1">
-                                        <span class="material-symbols-outlined text-[14px]">add</span> เพิ่มหน่วยงาน
-                                    </button>
-                                </div>
-                                <p class="text-[11px] text-slate-500 mb-4 leading-relaxed">ใช้สำหรับสร้างสิทธิ์ให้ รพ.สต. ย่อย สามารถลงทะเบียนและเห็นข้อมูลเฉพาะหมู่บ้านตัวเองได้</p>
-                                <div id="sub-center-list" class="space-y-4">
-                                    <!-- ตัวอย่าง UI ที่จะถูกสร้างด้วย JS -->
-                                </div>
-                            </div>
-
+                        <div class="pt-2 border-t border-slate-100 text-right">
+                            <button onclick="saveSystemConfig()" id="btn-save-sys" class="bg-amber-500 hover:bg-amber-600 text-white px-6 py-2.5 rounded-xl text-sm font-bold shadow-sm transition-all active:scale-95 inline-flex items-center gap-2">
+                                บันทึกตั้งค่าระบบ
+                            </button>
                         </div>
-
-                        <button onclick="saveSystemConfigs()" id="btn-save-config" class="w-full bg-[#00694a] hover:bg-[#005239] text-white font-bold py-3 rounded-xl shadow-lg transition-all flex justify-center items-center gap-2">
-                            บันทึกการตั้งค่าระบบ
-                        </button>
                     </div>
                 </div>
 
@@ -172,194 +146,131 @@
         const db = firebase.firestore();
 
         let currentUserUid = "";
-        let originalConfigs = [];
-        let globalHospitalName = DEFAULT_CONFIGS.HOSPITAL_NAME;
-        let subCentersArray = []; 
+        let currentUserRole = "VHV";
 
-        function toggleSidebar() { 
-            document.getElementById('sidebar').classList.toggle('-translate-x-full'); 
-            document.getElementById('sidebar-overlay').classList.toggle('hidden');
-        }
+        function toggleSidebar() { document.getElementById('sidebar').classList.toggle('-translate-x-full'); }
 
         document.addEventListener("DOMContentLoaded", () => {
             document.getElementById('sidebar-hospital-name').innerText = DEFAULT_CONFIGS.HOSPITAL_NAME;
-            document.getElementById('sidebar-system-name').innerText = DEFAULT_CONFIGS.SYSTEM_NAME;
-            
+
             liff.init({ liffId: LIFF_ID }).then(() => {
-                if (liff.isLoggedIn()) { 
+                const mockUid = localStorage.getItem('dev_mock_uid');
+                if (mockUid) { 
+                    currentUserUid = mockUid;
+                    verifyAdminAccess(mockUid); 
+                } else if (liff.isLoggedIn()) { 
                     liff.getProfile().then(p => {
                         currentUserUid = p.userId;
                         verifyAdminAccess(p.userId);
-                    });
-                } else window.location.href = 'index.html';
-            });
+                    }).catch(() => bounceToLogin()); 
+                } else { bounceToLogin(); }
+            }).catch(() => bounceToLogin());
         });
+
+        function bounceToLogin() { window.location.href = 'index.html'; }
 
         async function verifyAdminAccess(uid) {
             try {
                 const userDoc = await db.collection('VHVs').doc(String(uid)).get();
-                if (userDoc.exists && String(userDoc.data().role).toUpperCase() === 'ADMIN') {
-                    globalHospitalName = userDoc.data().hospital_name || DEFAULT_CONFIGS.HOSPITAL_NAME;
-                    document.getElementById('sidebar-hospital-name').innerText = globalHospitalName;
+                let hasAccess = false;
+                let hospital = DEFAULT_CONFIGS.HOSPITAL_NAME;
+
+                try {
+                    const sysSnapHospital = await db.collection('SystemConfig').doc('HOSPITAL_NAME').get();
+                    if(sysSnapHospital.exists) hospital = sysSnapHospital.data().value || hospital;
+                } catch(e) {}
+
+                if (userDoc.exists) {
+                    const userData = userDoc.data();
+                    const role = String(userData.role || '').toUpperCase();
                     
-                    loadProfileData();
-                    loadSystemConfigs();
-                } else {
-                    alert("หน้านี้สำหรับแอดมินส่วนกลางเท่านั้น");
-                    window.location.href = 'admin_dashboard.html';
-                }
-            } catch (error) { window.location.href = 'index.html'; }
-        }
-
-        // --- ส่วนที่ 1: โปรไฟล์ ---
-        async function loadProfileData() {
-            try {
-                const docSnap = await db.collection('VHVs').doc(String(currentUserUid)).get();
-                if(docSnap.exists) {
-                    const data = docSnap.data();
-                    document.getElementById('input-prof-name').value = data.name || '';
-                    document.getElementById('input-prof-phone').value = data.phone || '';
-                    const picUrl = data.profile_pic || data.pic_url || 'https://via.placeholder.com/150';
-                    document.getElementById('input-prof-url').value = picUrl;
-                    document.getElementById('prof-img').src = picUrl;
-                }
-                document.getElementById('input-prof-url').addEventListener('input', function() {
-                    document.getElementById('prof-img').src = this.value || 'https://via.placeholder.com/150';
-                });
-            } catch (error) { console.error("ดึงโปรไฟล์ล้มเหลว"); }
-        }
-
-        async function syncLineProfile() {
-            try {
-                const profile = await liff.getProfile();
-                const picUrl = profile.pictureUrl;
-                if(picUrl) {
-                    document.getElementById('input-prof-url').value = picUrl;
-                    document.getElementById('prof-img').src = picUrl;
-                } else alert('บัญชี LINE ของคุณไม่มีรูปโปรไฟล์ครับ');
-            } catch (error) { alert('ไม่สามารถดึงรูปจาก LINE ได้'); }
-        }
-
-        async function saveAdminProfile() {
-            const name = document.getElementById('input-prof-name').value.trim();
-            const phone = document.getElementById('input-prof-phone').value.trim();
-            const pic = document.getElementById('input-prof-url').value.trim();
-            const btn = document.getElementById('btn-save-profile');
-            btn.disabled = true; btn.innerHTML = '<div class="loader-small border-t-white"></div> กำลังบันทึก...';
-            try {
-                await db.collection('VHVs').doc(String(currentUserUid)).set({ name: name, phone: phone, profile_pic: pic }, { merge: true });
-                alert('อัปเดตโปรไฟล์ส่วนตัวสำเร็จ!');
-            } catch (error) { alert('บันทึกขัดข้อง'); }
-            btn.disabled = false; btn.innerHTML = 'บันทึกข้อมูลส่วนตัว';
-        }
-
-        // --- ส่วนที่ 2: ระบบตั้งค่าส่วนกลางและหน่วยงานย่อย ---
-        async function loadSystemConfigs() {
-            try {
-                const snapshot = await db.collection('SystemConfig').get();
-                
-                document.getElementById('config-HOSPITAL_NAME').value = DEFAULT_CONFIGS.HOSPITAL_NAME;
-                document.getElementById('config-VILLAGE_COUNT').value = DEFAULT_CONFIGS.VILLAGE_COUNT;
-                document.getElementById('config-DIAPER_PRICE').value = DEFAULT_CONFIGS.DIAPER_PRICE;
-                document.getElementById('config-UNDERPAD_PRICE').value = DEFAULT_CONFIGS.UNDERPAD_PRICE;
-
-                snapshot.forEach(doc => {
-                    const el = document.getElementById(`config-${doc.id}`);
-                    if(el) el.value = doc.data().value;
-                    
-                    if (doc.id === 'SUB_CENTERS') {
-                        try { subCentersArray = JSON.parse(doc.data().value); } catch(e) { subCentersArray = []; }
+                    if (role === 'ADMIN') {
+                        hasAccess = true; currentUserRole = 'ADMIN';
+                        hospital = userData.hospital_name || hospital;
+                        document.getElementById('profile-role').innerText = 'ผู้ดูแลระบบส่วนกลาง (ADMIN)';
+                        document.getElementById('profile-role').className = 'bg-amber-100 text-amber-700 px-3 py-1 rounded-lg text-xs font-bold mt-1 inline-block border border-amber-200';
+                        document.getElementById('system-config-card').classList.remove('hidden'); // โชว์ตั้งค่าระบบ
+                    } else if (role === 'SUB_ADMIN') {
+                        hasAccess = true; currentUserRole = 'SUB_ADMIN';
+                        hospital = userData.hospital_name || hospital;
+                        document.getElementById('profile-role').innerText = 'เจ้าหน้าที่หน่วยงาน (SUB_ADMIN)';
+                        document.getElementById('profile-role').className = 'bg-blue-100 text-blue-700 px-3 py-1 rounded-lg text-xs font-bold mt-1 inline-block border border-blue-200';
+                        // ซ่อนปุ่มตั้งค่าใน Sidebar (เพราะตั้งใจให้เป็นแค่หน้า Profile ของตัวเอง)
+                        document.getElementById('nav-settings').innerHTML = '<span class="flex items-center gap-3"><span class="material-symbols-outlined">manage_accounts</span> ข้อมูลส่วนตัว</span><span class="w-1.5 h-1.5 rounded-full bg-amber-400"></span>';
                     }
-                });
-                
-                renderSubCenters();
-                document.getElementById('config-loading').classList.add('hidden');
-            } catch (error) { alert("โหลดข้อมูลตั้งค่าล้มเหลว"); }
-        }
 
-        // วาด UI สำหรับหน่วยงานย่อย (ปรับปรุง UI ให้ชัดเจนขึ้น)
-        function renderSubCenters() {
-            const container = document.getElementById('sub-center-list');
-            container.innerHTML = '';
-            subCentersArray.forEach((sc, index) => {
-                container.insertAdjacentHTML('beforeend', `
-                    <div class="p-4 bg-slate-50 border border-slate-200 rounded-xl relative shadow-sm">
-                        <button onclick="removeSubCenter(${index})" class="absolute top-3 right-3 text-red-400 hover:text-red-600 bg-red-50 p-1.5 rounded-lg transition-colors" title="ลบหน่วยงานนี้">
-                            <span class="material-symbols-outlined text-[18px]">delete</span>
-                        </button>
-                        
-                        <div class="mb-3 pr-10">
-                            <label class="block text-[11px] font-bold text-slate-500 mb-1">ชื่อหน่วยงานย่อย (รพ.สต.)</label>
-                            <input type="text" id="sc-name-${index}" value="${sc.name}" placeholder="เช่น รพ.สต. บ้านใหม่" class="w-full text-sm font-bold text-slate-800 border border-slate-300 rounded-lg p-2.5 focus:ring-2 focus:ring-amber-500">
-                        </div>
-                        
-                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-1">
-                            <div>
-                                <label class="block text-[11px] font-bold text-slate-500 mb-1">หมู่ที่รับผิดชอบ (คั่นด้วย , )</label>
-                                <input type="text" id="sc-villages-${index}" value="${sc.villages.join(',')}" placeholder="เช่น 1,2,3" class="w-full text-xs border border-slate-300 rounded-lg p-2 focus:ring-2 focus:ring-amber-500">
-                            </div>
-                            <div>
-                                <label class="block text-[11px] font-bold text-slate-500 mb-1">รหัสลับ (Secret Code)</label>
-                                <input type="text" id="sc-code-${index}" value="${sc.secret_code}" placeholder="เช่น SUB01" class="w-full text-xs font-mono text-amber-800 bg-amber-50 border border-amber-300 rounded-lg p-2 focus:ring-2 focus:ring-amber-500">
-                            </div>
-                        </div>
-                    </div>
-                `);
-            });
-            if(subCentersArray.length === 0) container.innerHTML = '<div class="text-center p-6 bg-slate-50 border border-dashed border-slate-300 rounded-xl"><p class="text-xs text-slate-400 italic">ยังไม่มีการตั้งค่าหน่วยงานย่อยในระบบ</p></div>';
-        }
-
-        function addSubCenter() {
-            subCentersArray.push({ name: "", villages: [], secret_code: "SUB_" + Math.floor(Math.random() * 1000) });
-            renderSubCenters();
-        }
-
-        function removeSubCenter(index) {
-            if(confirm('ต้องการลบหน่วยงานย่อยนี้ใช่หรือไม่?')) {
-                subCentersArray.splice(index, 1);
-                renderSubCenters();
-            }
-        }
-
-        async function saveSystemConfigs() {
-            // อัปเดตข้อมูลจาก Input ของ SubCenters กลับเข้า Array
-            subCentersArray.forEach((sc, index) => {
-                sc.name = document.getElementById(`sc-name-${index}`).value.trim();
-                const vStr = document.getElementById(`sc-villages-${index}`).value.trim();
-                sc.villages = vStr ? vStr.split(',').map(v => v.trim()) : [];
-                sc.secret_code = document.getElementById(`sc-code-${index}`).value.trim();
-            });
-
-            const targetKeys = ['ADMIN_SECRET_CODE', 'HOSPITAL_NAME', 'VILLAGE_COUNT', 'DIAPER_PRICE', 'UNDERPAD_PRICE', 'LINE_CHANNEL_ACCESS_TOKEN'];
-            const batch = db.batch();
-            let updatedHospitalName = null;
-
-            targetKeys.forEach(key => {
-                const el = document.getElementById(`config-${key}`);
-                if(el) {
-                    const newVal = el.value.trim();
-                    const ref = db.collection('SystemConfig').doc(String(key));
-                    batch.set(ref, { value: newVal }, { merge: true });
-                    if (key === 'HOSPITAL_NAME') updatedHospitalName = newVal;
+                    // โหลดข้อมูลส่วนตัว
+                    document.getElementById('profile-name').value = userData.name || '';
+                    document.getElementById('profile-phone').value = userData.phone || '';
                 }
-            });
 
-            batch.set(db.collection('SystemConfig').doc('SUB_CENTERS'), { value: JSON.stringify(subCentersArray) }, { merge: true });
+                if (hasAccess) {
+                    document.getElementById('sidebar-hospital-name').innerText = hospital;
+                    document.getElementById('header-hospital-name').innerText = `หน่วยงาน: ${hospital}`;
+                    
+                    // โหลดตั้งค่าระบบมาเตรียมไว้ (ถ้าเป็น Admin)
+                    if (currentUserRole === 'ADMIN') {
+                        document.getElementById('sys-hospital').value = hospital;
+                        try {
+                            const sysSnapVCount = await db.collection('SystemConfig').doc('VILLAGE_COUNT').get();
+                            if(sysSnapVCount.exists) document.getElementById('sys-villages').value = sysSnapVCount.data().value || DEFAULT_CONFIGS.VILLAGE_COUNT;
+                        } catch(e) {}
+                    }
 
-            const btn = document.getElementById('btn-save-config');
-            btn.disabled = true; btn.innerHTML = '<div class="loader-small border-t-white"></div> กำลังบันทึก...';
+                    document.getElementById('loading-state').classList.add('hidden');
+                    document.getElementById('settings-content').classList.remove('hidden');
+                } else {
+                    window.location.href = 'dashboard.html'; 
+                }
+            } catch (error) { bounceToLogin(); }
+        }
+
+        async function saveProfile() {
+            const newName = document.getElementById('profile-name').value.trim();
+            const newPhone = document.getElementById('profile-phone').value.trim();
+            
+            if(!newName) return alert('กรุณาระบุชื่อ-นามสกุล');
+
+            const btn = document.getElementById('btn-save-profile');
+            btn.innerHTML = '<div class="loader-small" style="width:16px;height:16px;border-color:white;border-bottom-color:transparent"></div> กำลังบันทึก...';
+            btn.disabled = true;
 
             try {
-                await batch.commit();
-                
-                if(updatedHospitalName) {
-                    await db.collection('VHVs').doc(String(currentUserUid)).set({ hospital_name: updatedHospitalName }, { merge: true });
-                    document.getElementById('sidebar-hospital-name').innerText = updatedHospitalName;
-                }
-                alert('บันทึกการตั้งค่าระบบเรียบร้อยแล้ว!');
-            } catch (error) { alert('เกิดข้อผิดพลาดในการบันทึกข้อมูล: ' + error.message); }
+                await db.collection('VHVs').doc(currentUserUid).update({
+                    name: newName,
+                    phone: newPhone
+                });
+                alert('อัปเดตข้อมูลส่วนตัวเรียบร้อยแล้ว!');
+            } catch(e) {
+                alert('เกิดข้อผิดพลาดในการบันทึกข้อมูล');
+                console.error(e);
+            }
+
+            btn.innerHTML = 'บันทึกโปรไฟล์';
+            btn.disabled = false;
+        }
+
+        async function saveSystemConfig() {
+            const newHosp = document.getElementById('sys-hospital').value.trim();
+            const newCount = document.getElementById('sys-villages').value.trim();
             
-            btn.disabled = false; btn.innerHTML = 'บันทึกการตั้งค่าระบบ';
+            if(!newHosp || !newCount) return alert('กรุณากรอกข้อมูลให้ครบถ้วน');
+
+            const btn = document.getElementById('btn-save-sys');
+            btn.innerHTML = '<div class="loader-small" style="width:16px;height:16px;border-color:white;border-bottom-color:transparent"></div> กำลังบันทึก...';
+            btn.disabled = true;
+
+            try {
+                await db.collection('SystemConfig').doc('HOSPITAL_NAME').set({ value: newHosp });
+                await db.collection('SystemConfig').doc('VILLAGE_COUNT').set({ value: newCount });
+                alert('บันทึกการตั้งค่าระบบเรียบร้อยแล้ว!\n(ระบบจะโหลดหน้าต่างใหม่เพื่ออัปเดตข้อมูล)');
+                window.location.reload();
+            } catch(e) {
+                alert('เกิดข้อผิดพลาดในการบันทึกข้อมูล');
+                console.error(e);
+                btn.innerHTML = 'บันทึกตั้งค่าระบบ';
+                btn.disabled = false;
+            }
         }
     </script>
 </body>
