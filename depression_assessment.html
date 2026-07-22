@@ -239,13 +239,16 @@
             if (!patientId) return alert("ไม่พบข้อมูลผู้ป่วย กรุณากลับไปหน้ารายชื่อ");
 
             let answered2Q = 0;
-            let answersDetail = []; // 🌟 ตัวแปรเก็บรายละเอียดรายข้อ
+            let answersDetail = []; 
+            let finalScore2Q = 0; 
+            let finalScore9Q = 0; 
 
             questions2Q.forEach(q => { 
                 const selected = document.querySelector(`input[name="${q.id}"]:checked`);
                 if(selected) {
                     answered2Q++;
                     const scoreVal = parseInt(selected.value);
+                    finalScore2Q += scoreVal;
                     const labelText = scoreVal === 1 ? "มี" : "ไม่มี";
                     answersDetail.push({ q: q.text, a: labelText, score: scoreVal });
                 }
@@ -259,6 +262,7 @@
                     if(selected) {
                         answered9Q++;
                         const scoreVal = parseInt(selected.value);
+                        finalScore9Q += scoreVal;
                         const optObj = options9Q.find(o => o.score === scoreVal);
                         answersDetail.push({ q: q.text, a: optObj ? optObj.label : String(scoreVal), score: scoreVal });
                     }
@@ -266,8 +270,6 @@
                 if (answered9Q < 9) return alert(`กรุณาตอบคำถาม 9Q ให้ครบถ้วน (ตอบแล้ว ${answered9Q}/9 ข้อ)`);
             }
 
-            const score2qStr = document.getElementById('score-details').innerText.split('|')[0].replace(/\D/g, '');
-            const score9qStr = need9Q ? document.getElementById('score-details').innerText.split('|')[1].replace(/\D/g, '') : '0';
             const status = document.getElementById('result-status').innerText;
             
             const btn = document.getElementById('btn-save');
@@ -281,7 +283,7 @@
                 const yyyy = now.getFullYear() + 543;
                 const formattedDate = `${dd}/${mm}/${yyyy}`;
 
-                // 1. อัปเดตสถานะซึมเศร้าในโปรไฟล์คนไข้ (Firebase Only)
+                // 1. อัปเดตสถานะซึมเศร้าในโปรไฟล์คนไข้
                 await db.collection('Patients').doc(String(patientId)).update({
                     dep_status: status
                 });
@@ -290,11 +292,11 @@
                 await db.collection('Assessments').add({
                     patient_id: String(patientId),
                     type: 'DEP',
-                    score1: parseInt(score2qStr) || 0,
-                    score2: parseInt(score9qStr) || 0,
+                    score1: finalScore2Q, // ใช้คะแนนที่บวกมาแบบถูกต้อง
+                    score2: finalScore9Q, // ใช้คะแนนที่บวกมาแบบถูกต้อง
                     result: status,
-                    answers: answersDetail,       // <-- ข้อมูลรายข้อ
-                    assessor_uid: currentUserUid, // <-- รหัสผูประเมิน
+                    answers: answersDetail,
+                    assessor_uid: currentUserUid, 
                     date: formattedDate,
                     timestamp: firebase.firestore.FieldValue.serverTimestamp()
                 });
