@@ -85,52 +85,63 @@
             </div>
             
             <div id="dashboard-content" class="hidden space-y-6">
-                <!-- 🌟 กล่องสถิติที่คลิกได้ 🌟 -->
+                
+                <!-- 🌟 การ์ดเรียงตัวและดีไซน์แบบเดิม (แต่กดได้) 🌟 -->
                 <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
-                    <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200 cursor-pointer hover:shadow-md transition-all hover:-translate-y-1" onclick="showGroupList('ทั้งหมด')">
-                        <div class="flex justify-between items-start mb-2">
-                            <p class="text-xs text-slate-500 font-bold">ผู้ป่วยทั้งหมด (Active)</p>
-                            <span class="material-symbols-outlined text-slate-400">group</span>
+                    <div class="bg-white rounded-[20px] p-5 shadow-sm border border-slate-200 cursor-pointer hover:border-blue-400 hover:shadow-md transition-all group" onclick="showGroupList('ทั้งหมด')">
+                        <div class="flex justify-between items-center mb-3">
+                            <h3 class="text-sm font-bold text-slate-600 group-hover:text-blue-600 transition-colors">ผู้ป่วยทั้งหมด</h3>
+                            <div class="w-8 h-8 rounded-full bg-blue-50 text-blue-600 flex items-center justify-center">
+                                <span class="material-symbols-outlined text-[18px]">group</span>
+                            </div>
                         </div>
-                        <h3 class="text-3xl font-black text-slate-800" id="stat-all">0</h3>
-                        <p class="text-[10px] text-slate-400 mt-2">คลิกเพื่อดูรายชื่อทั้งหมด</p>
+                        <p class="text-3xl font-black text-slate-800" id="stat-all">0</p>
+                        <p class="text-[10px] text-slate-400 mt-2 flex items-center gap-1"><span class="material-symbols-outlined text-[12px]">ads_click</span> คลิกเพื่อดูรายชื่อ</p>
                     </div>
-                    <div class="bg-gradient-to-br from-emerald-50 to-white p-5 rounded-2xl shadow-sm border border-emerald-100 cursor-pointer hover:shadow-md transition-all hover:-translate-y-1" onclick="showGroupList('ติดสังคม')">
-                        <div class="flex justify-between items-start mb-2">
-                            <p class="text-xs text-emerald-600 font-bold">กลุ่มติดสังคม</p>
-                            <span class="material-symbols-outlined text-emerald-500">directions_walk</span>
+
+                    <div class="bg-white rounded-[20px] p-5 shadow-sm border border-slate-200 cursor-pointer hover:border-emerald-400 hover:shadow-md transition-all group" onclick="showGroupList('ติดสังคม')">
+                        <div class="flex justify-between items-center mb-3">
+                            <h3 class="text-sm font-bold text-slate-600 group-hover:text-emerald-600 transition-colors">กลุ่มติดสังคม</h3>
+                            <div class="w-8 h-8 rounded-full bg-emerald-50 text-emerald-600 flex items-center justify-center">
+                                <span class="material-symbols-outlined text-[18px]">directions_walk</span>
+                            </div>
                         </div>
-                        <h3 class="text-3xl font-black text-emerald-700" id="stat-social">0</h3>
-                        <p class="text-[10px] text-emerald-500 mt-2">คลิกเพื่อดูรายชื่อ</p>
+                        <p class="text-3xl font-black text-slate-800" id="stat-social">0</p>
+                        <p class="text-[10px] text-slate-400 mt-2 flex items-center gap-1"><span class="material-symbols-outlined text-[12px]">ads_click</span> คลิกเพื่อดูรายชื่อ</p>
                     </div>
-                    <div class="bg-gradient-to-br from-amber-50 to-white p-5 rounded-2xl shadow-sm border border-amber-100 cursor-pointer hover:shadow-md transition-all hover:-translate-y-1" onclick="showGroupList('ติดบ้าน')">
-                        <div class="flex justify-between items-start mb-2">
-                            <p class="text-xs text-amber-600 font-bold">กลุ่มติดบ้าน</p>
-                            <span class="material-symbols-outlined text-amber-500">home</span>
+
+                    <div class="bg-white rounded-[20px] p-5 shadow-sm border border-slate-200 cursor-pointer hover:border-amber-400 hover:shadow-md transition-all group" onclick="showGroupList('ติดบ้าน')">
+                        <div class="flex justify-between items-center mb-3">
+                            <h3 class="text-sm font-bold text-slate-600 group-hover:text-amber-600 transition-colors">กลุ่มติดบ้าน</h3>
+                            <div class="w-8 h-8 rounded-full bg-amber-50 text-amber-600 flex items-center justify-center">
+                                <span class="material-symbols-outlined text-[18px]">home</span>
+                            </div>
                         </div>
-                        <h3 class="text-3xl font-black text-amber-700" id="stat-home">0</h3>
-                        <p class="text-[10px] text-amber-500 mt-2">คลิกเพื่อดูรายชื่อ</p>
+                        <p class="text-3xl font-black text-slate-800" id="stat-home">0</p>
+                        <p class="text-[10px] text-slate-400 mt-2 flex items-center gap-1"><span class="material-symbols-outlined text-[12px]">ads_click</span> คลิกเพื่อดูรายชื่อ</p>
                     </div>
-                    <div class="bg-gradient-to-br from-red-50 to-white p-5 rounded-2xl shadow-sm border border-red-100 cursor-pointer hover:shadow-md transition-all hover:-translate-y-1" onclick="showGroupList('ติดเตียง')">
-                        <div class="flex justify-between items-start mb-2">
-                            <p class="text-xs text-red-600 font-bold">กลุ่มติดเตียง</p>
-                            <span class="material-symbols-outlined text-red-500">bed</span>
+
+                    <div class="bg-white rounded-[20px] p-5 shadow-sm border border-slate-200 cursor-pointer hover:border-red-400 hover:shadow-md transition-all group" onclick="showGroupList('ติดเตียง')">
+                        <div class="flex justify-between items-center mb-3">
+                            <h3 class="text-sm font-bold text-slate-600 group-hover:text-red-600 transition-colors">กลุ่มติดเตียง</h3>
+                            <div class="w-8 h-8 rounded-full bg-red-50 text-red-600 flex items-center justify-center">
+                                <span class="material-symbols-outlined text-[18px]">bed</span>
+                            </div>
                         </div>
-                        <h3 class="text-3xl font-black text-red-700" id="stat-bed">0</h3>
-                        <p class="text-[10px] text-red-500 mt-2">คลิกเพื่อดูรายชื่อ</p>
+                        <p class="text-3xl font-black text-slate-800" id="stat-bed">0</p>
+                        <p class="text-[10px] text-slate-400 mt-2 flex items-center gap-1"><span class="material-symbols-outlined text-[12px]">ads_click</span> คลิกเพื่อดูรายชื่อ</p>
                     </div>
                 </div>
 
-                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                    <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
-                        <h3 class="font-bold text-slate-800 mb-4 flex items-center gap-2"><span class="material-symbols-outlined text-blue-500">pie_chart</span> สัดส่วนกลุ่มผู้ป่วย</h3>
-                        <canvas id="groupChart" height="200"></canvas>
-                    </div>
-                    <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
-                        <h3 class="font-bold text-slate-800 mb-4 flex items-center gap-2"><span class="material-symbols-outlined text-orange-500">bar_chart</span> ความต้องการอุปกรณ์การแพทย์</h3>
-                        <canvas id="equipChart" height="200"></canvas>
-                    </div>
+                <!-- 🌟 กล่องข้อมูลเดิมด้านล่าง (เผื่อนำข้อมูลอื่นมาใส่ต่อ) 🌟 -->
+                <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
+                    <h3 class="font-bold text-slate-800 mb-4">ยินดีต้อนรับสู่ระบบจัดการข้อมูลผู้ป่วย</h3>
+                    <p class="text-sm text-slate-500 leading-relaxed">
+                        คุณสามารถดูภาพรวมของจำนวนผู้ป่วยแต่ละกลุ่มได้จากหน้าต่างด้านบน 
+                        และสามารถ <strong class="text-blue-600">คลิกที่การ์ด</strong> เพื่อดูรายชื่อผู้ป่วยที่ถูกจัดกลุ่มแยกตามหมู่บ้านได้อย่างรวดเร็วครับ
+                    </p>
                 </div>
+
             </div>
         </div>
 
@@ -149,14 +160,13 @@
 
     </main>
 
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script>
         firebase.initializeApp(firebaseConfig);
         const db = firebase.firestore();
 
         let currentUserRole = "ADMIN";
         let assignedVillages = [];
-        let dashboardPatients = []; // เก็บข้อมูลเพื่อใช้เปิด Modal
+        let dashboardPatients = []; 
 
         function toggleSidebar() { document.getElementById('sidebar').classList.toggle('-translate-x-full'); }
 
@@ -210,7 +220,6 @@
                 dashboardPatients = [];
                 
                 let cSocial = 0, cHome = 0, cBed = 0, cAll = 0;
-                let equipCount = {};
 
                 snapshot.forEach(doc => {
                     const p = doc.data();
@@ -223,14 +232,6 @@
                         if(p.group === 'ติดสังคม') cSocial++;
                         else if(p.group === 'ติดบ้าน') cHome++;
                         else if(p.group === 'ติดเตียง') cBed++;
-
-                        if (p.equipment && p.equipment !== '-' && p.equipment !== 'ไม่มีความต้องการเพิ่มเติม') {
-                            const eqs = p.equipment.split(',');
-                            eqs.forEach(eq => {
-                                const trimEq = eq.trim();
-                                if(trimEq) equipCount[trimEq] = (equipCount[trimEq] || 0) + 1;
-                            });
-                        }
                     }
                 });
 
@@ -239,47 +240,12 @@
                 document.getElementById('stat-home').innerText = cHome;
                 document.getElementById('stat-bed').innerText = cBed;
 
-                renderCharts(cSocial, cHome, cBed, equipCount);
-
                 document.getElementById('loading-state').classList.add('hidden');
                 document.getElementById('dashboard-content').classList.remove('hidden');
 
             } catch (error) { alert("ดึงฐานข้อมูลล้มเหลว"); }
         }
 
-        function renderCharts(social, home, bed, equipCount) {
-            new Chart(document.getElementById('groupChart'), {
-                type: 'doughnut',
-                data: {
-                    labels: ['ติดสังคม', 'ติดบ้าน', 'ติดเตียง'],
-                    datasets: [{
-                        data: [social, home, bed],
-                        backgroundColor: ['#10b981', '#f59e0b', '#ef4444'],
-                        borderWidth: 0
-                    }]
-                },
-                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom', labels: { font: { family: 'Sarabun' } } } } }
-            });
-
-            const eqLabels = Object.keys(equipCount).slice(0, 5); // เอาแค่ 5 อันดับแรก
-            const eqData = eqLabels.map(l => equipCount[l]);
-            
-            new Chart(document.getElementById('equipChart'), {
-                type: 'bar',
-                data: {
-                    labels: eqLabels.length > 0 ? eqLabels : ['ไม่มีข้อมูล'],
-                    datasets: [{
-                        label: 'จำนวนที่ต้องการ',
-                        data: eqData.length > 0 ? eqData : [0],
-                        backgroundColor: '#3b82f6',
-                        borderRadius: 4
-                    }]
-                },
-                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } } }
-            });
-        }
-
-        // 🌟 ฟังก์ชันเปิด Modal โชว์รายชื่อผู้ป่วยในกลุ่มนั้นแยกตามหมู่ 🌟
         function showGroupList(targetGroup) {
             const modal = document.getElementById('group-list-modal');
             const content = document.getElementById('group-list-content');
@@ -287,13 +253,11 @@
             
             document.getElementById('group-modal-title').innerHTML = `รายชื่อผู้ป่วยกลุ่ม: <span class="${targetGroup==='ติดเตียง'?'text-red-600':targetGroup==='ติดบ้าน'?'text-amber-600':targetGroup==='ติดสังคม'?'text-emerald-600':'text-blue-600'}">${targetGroup}</span>`;
 
-            // กรองข้อมูลตามกลุ่ม
             let filtered = dashboardPatients.filter(p => targetGroup === 'ทั้งหมด' ? true : p.group === targetGroup);
 
             if (filtered.length === 0) {
                 container.innerHTML = '<p class="text-center text-slate-400 py-10">ไม่มีผู้ป่วยในกลุ่มนี้</p>';
             } else {
-                // จัดกลุ่มตามหมู่บ้าน
                 const groupedByVillage = {};
                 filtered.forEach(p => {
                     const v = p.village_no || 'ไม่ระบุ';
@@ -301,34 +265,34 @@
                     groupedByVillage[v].push(p);
                 });
 
-                // เรียงหมู่บ้าน
                 const sortedVillages = Object.keys(groupedByVillage).sort((a,b) => parseInt(a) - parseInt(b));
 
                 let html = '';
                 sortedVillages.forEach(v => {
                     html += `<div class="mb-5">
-                                <h4 class="font-bold text-navy bg-white border border-slate-200 px-3 py-1.5 rounded-lg mb-3 shadow-sm inline-block text-sm">
-                                    หมู่ที่ ${v} <span class="text-slate-400 font-normal ml-1">(${groupedByVillage[v].length} คน)</span>
+                                <h4 class="font-bold text-slate-700 border-b border-slate-200 pb-2 mb-3 text-sm flex items-center gap-2">
+                                    <span class="material-symbols-outlined text-emerald-600 text-[18px]">location_on</span> หมู่ที่ ${v} 
+                                    <span class="text-slate-400 font-normal text-xs bg-slate-100 px-2 py-0.5 rounded-full">${groupedByVillage[v].length} คน</span>
                                 </h4>
-                                <div class="space-y-2">`;
+                                <div class="space-y-2 pl-2">`;
                     
                     groupedByVillage[v].forEach(p => {
-                        let avatar = `<div class="w-10 h-10 rounded-full bg-slate-200 text-slate-500 font-bold flex items-center justify-center flex-shrink-0 text-sm">${p.name ? p.name.substring(0,1) : '?'}</div>`;
+                        let avatar = `<div class="w-10 h-10 rounded-full bg-slate-100 text-slate-400 font-bold flex items-center justify-center flex-shrink-0 text-sm border-2 border-white shadow-sm">${p.name ? p.name.substring(0,1) : '?'}</div>`;
                         if (p.profile_pic && (p.profile_pic.startsWith('data:image') || p.profile_pic.startsWith('http'))) {
-                            avatar = `<img src="${p.profile_pic}" class="w-10 h-10 rounded-full object-cover flex-shrink-0 border border-slate-200">`;
+                            avatar = `<img src="${p.profile_pic}" class="w-10 h-10 rounded-full object-cover flex-shrink-0 border-2 border-white shadow-sm">`;
                         }
 
                         html += `
-                            <div class="flex items-center justify-between bg-white border border-slate-200 p-3 rounded-xl hover:border-blue-400 hover:shadow-md transition-all cursor-pointer group" onclick="window.open('patient_profile.html?id=${p.id}', '_blank')">
+                            <div class="flex items-center justify-between bg-white border border-slate-100 p-3 rounded-xl hover:border-blue-300 hover:shadow-md transition-all cursor-pointer group" onclick="window.open('patient_profile.html?id=${p.id}', '_blank')">
                                 <div class="flex items-center gap-3">
                                     ${avatar}
                                     <div>
-                                        <p class="text-sm font-bold text-slate-800 group-hover:text-blue-600 transition-colors">${p.prefix||''}${p.name||'ไม่ระบุชื่อ'}</p>
-                                        <p class="text-[10px] text-slate-500 font-medium">HN: ${p.id||'-'}</p>
+                                        <p class="text-sm font-bold text-slate-700 group-hover:text-blue-600 transition-colors">${p.prefix||''}${p.name||'ไม่ระบุชื่อ'}</p>
+                                        <p class="text-[10px] text-slate-400 font-medium">HN: ${p.id||'-'}</p>
                                     </div>
                                 </div>
-                                <div class="bg-blue-50 text-blue-600 p-1.5 rounded-lg group-hover:bg-blue-600 group-hover:text-white transition-colors flex items-center justify-center">
-                                    <span class="material-symbols-outlined text-[18px]">arrow_forward</span>
+                                <div class="bg-blue-50 text-blue-600 w-8 h-8 rounded-full group-hover:bg-blue-600 group-hover:text-white transition-colors flex items-center justify-center shadow-sm">
+                                    <span class="material-symbols-outlined text-[16px]">arrow_forward</span>
                                 </div>
                             </div>
                         `;
