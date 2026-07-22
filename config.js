@@ -33,39 +33,53 @@ const DEFAULT_CONFIGS = {
 
 // ==========================================
 // 🛡️ DIGITAL WATERMARK & DEVELOPER CREDIT
-// ระบบป้องกันการลบเครดิตผู้พัฒนา
+// (รูปแบบ Sidebar / Menu)
 // ==========================================
 document.addEventListener("DOMContentLoaded", function() {
-    // 1. สร้างกล่องลายน้ำ (Watermark)
-    const creditDiv = document.createElement("div");
-    creditDiv.id = "dev-credit-watermark";
-    creditDiv.innerHTML = `
-        <div style="position: fixed; bottom: 15px; right: 15px; background: rgba(255,255,255,0.85); backdrop-filter: blur(8px); padding: 10px 14px; border-radius: 12px; font-size: 10px; color: #475569; box-shadow: 0 4px 15px rgba(0,0,0,0.08); border: 1px solid #e2e8f0; z-index: 999999; pointer-events: none; text-align: right; line-height: 1.5; font-family: 'Sarabun', sans-serif;">
-            <strong style="color: #00694a; font-size: 11px;">ระบบ อสม.สามารถ (Orsomo Smart)</strong><br>
-            ออกแบบและพัฒนาโดย:<br>
-            <span style="font-weight: bold; color: #1e293b;">นายศุภวุธ อสุนี</span><br>
-            นักวิชาการสาธารณสุขปฏิบัติการ<br>
-            เทศบาลเมืองบางแก้ว
-        </div>
-    `;
-    
-    // 2. แปะลายน้ำลงในหน้าเว็บ
-    document.body.appendChild(creditDiv);
-    
-    // 3. ระบบป้องกันการแอบลบ (MutationObserver)
-    // หากมีคนใช้ Inspect Element แอบลบ กล่องนี้จะถูกสร้างใหม่ทันที!
+    // ฟังก์ชันสำหรับแทรกเครดิตลงใน Sidebar
+    function injectCreditToSidebar() {
+        // หา <nav> ใน sidebar
+        const sidebarNav = document.querySelector('aside nav');
+        
+        // ถ้าหาเจอ และยังไม่มีเครดิต
+        if (sidebarNav && !document.getElementById('dev-credit-sidebar')) {
+            const creditDiv = document.createElement("div");
+            creditDiv.id = "dev-credit-sidebar";
+            // ใช้ mt-auto เพื่อดันกล่องนี้ให้ไปอยู่ล่างสุดของเมนูเสมอ
+            creditDiv.className = "mt-auto pt-8 pb-4 px-4 text-center select-none pointer-events-none";
+            creditDiv.innerHTML = `
+                <div class="border-t border-slate-700/50 pt-4">
+                    <p style="font-size: 11px; color: #94a3b8; font-weight: bold; font-family: 'Sarabun', sans-serif;">Powered by Orsomo Smart</p>
+                    <p style="font-size: 9px; color: #64748b; margin-top: 4px; line-height: 1.4; font-family: 'Sarabun', sans-serif;">
+                        Designed & Developed by<br>
+                        <span style="color: #cbd5e1;">Suppawut Asunee</span><br>
+                        Public Health Technical Officer
+                    </p>
+                </div>
+            `;
+            sidebarNav.appendChild(creditDiv);
+        }
+    }
+
+    // เรียกใช้ฟังก์ชันครั้งแรก
+    setTimeout(injectCreditToSidebar, 500); // ดีเลย์นิดนึงรอ DOM โหลดเสร็จ
+
+    // ระบบป้องกันการลบ (MutationObserver) จะคอยเฝ้าดูว่า sidebar ถูกแก้หรือลบเครดิตออกหรือไม่
     const observer = new MutationObserver(function(mutations) {
-        if (!document.body.contains(creditDiv)) {
-            document.body.appendChild(creditDiv);
-            console.warn("⚠️ สงวนสิทธิ์เครดิตผู้พัฒนา: ไม่อนุญาตให้ลบลายน้ำ (Orsomo Smart by Suppawut Asunee)");
+        const sidebarNav = document.querySelector('aside nav');
+        if (sidebarNav && !document.getElementById('dev-credit-sidebar')) {
+            injectCreditToSidebar();
         }
     });
     
-    observer.observe(document.body, { childList: true });
+    // เริ่มสังเกตการณ์
+    if(document.body) {
+        observer.observe(document.body, { childList: true, subtree: true });
+    }
 
-    // 4. พิมพ์ลายน้ำลงใน Console (สำหรับพวกชอบแงะโค้ด)
+    // พิมพ์ลายน้ำลงใน Console
     console.log(
-        "%c🏥 Orsomo Smart System%c\n\nDeveloped by: นายศุภวุธ อสุนี\nPosition: นักวิชาการสาธารณสุขปฏิบัติการ\nOrganization: เทศบาลเมืองบางแก้ว\n\n%c© สงวนสิทธิ์ทรัพย์สินทางปัญญา ห้ามลบหรือดัดแปลงเครดิตผู้พัฒนา", 
+        "%c🏥 Orsomo Smart System%c\n\nDeveloped by: Suppawut Asunee\nPosition: Public Health Technical Officer\nOrganization: Bang Kaeo Town Municipality\n\n%c© All Rights Reserved.", 
         "color: #00694a; font-size: 20px; font-weight: bold;", 
         "color: #333; font-size: 14px;", 
         "color: red; font-size: 12px; font-weight: bold;"
