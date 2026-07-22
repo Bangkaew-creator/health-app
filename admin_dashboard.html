@@ -81,12 +81,11 @@
 
         <div class="flex-1 overflow-y-auto p-4 lg:p-6 relative">
             <div id="loading-state" class="absolute inset-0 flex flex-col items-center justify-center bg-slate-50 z-20">
-                <div class="loader-small mb-3"></div><p class="text-sm text-slate-400 animate-pulse">กำลังโหลดข้อมูลระบบ...</p>
+                <div class="loader-small mb-3"></div><p class="text-sm text-slate-400 animate-pulse">กำลังประมวลผลสถิติ...</p>
             </div>
             
             <div id="dashboard-content" class="hidden max-w-2xl mx-auto space-y-4">
                 
-                <!-- 🌟 การ์ดเรียงตัวเหมือนดีไซน์เดิมเป๊ะ แต่มีลูกเล่นกดได้ 🌟 -->
                 <div class="bg-white rounded-[24px] p-6 shadow-sm border-l-4 border-blue-500 cursor-pointer hover:bg-blue-50 hover:shadow-md transition-all group" onclick="showGroupList('ทั้งหมด')">
                     <div class="flex justify-between items-start">
                         <div>
@@ -135,7 +134,6 @@
                     </div>
                 </div>
 
-                <!-- 🌟 กล่องข้อมูลรออนุมัติ และ ค้างเยี่ยม (ของเดิมที่ขอกู้คืน) 🌟 -->
                 <div class="mt-6 space-y-4">
                     <div class="bg-white rounded-[24px] p-5 shadow-sm border border-slate-200 cursor-pointer hover:bg-slate-50 transition-colors" onclick="window.location.href='admin_datacenter.html'">
                         <div class="flex justify-between items-center">
@@ -167,7 +165,6 @@
             </div>
         </div>
 
-        <!-- Modal โชว์รายชื่อเมื่อกดการ์ด (ทำงานเหมือนเดิม) -->
         <div id="group-list-modal" class="fixed inset-0 bg-[#111c2d]/50 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4 opacity-0 transition-opacity duration-300">
             <div class="bg-white rounded-[24px] w-full max-w-lg max-h-[85vh] flex flex-col shadow-2xl transform scale-95 transition-transform duration-300" id="group-list-content">
                 <div class="p-5 border-b border-slate-100 flex justify-between items-center bg-slate-50 rounded-t-[24px]">
@@ -269,7 +266,6 @@
                         else if(p.group === 'ติดบ้าน') cHome++;
                         else if(p.group === 'ติดเตียง') cBed++;
 
-                        // เช็คสถานะผ้าอ้อมรออนุมัติ
                         if (p.diaper) {
                             try {
                                 let dpStr = typeof p.diaper === 'string' ? p.diaper.replace(/""/g, '"') : JSON.stringify(p.diaper);
@@ -279,7 +275,6 @@
                             } catch(e) {}
                         }
 
-                        // เช็คผู้ป่วยค้างเยี่ยม
                         const daysSince = calculateDaysSince(p.last_assess);
                         if (daysSince > 30) cOverdue++;
                     }
@@ -296,7 +291,23 @@
                 document.getElementById('loading-state').classList.add('hidden');
                 document.getElementById('dashboard-content').classList.remove('hidden');
 
+                // 🌟 ระบบจับ URL Parameter ถ้ากด "ย้อนกลับ" จากแฟ้มประวัติ จะเปิด Modal เดิมให้ 🌟
+                const urlParams = new URLSearchParams(window.location.search);
+                const openGroup = urlParams.get('openGroup');
+                if (openGroup) {
+                    setTimeout(() => showGroupList(openGroup), 100);
+                    // เคลียร์ URL ป้องกันการกดรีเฟรชแล้วติดลูป
+                    window.history.replaceState(null, '', window.location.pathname);
+                }
+
             } catch (error) { alert("ดึงฐานข้อมูลล้มเหลว"); }
+        }
+
+        // 🌟 ฟังก์ชันส่งรหัสและกลุ่มข้ามหน้าไปยัง Profile 🌟
+        function viewPatient(id, group) {
+            sessionStorage.setItem('return_to', 'dashboard');
+            sessionStorage.setItem('return_group', group);
+            window.location.href = `patient_profile.html?id=${id}`;
         }
 
         function showGroupList(targetGroup) {
@@ -332,11 +343,12 @@
                     groupedByVillage[v].forEach(p => {
                         let avatar = `<div class="w-10 h-10 rounded-full bg-slate-100 text-slate-400 font-bold flex items-center justify-center flex-shrink-0 text-sm border-2 border-white shadow-sm">${p.name ? p.name.substring(0,1) : '?'}</div>`;
                         if (p.profile_pic && (p.profile_pic.startsWith('data:image') || p.profile_pic.startsWith('http'))) {
-                            avatar = `<img src="${p.profile_pic}" class="w-10 h-10 rounded-full object-cover flex-shrink-0 border border-slate-200">`;
+                            avatar = `<img src="${p.profile_pic}" class="w-10 h-10 rounded-full object-cover flex-shrink-0 border-2 border-white shadow-sm">`;
                         }
 
+                        // เปลี่ยน onclick ให้เรียก viewPatient() แทน
                         html += `
-                            <div class="flex items-center justify-between bg-white border border-slate-100 p-3 rounded-xl hover:border-blue-300 hover:shadow-md transition-all cursor-pointer group" onclick="window.open('patient_profile.html?id=${p.id}', '_blank')">
+                            <div class="flex items-center justify-between bg-white border border-slate-100 p-3 rounded-xl hover:border-blue-300 hover:shadow-md transition-all cursor-pointer group" onclick="viewPatient('${p.id}', '${targetGroup}')">
                                 <div class="flex items-center gap-3">
                                     ${avatar}
                                     <div>
