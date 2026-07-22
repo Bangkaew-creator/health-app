@@ -148,7 +148,7 @@
                     </div>
                 </div>
 
-                <!-- 🌟 กล่องจัดการหน่วยงานย่อย Sub-Admin (เฉพาะ ADMIN เห็น) 🌟 -->
+                <!-- 🌟 กล่องจัดการหน่วยงานย่อย (ดึงจาก SUB_CENTERS ใน SystemConfig) 🌟 -->
                 <div id="sub-agency-card" class="hidden bg-white rounded-[24px] p-6 shadow-sm border border-slate-200 relative overflow-hidden">
                     <div class="absolute top-0 right-0 w-32 h-32 bg-emerald-50 rounded-bl-full -z-10"></div>
                     <div class="flex items-center gap-2 mb-6">
@@ -159,7 +159,6 @@
                         สร้างรหัสผ่านลับ (Secret Code) เพื่อให้เจ้าหน้าที่ รพ.สต. นำไปกรอกตอนลงทะเบียนเข้าใช้งาน โดยระบบจะล็อกสิทธิ์ให้ดูแลได้เฉพาะหมู่ที่กำหนดไว้เท่านั้น
                     </p>
 
-                    <!-- ฟอร์มสร้างหน่วยงานใหม่ -->
                     <div class="bg-emerald-50 p-4 rounded-xl border border-emerald-100 mb-6">
                         <h4 class="text-sm font-bold text-emerald-800 mb-3 flex items-center gap-1"><span class="material-symbols-outlined text-[18px]">add_circle</span> เพิ่มหน่วยงานย่อยใหม่</h4>
                         <div class="space-y-3">
@@ -181,7 +180,6 @@
                         </div>
                     </div>
 
-                    <!-- รายการหน่วยงานที่มีอยู่ -->
                     <div>
                         <h4 class="text-sm font-bold text-slate-700 mb-3 border-b border-slate-100 pb-2">รายชื่อรหัสหน่วยงานย่อยทั้งหมด</h4>
                         <div id="sub-agency-list" class="space-y-2">
@@ -243,7 +241,6 @@
                         document.getElementById('profile-role').innerText = 'ผู้ดูแลระบบส่วนกลาง (ADMIN)';
                         document.getElementById('profile-role').className = 'bg-amber-100 text-amber-700 px-3 py-1 rounded-lg text-xs font-bold mt-1 inline-block border border-amber-200';
                         
-                        // เปิดการ์ดของแอดมินหลัก
                         document.getElementById('system-config-card').classList.remove('hidden'); 
                         document.getElementById('sub-agency-card').classList.remove('hidden');
                         
@@ -253,7 +250,6 @@
                         document.getElementById('profile-role').innerText = 'เจ้าหน้าที่หน่วยงาน (SUB_ADMIN)';
                         document.getElementById('profile-role').className = 'bg-blue-100 text-blue-700 px-3 py-1 rounded-lg text-xs font-bold mt-1 inline-block border border-blue-200';
                         
-                        // ซ่อนปุ่มตั้งค่าใน Sidebar
                         const navSet = document.getElementById('nav-settings');
                         navSet.innerHTML = '<span class="flex items-center gap-3"><span class="material-symbols-outlined">manage_accounts</span> ข้อมูลส่วนตัว</span><span class="w-1.5 h-1.5 rounded-full bg-amber-400"></span>';
                     }
@@ -266,7 +262,6 @@
                     document.getElementById('sidebar-hospital-name').innerText = hospital;
                     document.getElementById('header-hospital-name').innerText = `หน่วยงาน: ${hospital}`;
                     
-                    // โหลดข้อมูลให้แอดมินหลัก
                     if (currentUserRole === 'ADMIN') {
                         document.getElementById('sys-hospital').value = hospital;
                         try {
@@ -280,7 +275,7 @@
                             document.getElementById('sys-underpad-price').value = sysSnapUP.exists ? sysSnapUP.data().value : (DEFAULT_CONFIGS.UNDERPAD_PRICE || 6.00);
                         } catch(e) {}
 
-                        // โหลดรายชื่อหน่วยงานย่อย
+                        // 🌟 ดึงข้อมูลหน่วยงานย่อยจาก SUB_CENTERS 🌟
                         loadSubAgencies();
                     }
 
@@ -341,25 +336,36 @@
             }
         }
 
+        // 🌟 ดึงข้อมูลจากโครงสร้าง JSON ของ SUB_CENTERS อย่างถูกต้อง 🌟
         async function loadSubAgencies() {
             const listContainer = document.getElementById('sub-agency-list');
             try {
-                const snapshot = await db.collection('RegistrationTokens').where('role', '==', 'SUB_ADMIN').get();
-                if (snapshot.empty) {
+                const docSnap = await db.collection('SystemConfig').doc('SUB_CENTERS').get();
+                let centers = [];
+
+                if (docSnap.exists) {
+                    const val = docSnap.data().value;
+                    if(val && typeof val === 'string') {
+                        try { centers = JSON.parse(val); } catch(e){}
+                    } else if (val && Array.isArray(val)) {
+                        centers = val;
+                    }
+                }
+
+                if (centers.length === 0) {
                     listContainer.innerHTML = '<p class="text-xs text-slate-400 text-center py-4 bg-slate-50 rounded-xl border border-dashed border-slate-200">ยังไม่มีการสร้างรหัสผ่านสำหรับหน่วยงานย่อย</p>';
                     return;
                 }
 
                 let html = '';
-                snapshot.forEach(doc => {
-                    const data = doc.data();
+                centers.forEach(c => {
                     html += `
                         <div class="bg-white border border-slate-200 p-3 rounded-xl flex justify-between items-center hover:border-emerald-300 transition-colors">
                             <div>
-                                <p class="text-sm font-bold text-slate-800">${data.hospital_name || '-'}</p>
-                                <p class="text-[11px] text-slate-500 mt-0.5"><span class="font-bold text-emerald-600">รหัส: ${doc.id}</span> | หมู่ที่ดูแล: ${data.assigned_villages ? data.assigned_villages.join(', ') : '-'}</p>
+                                <p class="text-sm font-bold text-slate-800">${c.name || '-'}</p>
+                                <p class="text-[11px] text-slate-500 mt-0.5"><span class="font-bold text-emerald-600">รหัส: ${c.secret_code || '-'}</span> | หมู่ที่ดูแล: ${c.villages ? c.villages.join(', ') : '-'}</p>
                             </div>
-                            <button onclick="deleteSubAgency('${doc.id}')" class="w-8 h-8 rounded-full bg-red-50 text-red-500 flex items-center justify-center hover:bg-red-500 hover:text-white transition-colors" title="ลบรหัสนี้">
+                            <button onclick="deleteSubAgency('${c.secret_code}')" class="w-8 h-8 rounded-full bg-red-50 text-red-500 flex items-center justify-center hover:bg-red-500 hover:text-white transition-colors" title="ลบรหัสนี้">
                                 <span class="material-symbols-outlined text-[16px]">delete</span>
                             </button>
                         </div>
@@ -371,6 +377,7 @@
             }
         }
 
+        // 🌟 บันทึกหน่วยงานย่อยใหม่ ต่อท้ายใน Array ของ SUB_CENTERS 🌟
         async function createSubAgency() {
             const subName = document.getElementById('sub-name').value.trim();
             const subVillages = document.getElementById('sub-villages').value.trim();
@@ -387,39 +394,71 @@
             btn.disabled = true;
 
             try {
-                // เช็คว่ามีรหัสซ้ำหรือไม่
-                const docCheck = await db.collection('RegistrationTokens').doc(subToken).get();
-                if (docCheck.exists) {
-                    alert('รหัสผ่านลับนี้ถูกใช้งานแล้ว กรุณาตั้งรหัสอื่นครับ');
-                } else {
-                    // บันทึกลง RegistrationTokens
-                    await db.collection('RegistrationTokens').doc(subToken).set({
-                        token: subToken,
-                        role: 'SUB_ADMIN',
-                        hospital_name: subName,
-                        assigned_villages: villageArray,
-                        created_at: firebase.firestore.FieldValue.serverTimestamp()
-                    });
-                    alert('สร้างรหัสสำหรับหน่วยงานย่อยสำเร็จ!');
-                    
-                    document.getElementById('sub-name').value = '';
-                    document.getElementById('sub-villages').value = '';
-                    document.getElementById('sub-token').value = '';
-                    
-                    loadSubAgencies(); // โหลดรายการใหม่
+                const docRef = db.collection('SystemConfig').doc('SUB_CENTERS');
+                const docSnap = await docRef.get();
+                let centers = [];
+                
+                if(docSnap.exists) {
+                    const val = docSnap.data().value;
+                    if(val && typeof val === 'string') {
+                        try { centers = JSON.parse(val); } catch(e){}
+                    } else if (val && Array.isArray(val)) {
+                        centers = val;
+                    }
                 }
-            } catch(e) { alert('เกิดข้อผิดพลาด กรุณาลองใหม่'); }
+
+                // เช็ครหัสซ้ำ
+                if(centers.find(c => String(c.secret_code).trim() === subToken)) {
+                    alert('รหัสผ่านลับนี้ถูกใช้งานแล้ว กรุณาตั้งรหัสอื่นครับ');
+                    btn.innerHTML = 'บันทึกหน่วยงานย่อย';
+                    btn.disabled = false;
+                    return;
+                }
+
+                centers.push({
+                    name: subName,
+                    villages: villageArray,
+                    secret_code: subToken
+                });
+
+                await docRef.set({ value: JSON.stringify(centers) }, {merge: true});
+                
+                alert('สร้างรหัสสำหรับหน่วยงานย่อยสำเร็จ!');
+                document.getElementById('sub-name').value = '';
+                document.getElementById('sub-villages').value = '';
+                document.getElementById('sub-token').value = '';
+                
+                loadSubAgencies(); 
+            } catch(e) { 
+                alert('เกิดข้อผิดพลาด กรุณาลองใหม่'); 
+            }
 
             btn.innerHTML = 'บันทึกหน่วยงานย่อย';
             btn.disabled = false;
         }
 
-        async function deleteSubAgency(tokenId) {
-            if (!confirm(`คุณต้องการลบรหัสผ่าน "${tokenId}" ใช่หรือไม่?\n(จะทำให้ไม่สามารถใช้รหัสนี้สมัครใหม่ได้อีก แต่ไม่มีผลกับบัญชีที่สมัครไปแล้ว)`)) return;
+        // 🌟 ลบหน่วยงานย่อยออกจาก Array ของ SUB_CENTERS 🌟
+        async function deleteSubAgency(code) {
+            if (!confirm(`คุณต้องการลบรหัสผ่าน "${code}" ใช่หรือไม่?\n(จะทำให้ไม่สามารถใช้รหัสนี้สมัครใหม่ได้อีก แต่ไม่มีผลกับบัญชีที่สมัครไปแล้ว)`)) return;
             
             try {
-                await db.collection('RegistrationTokens').doc(tokenId).delete();
-                loadSubAgencies();
+                const docRef = db.collection('SystemConfig').doc('SUB_CENTERS');
+                const docSnap = await docRef.get();
+                
+                if(docSnap.exists) {
+                    const val = docSnap.data().value;
+                    let centers = [];
+                    if(val && typeof val === 'string') {
+                        try { centers = JSON.parse(val); } catch(e){}
+                    } else if (val && Array.isArray(val)) {
+                        centers = val;
+                    }
+
+                    centers = centers.filter(c => String(c.secret_code) !== String(code));
+                    
+                    await docRef.set({ value: JSON.stringify(centers) }, {merge: true});
+                    loadSubAgencies();
+                }
             } catch(e) { alert('ลบข้อมูลไม่สำเร็จ'); }
         }
     </script>
