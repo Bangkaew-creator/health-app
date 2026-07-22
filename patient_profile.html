@@ -220,6 +220,7 @@
         </div>
     </main>
 
+    <!-- Modal เปลี่ยนสถานะ -->
     <div id="status-modal" class="fixed inset-0 bg-black/50 z-[100] hidden flex items-center justify-center opacity-0 transition-opacity duration-300">
         <div id="status-modal-content" class="bg-white rounded-[24px] w-[90%] max-w-sm p-6 transform scale-95 transition-transform duration-300">
             <h3 class="text-lg font-bold text-[#ba1a1a] mb-2 flex items-center gap-2">
@@ -402,11 +403,194 @@
             if(currentMedImageToExpand) openModal(currentMedImageToExpand);
         }
 
+        function getTodayDateStr() {
+            const now = new Date();
+            const dd = String(now.getDate()).padStart(2, '0');
+            const mm = String(now.getMonth() + 1).padStart(2, '0');
+            const yyyy = now.getFullYear() + 543;
+            return `${dd}/${mm}/${yyyy}`;
+        }
+
+        // ==========================================
+        // ฟังก์ชันสร้างและสั่งพิมพ์แบบประเมิน
+        // ==========================================
         function printForm(type, recordDate = '') {
-            let msg = `เตรียมพิมพ์แบบฟอร์ม: ${type}`;
-            if (recordDate) msg += `\n(ข้อมูลการประเมินวันที่: ${recordDate})`;
-            msg += `\n\nระบบกำลังรอการอัปเดตโค้ดแบบฟอร์ม HTML จากผู้พัฒนาครับ 🖨️`;
-            alert(msg);
+            if (!currentPatientData) return alert("ข้อมูลผู้ป่วยยังโหลดไม่เสร็จ");
+
+            const p = currentPatientData;
+            const pName = `${p.prefix||''}${p.name||'-'}`;
+            const pId = p.id_card || '-';
+            const pPhone = p.caregiver_phone || p.phone || '-';
+            const pAddress = `บ้านเลขที่ ${p.house_no||'-'} หมู่ที่ ${p.village_no||'-'} ${DEFAULT_CONFIGS.HOSPITAL_NAME}`;
+            const pAge = p.age || '-';
+            const pDob = p.dob || '-';
+            
+            // ดึงชื่อหน่วยงาน หรือตั้งค่าเริ่มต้น
+            const hospitalName = DEFAULT_CONFIGS.HOSPITAL_NAME;
+
+            let htmlContent = `
+            <html>
+            <head>
+                <title>พิมพ์แบบประเมิน - ${pName}</title>
+                <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;700&display=swap" rel="stylesheet">
+                <style>
+                    body { font-family: 'Sarabun', sans-serif; font-size: 14pt; color: #000; line-height: 1.5; padding: 20px; }
+                    h2 { text-align: center; font-size: 16pt; margin-bottom: 20px; }
+                    h3 { font-size: 14pt; margin-top: 15px; margin-bottom: 10px; }
+                    table { width: 100%; border-collapse: collapse; margin-bottom: 15px; }
+                    th, td { border: 1px solid #000; padding: 8px; vertical-align: top; }
+                    .no-border, .no-border td, .no-border th { border: none !important; padding: 4px 0; }
+                    .checkbox { display: inline-block; width: 14px; height: 14px; border: 1px solid #000; margin-right: 5px; vertical-align: middle; text-align: center; line-height: 14px; font-size: 12px; }
+                    .checked::after { content: '✓'; }
+                    @media print {
+                        @page { size: A4; margin: 1.5cm; }
+                    }
+                </style>
+            </head>
+            <body onload="setTimeout(function(){ window.print(); window.close(); }, 500);">
+            `;
+
+            if (type === 'DIAPER') {
+                let d = {};
+                try {
+                    if (typeof p.diaper === 'string') d = JSON.parse(p.diaper);
+                    else if (p.diaper) d = p.diaper;
+                } catch(e) {}
+                
+                const assessDate = d.approve_date || recordDate || getTodayDateStr();
+
+                htmlContent += `
+                <h2>แบบประเมิน<br>บุคคลที่มีภาวะปัญหากลั้นปัสสาวะหรืออุจจาระไม่ได้ ตามผลการประเมินหรือข้อบ่งชี้ทางการแพทย์</h2>
+                <table>
+                    <tr>
+                        <td colspan="2"><b>ชื่อ - สกุล:</b> ${pName}</td>
+                        <td colspan="2"><b>วัน/เดือน/ปี (เกิด):</b> ${pDob}</td>
+                    </tr>
+                    <tr>
+                        <td colspan="4"><b>ที่อยู่:</b> ${pAddress}</td>
+                    </tr>
+                    <tr>
+                        <td colspan="2"><b>หมายเลขโทรศัพท์:</b> ${pPhone}</td>
+                        <td><b>อายุ:</b> ${pAge} ปี</td>
+                        <td><b>เลขประจำตัวประชาชน:</b> ${pId}</td>
+                    </tr>
+                    <tr>
+                        <td colspan="2">
+                            <b>วันที่ประเมิน:</b> ${assessDate}<br><br>
+                            <b>U/D (โรคประจำตัว):</b><br>${p.disease || '-'}
+                        </td>
+                        <td colspan="2">
+                            <b>ผลการประเมิน:</b><br>
+                            <span class="checkbox checked"></span> ${d.result || 'ไม่ระบุ'}<br><br>
+                            <b>ข้อบ่งชี้ทางการแพทย์:</b><br>
+                            ${(d.indications || []).map(ind => `<span class="checkbox checked"></span> ${ind}<br>`).join('')}
+                        </td>
+                    </tr>
+                    <tr>
+                        <td colspan="2"><b>ADL =</b> ${p.adl || '-'} คะแนน</td>
+                        <td colspan="2"><b>ผู้ประเมิน:</b> ${currentUserRole === 'ADMIN' ? 'เจ้าหน้าที่' : 'อสม.'} <br><b>ชื่อหน่วยงาน:</b> ${hospitalName}</td>
+                    </tr>
+                    <tr>
+                        <td colspan="4">
+                            <b>ความเห็นของผู้ประเมิน:</b><br>
+                            ${d.req_diaper ? `<span class="checkbox checked"></span> ผ้าอ้อมผู้ใหญ่ จำนวน ${d.approved_diaper || '_'} ชิ้น/เดือน (ขนาด ${d.size || '_'})<br>` : `<span class="checkbox"></span> ผ้าอ้อมผู้ใหญ่<br>`}
+                            ${d.req_underpad ? `<span class="checkbox checked"></span> แผ่นรองซับการขับถ่าย จำนวน ${d.approved_underpad || '_'} ชิ้น/เดือน<br>` : `<span class="checkbox"></span> แผ่นรองซับการขับถ่าย<br>`}
+                        </td>
+                    </tr>
+                </table>`;
+                
+            } else if (type === 'ADL') {
+                const assess = globalAssessments.find(a => a.type === 'ADL' && a.date === recordDate);
+                if(!assess) return alert('ไม่พบข้อมูลการประเมินในระบบ');
+
+                htmlContent += `
+                <h2>แบบประเมินกิจวัตรประจำวัน ดัชนีบาร์เธลเอดีแอล (ADL)</h2>
+                <table class="no-border" style="margin-bottom: 20px;">
+                    <tr>
+                        <td><b>ชื่อ - สกุล:</b> ${pName}</td>
+                        <td><b>หมายเลขบัตรประชาชน:</b> ${pId}</td>
+                        <td><b>เบอร์โทรศัพท์:</b> ${pPhone}</td>
+                    </tr>
+                </table>
+                <table>
+                `;
+                
+                if (assess.answers && assess.answers.length > 0) {
+                    assess.answers.forEach((ans, idx) => {
+                        htmlContent += `
+                        <tr>
+                            <td>
+                                <b>${ans.q}</b><br>
+                                <div style="margin-left: 20px; margin-top: 5px;">
+                                    <span class="checkbox checked"></span> ${ans.a} (${ans.score} คะแนน)
+                                </div>
+                            </td>
+                        </tr>`;
+                    });
+                } else {
+                    htmlContent += `<tr><td>ไม่พบการบันทึกคำตอบรายข้อ</td></tr>`;
+                }
+
+                htmlContent += `
+                    <tr>
+                        <td style="text-align: right; background-color: #f0f0f0;">
+                            <b>รวมคะแนน ADL = ${assess.score1} คะแนน (${assess.result})</b>
+                        </td>
+                    </tr>
+                </table>`;
+
+            } else if (type === 'DEP') {
+                const assess = globalAssessments.find(a => a.type === 'DEP' && a.date === recordDate);
+                if(!assess) return alert('ไม่พบข้อมูลการประเมินในระบบ');
+
+                htmlContent += `
+                <h2>แบบคัดกรองโรคซึมเศร้า (2Q/9Q)</h2>
+                <table class="no-border" style="margin-bottom: 20px;">
+                    <tr>
+                        <td><b>ชื่อ - สกุล:</b> ${pName}</td>
+                        <td><b>หมายเลขบัตรประชาชน:</b> ${pId}</td>
+                    </tr>
+                </table>`;
+
+                if (assess.answers && assess.answers.length > 0) {
+                    // แยกส่วน 2Q (มีคำว่า หดหู่ เศร้า ท้อแท้ หรือ เบื่อ)
+                    const q2Answers = assess.answers.filter(a => a.q.includes('หดหู่') || a.q.includes('เศร้า') || a.q.includes('เบื่อ'));
+                    
+                    htmlContent += `<h3>แบบคัดกรอง 2 คำถาม (2Q)</h3>`;
+                    htmlContent += `<table><tr><th>คำถาม</th><th style="width:100px; text-align:center;">คำตอบ</th></tr>`;
+                    q2Answers.forEach(ans => {
+                        htmlContent += `<tr><td>${ans.q}</td><td style="text-align:center;"><b>${ans.a}</b></td></tr>`;
+                    });
+                    htmlContent += `</table>`;
+
+                    // แยกส่วน 9Q
+                    const q9Answers = assess.answers.filter(a => !a.q.includes('หดหู่') && !a.q.includes('เบื่อ') || a.q.match(/^\d+\./));
+                    
+                    if(q9Answers.length > 0 && assess.score2 > 0) {
+                        htmlContent += `<h3>แบบประเมินโรคซึมเศร้า 9 คำถาม (9Q)</h3>`;
+                        htmlContent += `<table><tr><th>คำถาม</th><th style="width:180px; text-align:center;">คำตอบ</th><th style="width:80px; text-align:center;">คะแนน</th></tr>`;
+                        q9Answers.forEach(ans => {
+                            htmlContent += `<tr><td>${ans.q}</td><td style="text-align:center;">${ans.a}</td><td style="text-align:center;">${ans.score}</td></tr>`;
+                        });
+                        htmlContent += `
+                            <tr>
+                                <td colspan="2" style="text-align: right; background-color: #f0f0f0;"><b>รวมคะแนน 9Q = </b></td>
+                                <td style="text-align:center; background-color: #f0f0f0;"><b>${assess.score2}</b></td>
+                            </tr>
+                        </table>`;
+                    }
+
+                    htmlContent += `<div style="text-align: right; font-size: 16pt; margin-top: 20px;"><b>การแปรผล: ${assess.result}</b></div>`;
+
+                } else {
+                    htmlContent += `<p>ไม่พบการบันทึกคำตอบรายข้อ</p>`;
+                }
+            }
+
+            htmlContent += `</body></html>`;
+            const printWin = window.open('', '_blank');
+            printWin.document.write(htmlContent);
+            printWin.document.close();
         }
 
         function openHistoryModal() {
@@ -429,7 +613,7 @@
                     if(a.answers && Array.isArray(a.answers) && a.answers.length > 0) {
                         printBtnHtml = `
                             <button onclick="printForm('${a.type}', '${a.date}')" class="text-[10px] bg-indigo-50 text-indigo-600 px-2 py-1 rounded border border-indigo-200 hover:bg-indigo-100 flex items-center gap-1 transition-colors shadow-sm">
-                                <span class="material-symbols-outlined text-[12px]">print</span> พิมพ์
+                                <span class="material-symbols-outlined text-[12px]">print</span> พิมพ์ฟอร์ม
                             </button>
                         `;
 
@@ -488,15 +672,6 @@
             document.getElementById(id).classList.toggle('hidden');
         }
 
-        // 🌟 ฟังก์ชันจัดการข้อมูล (แก้ไขบั๊กการอ่าน Array) 🌟
-        function cleanAndParseJSON(rawStr) {
-            if (!rawStr || String(rawStr).trim() === '') return null;
-            let cleanStr = String(rawStr).trim();
-            if (cleanStr.includes('""')) { cleanStr = cleanStr.replace(/""/g, '"'); }
-            if (cleanStr.startsWith('"') && cleanStr.endsWith('"')) { cleanStr = cleanStr.substring(1, cleanStr.length - 1); }
-            try { return JSON.parse(cleanStr); } catch(e) { return null; }
-        }
-
         async function loadPatientProfile() {
             if (!patientId) { goBackToList(); return; }
             try {
@@ -542,16 +717,20 @@
 
                 document.getElementById('profile-disease').innerText = data.disease || '-';
                 
-                // 🌟 อัปเกรดระบบอ่านข้อมูลยา (รองรับแบบ Array) 🌟
                 const medContainer = document.getElementById('profile-medication');
                 let meds = [];
                 
                 if (Array.isArray(data.medication)) {
-                    meds = data.medication; // ถ้าเป็น Array อยู่แล้ว (ระบบใหม่)
+                    meds = data.medication;
                 } else if (typeof data.medication === 'string') {
-                    const parsedMed = cleanAndParseJSON(data.medication);
-                    if (Array.isArray(parsedMed)) meds = parsedMed; // ถ้าเป็น JSON String (ระบบเดิม)
-                    else if (data.medication && data.medication !== '-') meds = [{ name: data.medication }];
+                    try {
+                        let cleanMedStr = data.medication.replace(/""/g, '"');
+                        if (cleanMedStr.startsWith('"') && cleanMedStr.endsWith('"')) { cleanMedStr = cleanMedStr.substring(1, cleanMedStr.length - 1); }
+                        const parsedMed = JSON.parse(cleanMedStr);
+                        if (Array.isArray(parsedMed)) meds = parsedMed;
+                    } catch(e) {
+                        if (data.medication && data.medication !== '-') meds = [{ name: data.medication }];
+                    }
                 }
 
                 if (meds.length === 0) {
@@ -601,9 +780,10 @@
                 const diaperItems = document.getElementById('profile-diaper-items');
                 if (data.diaper) {
                     try {
-                        let cleanDiaperStr = data.diaper.replace(/""/g, '"');
+                        let cleanDiaperStr = typeof data.diaper === 'string' ? data.diaper.replace(/""/g, '"') : JSON.stringify(data.diaper);
                         if (cleanDiaperStr.startsWith('"') && cleanDiaperStr.endsWith('"')) { cleanDiaperStr = cleanDiaperStr.substring(1, cleanDiaperStr.length - 1); }
-                        const dp = JSON.parse(cleanDiaperStr);
+                        const dp = typeof data.diaper === 'object' ? data.diaper : JSON.parse(cleanDiaperStr);
+                        
                         diaperStatus.innerText = dp.result || 'ยังไม่มีผลประเมิน';
                         let reqHtml = [];
                         if (dp.req_diaper) reqHtml.push(`<span class="bg-blue-50 text-blue-600 px-2 py-1 rounded font-bold border border-blue-100">ผ้าอ้อมผู้ใหญ่ (ไซส์ ${dp.size !== '-' ? dp.size : 'ไม่ระบุ'})</span>`);
