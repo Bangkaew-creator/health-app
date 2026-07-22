@@ -74,6 +74,14 @@
                     <p id="header-hospital-name" class="text-[11px] lg:text-xs text-slate-400 font-medium mt-0.5">Settings & Configurations</p>
                 </div>
             </div>
+            
+            <!-- 🌟 เพิ่มรูปโปรไฟล์กลับมาตรงนี้ด้วย 🌟 -->
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-full bg-slate-200 border-2 border-white shadow-sm overflow-hidden flex items-center justify-center">
+                    <img id="header-profile-pic" src="" class="w-full h-full object-cover hidden">
+                    <span id="header-profile-icon" class="material-symbols-outlined text-slate-400">person</span>
+                </div>
+            </div>
         </header>
 
         <div class="flex-1 overflow-y-auto p-4 lg:p-6 relative">
@@ -83,12 +91,19 @@
             
             <div id="settings-content" class="hidden max-w-2xl mx-auto space-y-6 pb-10">
                 
-                <!-- 🌟 กล่องข้อมูลส่วนตัว (ทุกคนแก้ไขได้) 🌟 -->
                 <div class="bg-white rounded-[24px] p-6 shadow-sm border border-slate-200 relative overflow-hidden">
                     <div class="absolute top-0 right-0 w-32 h-32 bg-blue-50 rounded-bl-full -z-10"></div>
-                    <div class="flex items-center gap-2 mb-6">
-                        <span class="material-symbols-outlined text-blue-500 text-[28px]">manage_accounts</span>
-                        <h3 class="text-lg font-bold text-slate-800">ข้อมูลส่วนตัว (Profile)</h3>
+                    
+                    <!-- 🌟 อัปเกรดให้มีรูปโปรไฟล์อยู่ข้างๆ หัวข้อ 🌟 -->
+                    <div class="flex items-center gap-4 mb-6 pb-4 border-b border-slate-100">
+                        <div class="w-16 h-16 rounded-full bg-slate-200 border-4 border-white shadow-md overflow-hidden flex items-center justify-center flex-shrink-0">
+                            <img id="main-profile-pic" src="" class="w-full h-full object-cover hidden">
+                            <span id="main-profile-icon" class="material-symbols-outlined text-slate-400 text-3xl">person</span>
+                        </div>
+                        <div>
+                            <h3 class="text-lg font-bold text-slate-800">ข้อมูลส่วนตัว (Profile)</h3>
+                            <p class="text-[11px] text-slate-500">ดึงรูปภาพอัตโนมัติจาก LINE</p>
+                        </div>
                     </div>
                     
                     <div class="space-y-4">
@@ -112,7 +127,6 @@
                     </div>
                 </div>
 
-                <!-- 🌟 กล่องตั้งค่าระบบ (เฉพาะ ADMIN เห็น) 🌟 -->
                 <div id="system-config-card" class="hidden bg-white rounded-[24px] p-6 shadow-sm border border-slate-200 relative overflow-hidden">
                     <div class="absolute top-0 right-0 w-32 h-32 bg-amber-50 rounded-bl-full -z-10"></div>
                     <div class="flex items-center gap-2 mb-6">
@@ -148,7 +162,6 @@
                     </div>
                 </div>
 
-                <!-- 🌟 กล่องจัดการหน่วยงานย่อย (ดึงจาก SUB_CENTERS ใน SystemConfig) 🌟 -->
                 <div id="sub-agency-card" class="hidden bg-white rounded-[24px] p-6 shadow-sm border border-slate-200 relative overflow-hidden">
                     <div class="absolute top-0 right-0 w-32 h-32 bg-emerald-50 rounded-bl-full -z-10"></div>
                     <div class="flex items-center gap-2 mb-6">
@@ -212,6 +225,16 @@
                 } else if (liff.isLoggedIn()) { 
                     liff.getProfile().then(p => {
                         currentUserUid = p.userId;
+                        // 🌟 อัปเดตรูปจาก LINE ทันที 🌟
+                        if(p.pictureUrl) {
+                            document.getElementById('header-profile-pic').src = p.pictureUrl;
+                            document.getElementById('header-profile-pic').classList.remove('hidden');
+                            document.getElementById('header-profile-icon').classList.add('hidden');
+                            
+                            document.getElementById('main-profile-pic').src = p.pictureUrl;
+                            document.getElementById('main-profile-pic').classList.remove('hidden');
+                            document.getElementById('main-profile-icon').classList.add('hidden');
+                        }
                         verifyAdminAccess(p.userId);
                     }).catch(() => bounceToLogin()); 
                 } else { bounceToLogin(); }
@@ -275,7 +298,6 @@
                             document.getElementById('sys-underpad-price').value = sysSnapUP.exists ? sysSnapUP.data().value : (DEFAULT_CONFIGS.UNDERPAD_PRICE || 6.00);
                         } catch(e) {}
 
-                        // 🌟 ดึงข้อมูลหน่วยงานย่อยจาก SUB_CENTERS 🌟
                         loadSubAgencies();
                     }
 
@@ -336,7 +358,6 @@
             }
         }
 
-        // 🌟 ดึงข้อมูลจากโครงสร้าง JSON ของ SUB_CENTERS อย่างถูกต้อง 🌟
         async function loadSubAgencies() {
             const listContainer = document.getElementById('sub-agency-list');
             try {
@@ -377,7 +398,6 @@
             }
         }
 
-        // 🌟 บันทึกหน่วยงานย่อยใหม่ ต่อท้ายใน Array ของ SUB_CENTERS 🌟
         async function createSubAgency() {
             const subName = document.getElementById('sub-name').value.trim();
             const subVillages = document.getElementById('sub-villages').value.trim();
@@ -407,7 +427,6 @@
                     }
                 }
 
-                // เช็ครหัสซ้ำ
                 if(centers.find(c => String(c.secret_code).trim() === subToken)) {
                     alert('รหัสผ่านลับนี้ถูกใช้งานแล้ว กรุณาตั้งรหัสอื่นครับ');
                     btn.innerHTML = 'บันทึกหน่วยงานย่อย';
@@ -437,7 +456,6 @@
             btn.disabled = false;
         }
 
-        // 🌟 ลบหน่วยงานย่อยออกจาก Array ของ SUB_CENTERS 🌟
         async function deleteSubAgency(code) {
             if (!confirm(`คุณต้องการลบรหัสผ่าน "${code}" ใช่หรือไม่?\n(จะทำให้ไม่สามารถใช้รหัสนี้สมัครใหม่ได้อีก แต่ไม่มีผลกับบัญชีที่สมัครไปแล้ว)`)) return;
             
