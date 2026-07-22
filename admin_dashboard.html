@@ -74,9 +74,18 @@
                     <p id="header-hospital-name" class="text-[11px] lg:text-xs text-slate-400 font-medium mt-0.5">ภาพรวมข้อมูล</p>
                 </div>
             </div>
-            <button onclick="window.location.href='admin_settings.html'" class="hidden md:flex items-center gap-2 bg-slate-100 hover:bg-slate-200 text-slate-700 px-4 py-2 rounded-xl text-sm font-bold transition-colors">
-                <span class="material-symbols-outlined text-[18px]">manage_accounts</span> ข้อมูลส่วนตัว
-            </button>
+            
+            <!-- 🌟 เพิ่มรูปโปรไฟล์กลับมาตรงนี้ 🌟 -->
+            <div class="flex items-center gap-3 cursor-pointer" onclick="window.location.href='admin_settings.html'">
+                <div class="hidden md:block text-right">
+                    <p class="text-sm font-bold text-slate-700 leading-tight" id="header-user-name">กำลังโหลด...</p>
+                    <p class="text-[10px] text-slate-400">ไปที่ตั้งค่าข้อมูลส่วนตัว</p>
+                </div>
+                <div class="w-10 h-10 rounded-full bg-slate-200 border-2 border-white shadow-sm overflow-hidden flex items-center justify-center">
+                    <img id="header-profile-pic" src="" class="w-full h-full object-cover hidden">
+                    <span id="header-profile-icon" class="material-symbols-outlined text-slate-400">person</span>
+                </div>
+            </div>
         </header>
 
         <div class="flex-1 overflow-y-auto p-4 lg:p-6 relative">
@@ -206,9 +215,20 @@
             
             liff.init({ liffId: LIFF_ID }).then(() => {
                 const mockUid = localStorage.getItem('dev_mock_uid');
-                if (mockUid) { verifyAdminAccess(mockUid); } 
-                else if (liff.isLoggedIn()) { liff.getProfile().then(p => verifyAdminAccess(p.userId)).catch(() => bounceToLogin()); } 
-                else { bounceToLogin(); }
+                if (mockUid) { 
+                    verifyAdminAccess(mockUid); 
+                } else if (liff.isLoggedIn()) { 
+                    liff.getProfile().then(p => {
+                        // 🌟 อัปเดตรูปและชื่อจาก LINE ทันที 🌟
+                        document.getElementById('header-user-name').innerText = p.displayName;
+                        if(p.pictureUrl) {
+                            document.getElementById('header-profile-pic').src = p.pictureUrl;
+                            document.getElementById('header-profile-pic').classList.remove('hidden');
+                            document.getElementById('header-profile-icon').classList.add('hidden');
+                        }
+                        verifyAdminAccess(p.userId);
+                    }).catch(() => bounceToLogin()); 
+                } else { bounceToLogin(); }
             }).catch(() => bounceToLogin());
         });
 
@@ -291,19 +311,16 @@
                 document.getElementById('loading-state').classList.add('hidden');
                 document.getElementById('dashboard-content').classList.remove('hidden');
 
-                // 🌟 ระบบจับ URL Parameter ถ้ากด "ย้อนกลับ" จากแฟ้มประวัติ จะเปิด Modal เดิมให้ 🌟
                 const urlParams = new URLSearchParams(window.location.search);
                 const openGroup = urlParams.get('openGroup');
                 if (openGroup) {
                     setTimeout(() => showGroupList(openGroup), 100);
-                    // เคลียร์ URL ป้องกันการกดรีเฟรชแล้วติดลูป
                     window.history.replaceState(null, '', window.location.pathname);
                 }
 
             } catch (error) { alert("ดึงฐานข้อมูลล้มเหลว"); }
         }
 
-        // 🌟 ฟังก์ชันส่งรหัสและกลุ่มข้ามหน้าไปยัง Profile 🌟
         function viewPatient(id, group) {
             sessionStorage.setItem('return_to', 'dashboard');
             sessionStorage.setItem('return_group', group);
@@ -343,10 +360,9 @@
                     groupedByVillage[v].forEach(p => {
                         let avatar = `<div class="w-10 h-10 rounded-full bg-slate-100 text-slate-400 font-bold flex items-center justify-center flex-shrink-0 text-sm border-2 border-white shadow-sm">${p.name ? p.name.substring(0,1) : '?'}</div>`;
                         if (p.profile_pic && (p.profile_pic.startsWith('data:image') || p.profile_pic.startsWith('http'))) {
-                            avatar = `<img src="${p.profile_pic}" class="w-10 h-10 rounded-full object-cover flex-shrink-0 border-2 border-white shadow-sm">`;
+                            avatar = `<img src="${p.profile_pic}" class="w-10 h-10 rounded-full object-cover flex-shrink-0 border border-slate-200">`;
                         }
 
-                        // เปลี่ยน onclick ให้เรียก viewPatient() แทน
                         html += `
                             <div class="flex items-center justify-between bg-white border border-slate-100 p-3 rounded-xl hover:border-blue-300 hover:shadow-md transition-all cursor-pointer group" onclick="viewPatient('${p.id}', '${targetGroup}')">
                                 <div class="flex items-center gap-3">
