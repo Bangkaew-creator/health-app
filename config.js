@@ -30,3 +30,45 @@ const DEFAULT_CONFIGS = {
     DIAPER_PRICE: 9.50,                           // ราคาผ้าอ้อมผู้ใหญ่ตั้งต้น (บาท/ชิ้น)
     UNDERPAD_PRICE: 6.00                          // ราคาแผ่นรองซับตั้งต้น (บาท/ชิ้น)
 };
+
+// ==========================================
+// 🛡️ DIGITAL WATERMARK & DEVELOPER CREDIT
+// ระบบป้องกันการลบเครดิตผู้พัฒนา
+// ==========================================
+document.addEventListener("DOMContentLoaded", function() {
+    // 1. สร้างกล่องลายน้ำ (Watermark)
+    const creditDiv = document.createElement("div");
+    creditDiv.id = "dev-credit-watermark";
+    creditDiv.innerHTML = `
+        <div style="position: fixed; bottom: 15px; right: 15px; background: rgba(255,255,255,0.85); backdrop-filter: blur(8px); padding: 10px 14px; border-radius: 12px; font-size: 10px; color: #475569; box-shadow: 0 4px 15px rgba(0,0,0,0.08); border: 1px solid #e2e8f0; z-index: 999999; pointer-events: none; text-align: right; line-height: 1.5; font-family: 'Sarabun', sans-serif;">
+            <strong style="color: #00694a; font-size: 11px;">ระบบ อสม.สามารถ (Orsomo Smart)</strong><br>
+            ออกแบบและพัฒนาโดย:<br>
+            <span style="font-weight: bold; color: #1e293b;">นายศุภวุธ อสุนี</span><br>
+            นักวิชาการสาธารณสุขปฏิบัติการ<br>
+            เทศบาลเมืองบางแก้ว
+        </div>
+    `;
+    
+    // 2. แปะลายน้ำลงในหน้าเว็บ
+    document.body.appendChild(creditDiv);
+    
+    // 3. ระบบป้องกันการแอบลบ (MutationObserver)
+    // หากมีคนใช้ Inspect Element แอบลบ กล่องนี้จะถูกสร้างใหม่ทันที!
+    const observer = new MutationObserver(function(mutations) {
+        if (!document.body.contains(creditDiv)) {
+            document.body.appendChild(creditDiv);
+            console.warn("⚠️ สงวนสิทธิ์เครดิตผู้พัฒนา: ไม่อนุญาตให้ลบลายน้ำ (Orsomo Smart by Suppawut Asunee)");
+        }
+    });
+    
+    observer.observe(document.body, { childList: true });
+
+    // 4. พิมพ์ลายน้ำลงใน Console (สำหรับพวกชอบแงะโค้ด)
+    console.log(
+        "%c🏥 Orsomo Smart System%c\n\nDeveloped by: นายศุภวุธ อสุนี\nPosition: นักวิชาการสาธารณสุขปฏิบัติการ\nOrganization: เทศบาลเมืองบางแก้ว\n\n%c© สงวนสิทธิ์ทรัพย์สินทางปัญญา ห้ามลบหรือดัดแปลงเครดิตผู้พัฒนา", 
+        "color: #00694a; font-size: 20px; font-weight: bold;", 
+        "color: #333; font-size: 14px;", 
+        "color: red; font-size: 12px; font-weight: bold;"
+    );
+});
+
