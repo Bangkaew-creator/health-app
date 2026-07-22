@@ -3,7 +3,7 @@
 <head>
     <meta charset="utf-8"/>
     <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-    <title>แดชบอร์ดผู้บริหาร - จัดการระบบ</title>
+    <title>ภาพรวมระบบ - จัดการระบบ</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700&display=swap" rel="stylesheet"/>
     <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
@@ -16,16 +16,9 @@
     <style>
         body { font-family: 'Sarabun', sans-serif; background-color: #f4f7fa; }
         .material-symbols-outlined { font-variation-settings: 'FILL' 1, 'wght' 400, 'GRAD' 0, 'opsz' 24; }
-        .neo-card {
-            background: #ffffff;
-            border-radius: 24px;
-            box-shadow: 6px 6px 16px #e2e8f0, -6px -6px 16px #ffffff;
-            border: 1px solid rgba(255, 255, 255, 0.7);
-            transition: all 0.2s ease-in-out;
-        }
-        .neo-card:hover { transform: translateY(-2px); box-shadow: 8px 8px 20px #cbd5e1, -8px -8px 20px #ffffff; }
-        .bg-navy { background-color: #0f172a; }
-        .text-navy { color: #0f172a; }
+        .bg-navy { background-color: #0f172a; } .text-navy { color: #0f172a; }
+        .loader-small { border: 2px solid #f3f3f3; border-bottom-color: #00694a; border-radius: 50%; width: 24px; height: 24px; animation: spin 1s linear infinite; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
     </style>
 </head>
 <body class="flex h-[100dvh] overflow-hidden text-slate-800 relative">
@@ -57,6 +50,9 @@
             <a href="admin_datacenter.html" class="flex items-center gap-3 px-4 py-3.5 text-slate-400 hover:bg-white/5 hover:text-white rounded-xl font-medium transition-all">
                 <span class="material-symbols-outlined">folder_shared</span> ศูนย์ข้อมูลผู้ป่วย
             </a>
+            <a href="admin_map.html" class="flex items-center gap-3 px-4 py-3.5 text-slate-400 hover:bg-white/5 hover:text-white rounded-xl font-medium transition-all">
+                <span class="material-symbols-outlined">map</span> แผนที่พิกัดผู้ป่วย
+            </a>
             <a href="admin_delegation.html" class="flex items-center gap-3 px-4 py-3.5 text-slate-400 hover:bg-white/5 hover:text-white rounded-xl font-medium transition-all">
                 <span class="material-symbols-outlined">assignment_ind</span> มอบหมายงาน อสม.
             </a>
@@ -67,281 +63,290 @@
                 <span class="material-symbols-outlined">settings</span> ตั้งค่าระบบ
             </a>
         </nav>
-
-        <div class="p-4 border-t border-slate-700/40 bg-slate-950/40">
-            <div onclick="liff.logout(); location.reload();" class="flex items-center gap-3 px-4 py-3 text-red-400 hover:bg-red-500/10 rounded-xl cursor-pointer transition-all">
-                <span class="material-symbols-outlined">logout</span>
-                <span class="text-sm font-bold">ออกจากระบบ</span>
-            </div>
-        </div>
     </aside>
 
-    <main class="flex-1 flex flex-col min-h-0">
-        
+    <main class="flex-1 flex flex-col min-h-0 bg-slate-50">
         <header class="h-20 min-h-[80px] bg-white shadow-sm flex items-center justify-between px-6 lg:px-8 z-10 flex-shrink-0 border-b border-slate-100">
             <div class="flex items-center">
                 <button onclick="toggleSidebar()" class="lg:hidden p-2.5 -ml-2 mr-3 text-slate-600 hover:bg-slate-100 rounded-xl transition-colors"><span class="material-symbols-outlined text-[26px]">menu</span></button>
                 <div>
                     <h2 class="text-base lg:text-lg font-bold text-slate-900 leading-tight">ภาพรวมระบบ (Dashboard)</h2>
-                    <p id="header-hospital-name" class="text-[11px] lg:text-xs text-slate-400 font-medium mt-0.5">กำลังโหลด...</p>
+                    <p id="header-hospital-name" class="text-[11px] lg:text-xs text-slate-400 font-medium mt-0.5">สถิติและข้อมูลสรุป</p>
                 </div>
             </div>
-            
-            <div class="flex items-center gap-3 pl-4 border-l border-slate-100 cursor-pointer hover:opacity-80 transition-opacity" onclick="window.location.href='admin_settings.html'" title="ไปที่หน้าตั้งค่าระบบ">
-                <div class="text-right hidden sm:block">
-                    <p id="admin-name-display" class="text-xs font-bold text-slate-800 leading-none">ผู้ดูแลระบบ</p>
-                    <p id="admin-role-display" class="text-[10px] text-amber-500 font-bold mt-1">Administrator</p>
-                </div>
-                <img id="admin-profile-pic" src="https://via.placeholder.com/150" alt="Admin Profile" class="w-10 h-10 rounded-full object-cover border-2 border-slate-200 shadow-sm bg-slate-50">
-            </div>
+            <button onclick="window.location.href='admin_settings.html'" class="hidden md:flex items-center gap-2 bg-slate-100 hover:bg-slate-200 text-slate-700 px-4 py-2 rounded-xl text-sm font-bold transition-colors">
+                <span class="material-symbols-outlined text-[18px]">manage_accounts</span> ข้อมูลส่วนตัว
+            </button>
         </header>
 
-        <div class="flex-1 overflow-y-auto p-4 lg:p-8 space-y-6 lg:space-y-8">
+        <div class="flex-1 overflow-y-auto p-4 lg:p-6 relative">
+            <div id="loading-state" class="absolute inset-0 flex flex-col items-center justify-center bg-slate-50 z-20">
+                <div class="loader-small mb-3"></div><p class="text-sm text-slate-400 animate-pulse">กำลังประมวลผลสถิติ...</p>
+            </div>
             
-            <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4 lg:gap-6">
-                <div class="neo-card p-6 border-l-4 border-blue-500">
-                    <div class="flex justify-between items-start">
-                        <div>
-                            <p class="text-[11px] font-bold text-slate-400 uppercase tracking-wider">ผู้ป่วยในพื้นที่ดูแล</p>
-                            <h3 class="text-3xl font-bold text-slate-900 mt-2" id="total-all">-</h3>
+            <div id="dashboard-content" class="hidden space-y-6">
+                <!-- 🌟 กล่องสถิติที่คลิกได้ 🌟 -->
+                <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
+                    <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200 cursor-pointer hover:shadow-md transition-all hover:-translate-y-1" onclick="showGroupList('ทั้งหมด')">
+                        <div class="flex justify-between items-start mb-2">
+                            <p class="text-xs text-slate-500 font-bold">ผู้ป่วยทั้งหมด (Active)</p>
+                            <span class="material-symbols-outlined text-slate-400">group</span>
                         </div>
-                        <div class="w-10 h-10 rounded-xl bg-blue-50 flex items-center justify-center text-blue-500 shadow-sm"><span class="material-symbols-outlined text-[22px]">groups</span></div>
+                        <h3 class="text-3xl font-black text-slate-800" id="stat-all">0</h3>
+                        <p class="text-[10px] text-slate-400 mt-2">คลิกเพื่อดูรายชื่อทั้งหมด</p>
+                    </div>
+                    <div class="bg-gradient-to-br from-emerald-50 to-white p-5 rounded-2xl shadow-sm border border-emerald-100 cursor-pointer hover:shadow-md transition-all hover:-translate-y-1" onclick="showGroupList('ติดสังคม')">
+                        <div class="flex justify-between items-start mb-2">
+                            <p class="text-xs text-emerald-600 font-bold">กลุ่มติดสังคม</p>
+                            <span class="material-symbols-outlined text-emerald-500">directions_walk</span>
+                        </div>
+                        <h3 class="text-3xl font-black text-emerald-700" id="stat-social">0</h3>
+                        <p class="text-[10px] text-emerald-500 mt-2">คลิกเพื่อดูรายชื่อ</p>
+                    </div>
+                    <div class="bg-gradient-to-br from-amber-50 to-white p-5 rounded-2xl shadow-sm border border-amber-100 cursor-pointer hover:shadow-md transition-all hover:-translate-y-1" onclick="showGroupList('ติดบ้าน')">
+                        <div class="flex justify-between items-start mb-2">
+                            <p class="text-xs text-amber-600 font-bold">กลุ่มติดบ้าน</p>
+                            <span class="material-symbols-outlined text-amber-500">home</span>
+                        </div>
+                        <h3 class="text-3xl font-black text-amber-700" id="stat-home">0</h3>
+                        <p class="text-[10px] text-amber-500 mt-2">คลิกเพื่อดูรายชื่อ</p>
+                    </div>
+                    <div class="bg-gradient-to-br from-red-50 to-white p-5 rounded-2xl shadow-sm border border-red-100 cursor-pointer hover:shadow-md transition-all hover:-translate-y-1" onclick="showGroupList('ติดเตียง')">
+                        <div class="flex justify-between items-start mb-2">
+                            <p class="text-xs text-red-600 font-bold">กลุ่มติดเตียง</p>
+                            <span class="material-symbols-outlined text-red-500">bed</span>
+                        </div>
+                        <h3 class="text-3xl font-black text-red-700" id="stat-bed">0</h3>
+                        <p class="text-[10px] text-red-500 mt-2">คลิกเพื่อดูรายชื่อ</p>
                     </div>
                 </div>
-                <div class="neo-card p-6 border-l-4 border-emerald-500">
-                    <div class="flex justify-between items-start">
-                        <div>
-                            <p class="text-[11px] font-bold text-slate-400 uppercase tracking-wider">กลุ่มติดสังคม</p>
-                            <h3 class="text-3xl font-bold text-slate-900 mt-2" id="total-social">-</h3>
-                        </div>
-                        <div class="w-10 h-10 rounded-xl bg-emerald-50 flex items-center justify-center text-emerald-500 shadow-sm"><span class="material-symbols-outlined text-[22px]">sentiment_satisfied</span></div>
+
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
+                        <h3 class="font-bold text-slate-800 mb-4 flex items-center gap-2"><span class="material-symbols-outlined text-blue-500">pie_chart</span> สัดส่วนกลุ่มผู้ป่วย</h3>
+                        <canvas id="groupChart" height="200"></canvas>
                     </div>
-                </div>
-                <div class="neo-card p-6 border-l-4 border-amber-500">
-                    <div class="flex justify-between items-start">
-                        <div>
-                            <p class="text-[11px] font-bold text-slate-400 uppercase tracking-wider">กลุ่มติดบ้าน</p>
-                            <h3 class="text-3xl font-bold text-slate-900 mt-2" id="total-home">-</h3>
-                        </div>
-                        <div class="w-10 h-10 rounded-xl bg-amber-50 flex items-center justify-center text-amber-500 shadow-sm"><span class="material-symbols-outlined text-[22px]">home</span></div>
-                    </div>
-                </div>
-                <div class="neo-card p-6 border-l-4 border-red-500">
-                    <div class="flex justify-between items-start">
-                        <div>
-                            <p class="text-[11px] font-bold text-slate-400 uppercase tracking-wider">กลุ่มติดเตียง (วิกฤต)</p>
-                            <h3 class="text-3xl font-bold text-slate-900 mt-2" id="total-bed">-</h3>
-                        </div>
-                        <div class="w-10 h-10 rounded-xl bg-red-50 flex items-center justify-center text-red-500 shadow-sm"><span class="material-symbols-outlined text-[22px]">bed</span></div>
+                    <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
+                        <h3 class="font-bold text-slate-800 mb-4 flex items-center gap-2"><span class="material-symbols-outlined text-orange-500">bar_chart</span> ความต้องการอุปกรณ์การแพทย์</h3>
+                        <canvas id="equipChart" height="200"></canvas>
                     </div>
                 </div>
             </div>
-
-            <div class="grid grid-cols-1 xl:grid-cols-2 gap-6">
-                <!-- คงส่วนการ์ดวัสดุและ SLA Alert ไว้เหมือนเดิม โค้ดดึงข้อมูลจะกรองตามสิทธิ์อัตโนมัติ -->
-                <div class="neo-card p-6 flex flex-col justify-between">
-                    <div>
-                        <div class="flex justify-between items-center mb-5 border-b border-slate-100 pb-3">
-                            <h3 class="font-bold text-slate-900 flex items-center gap-2 text-[15px]">
-                                <span class="material-symbols-outlined text-amber-500">inventory</span> 
-                                วัสดุทางการแพทย์รออนุมัติ
-                            </h3>
-                            <span class="bg-amber-50 text-amber-700 text-[10px] font-bold px-2 py-0.5 rounded-md border border-amber-200">ตรวจสอบด่วน</span>
-                        </div>
-                        <p class="text-xs text-slate-500 mb-4 leading-relaxed">คำขอที่ได้รับการชี้เป้าจากพื้นที่เรียบร้อยแล้ว รอตรวจสอบเพื่ออนุมัติการเบิกจ่าย</p>
-                        <div class="p-4 bg-slate-50 border border-slate-100 rounded-2xl flex items-center justify-between mb-2">
-                            <div class="flex items-center gap-3">
-                                <div class="w-9 h-9 rounded-lg bg-amber-500/10 text-amber-600 flex items-center justify-center"><span class="material-symbols-outlined text-[20px]">package_2</span></div>
-                                <div><h4 class="text-sm font-bold text-slate-800">คำขอสนับสนุนผ้าอ้อม/แผ่นรอง</h4></div>
-                            </div>
-                            <div class="text-right">
-                                <span class="text-2xl font-black text-amber-600" id="count-pending-diaper">-</span><p class="text-[10px] font-bold text-slate-400">ราย</p>
-                            </div>
-                        </div>
-                    </div>
-                    <button onclick="window.location.href='admin_resources.html'" class="w-full mt-4 py-3 bg-navy text-white text-xs font-bold rounded-xl hover:bg-opacity-90 transition-all flex items-center justify-center gap-1.5 shadow-md">เปิดหน้าบริหารจัดการทรัพยากร <span class="material-symbols-outlined text-[14px]">arrow_forward</span></button>
-                </div>
-
-                <div class="neo-card p-6 flex flex-col justify-between">
-                    <div>
-                        <div class="flex justify-between items-center mb-5 border-b border-slate-100 pb-3">
-                            <h3 class="font-bold text-slate-900 flex items-center gap-2 text-[15px]">
-                                <span class="material-symbols-outlined text-red-500">notification_important</span> 
-                                ระบบควบคุมเวลาเยี่ยมบ้าน (SLA Alert)
-                            </h3>
-                            <span class="bg-red-50 text-red-700 text-[10px] font-bold px-2 py-0.5 rounded-md border border-red-200">ระวัง</span>
-                        </div>
-                        <p class="text-xs text-slate-500 mb-4 leading-relaxed">ระบบตรวจจับอัตโนมัติสำหรับผู้ป่วยวิกฤตที่ไม่มีข้อมูลการตรวจจาก อสม. เกิน 30 วัน</p>
-                        <div class="p-4 bg-red-50/50 border border-red-100 rounded-2xl flex items-center justify-between mb-2">
-                            <div class="flex items-center gap-3">
-                                <div class="w-9 h-9 rounded-lg bg-red-500/10 text-red-600 flex items-center justify-center"><span class="material-symbols-outlined text-[20px]">running_with_errors</span></div>
-                                <div><h4 class="text-sm font-bold text-slate-800">ติดเตียงค้างการเยี่ยมเกิน 30 วัน</h4></div>
-                            </div>
-                            <div class="text-right">
-                                <span class="text-2xl font-black text-red-600" id="count-sla-alert">-</span><p class="text-[10px] font-bold text-slate-400">ราย</p>
-                            </div>
-                        </div>
-                    </div>
-                    <button onclick="window.location.href='admin_delegation.html'" class="w-full mt-4 py-3 bg-white border-2 border-red-200 text-red-600 text-xs font-bold rounded-xl hover:bg-red-50 transition-all flex items-center justify-center gap-1.5">ตรวจสอบกระดานติดตามงาน <span class="material-symbols-outlined text-[14px]">arrow_forward</span></button>
-                </div>
-            </div>
-
         </div>
+
+        <!-- 🌟 Modal โชว์รายชื่อเมื่อกดการ์ด 🌟 -->
+        <div id="group-list-modal" class="fixed inset-0 bg-[#111c2d]/50 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4 opacity-0 transition-opacity duration-300">
+            <div class="bg-white rounded-[24px] w-full max-w-lg max-h-[85vh] flex flex-col shadow-2xl transform scale-95 transition-transform duration-300" id="group-list-content">
+                <div class="p-5 border-b border-slate-100 flex justify-between items-center bg-slate-50 rounded-t-[24px]">
+                    <h3 class="text-lg font-bold text-navy flex items-center gap-2" id="group-modal-title">รายชื่อผู้ป่วย</h3>
+                    <button onclick="closeGroupList()" class="text-slate-400 hover:text-slate-600 bg-white p-1 rounded-full"><span class="material-symbols-outlined">close</span></button>
+                </div>
+                <div class="p-5 overflow-y-auto flex-1 bg-slate-50/50" id="group-list-container">
+                    <!-- รายชื่อผู้ป่วยแยกตามหมู่จะถูกสร้างด้วย JS ที่นี่ -->
+                </div>
+            </div>
+        </div>
+
     </main>
 
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script>
         firebase.initializeApp(firebaseConfig);
         const db = firebase.firestore();
-        
-        let currentUserRole = "ADMIN";
-        let assignedVillages = []; // อาร์เรย์เก็บหมู่บ้านที่ รพ.สต.ดูแล
 
-        function toggleSidebar() {
-            document.getElementById('sidebar').classList.toggle('-translate-x-full');
-            document.getElementById('sidebar-overlay').classList.toggle('hidden');
-        }
+        let currentUserRole = "ADMIN";
+        let assignedVillages = [];
+        let dashboardPatients = []; // เก็บข้อมูลเพื่อใช้เปิด Modal
+
+        function toggleSidebar() { document.getElementById('sidebar').classList.toggle('-translate-x-full'); }
 
         document.addEventListener("DOMContentLoaded", () => {
             document.getElementById('sidebar-hospital-name').innerText = DEFAULT_CONFIGS.HOSPITAL_NAME;
             document.getElementById('sidebar-system-name').innerText = DEFAULT_CONFIGS.SYSTEM_NAME;
-            
+
             liff.init({ liffId: LIFF_ID }).then(() => {
-                // ระบบสับขาหลอกสำหรับโหมดทดสอบ (Developer Mode)
                 const mockUid = localStorage.getItem('dev_mock_uid');
-                
-                if (mockUid) {
-                    // สร้าง Profile ปลอมส่งเข้าไปหลอกระบบ
-                    const mockProfile = { displayName: "บัญชีทดสอบ (Dev Mode)", pictureUrl: "https://via.placeholder.com/150" };
-                    verifyAdminAccess(mockUid, mockProfile);
-                } else if (liff.isLoggedIn()) {
-                    liff.getProfile().then(profile => {
-                        verifyAdminAccess(profile.userId, profile);
-                    }).catch(() => bounceToLogin());
-                } else bounceToLogin();
+                if (mockUid) { verifyAdminAccess(mockUid); } 
+                else if (liff.isLoggedIn()) { liff.getProfile().then(p => verifyAdminAccess(p.userId)).catch(() => bounceToLogin()); } 
+                else { bounceToLogin(); }
             }).catch(() => bounceToLogin());
         });
 
-        async function verifyAdminAccess(uid, profile) {
+        function bounceToLogin() { window.location.href = 'index.html'; }
+
+        async function verifyAdminAccess(uid) {
             try {
                 const userDoc = await db.collection('VHVs').doc(String(uid)).get();
                 let hasAccess = false;
                 let hospital = DEFAULT_CONFIGS.HOSPITAL_NAME;
 
-                // ตรวจสอบชื่อใน SystemConfig เสมอ
                 try {
-                    const sysSnap = await db.collection('SystemConfig').doc('HOSPITAL_NAME').get();
-                    if(sysSnap.exists) hospital = sysSnap.data().value || hospital;
+                    const sysSnapHospital = await db.collection('SystemConfig').doc('HOSPITAL_NAME').get();
+                    if(sysSnapHospital.exists) hospital = sysSnapHospital.data().value || hospital;
                 } catch(e) {}
 
                 if (userDoc.exists) {
                     const userData = userDoc.data();
                     const role = String(userData.role || '').toUpperCase();
-                    
                     if (role === 'ADMIN') {
-                        hasAccess = true;
-                        currentUserRole = 'ADMIN';
-                        hospital = userData.hospital_name || hospital;
+                        hasAccess = true; currentUserRole = 'ADMIN'; hospital = userData.hospital_name || hospital;
                     } else if (role === 'SUB_ADMIN') {
-                        hasAccess = true;
-                        currentUserRole = 'SUB_ADMIN';
-                        hospital = userData.hospital_name || hospital;
+                        hasAccess = true; currentUserRole = 'SUB_ADMIN'; hospital = userData.hospital_name || hospital;
                         assignedVillages = userData.assigned_villages || [];
                     }
                 }
 
                 if (hasAccess) {
                     document.getElementById('sidebar-hospital-name').innerText = hospital;
-                    document.getElementById('header-hospital-name').innerText = 'ภาพรวมข้อมูล ' + hospital;
-                    document.getElementById('admin-name-display').innerText = profile.displayName || 'ผู้ดูแลระบบ';
-                    document.getElementById('admin-profile-pic').src = profile.pictureUrl || 'https://via.placeholder.com/150';
-                    
-                    if(currentUserRole === 'SUB_ADMIN') {
-                        document.getElementById('admin-role-display').innerText = 'รพ.สต. ส่วนขยาย';
-                        document.getElementById('admin-role-display').classList.replace('text-amber-500', 'text-emerald-500');
-                        // ซ่อนปุ่มตั้งค่าระบบจากหน้า Sidebar เพราะ รพ.สต. ย่อย ไม่ควรเข้าหน้าตั้งค่ารวม
-                        document.getElementById('nav-settings').style.display = 'none';
-                    }
-                    
+                    if (currentUserRole === 'SUB_ADMIN') document.getElementById('nav-settings').style.display = 'none'; 
                     loadDashboardData(); 
-                } else {
-                    window.location.href = 'dashboard.html'; // ถ้าไม่ใช่แอดมิน ให้กลับไปหน้า อสม.
-                }
+                } else window.location.href = 'dashboard.html'; 
             } catch (error) { bounceToLogin(); }
         }
-
-        function bounceToLogin() { window.location.href = 'index.html'; }
 
         async function loadDashboardData() {
             try {
                 const snapshot = await db.collection('Patients').get();
-                const patients = [];
+                dashboardPatients = [];
                 
+                let cSocial = 0, cHome = 0, cBed = 0, cAll = 0;
+                let equipCount = {};
+
                 snapshot.forEach(doc => {
-                    const data = doc.data();
-                    const isActive = String(data.status || 'Active').trim().toLowerCase() === 'active';
-                    
-                    // ระบบกรองข้อมูลตามสิทธิ์: ถ้าเป็น SUB_ADMIN ให้ดึงเฉพาะข้อมูลหมู่ตัวเอง
+                    const p = doc.data();
                     let hasPermissionToView = true;
-                    if (currentUserRole === 'SUB_ADMIN') {
-                        hasPermissionToView = assignedVillages.includes(String(data.village_no).trim());
-                    }
+                    if (currentUserRole === 'SUB_ADMIN') hasPermissionToView = assignedVillages.includes(String(p.village_no).trim());
 
-                    if (isActive && hasPermissionToView) {
-                        patients.push(data);
-                    }
-                });
+                    if (hasPermissionToView && String(p.status).toLowerCase() === 'active') {
+                        dashboardPatients.push(p);
+                        cAll++;
+                        if(p.group === 'ติดสังคม') cSocial++;
+                        else if(p.group === 'ติดบ้าน') cHome++;
+                        else if(p.group === 'ติดเตียง') cBed++;
 
-                document.getElementById('total-all').innerText = patients.length;
-                document.getElementById('total-social').innerText = patients.filter(p => p.group === 'ติดสังคม').length;
-                document.getElementById('total-home').innerText = patients.filter(p => p.group === 'ติดบ้าน').length;
-                
-                const bedRidden = patients.filter(p => p.group === 'ติดเตียง');
-                document.getElementById('total-bed').innerText = bedRidden.length;
-
-                // นับเคสผ้าอ้อม
-                let pendingDiaper = 0;
-                patients.forEach(p => {
-                    if (p.diaper && p.diaper !== '') {
-                        try {
-                            const diaperObj = typeof p.diaper === 'string' ? JSON.parse(p.diaper) : p.diaper;
-                            if (diaperObj.req_diaper || diaperObj.req_underpad || diaperObj.approve_status === "รออนุมัติ") {
-                                pendingDiaper++;
-                            }
-                        } catch(e) {}
-                    }
-                });
-                document.getElementById('count-pending-diaper').innerText = pendingDiaper;
-
-                // ค้นหาค้างเยี่ยม (SLA)
-                let slaAlertCount = 0;
-                const today = new Date();
-                
-                bedRidden.forEach(p => {
-                    let lastAssessDate = null;
-                    const dateStr = String(p.last_assess || '').trim();
-                    
-                    if (dateStr !== '' && dateStr !== '-') {
-                        if (dateStr.includes('/')) {
-                            const parts = dateStr.split(' ')[0].split('/');
-                            lastAssessDate = new Date(parts[2], parts[1] - 1, parts[0]);
-                        } else {
-                            lastAssessDate = new Date(dateStr);
+                        if (p.equipment && p.equipment !== '-' && p.equipment !== 'ไม่มีความต้องการเพิ่มเติม') {
+                            const eqs = p.equipment.split(',');
+                            eqs.forEach(eq => {
+                                const trimEq = eq.trim();
+                                if(trimEq) equipCount[trimEq] = (equipCount[trimEq] || 0) + 1;
+                            });
                         }
                     }
-                    
-                    if (lastAssessDate && !isNaN(lastAssessDate.getTime())) {
-                        const timeDiff = Math.abs(today.getTime() - lastAssessDate.getTime());
-                        const diffDays = Math.floor(timeDiff / (1000 * 3600 * 24));
-                        if (diffDays > 30) slaAlertCount++;
-                    } else {
-                        slaAlertCount++; 
-                    }
                 });
-                document.getElementById('count-sla-alert').innerText = slaAlertCount;
 
-            } catch (error) {
-                console.error("โหลดข้อมูลล้มเหลว:", error);
+                document.getElementById('stat-all').innerText = cAll;
+                document.getElementById('stat-social').innerText = cSocial;
+                document.getElementById('stat-home').innerText = cHome;
+                document.getElementById('stat-bed').innerText = cBed;
+
+                renderCharts(cSocial, cHome, cBed, equipCount);
+
+                document.getElementById('loading-state').classList.add('hidden');
+                document.getElementById('dashboard-content').classList.remove('hidden');
+
+            } catch (error) { alert("ดึงฐานข้อมูลล้มเหลว"); }
+        }
+
+        function renderCharts(social, home, bed, equipCount) {
+            new Chart(document.getElementById('groupChart'), {
+                type: 'doughnut',
+                data: {
+                    labels: ['ติดสังคม', 'ติดบ้าน', 'ติดเตียง'],
+                    datasets: [{
+                        data: [social, home, bed],
+                        backgroundColor: ['#10b981', '#f59e0b', '#ef4444'],
+                        borderWidth: 0
+                    }]
+                },
+                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom', labels: { font: { family: 'Sarabun' } } } } }
+            });
+
+            const eqLabels = Object.keys(equipCount).slice(0, 5); // เอาแค่ 5 อันดับแรก
+            const eqData = eqLabels.map(l => equipCount[l]);
+            
+            new Chart(document.getElementById('equipChart'), {
+                type: 'bar',
+                data: {
+                    labels: eqLabels.length > 0 ? eqLabels : ['ไม่มีข้อมูล'],
+                    datasets: [{
+                        label: 'จำนวนที่ต้องการ',
+                        data: eqData.length > 0 ? eqData : [0],
+                        backgroundColor: '#3b82f6',
+                        borderRadius: 4
+                    }]
+                },
+                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } } }
+            });
+        }
+
+        // 🌟 ฟังก์ชันเปิด Modal โชว์รายชื่อผู้ป่วยในกลุ่มนั้นแยกตามหมู่ 🌟
+        function showGroupList(targetGroup) {
+            const modal = document.getElementById('group-list-modal');
+            const content = document.getElementById('group-list-content');
+            const container = document.getElementById('group-list-container');
+            
+            document.getElementById('group-modal-title').innerHTML = `รายชื่อผู้ป่วยกลุ่ม: <span class="${targetGroup==='ติดเตียง'?'text-red-600':targetGroup==='ติดบ้าน'?'text-amber-600':targetGroup==='ติดสังคม'?'text-emerald-600':'text-blue-600'}">${targetGroup}</span>`;
+
+            // กรองข้อมูลตามกลุ่ม
+            let filtered = dashboardPatients.filter(p => targetGroup === 'ทั้งหมด' ? true : p.group === targetGroup);
+
+            if (filtered.length === 0) {
+                container.innerHTML = '<p class="text-center text-slate-400 py-10">ไม่มีผู้ป่วยในกลุ่มนี้</p>';
+            } else {
+                // จัดกลุ่มตามหมู่บ้าน
+                const groupedByVillage = {};
+                filtered.forEach(p => {
+                    const v = p.village_no || 'ไม่ระบุ';
+                    if(!groupedByVillage[v]) groupedByVillage[v] = [];
+                    groupedByVillage[v].push(p);
+                });
+
+                // เรียงหมู่บ้าน
+                const sortedVillages = Object.keys(groupedByVillage).sort((a,b) => parseInt(a) - parseInt(b));
+
+                let html = '';
+                sortedVillages.forEach(v => {
+                    html += `<div class="mb-5">
+                                <h4 class="font-bold text-navy bg-white border border-slate-200 px-3 py-1.5 rounded-lg mb-3 shadow-sm inline-block text-sm">
+                                    หมู่ที่ ${v} <span class="text-slate-400 font-normal ml-1">(${groupedByVillage[v].length} คน)</span>
+                                </h4>
+                                <div class="space-y-2">`;
+                    
+                    groupedByVillage[v].forEach(p => {
+                        let avatar = `<div class="w-10 h-10 rounded-full bg-slate-200 text-slate-500 font-bold flex items-center justify-center flex-shrink-0 text-sm">${p.name ? p.name.substring(0,1) : '?'}</div>`;
+                        if (p.profile_pic && (p.profile_pic.startsWith('data:image') || p.profile_pic.startsWith('http'))) {
+                            avatar = `<img src="${p.profile_pic}" class="w-10 h-10 rounded-full object-cover flex-shrink-0 border border-slate-200">`;
+                        }
+
+                        html += `
+                            <div class="flex items-center justify-between bg-white border border-slate-200 p-3 rounded-xl hover:border-blue-400 hover:shadow-md transition-all cursor-pointer group" onclick="window.open('patient_profile.html?id=${p.id}', '_blank')">
+                                <div class="flex items-center gap-3">
+                                    ${avatar}
+                                    <div>
+                                        <p class="text-sm font-bold text-slate-800 group-hover:text-blue-600 transition-colors">${p.prefix||''}${p.name||'ไม่ระบุชื่อ'}</p>
+                                        <p class="text-[10px] text-slate-500 font-medium">HN: ${p.id||'-'}</p>
+                                    </div>
+                                </div>
+                                <div class="bg-blue-50 text-blue-600 p-1.5 rounded-lg group-hover:bg-blue-600 group-hover:text-white transition-colors flex items-center justify-center">
+                                    <span class="material-symbols-outlined text-[18px]">arrow_forward</span>
+                                </div>
+                            </div>
+                        `;
+                    });
+                    html += `</div></div>`;
+                });
+                container.innerHTML = html;
             }
+
+            modal.classList.remove('hidden');
+            setTimeout(() => { modal.classList.remove('opacity-0'); content.classList.remove('scale-95'); }, 10);
+        }
+
+        function closeGroupList() {
+            const modal = document.getElementById('group-list-modal');
+            const content = document.getElementById('group-list-content');
+            modal.classList.add('opacity-0'); content.classList.add('scale-95');
+            setTimeout(() => { modal.classList.add('hidden'); }, 300);
         }
     </script>
 </body>
