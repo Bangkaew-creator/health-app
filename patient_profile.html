@@ -301,8 +301,9 @@
 
         const urlParams = new URLSearchParams(window.location.search);
         const patientId = urlParams.get('id');
-        let currentUserRole = 'VHV';
         
+        let currentUserRole = 'VHV';
+        let currentUserName = "เจ้าหน้าที่";
         let currentPatientData = null;
         let globalAssessments = []; 
         let latestADLDate = 0;
@@ -353,7 +354,9 @@
             try {
                 const userDoc = await db.collection('VHVs').doc(String(uid)).get();
                 if (userDoc.exists) {
-                    currentUserRole = String(userDoc.data().role || 'VHV').toUpperCase();
+                    const data = userDoc.data();
+                    currentUserRole = String(data.role || 'VHV').toUpperCase();
+                    currentUserName = data.name || "เจ้าหน้าที่";
                 }
             } catch(e) { console.error(e); }
         }
@@ -412,7 +415,7 @@
         }
 
         // ==========================================
-        // ฟังก์ชันสร้างและสั่งพิมพ์แบบประเมิน
+        // ฟังก์ชันสร้างและสั่งพิมพ์แบบประเมิน (PDF)
         // ==========================================
         function printForm(type, recordDate = '') {
             if (!currentPatientData) return alert("ข้อมูลผู้ป่วยยังโหลดไม่เสร็จ");
@@ -424,8 +427,6 @@
             const pAddress = `บ้านเลขที่ ${p.house_no||'-'} หมู่ที่ ${p.village_no||'-'} ${DEFAULT_CONFIGS.HOSPITAL_NAME}`;
             const pAge = p.age || '-';
             const pDob = p.dob || '-';
-            
-            // ดึงชื่อหน่วยงาน หรือตั้งค่าเริ่มต้น
             const hospitalName = DEFAULT_CONFIGS.HOSPITAL_NAME;
 
             let htmlContent = `
@@ -435,29 +436,36 @@
                 <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;700&display=swap" rel="stylesheet">
                 <style>
                     body { font-family: 'Sarabun', sans-serif; font-size: 14pt; color: #000; line-height: 1.5; padding: 20px; }
-                    h2 { text-align: center; font-size: 16pt; margin-bottom: 20px; }
-                    h3 { font-size: 14pt; margin-top: 15px; margin-bottom: 10px; }
+                    h2 { text-align: center; font-size: 16pt; margin-bottom: 20px; font-weight: bold; }
+                    h3 { font-size: 14pt; margin-top: 15px; margin-bottom: 10px; font-weight: bold; }
                     table { width: 100%; border-collapse: collapse; margin-bottom: 15px; }
                     th, td { border: 1px solid #000; padding: 8px; vertical-align: top; }
                     .no-border, .no-border td, .no-border th { border: none !important; padding: 4px 0; }
-                    .checkbox { display: inline-block; width: 14px; height: 14px; border: 1px solid #000; margin-right: 5px; vertical-align: middle; text-align: center; line-height: 14px; font-size: 12px; }
-                    .checked::after { content: '✓'; }
-                    @media print {
-                        @page { size: A4; margin: 1.5cm; }
-                    }
+                    @media print { @page { size: A4; margin: 1.5cm; } }
                 </style>
             </head>
-            <body onload="setTimeout(function(){ window.print(); window.close(); }, 500);">
+            <body onload="setTimeout(function(){ window.print(); window.close(); }, 800);">
             `;
 
             if (type === 'DIAPER') {
                 let d = {};
-                try {
-                    if (typeof p.diaper === 'string') d = JSON.parse(p.diaper);
-                    else if (p.diaper) d = p.diaper;
-                } catch(e) {}
-                
+                try { if (typeof p.diaper === 'string') d = JSON.parse(p.diaper); else if (p.diaper) d = p.diaper; } catch(e) {}
                 const assessDate = d.approve_date || recordDate || getTodayDateStr();
+
+                const check1 = d.result === 'มีภาวะกลั้นปัสสาวะไม่ได้' ? '☑' : '☐';
+                const check2 = d.result === 'มีภาวะกลั้นอุจจาระไม่ได้' ? '☑' : '☐';
+                const check3 = d.result === 'มีภาวะกลั้นปัสสาวะและอุจจาระไม่ได้' ? '☑' : '☐';
+                
+                const ind1 = (d.indications || []).some(x => x.includes('มีประวัติกลั้น')) ? '☑' : '☐';
+                const ind2 = (d.indications || []).some(x => x.includes('ระบบประสาทบกพร่อง')) ? '☑' : '☐';
+                const ind3 = (d.indications || []).some(x => x.includes('มีใบรับรองแพทย์')) ? '☑' : '☐';
+
+                // แปลงหน่วยรายเดือนเป็นรายวัน 
+                const diaperDaily = d.approved_diaper ? Math.ceil(d.approved_diaper / 30) : '____';
+                const underpadDaily = d.approved_underpad ? Math.ceil(d.approved_underpad / 30) : '____';
+
+                const reqDiaperCheck = d.req_diaper ? '☑' : '☐';
+                const reqUnderpadCheck = d.req_underpad ? '☑' : '☐';
 
                 htmlContent += `
                 <h2>แบบประเมิน<br>บุคคลที่มีภาวะปัญหากลั้นปัสสาวะหรืออุจจาระไม่ได้ ตามผลการประเมินหรือข้อบ่งชี้ทางการแพทย์</h2>
@@ -475,26 +483,45 @@
                         <td><b>เลขประจำตัวประชาชน:</b> ${pId}</td>
                     </tr>
                     <tr>
-                        <td colspan="2">
+                        <td colspan="2" style="width: 50%;">
                             <b>วันที่ประเมิน:</b> ${assessDate}<br><br>
                             <b>U/D (โรคประจำตัว):</b><br>${p.disease || '-'}
                         </td>
-                        <td colspan="2">
+                        <td colspan="2" style="width: 50%;">
                             <b>ผลการประเมิน:</b><br>
-                            <span class="checkbox checked"></span> ${d.result || 'ไม่ระบุ'}<br><br>
-                            <b>ข้อบ่งชี้ทางการแพทย์:</b><br>
-                            ${(d.indications || []).map(ind => `<span class="checkbox checked"></span> ${ind}<br>`).join('')}
+                            ${check1} มีภาวะกลั้นปัสสาวะไม่ได้<br>
+                            ${check2} มีภาวะกลั้นอุจจาระไม่ได้<br>
+                            ${check3} มีภาวะกลั้นปัสสาวะและอุจจาระไม่ได้<br><br>
+                            <b>ข้อบ่งชี้ทางการแพทย์: (ควรมีอย่างน้อย 2 ใน 3 ข้อ)</b><br>
+                            ${ind1} มีประวัติกลั้นปัสสาวะหรืออุจจาระไม่ได้<br>
+                            ${ind2} ตรวจร่างกายพบระบบประสาทบกพร่อง (ขา ทวารหนัก อุ้งเชิงกราน) หรือมีภาวะอุ้งเชิงกรานหย่อน หรือมีปัสสาวะค้างในช่องคลอด หรือมีความผิดปกติของการขับถ่ายอุจจาระทางทวารหนัก การมีปัสสาวะเล็ดราด เมื่อมีการกระตุ้น เช่น ไอ ได้ยินเสียงน้ำไหล เป็นต้น<br>
+                            ${ind3} มีผลตรวจจากแพทย์อย่างใดอย่างหนึ่ง (การตรวจทางรังสี, ส่องกล้องทางเดินปัสสาวะพลศาสตร์, ตรวจวัดการทำงานของลำไส้ใหญ่และหูรูดทวารหนัก)
                         </td>
                     </tr>
                     <tr>
                         <td colspan="2"><b>ADL =</b> ${p.adl || '-'} คะแนน</td>
-                        <td colspan="2"><b>ผู้ประเมิน:</b> ${currentUserRole === 'ADMIN' ? 'เจ้าหน้าที่' : 'อสม.'} <br><b>ชื่อหน่วยงาน:</b> ${hospitalName}</td>
+                        <td colspan="2"><b>ผู้ประเมิน:</b> ${currentUserName} <br><b>ชื่อหน่วยงาน:</b> ${hospitalName}</td>
                     </tr>
                     <tr>
                         <td colspan="4">
                             <b>ความเห็นของผู้ประเมิน:</b><br>
-                            ${d.req_diaper ? `<span class="checkbox checked"></span> ผ้าอ้อมผู้ใหญ่ จำนวน ${d.approved_diaper || '_'} ชิ้น/เดือน (ขนาด ${d.size || '_'})<br>` : `<span class="checkbox"></span> ผ้าอ้อมผู้ใหญ่<br>`}
-                            ${d.req_underpad ? `<span class="checkbox checked"></span> แผ่นรองซับการขับถ่าย จำนวน ${d.approved_underpad || '_'} ชิ้น/เดือน<br>` : `<span class="checkbox"></span> แผ่นรองซับการขับถ่าย<br>`}
+                            <table class="no-border" style="width:100%; margin-top:10px;">
+                                <tr>
+                                    <td>${reqDiaperCheck} ผ้าอ้อมผู้ใหญ่</td>
+                                    <td>จำนวน <b>${diaperDaily}</b> ชิ้น/วัน</td>
+                                    <td>ขนาด <b>${d.size || '_____'}</b></td>
+                                </tr>
+                                <tr>
+                                    <td>${reqUnderpadCheck} แผ่นรองซับการขับถ่าย</td>
+                                    <td>จำนวน <b>${underpadDaily}</b> ชิ้น/วัน</td>
+                                    <td></td>
+                                </tr>
+                                <tr>
+                                    <td>☐ ผ้าอ้อมทางเลือก</td>
+                                    <td>จำนวน _____ ชิ้น/วัน</td>
+                                    <td></td>
+                                </tr>
+                            </table>
                         </td>
                     </tr>
                 </table>`;
@@ -502,6 +529,19 @@
             } else if (type === 'ADL') {
                 const assess = globalAssessments.find(a => a.type === 'ADL' && a.date === recordDate);
                 if(!assess) return alert('ไม่พบข้อมูลการประเมินในระบบ');
+
+                const adlTemplate = [
+                    { q: "1. Feeding (รับประทานอาหารเมื่อเตรียมสำรับไว้ให้เรียบร้อยต่อหน้า)", choices: [{score: 0, text: "ไม่สามารถตักอาหารเข้าปากได้ ต้องมีคนป้อนให้"}, {score: 1, text: "ตักอาหารเองได้แต่ต้องมีคนช่วย เช่น ช่วยใช้ช้อนตักเตรียมไว้ให้หรือตัดเป็นเล็กๆไว้ล่วงหน้า"}, {score: 2, text: "ตักอาหารและช่วยตัวเองได้เป็นปกติ"}] },
+                    { q: "2. Grooming (ล้างหน้า หวีผม แปรงฟัน โกนหนวด ในระยะเวลา 24 - 28 ชั่วโมงที่ผ่านมา)", choices: [{score: 0, text: "ต้องการความช่วยเหลือ"}, {score: 1, text: "ทำเองได้ (รวมทั้งที่ทำได้เองถ้าเตรียมอุปกรณ์ไว้ให้)"}] },
+                    { q: "3. Transfer (ลุกนั่งจากที่นอน หรือจากเตียงไปยังเก้าอี้)", choices: [{score: 0, text: "ไม่สามารถนั่งได้ (นั่งแล้วจะล้มเสมอ) หรือต้องใช้คนสองคนช่วยกันยกขึ้น"}, {score: 1, text: "ต้องการความช่วยเหลืออย่างมากจึงจะนั่งได้ เช่น ต้องใช้คนที่แข็งแรงหรือมีทักษะ 1 คน หรือใช้คนทั่วไป 2 คนพยุงหรือดันขึ้นมาจึงจะนั่งอยู่ได้"}, {score: 2, text: "ต้องการความช่วยเหลือบ้าง เช่นบอกให้ทำตาม หรือช่วยพยุงเล็กน้อย หรือต้องมีคนดูแลเพื่อความปลอดภัย"}, {score: 3, text: "ทำได้เอง"}] },
+                    { q: "4. Toilet use (ใช้ห้องน้ำ)", choices: [{score: 0, text: "ช่วยตัวเองไม่ได้"}, {score: 1, text: "ทำเองได้บ้าง (อย่างน้อยทำความสะอาดตัวเองได้หลังจากเสร็จธุระ) แต่ต้องการความช่วยเหลือในบางสิ่ง"}, {score: 2, text: "ช่วยตัวเองได้ดี (ขึ้นนั่งและลงจากโถส้วมเองได้ ทำความสะอาดได้เรียบร้อยหลังจากเสร็จธุระ ถอดใส่เสื้อผ้าได้เรียบร้อย)"}] },
+                    { q: "5. Mobility (การเคลื่อนที่ภายในห้องหรือบ้าน)", choices: [{score: 0, text: "เคลื่อนที่ไปไหนไม่ได้"}, {score: 1, text: "ต้องใช้รถเข็นช่วยตัวเองให้เคลื่อนที่ได้เอง (ไม่ต้องมีคนเข็นให้) และจะต้องเข้าออกมุมห้อง หรือประตูได้"}, {score: 2, text: "เดินหรือเคลื่อนที่โดยมีคนช่วย เช่น พยุง หรือบอกให้ทำตาม หรือต้องให้ความสนใจดูแลเพื่อความปลอดภัย"}, {score: 3, text: "เดินหรือเคลื่อนที่ได้เอง"}] },
+                    { q: "6. Dressing (การสวมใส่เสื้อผ้า)", choices: [{score: 0, text: "ต้องมีคนสวมใส่ให้ ช่วยตัวเองแทบไม่ได้หรือได้น้อย"}, {score: 1, text: "ช่วยตัวเองได้ประมาณร้อยละ 50 ที่เหลือต้องมีคนช่วย"}, {score: 2, text: "ช่วยตัวเองได้ดี (รวมทั้งการติดกระดุม รูดซิบ หรือใช้เสื้อผ้าที่ดัดแปลงให้เหมาะสมก็ได้)"}] },
+                    { q: "7. Stairs (การขึ้นลงบันได 1 ชั้น)", choices: [{score: 0, text: "ไม่สามารถทำได้"}, {score: 1, text: "ต้องการคนช่วย"}, {score: 2, text: "ขึ้นลงได้เอง (ถ้าต้องใช้เครื่องช่วยเดิน เช่น walker จะต้องเอาขึ้นลงได้ด้วย)"}] },
+                    { q: "8. Bathing (การอาบน้ำ)", choices: [{score: 0, text: "ต้องมีคนช่วยหรือทำให้"}, {score: 1, text: "อาบน้ำเองได้"}] },
+                    { q: "9. Bowels (การกลั้นการถ่ายอุจจาระในระยะ 1 สัปดาห์ที่ผ่านมา)", choices: [{score: 0, text: "กลั้นไม่ได้ หรือต้องการการสวนอุจจาระอยู่เสมอ"}, {score: 1, text: "กลั้นไม่ได้บางครั้ง (เป็นน้อยกว่า 1 ครั้งต่อสัปดาห์)"}, {score: 2, text: "กลั้นได้เป็นปกติ"}] },
+                    { q: "10. Bladder (การกลั้นปัสสาวะในระยะ 1 สัปดาห์ที่ผ่านมา)", choices: [{score: 0, text: "กลั้นไม่ได้ หรือใส่สายสวนปัสสาวะแต่ไม่สามารถดูแลเองได้"}, {score: 1, text: "กลั้นไม่ได้บางครั้ง (เป็นน้อยกว่าวันละ 1 ครั้ง)"}, {score: 2, text: "กลั้นได้เป็นปกติ"}] }
+                ];
 
                 htmlContent += `
                 <h2>แบบประเมินกิจวัตรประจำวัน ดัชนีบาร์เธลเอดีแอล (ADL)</h2>
@@ -511,30 +551,22 @@
                         <td><b>หมายเลขบัตรประชาชน:</b> ${pId}</td>
                         <td><b>เบอร์โทรศัพท์:</b> ${pPhone}</td>
                     </tr>
-                </table>
-                <table>
-                `;
+                </table>`;
                 
-                if (assess.answers && assess.answers.length > 0) {
-                    assess.answers.forEach((ans, idx) => {
-                        htmlContent += `
-                        <tr>
-                            <td>
-                                <b>${ans.q}</b><br>
-                                <div style="margin-left: 20px; margin-top: 5px;">
-                                    <span class="checkbox checked"></span> ${ans.a} (${ans.score} คะแนน)
-                                </div>
-                            </td>
-                        </tr>`;
+                adlTemplate.forEach((item, index) => {
+                    const ans = assess.answers && assess.answers[index] ? assess.answers[index].score : -1;
+                    htmlContent += `<p style="margin-bottom: 5px; font-weight: bold;">${item.q}</p>`;
+                    item.choices.forEach(choice => {
+                        const mark = choice.score === ans ? '☑' : '☐';
+                        htmlContent += `<div style="margin-left: 20px; margin-bottom: 3px;">${mark} ${choice.text}</div>`;
                     });
-                } else {
-                    htmlContent += `<tr><td>ไม่พบการบันทึกคำตอบรายข้อ</td></tr>`;
-                }
+                });
 
                 htmlContent += `
+                <table style="margin-top: 20px;">
                     <tr>
                         <td style="text-align: right; background-color: #f0f0f0;">
-                            <b>รวมคะแนน ADL = ${assess.score1} คะแนน (${assess.result})</b>
+                            <b>รวมคะแนน ADL = ${assess.score1} คะแนน</b>
                         </td>
                     </tr>
                 </table>`;
@@ -544,7 +576,7 @@
                 if(!assess) return alert('ไม่พบข้อมูลการประเมินในระบบ');
 
                 htmlContent += `
-                <h2>แบบคัดกรองโรคซึมเศร้า (2Q/9Q)</h2>
+                <h2>แบบคัดกรองโรคซึมเศร้า 2 คำถาม (2Q) และ 9 คำถาม (9Q)</h2>
                 <table class="no-border" style="margin-bottom: 20px;">
                     <tr>
                         <td><b>ชื่อ - สกุล:</b> ${pName}</td>
@@ -553,37 +585,54 @@
                 </table>`;
 
                 if (assess.answers && assess.answers.length > 0) {
-                    // แยกส่วน 2Q (มีคำว่า หดหู่ เศร้า ท้อแท้ หรือ เบื่อ)
-                    const q2Answers = assess.answers.filter(a => a.q.includes('หดหู่') || a.q.includes('เศร้า') || a.q.includes('เบื่อ'));
+                    const q2Answers = assess.answers.filter(a => a.q.includes('ท่านรู้สึกหดหู่') || a.q.includes('ท่านรู้สึกเบื่อ'));
                     
                     htmlContent += `<h3>แบบคัดกรอง 2 คำถาม (2Q)</h3>`;
-                    htmlContent += `<table><tr><th>คำถาม</th><th style="width:100px; text-align:center;">คำตอบ</th></tr>`;
+                    htmlContent += `<table><tr><th style="text-align:left;">คำถาม</th><th style="width:100px; text-align:center;">มี</th><th style="width:100px; text-align:center;">ไม่มี</th></tr>`;
                     q2Answers.forEach(ans => {
-                        htmlContent += `<tr><td>${ans.q}</td><td style="text-align:center;"><b>${ans.a}</b></td></tr>`;
+                        const hasSymptom = ans.score === 1;
+                        htmlContent += `<tr><td>${ans.q}</td><td style="text-align:center; font-size:16pt;">${hasSymptom ? '✓' : ''}</td><td style="text-align:center; font-size:16pt;">${!hasSymptom ? '✓' : ''}</td></tr>`;
                     });
                     htmlContent += `</table>`;
+                    htmlContent += `<p style="font-size: 12pt;"><b>การแปรผล 2Q:</b> ถ้าคำตอบ "มี" ข้อใดข้อหนึ่งหรือทั้ง 2 ข้อ หมายถึง "เป็นผู้มีความเสี่ยง" หรือ "มีแนวโน้มที่จะเป็นโรคซึมเศร้า" ให้ประเมินต่อด้วยแบบประเมินโรคซึมเศร้า 9Q</p><br>`;
 
-                    // แยกส่วน 9Q
-                    const q9Answers = assess.answers.filter(a => !a.q.includes('หดหู่') && !a.q.includes('เบื่อ') || a.q.match(/^\d+\./));
+                    const q9Answers = assess.answers.filter(a => !a.q.includes('ท่านรู้สึกหดหู่') && !a.q.includes('ท่านรู้สึกเบื่อ'));
                     
-                    if(q9Answers.length > 0 && assess.score2 > 0) {
+                    if(q9Answers.length > 0) {
                         htmlContent += `<h3>แบบประเมินโรคซึมเศร้า 9 คำถาม (9Q)</h3>`;
-                        htmlContent += `<table><tr><th>คำถาม</th><th style="width:180px; text-align:center;">คำตอบ</th><th style="width:80px; text-align:center;">คะแนน</th></tr>`;
+                        htmlContent += `<p style="font-size: 12pt;">ในช่วง 2 สัปดาห์ที่ผ่านมารวมทั้งวันนี้ ท่านมีอาการเหล่านี้ บ่อยแค่ไหน</p>`;
+                        htmlContent += `<table><tr><th style="text-align:left;">อาการ</th><th style="width:70px; text-align:center;">ไม่มีเลย<br>(0)</th><th style="width:70px; text-align:center;">เป็นบางวัน<br>(1)</th><th style="width:70px; text-align:center;">เป็นบ่อย<br>(2)</th><th style="width:70px; text-align:center;">เป็นทุกวัน<br>(3)</th></tr>`;
+                        
                         q9Answers.forEach(ans => {
-                            htmlContent += `<tr><td>${ans.q}</td><td style="text-align:center;">${ans.a}</td><td style="text-align:center;">${ans.score}</td></tr>`;
+                            htmlContent += `<tr>
+                                <td>${ans.q}</td>
+                                <td style="text-align:center; font-size:16pt;">${ans.score === 0 ? '✓' : ''}</td>
+                                <td style="text-align:center; font-size:16pt;">${ans.score === 1 ? '✓' : ''}</td>
+                                <td style="text-align:center; font-size:16pt;">${ans.score === 2 ? '✓' : ''}</td>
+                                <td style="text-align:center; font-size:16pt;">${ans.score === 3 ? '✓' : ''}</td>
+                            </tr>`;
                         });
                         htmlContent += `
                             <tr>
-                                <td colspan="2" style="text-align: right; background-color: #f0f0f0;"><b>รวมคะแนน 9Q = </b></td>
-                                <td style="text-align:center; background-color: #f0f0f0;"><b>${assess.score2}</b></td>
+                                <td style="text-align: right; background-color: #f0f0f0;"><b>คะแนนรวมทั้งหมด = </b></td>
+                                <td colspan="4" style="text-align:center; background-color: #f0f0f0;"><b>${assess.score2} คะแนน</b></td>
                             </tr>
+                        </table>`;
+                        
+                        htmlContent += `
+                        <table style="font-size: 12pt; margin-top: 15px;">
+                            <tr><th style="width:120px;">คะแนนรวม</th><th>การแปรผล</th></tr>
+                            <tr><td style="text-align:center;">< 7</td><td>ไม่มีอาการของโรคซึมเศร้าหรือมีอาการของโรคซึมเศร้าระดับน้อยมาก</td></tr>
+                            <tr><td style="text-align:center;">7 - 12</td><td>มีอาการของโรคซึมเศร้า ระดับน้อย</td></tr>
+                            <tr><td style="text-align:center;">13 - 18</td><td>มีอาการของโรคซึมเศร้า ระดับปานกลาง</td></tr>
+                            <tr><td style="text-align:center;">≥ 19</td><td>มีอาการของโรคซึมเศร้า ระดับรุนแรง</td></tr>
                         </table>`;
                     }
 
-                    htmlContent += `<div style="text-align: right; font-size: 16pt; margin-top: 20px;"><b>การแปรผล: ${assess.result}</b></div>`;
+                    htmlContent += `<div style="text-align: right; font-size: 16pt; margin-top: 20px;"><b>การแปรผลสรุป: ${assess.result}</b></div>`;
 
                 } else {
-                    htmlContent += `<p>ไม่พบการบันทึกคำตอบรายข้อ</p>`;
+                    htmlContent += `<p>ไม่พบการบันทึกคำตอบรายข้อ กรุณาประเมินใหม่เพื่อพิมพ์แบบฟอร์ม</p>`;
                 }
             }
 
@@ -612,28 +661,54 @@
 
                     if(a.answers && Array.isArray(a.answers) && a.answers.length > 0) {
                         printBtnHtml = `
-                            <button onclick="printForm('${a.type}', '${a.date}')" class="text-[10px] bg-indigo-50 text-indigo-600 px-2 py-1 rounded border border-indigo-200 hover:bg-indigo-100 flex items-center gap-1 transition-colors shadow-sm">
-                                <span class="material-symbols-outlined text-[12px]">print</span> พิมพ์ฟอร์ม
+                            <button onclick="printForm('${a.type}', '${a.date}')" class="text-[10px] bg-indigo-50 text-indigo-600 px-3 py-1.5 rounded-full border border-indigo-200 hover:bg-indigo-100 flex items-center gap-1 transition-colors shadow-sm font-bold">
+                                <span class="material-symbols-outlined text-[14px]">print</span> พิมพ์แบบฟอร์ม
                             </button>
                         `;
 
-                        const ansList = a.answers.map(ans => `
-                            <div class="flex justify-between items-start border-b border-gray-200 py-2 last:border-0">
-                                <span class="text-[12px] text-gray-700 flex-1 pr-3 leading-tight">${ans.q}</span>
-                                <span class="text-[12px] font-bold text-[#00694a] text-right w-1/3 flex-shrink-0">${ans.a} <span class="text-gray-400 font-normal">(${ans.score})</span></span>
-                            </div>
-                        `).join('');
-                        
-                        detailsHtml = `
-                            <div class="mt-3 pt-3 border-t border-gray-100">
-                                <button onclick="toggleHistoryDetails('det-${index}')" class="text-[11px] text-blue-600 bg-blue-50 px-3 py-1.5 rounded-lg font-bold flex items-center gap-1 hover:bg-blue-100 transition-colors w-full justify-center">
-                                    <span class="material-symbols-outlined text-[16px]">expand_more</span> ดูคำตอบรายข้อแบบละเอียด
-                                </button>
-                                <div id="det-${index}" class="hidden mt-3 bg-white p-3 rounded-xl border border-gray-200 shadow-inner">
-                                    ${ansList}
+                        if (a.type === 'DEP') {
+                            let q2List = ''; let q9List = '';
+                            a.answers.forEach(ans => {
+                                const itemHtml = `<div class="flex justify-between items-start border-b border-gray-200 py-2 last:border-0">
+                                                    <span class="text-[12px] text-gray-700 flex-1 pr-3 leading-tight">${ans.q}</span>
+                                                    <span class="text-[12px] font-bold text-[#00694a] text-right w-1/3 flex-shrink-0">${ans.a} <span class="text-gray-400 font-normal">(${ans.score})</span></span>
+                                                </div>`;
+                                if(ans.q.includes('ท่านรู้สึกหดหู่') || ans.q.includes('ท่านรู้สึกเบื่อ')) q2List += itemHtml;
+                                else q9List += itemHtml;
+                            });
+                            
+                            let ansListHtml = `<div class="mb-3"><p class="text-xs font-bold text-amber-600 border-b pb-1 mb-1">ส่วนที่ 1: แบบคัดกรอง 2Q</p>${q2List}</div>`;
+                            if(q9List) ansListHtml += `<div><p class="text-xs font-bold text-red-600 border-b pb-1 mb-1">ส่วนที่ 2: แบบประเมิน 9Q</p>${q9List}</div>`;
+                            
+                            detailsHtml = `
+                                <div class="mt-3 pt-3 border-t border-gray-100">
+                                    <button onclick="toggleHistoryDetails('det-${index}')" class="text-[11px] text-blue-600 bg-blue-50 px-3 py-1.5 rounded-lg font-bold flex items-center gap-1 hover:bg-blue-100 transition-colors w-full justify-center">
+                                        <span class="material-symbols-outlined text-[16px]">expand_more</span> ดูคำตอบรายข้อแบบละเอียด
+                                    </button>
+                                    <div id="det-${index}" class="hidden mt-3 bg-white p-3 rounded-xl border border-gray-200 shadow-inner">
+                                        ${ansListHtml}
+                                    </div>
                                 </div>
-                            </div>
-                        `;
+                            `;
+                        } else {
+                            const ansList = a.answers.map(ans => `
+                                <div class="flex justify-between items-start border-b border-gray-200 py-2 last:border-0">
+                                    <span class="text-[12px] text-gray-700 flex-1 pr-3 leading-tight">${ans.q}</span>
+                                    <span class="text-[12px] font-bold text-[#00694a] text-right w-1/3 flex-shrink-0">${ans.a} <span class="text-gray-400 font-normal">(${ans.score})</span></span>
+                                </div>
+                            `).join('');
+                            
+                            detailsHtml = `
+                                <div class="mt-3 pt-3 border-t border-gray-100">
+                                    <button onclick="toggleHistoryDetails('det-${index}')" class="text-[11px] text-blue-600 bg-blue-50 px-3 py-1.5 rounded-lg font-bold flex items-center gap-1 hover:bg-blue-100 transition-colors w-full justify-center">
+                                        <span class="material-symbols-outlined text-[16px]">expand_more</span> ดูคำตอบรายข้อแบบละเอียด
+                                    </button>
+                                    <div id="det-${index}" class="hidden mt-3 bg-white p-3 rounded-xl border border-gray-200 shadow-inner">
+                                        ${ansList}
+                                    </div>
+                                </div>
+                            `;
+                        }
                     } else {
                         detailsHtml = `<div class="mt-3 pt-2 border-t border-gray-100 text-center"><p class="text-[10px] text-gray-400 italic">การประเมินครั้งนี้ไม่มีการบันทึกคำตอบรายข้อไว้</p></div>`;
                     }
