@@ -10,7 +10,6 @@
     <script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
     <script charset="utf-8" src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
     
-    <!-- โหลดเครื่องมือ Firebase -->
     <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore-compat.js"></script>
     <script src="config.js"></script>
@@ -64,12 +63,10 @@
                     <span class="text-[18px] mb-1">📦</span>
                     <span class="text-[11px] sm:text-[13px] text-center">เบิกจ่าย กปท.</span>
                 </button>
-                
                 <button class="tab-btn border-r border-slate-100 flex flex-col items-center justify-center py-3 px-1 leading-tight" id="tab-registry" onclick="switchTab('registry')">
                     <span class="text-[18px] mb-1">🏥</span>
                     <span class="text-[11px] sm:text-[13px] text-center">ทะเบียนสุขภาพ</span>
                 </button>
-                
                 <button class="tab-btn flex flex-col items-center justify-center py-3 px-1 leading-tight" id="tab-vhv" onclick="switchTab('vhv')">
                     <span class="text-[18px] mb-1">👥</span>
                     <span class="text-[11px] sm:text-[13px] text-center">สถิติ อสม.</span>
@@ -111,20 +108,26 @@
                 </div>
             </div>
 
+            <!-- 🌟 อัปเกรดหมวดทะเบียนสุขภาพ (เพิ่ม 2 ปุ่ม) 🌟 -->
             <div id="content-registry" class="hidden p-4 lg:p-6">
                 <div class="bg-white rounded-[24px] p-8 lg:p-12 shadow-sm border border-slate-200 text-center max-w-3xl mx-auto mt-6">
                     <span class="material-symbols-outlined text-[70px] text-[#00694a] mb-4 bg-emerald-50 w-24 h-24 rounded-full flex items-center justify-center mx-auto">health_metrics</span>
                     <h2 class="text-2xl font-bold text-slate-800">ทะเบียนประวัติและการคัดกรองสุขภาพ</h2>
                     <p class="text-sm text-slate-500 mt-3 mb-8 leading-relaxed max-w-xl mx-auto">
-                        ส่งออกข้อมูล Master Data ผู้ป่วยทั้งหมด (Active) พร้อมผลประเมิน ADL, ภาวะซึมเศร้า 2Q/9Q, โรคประจำตัว, ประวัติการใช้ยา และข้อมูลผู้ดูแล เพื่อใช้วิเคราะห์หรือส่งต่อหน่วยงาน รพ.สต.
+                        ส่งออกข้อมูล Master Data ผู้ป่วยทั้งหมด (Active) กรุณาเลือกรูปแบบที่ต้องการดาวน์โหลด
                     </p>
-                    <button onclick="exportRegistryExcel()" class="w-full sm:w-auto bg-[#00694a] hover:bg-[#005239] text-white px-8 py-3.5 rounded-[16px] font-bold text-base inline-flex items-center justify-center gap-2 shadow-lg transition-all active:scale-95">
-                        <span class="material-symbols-outlined text-[22px]">download</span> ดาวน์โหลด Excel ทะเบียนสุขภาพ
-                    </button>
+                    
+                    <div class="flex flex-col sm:flex-row justify-center gap-4">
+                        <button onclick="exportSummaryExcel()" class="w-full sm:w-auto bg-amber-500 hover:bg-amber-600 text-white px-6 py-3.5 rounded-[16px] font-bold text-sm inline-flex items-center justify-center gap-2 shadow-lg transition-all active:scale-95">
+                            <span class="material-symbols-outlined text-[20px]">list_alt</span> โหลด Summary (สรุปย่อ)
+                        </button>
+                        <button onclick="exportRegistryExcel()" class="w-full sm:w-auto bg-[#00694a] hover:bg-[#005239] text-white px-6 py-3.5 rounded-[16px] font-bold text-sm inline-flex items-center justify-center gap-2 shadow-lg transition-all active:scale-95">
+                            <span class="material-symbols-outlined text-[20px]">download</span> โหลด Registry (ฉบับเต็ม)
+                        </button>
+                    </div>
                 </div>
             </div>
 
-            <!-- Tab 3: ผลงาน อสม. -->
             <div id="content-vhv" class="hidden p-4 lg:p-6">
                 <div class="bg-white rounded-[24px] p-8 lg:p-12 shadow-sm border border-slate-200 text-center max-w-3xl mx-auto mt-6">
                     <span class="material-symbols-outlined text-[70px] text-blue-600 mb-4 bg-blue-50 w-24 h-24 rounded-full flex items-center justify-center mx-auto">analytics</span>
@@ -138,7 +141,6 @@
                         <div class="relative w-full sm:w-64 text-left">
                             <select id="vhv-village-filter" class="w-full pl-4 pr-8 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-blue-500 appearance-none font-medium text-navy">
                                 <option value="">ดูทุกหมู่ (ทั้งหมด)</option>
-                                <!-- โค้ดจะดึงตัวเลือกหมู่มาใส่ตรงนี้อัตโนมัติ -->
                             </select>
                             <span class="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none">expand_more</span>
                         </div>
@@ -295,7 +297,6 @@
                 });
                 
                 renderKPTTable();
-
                 document.getElementById('loading-state').classList.add('hidden');
                 switchTab('kpt'); 
             } catch (error) { alert("ดึงข้อมูลล้มเหลว กรุณารีเฟรชหน้าเว็บ"); }
@@ -457,15 +458,65 @@
             XLSX.writeFile(workbook, `รายงานเบิกผ้าอ้อม_กปท_${getTodayDateStr()}.xlsx`);
         }
 
+        // 🌟 เพิ่มฟังก์ชันโหลด Summary แบบย่อ 🌟
+        function exportSummaryExcel() {
+            const exportData = []; let runningNum = 1;
+            allPatients.forEach(p => {
+                if(String(p.status).trim().toLowerCase() !== 'active') return;
+                
+                let diaperSize = '-';
+                if(p.diaper) {
+                    try {
+                        let dpStr = typeof p.diaper === 'string' ? p.diaper.replace(/""/g, '"') : JSON.stringify(p.diaper);
+                        if(dpStr.startsWith('"') && dpStr.endsWith('"')) dpStr = dpStr.substring(1, dpStr.length-1);
+                        const dp = typeof p.diaper === 'object' ? p.diaper : JSON.parse(dpStr);
+                        if(dp.req_diaper && dp.size && dp.size !== '-') diaperSize = dp.size;
+                    } catch(e){}
+                }
+
+                exportData.push({
+                    "ลำดับ": runningNum++,
+                    "คำนำหน้า": p.prefix || '',
+                    "ชื่อ-สกุล": p.name || '-',
+                    "เลขบัตรประชาชน": p.id_card || '-',
+                    "เบอร์โทรศัพท์ญาติ": p.caregiver_phone || p.phone || '-',
+                    "บ้านเลขที่": p.house_no || '-',
+                    "หมู่ที่": p.village_no || '-',
+                    "คะแนน ADL": p.adl || '-',
+                    "ขนาดผ้าอ้อม": diaperSize
+                });
+            });
+
+            const worksheet = XLSX.utils.json_to_sheet(exportData);
+            const workbook = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(workbook, worksheet, "สรุปประวัติผู้ป่วย");
+            worksheet['!cols'] = [{wch:6},{wch:10},{wch:20},{wch:18},{wch:15},{wch:10},{wch:8},{wch:12},{wch:12}];
+            XLSX.writeFile(workbook, `สรุปประวัติผู้ป่วย_${getTodayDateStr()}.xlsx`);
+        }
+
+        // 🌟 แก้บั๊กระบบอ่านยาย้อนหลัง (ป้องกันการหลุด Error) 🌟
         function exportRegistryExcel() {
             const exportData = []; let runningNum = 1;
             
             allPatients.forEach(p => {
                 if(String(p.status).trim().toLowerCase() !== 'active') return;
 
-                let medDisplay = p.medication || '-';
-                if (medDisplay.startsWith('[')) {
-                    try { const meds = JSON.parse(medDisplay); medDisplay = meds.map(m => `${m.name} (${m.dose})`).join(', '); } catch(e) {}
+                let medDisplay = '-';
+                if (Array.isArray(p.medication)) {
+                    // ระบบใหม่ที่เป็น Array
+                    medDisplay = p.medication.map(m => `${m.name||''} ${m.dose||''}`).filter(t => t.trim() !== '').join(', ') || 'ระบุเป็นรูปภาพ';
+                } else if (typeof p.medication === 'string') {
+                    // ระบบเก่าที่บันทึกเป็น String
+                    if (p.medication.startsWith('[')) {
+                        try { 
+                            let cleanMed = p.medication.replace(/""/g, '"');
+                            if (cleanMed.startsWith('"') && cleanMed.endsWith('"')) cleanMed = cleanMed.substring(1, cleanMed.length - 1);
+                            const meds = JSON.parse(cleanMed);
+                            if (Array.isArray(meds)) medDisplay = meds.map(m => `${m.name||''} ${m.dose||''}`).filter(t => t.trim() !== '').join(', ');
+                        } catch(e) { medDisplay = p.medication; }
+                    } else {
+                        medDisplay = p.medication;
+                    }
                 }
 
                 exportData.push({
@@ -489,7 +540,7 @@
             const workbook = XLSX.utils.book_new();
             XLSX.utils.book_append_sheet(workbook, worksheet, "ทะเบียนสุขภาพชุมชน");
             worksheet['!cols'] = [{wch:6},{wch:25},{wch:8},{wch:20},{wch:12},{wch:8},{wch:15},{wch:12},{wch:20},{wch:25},{wch:40},{wch:20},{wch:15}];
-            XLSX.writeFile(workbook, `ทะเบียนประวัติสุขภาพผู้ป่วย_${getTodayDateStr()}.xlsx`);
+            XLSX.writeFile(workbook, `ทะเบียนประวัติสุขภาพฉบับเต็ม_${getTodayDateStr()}.xlsx`);
         }
 
         function exportVHVExcel() {
