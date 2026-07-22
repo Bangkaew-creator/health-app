@@ -14,7 +14,7 @@
     <script src="config.js"></script>
     
     <style>
-        body { font-family: 'Sarabun', sans-serif; background-color: #f4f7fa; }
+        body { font-family: 'Sarabun', sans-serif; background-color: #f8fafc; }
         .material-symbols-outlined { font-variation-settings: 'FILL' 1, 'wght' 400, 'GRAD' 0, 'opsz' 24; }
         .bg-navy { background-color: #0f172a; } .text-navy { color: #0f172a; }
         .loader-small { border: 2px solid #f3f3f3; border-bottom-color: #00694a; border-radius: 50%; width: 24px; height: 24px; animation: spin 1s linear infinite; }
@@ -71,7 +71,7 @@
                 <button onclick="toggleSidebar()" class="lg:hidden p-2.5 -ml-2 mr-3 text-slate-600 hover:bg-slate-100 rounded-xl transition-colors"><span class="material-symbols-outlined text-[26px]">menu</span></button>
                 <div>
                     <h2 class="text-base lg:text-lg font-bold text-slate-900 leading-tight">ภาพรวมระบบ (Dashboard)</h2>
-                    <p id="header-hospital-name" class="text-[11px] lg:text-xs text-slate-400 font-medium mt-0.5">สถิติและข้อมูลสรุป</p>
+                    <p id="header-hospital-name" class="text-[11px] lg:text-xs text-slate-400 font-medium mt-0.5">ภาพรวมข้อมูล</p>
                 </div>
             </div>
             <button onclick="window.location.href='admin_settings.html'" class="hidden md:flex items-center gap-2 bg-slate-100 hover:bg-slate-200 text-slate-700 px-4 py-2 rounded-xl text-sm font-bold transition-colors">
@@ -81,71 +81,93 @@
 
         <div class="flex-1 overflow-y-auto p-4 lg:p-6 relative">
             <div id="loading-state" class="absolute inset-0 flex flex-col items-center justify-center bg-slate-50 z-20">
-                <div class="loader-small mb-3"></div><p class="text-sm text-slate-400 animate-pulse">กำลังประมวลผลสถิติ...</p>
+                <div class="loader-small mb-3"></div><p class="text-sm text-slate-400 animate-pulse">กำลังโหลดข้อมูลระบบ...</p>
             </div>
             
-            <div id="dashboard-content" class="hidden space-y-6">
+            <div id="dashboard-content" class="hidden max-w-2xl mx-auto space-y-4">
                 
-                <!-- 🌟 การ์ดเรียงตัวและดีไซน์แบบเดิม (แต่กดได้) 🌟 -->
-                <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
-                    <div class="bg-white rounded-[20px] p-5 shadow-sm border border-slate-200 cursor-pointer hover:border-blue-400 hover:shadow-md transition-all group" onclick="showGroupList('ทั้งหมด')">
-                        <div class="flex justify-between items-center mb-3">
-                            <h3 class="text-sm font-bold text-slate-600 group-hover:text-blue-600 transition-colors">ผู้ป่วยทั้งหมด</h3>
-                            <div class="w-8 h-8 rounded-full bg-blue-50 text-blue-600 flex items-center justify-center">
-                                <span class="material-symbols-outlined text-[18px]">group</span>
-                            </div>
+                <!-- 🌟 การ์ดเรียงตัวเหมือนดีไซน์เดิมเป๊ะ แต่มีลูกเล่นกดได้ 🌟 -->
+                <div class="bg-white rounded-[24px] p-6 shadow-sm border-l-4 border-blue-500 cursor-pointer hover:bg-blue-50 hover:shadow-md transition-all group" onclick="showGroupList('ทั้งหมด')">
+                    <div class="flex justify-between items-start">
+                        <div>
+                            <p class="text-[13px] text-slate-500 font-bold mb-1">ผู้ป่วยในพื้นที่ดูแล</p>
+                            <h3 class="text-[40px] font-black text-slate-800 leading-none" id="stat-all">0</h3>
                         </div>
-                        <p class="text-3xl font-black text-slate-800" id="stat-all">0</p>
-                        <p class="text-[10px] text-slate-400 mt-2 flex items-center gap-1"><span class="material-symbols-outlined text-[12px]">ads_click</span> คลิกเพื่อดูรายชื่อ</p>
-                    </div>
-
-                    <div class="bg-white rounded-[20px] p-5 shadow-sm border border-slate-200 cursor-pointer hover:border-emerald-400 hover:shadow-md transition-all group" onclick="showGroupList('ติดสังคม')">
-                        <div class="flex justify-between items-center mb-3">
-                            <h3 class="text-sm font-bold text-slate-600 group-hover:text-emerald-600 transition-colors">กลุ่มติดสังคม</h3>
-                            <div class="w-8 h-8 rounded-full bg-emerald-50 text-emerald-600 flex items-center justify-center">
-                                <span class="material-symbols-outlined text-[18px]">directions_walk</span>
-                            </div>
+                        <div class="w-12 h-12 rounded-2xl bg-blue-50 text-blue-500 flex items-center justify-center group-hover:scale-110 transition-transform">
+                            <span class="material-symbols-outlined text-[26px]" style="font-variation-settings: 'FILL' 1;">groups</span>
                         </div>
-                        <p class="text-3xl font-black text-slate-800" id="stat-social">0</p>
-                        <p class="text-[10px] text-slate-400 mt-2 flex items-center gap-1"><span class="material-symbols-outlined text-[12px]">ads_click</span> คลิกเพื่อดูรายชื่อ</p>
-                    </div>
-
-                    <div class="bg-white rounded-[20px] p-5 shadow-sm border border-slate-200 cursor-pointer hover:border-amber-400 hover:shadow-md transition-all group" onclick="showGroupList('ติดบ้าน')">
-                        <div class="flex justify-between items-center mb-3">
-                            <h3 class="text-sm font-bold text-slate-600 group-hover:text-amber-600 transition-colors">กลุ่มติดบ้าน</h3>
-                            <div class="w-8 h-8 rounded-full bg-amber-50 text-amber-600 flex items-center justify-center">
-                                <span class="material-symbols-outlined text-[18px]">home</span>
-                            </div>
-                        </div>
-                        <p class="text-3xl font-black text-slate-800" id="stat-home">0</p>
-                        <p class="text-[10px] text-slate-400 mt-2 flex items-center gap-1"><span class="material-symbols-outlined text-[12px]">ads_click</span> คลิกเพื่อดูรายชื่อ</p>
-                    </div>
-
-                    <div class="bg-white rounded-[20px] p-5 shadow-sm border border-slate-200 cursor-pointer hover:border-red-400 hover:shadow-md transition-all group" onclick="showGroupList('ติดเตียง')">
-                        <div class="flex justify-between items-center mb-3">
-                            <h3 class="text-sm font-bold text-slate-600 group-hover:text-red-600 transition-colors">กลุ่มติดเตียง</h3>
-                            <div class="w-8 h-8 rounded-full bg-red-50 text-red-600 flex items-center justify-center">
-                                <span class="material-symbols-outlined text-[18px]">bed</span>
-                            </div>
-                        </div>
-                        <p class="text-3xl font-black text-slate-800" id="stat-bed">0</p>
-                        <p class="text-[10px] text-slate-400 mt-2 flex items-center gap-1"><span class="material-symbols-outlined text-[12px]">ads_click</span> คลิกเพื่อดูรายชื่อ</p>
                     </div>
                 </div>
 
-                <!-- 🌟 กล่องข้อมูลเดิมด้านล่าง (เผื่อนำข้อมูลอื่นมาใส่ต่อ) 🌟 -->
-                <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
-                    <h3 class="font-bold text-slate-800 mb-4">ยินดีต้อนรับสู่ระบบจัดการข้อมูลผู้ป่วย</h3>
-                    <p class="text-sm text-slate-500 leading-relaxed">
-                        คุณสามารถดูภาพรวมของจำนวนผู้ป่วยแต่ละกลุ่มได้จากหน้าต่างด้านบน 
-                        และสามารถ <strong class="text-blue-600">คลิกที่การ์ด</strong> เพื่อดูรายชื่อผู้ป่วยที่ถูกจัดกลุ่มแยกตามหมู่บ้านได้อย่างรวดเร็วครับ
-                    </p>
+                <div class="bg-white rounded-[24px] p-6 shadow-sm border-l-4 border-emerald-500 cursor-pointer hover:bg-emerald-50 hover:shadow-md transition-all group" onclick="showGroupList('ติดสังคม')">
+                    <div class="flex justify-between items-start">
+                        <div>
+                            <p class="text-[13px] text-slate-500 font-bold mb-1">กลุ่มติดสังคม</p>
+                            <h3 class="text-[40px] font-black text-slate-800 leading-none" id="stat-social">0</h3>
+                        </div>
+                        <div class="w-12 h-12 rounded-2xl bg-emerald-50 text-emerald-500 flex items-center justify-center group-hover:scale-110 transition-transform">
+                            <span class="material-symbols-outlined text-[26px]" style="font-variation-settings: 'FILL' 1;">sentiment_satisfied</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-white rounded-[24px] p-6 shadow-sm border-l-4 border-amber-500 cursor-pointer hover:bg-amber-50 hover:shadow-md transition-all group" onclick="showGroupList('ติดบ้าน')">
+                    <div class="flex justify-between items-start">
+                        <div>
+                            <p class="text-[13px] text-slate-500 font-bold mb-1">กลุ่มติดบ้าน</p>
+                            <h3 class="text-[40px] font-black text-slate-800 leading-none" id="stat-home">0</h3>
+                        </div>
+                        <div class="w-12 h-12 rounded-2xl bg-amber-50 text-amber-500 flex items-center justify-center group-hover:scale-110 transition-transform">
+                            <span class="material-symbols-outlined text-[26px]" style="font-variation-settings: 'FILL' 1;">home</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-white rounded-[24px] p-6 shadow-sm border-l-4 border-red-500 cursor-pointer hover:bg-red-50 hover:shadow-md transition-all group" onclick="showGroupList('ติดเตียง')">
+                    <div class="flex justify-between items-start">
+                        <div>
+                            <p class="text-[13px] text-slate-500 font-bold mb-1">กลุ่มติดเตียง (วิกฤต)</p>
+                            <h3 class="text-[40px] font-black text-slate-800 leading-none" id="stat-bed">0</h3>
+                        </div>
+                        <div class="w-12 h-12 rounded-2xl bg-red-50 text-red-500 flex items-center justify-center group-hover:scale-110 transition-transform">
+                            <span class="material-symbols-outlined text-[26px]" style="font-variation-settings: 'FILL' 1;">bed</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 🌟 กล่องข้อมูลรออนุมัติ และ ค้างเยี่ยม (ของเดิมที่ขอกู้คืน) 🌟 -->
+                <div class="mt-6 space-y-4">
+                    <div class="bg-white rounded-[24px] p-5 shadow-sm border border-slate-200 cursor-pointer hover:bg-slate-50 transition-colors" onclick="window.location.href='admin_datacenter.html'">
+                        <div class="flex justify-between items-center">
+                            <div class="flex items-center gap-3">
+                                <span class="material-symbols-outlined text-amber-500 text-[24px]">inventory_2</span>
+                                <h4 class="font-bold text-slate-700 text-sm">วัสดุทางการแพทย์รออนุมัติ</h4>
+                            </div>
+                            <div class="flex items-center gap-2">
+                                <span class="font-black text-amber-600 text-lg" id="stat-pending">0</span>
+                                <span class="bg-amber-50 border border-amber-200 text-amber-600 text-[10px] px-2 py-1 rounded-lg font-bold">ตรวจสอบด่วน</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="bg-white rounded-[24px] p-5 shadow-sm border border-slate-200 cursor-pointer hover:bg-slate-50 transition-colors" onclick="window.location.href='admin_datacenter.html'">
+                        <div class="flex justify-between items-center">
+                            <div class="flex items-center gap-3">
+                                <span class="material-symbols-outlined text-red-500 text-[24px]">notification_important</span>
+                                <h4 class="font-bold text-slate-700 text-sm">รายการผู้ป่วยค้างเยี่ยม (>1 เดือน)</h4>
+                            </div>
+                            <div class="flex items-center gap-2">
+                                <span class="font-black text-red-600 text-lg" id="stat-overdue">0</span>
+                                <span class="bg-red-50 border border-red-200 text-red-600 text-[10px] px-2 py-1 rounded-lg font-bold">ค้างประเมิน</span>
+                            </div>
+                        </div>
+                    </div>
                 </div>
 
             </div>
         </div>
 
-        <!-- 🌟 Modal โชว์รายชื่อเมื่อกดการ์ด 🌟 -->
+        <!-- Modal โชว์รายชื่อเมื่อกดการ์ด (ทำงานเหมือนเดิม) -->
         <div id="group-list-modal" class="fixed inset-0 bg-[#111c2d]/50 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4 opacity-0 transition-opacity duration-300">
             <div class="bg-white rounded-[24px] w-full max-w-lg max-h-[85vh] flex flex-col shadow-2xl transform scale-95 transition-transform duration-300" id="group-list-content">
                 <div class="p-5 border-b border-slate-100 flex justify-between items-center bg-slate-50 rounded-t-[24px]">
@@ -153,7 +175,6 @@
                     <button onclick="closeGroupList()" class="text-slate-400 hover:text-slate-600 bg-white p-1 rounded-full"><span class="material-symbols-outlined">close</span></button>
                 </div>
                 <div class="p-5 overflow-y-auto flex-1 bg-slate-50/50" id="group-list-container">
-                    <!-- รายชื่อผู้ป่วยแยกตามหมู่จะถูกสร้างด้วย JS ที่นี่ -->
                 </div>
             </div>
         </div>
@@ -170,10 +191,22 @@
 
         function toggleSidebar() { document.getElementById('sidebar').classList.toggle('-translate-x-full'); }
 
+        function calculateDaysSince(dateStr) {
+            if (!dateStr || dateStr.trim() === '' || dateStr === '-') return 999;
+            let targetDate;
+            if (dateStr.includes('/')) {
+                const parts = dateStr.split(' ')[0].split('/');
+                let year = parseInt(parts[2]);
+                if (year > 2400) year -= 543;
+                targetDate = new Date(year, parseInt(parts[1]) - 1, parseInt(parts[0]));
+            } else { targetDate = new Date(dateStr); }
+            if (isNaN(targetDate)) return 999;
+            return Math.floor(Math.abs(new Date() - targetDate) / (1000 * 60 * 60 * 24));
+        }
+
         document.addEventListener("DOMContentLoaded", () => {
             document.getElementById('sidebar-hospital-name').innerText = DEFAULT_CONFIGS.HOSPITAL_NAME;
-            document.getElementById('sidebar-system-name').innerText = DEFAULT_CONFIGS.SYSTEM_NAME;
-
+            
             liff.init({ liffId: LIFF_ID }).then(() => {
                 const mockUid = localStorage.getItem('dev_mock_uid');
                 if (mockUid) { verifyAdminAccess(mockUid); } 
@@ -208,6 +241,7 @@
 
                 if (hasAccess) {
                     document.getElementById('sidebar-hospital-name').innerText = hospital;
+                    document.getElementById('header-hospital-name').innerText = `ข้อมูลสำหรับ ${hospital}`;
                     if (currentUserRole === 'SUB_ADMIN') document.getElementById('nav-settings').style.display = 'none'; 
                     loadDashboardData(); 
                 } else window.location.href = 'dashboard.html'; 
@@ -220,6 +254,8 @@
                 dashboardPatients = [];
                 
                 let cSocial = 0, cHome = 0, cBed = 0, cAll = 0;
+                let cPending = 0;
+                let cOverdue = 0;
 
                 snapshot.forEach(doc => {
                     const p = doc.data();
@@ -232,6 +268,20 @@
                         if(p.group === 'ติดสังคม') cSocial++;
                         else if(p.group === 'ติดบ้าน') cHome++;
                         else if(p.group === 'ติดเตียง') cBed++;
+
+                        // เช็คสถานะผ้าอ้อมรออนุมัติ
+                        if (p.diaper) {
+                            try {
+                                let dpStr = typeof p.diaper === 'string' ? p.diaper.replace(/""/g, '"') : JSON.stringify(p.diaper);
+                                if (dpStr.startsWith('"') && dpStr.endsWith('"')) dpStr = dpStr.substring(1, dpStr.length - 1);
+                                const dp = typeof p.diaper === 'object' ? p.diaper : JSON.parse(dpStr);
+                                if (dp.approve_status === 'รออนุมัติ') cPending++;
+                            } catch(e) {}
+                        }
+
+                        // เช็คผู้ป่วยค้างเยี่ยม
+                        const daysSince = calculateDaysSince(p.last_assess);
+                        if (daysSince > 30) cOverdue++;
                     }
                 });
 
@@ -239,6 +289,9 @@
                 document.getElementById('stat-social').innerText = cSocial;
                 document.getElementById('stat-home').innerText = cHome;
                 document.getElementById('stat-bed').innerText = cBed;
+                
+                document.getElementById('stat-pending').innerText = cPending;
+                document.getElementById('stat-overdue').innerText = cOverdue;
 
                 document.getElementById('loading-state').classList.add('hidden');
                 document.getElementById('dashboard-content').classList.remove('hidden');
@@ -279,7 +332,7 @@
                     groupedByVillage[v].forEach(p => {
                         let avatar = `<div class="w-10 h-10 rounded-full bg-slate-100 text-slate-400 font-bold flex items-center justify-center flex-shrink-0 text-sm border-2 border-white shadow-sm">${p.name ? p.name.substring(0,1) : '?'}</div>`;
                         if (p.profile_pic && (p.profile_pic.startsWith('data:image') || p.profile_pic.startsWith('http'))) {
-                            avatar = `<img src="${p.profile_pic}" class="w-10 h-10 rounded-full object-cover flex-shrink-0 border-2 border-white shadow-sm">`;
+                            avatar = `<img src="${p.profile_pic}" class="w-10 h-10 rounded-full object-cover flex-shrink-0 border border-slate-200">`;
                         }
 
                         html += `
