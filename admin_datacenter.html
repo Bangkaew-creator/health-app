@@ -224,9 +224,9 @@
 
         async function addNewPatient() {
             let idCard = prompt("กรุณาระบุเลขบัตรประชาชน 13 หลัก\n(หากไม่มี หรือยังไม่ทราบ ให้เว้นว่างไว้เพื่อสร้างรหัสชั่วคราวก่อนได้ครับ):");
-            if (idCard === null) return; // กดยกเลิก
+            if (idCard === null) return; 
             
-            idCard = idCard.replace(/[^0-9]/g, ''); // กรองเอาเฉพาะตัวเลข
+            idCard = idCard.replace(/[^0-9]/g, ''); 
 
             let docId = idCard;
             if (docId.length !== 13) {
@@ -389,18 +389,22 @@
             }
         }
 
-        // 🌟 ตัวช่วยดึงข้อมูลจากคอลัมน์ Excel ป้องกันปัญหาเลข 0 🌟
-        function getExcelValue(row, possibleKeys) {
-            // เช็คว่ามีค่าปกติหรือไม่
-            for (let key of possibleKeys) {
-                if (row[key] !== undefined && row[key] !== null && row[key] !== "") {
-                    return row[key];
-                }
+        // 🌟 ฟังก์ชันตัวช่วยดึงข้อมูล ตัดช่องว่าง แปลงตัวพิมพ์เล็ก 🌟
+        function getNormalizedValue(row, possibleKeys) {
+            const normRow = {};
+            for (let key in row) {
+                const cleanKey = String(key).replace(/[\s\r\n_\-]/g, '').toLowerCase();
+                normRow[cleanKey] = row[key];
             }
-            // ถ้าระบบปัดตกไป เช็คอีกรอบว่าค่านั้นเป็นเลข 0 ตรงๆ หรือไม่
-            for (let key of possibleKeys) {
-                if (row[key] === 0 || row[key] === "0") {
-                    return 0;
+
+            for (let pKey of possibleKeys) {
+                const cleanPKey = String(pKey).replace(/[\s\r\n_\-]/g, '').toLowerCase();
+                if (normRow[cleanPKey] !== undefined && normRow[cleanPKey] !== null && normRow[cleanPKey] !== "") {
+                    return normRow[cleanPKey];
+                }
+                // ถ้าค่าเป็นเลข 0 ให้ส่งคืนเลข 0 เลย
+                if (normRow[cleanPKey] === 0 || normRow[cleanPKey] === "0") {
+                    return 0; 
                 }
             }
             return '';
@@ -417,10 +421,10 @@
             reader.onload = async function(e) {
                 try {
                     const data = new Uint8Array(e.target.result);
-                    const workbook = XLSX.read(data, {type: 'array'});
+                    const workbook = XLSX.read(data, {type: 'array', cellDates: true, cellText: false});
                     const firstSheetName = workbook.SheetNames[0];
                     const worksheet = workbook.Sheets[firstSheetName];
-                    const jsonRows = XLSX.utils.sheet_to_json(worksheet, {defval: ""}); 
+                    const jsonRows = XLSX.utils.sheet_to_json(worksheet, {defval: "", raw: true}); 
 
                     if (jsonRows.length === 0) throw new Error("ไม่พบข้อมูลในไฟล์ Excel");
 
@@ -429,9 +433,14 @@
 
                     for (let row of jsonRows) {
                         
-                        // ใช้ฟังก์ชัน getExcelValue เพื่อดึงข้อมูลอย่างแม่นยำ
-                        let rawIdCard = String(getExcelValue(row, ['เลขบัตรประชาชน', 'เลขประจำตัวประชาชน', 'ID_CARD', 'CID'])).trim();
+                        // 1. ดึงและกรองเลขบัตรประชาชน
+                        let rawIdCard = String(getNormalizedValue(row, ['เลขบัตรประชาชน', 'เลขประจำตัวประชาชน', 'เลขที่บัตรประชาชน', 'บัตรประชาชน', 'idcard', 'cid', 'เลขบัตร'])).trim();
                         rawIdCard = rawIdCard.replace(/[^0-9]/g, ''); 
+
+                        // ✅ ป้องกัน Excel หั่นเลข 0 ตัวหน้าทิ้ง (กรณีเลขบัตรไทย 13 หลักที่ขึ้นต้นด้วย 0)
+                        if (rawIdCard.length === 12) {
+                            rawIdCard = '0' + rawIdCard;
+                        }
 
                         let docId = rawIdCard;
                         if (docId.length !== 13) {
@@ -440,8 +449,8 @@
                             docId = `TEMP-${now.getFullYear()}${String(now.getMonth()+1).padStart(2,'0')}${String(now.getDate()).padStart(2,'0')}-${randomNum}`;
                         }
 
-                        // 🌟 ดึงค่า ADL (รองรับเลข 0) 🌟
-                        let rawAdl = String(getExcelValue(row, ['ADL', 'คะแนน ADL', 'adl'])).trim();
+                        // 2. ดึงและวิเคราะห์คะแนน ADL (รองรับเลข 0 สมบูรณ์แบบ)
+                        let rawAdl = String(getNormalizedValue(row, ['adl', 'คะแนนadl', 'ผลadl', 'คะแนน', 'คะแนนประเมินadl'])).trim();
                         let adlScore = '-';
                         let group = 'ยังไม่ประเมิน';
 
@@ -455,21 +464,23 @@
                             }
                         }
 
+                        // 3. จัดเตรียมข้อมูลผู้ป่วย
                         const patientData = {
                             id: docId,
                             id_card: rawIdCard,
-                            prefix: String(getExcelValue(row, ['คำนำหน้า'])).trim(),
-                            name: String(getExcelValue(row, ['ชื่อ-สกุล', 'ชื่อ-นามสกุล', 'ชื่อ'])).trim() || 'ไม่ระบุชื่อ',
-                            house_no: String(getExcelValue(row, ['บ้านเลขที่', 'ที่อยู่'])).trim() || '-',
-                            village_no: String(getExcelValue(row, ['หมู่ที่', 'หมู่'])).trim() || '-',
-                            phone: String(getExcelValue(row, ['เบอร์โทรศัพท์', 'เบอร์โทร', 'เบอร์ญาติ'])).trim() || '-',
+                            prefix: String(getNormalizedValue(row, ['คำนำหน้า', 'คำนำหน้านาม', 'ยศ'])).trim(),
+                            name: String(getNormalizedValue(row, ['ชื่อสกุล', 'ชื่อนามสกุล', 'ชื่อ', 'ชื่อผู้ป่วย'])).trim() || 'ไม่ระบุชื่อ',
+                            house_no: String(getNormalizedValue(row, ['บ้านเลขที่', 'ที่อยู่', 'เลขที่'])).trim() || '-',
+                            village_no: String(getNormalizedValue(row, ['หมู่ที่', 'หมู่', 'ม', 'moo'])).trim() || '-',
+                            phone: String(getNormalizedValue(row, ['เบอร์โทรศัพท์', 'เบอร์โทร', 'เบอร์ญาติ', 'โทรศัพท์', 'เบอร์ติดต่อ'])).trim() || '-',
                             adl: adlScore,
                             group: group,
                             status: 'Active',
-                            disease: String(getExcelValue(row, ['โรคประจำตัว'])).trim() || '-',
+                            disease: String(getNormalizedValue(row, ['โรคประจำตัว', 'โรค', 'โรคเรื้อรัง'])).trim() || '-',
                             updated_at: firebase.firestore.FieldValue.serverTimestamp()
                         };
 
+                        // 4. บันทึกทับข้อมูลเดิม
                         const docRef = db.collection('Patients').doc(docId);
                         batch.set(docRef, patientData, { merge: true });
                         batchCount++;
