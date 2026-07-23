@@ -8,6 +8,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700&display=swap" rel="stylesheet"/>
     <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
     <script charset="utf-8" src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
     
     <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore-compat.js"></script>
@@ -50,7 +51,6 @@
                 <span class="flex items-center gap-3"><span class="material-symbols-outlined">folder_shared</span> ศูนย์ข้อมูลผู้ป่วย</span>
                 <span class="w-1.5 h-1.5 rounded-full bg-amber-400"></span>
             </a>
-            <!-- 🌟 เมนูแผนที่ใหม่ 🌟 -->
             <a href="admin_map.html" class="flex items-center gap-3 px-4 py-3.5 text-slate-400 hover:bg-white/5 hover:text-white rounded-xl font-medium transition-all">
                 <span class="material-symbols-outlined">map</span> แผนที่พิกัดผู้ป่วย
             </a>
@@ -81,7 +81,7 @@
             <div class="flex flex-col md:flex-row gap-3">
                 <div class="relative flex-1">
                     <span class="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-slate-400">search</span>
-                    <input type="text" id="search-input" oninput="filterPatients()" class="w-full pl-12 pr-4 py-3 bg-white border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 shadow-sm" placeholder="ค้นหา HN, เลขบัตร, ชื่อ-นามสกุล, หรือบ้านเลขที่...">
+                    <input type="text" id="search-input" oninput="filterPatients()" class="w-full pl-12 pr-4 py-3 bg-white border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 shadow-sm" placeholder="ค้นหา เลขบัตร, ชื่อ-นามสกุล, หรือบ้านเลขที่...">
                 </div>
                 
                 <div class="flex gap-2">
@@ -94,7 +94,6 @@
                 </div>
             </div>
             
-            <!-- 🌟 เพิ่มฟิลเตอร์ "กลุ่มผู้ป่วย" ตามที่ขอ 🌟 -->
             <div class="grid grid-cols-1 md:grid-cols-3 gap-2">
                 <select id="village-filter" onchange="filterPatients()" class="w-full px-4 py-2.5 bg-white border border-slate-200 rounded-xl text-sm font-bold text-slate-600 focus:ring-2 focus:ring-emerald-500 shadow-sm outline-none">
                     <option value="">ดูทุกหมู่ (ทั้งหมด)</option>
@@ -139,7 +138,11 @@
                 <div class="p-6 space-y-4">
                     <div class="bg-amber-50 p-4 rounded-xl border border-amber-200 text-sm text-amber-800">
                         <p class="font-bold mb-1 flex items-center gap-1"><span class="material-symbols-outlined text-[16px]">info</span> ข้อแนะนำก่อนนำเข้า</p>
-                        <p class="text-xs">กรุณาดาวน์โหลดฟอร์มต้นแบบ เพื่อให้แน่ใจว่าคอลัมน์ของข้อมูลตรงกับที่ระบบต้องการ (หากอัปโหลดไฟล์ที่มีโครงสร้างผิด ข้อมูลอาจไม่สมบูรณ์)</p>
+                        <p class="text-xs">
+                            - ระบบจะใช้ <b>เลขบัตรประชาชน</b> เป็นกุญแจหลัก หากเลขซ้ำจะถือเป็นการอัปเดตข้อมูล<br>
+                            - หากไม่มีเลขบัตร ระบบจะสร้างรหัสชั่วคราวให้ (TEMP-xxx)<br>
+                            - รองรับหัวคอลัมน์: ชื่อ, เลขบัตร, หมู่, ADL
+                        </p>
                     </div>
                     <div class="relative border-2 border-dashed border-blue-300 rounded-xl p-6 text-center hover:bg-blue-50 transition-colors cursor-pointer" onclick="document.getElementById('excel-file').click()">
                         <span class="material-symbols-outlined text-blue-500 text-[40px] mb-2">note_add</span>
@@ -219,17 +222,43 @@
             } catch (error) { bounceToLogin(); }
         }
 
+        // 🌟 อัปเกรด: บังคับกรอกเลขบัตรประชาชนเพื่อใช้เป็น Primary Key 🌟
         async function addNewPatient() {
-            if(!confirm("ต้องการสร้างแฟ้มประวัติผู้ป่วยรายใหม่ใช่หรือไม่?")) return;
-            try {
+            let idCard = prompt("กรุณาระบุเลขบัตรประชาชน 13 หลัก\n(หากไม่มี หรือยังไม่ทราบ ให้เว้นว่างไว้เพื่อสร้างรหัสชั่วคราวก่อนได้ครับ):");
+            if (idCard === null) return; // กดยกเลิก
+            
+            idCard = idCard.replace(/[^0-9]/g, ''); // กรองเอาเฉพาะตัวเลข
+
+            let docId = idCard;
+            // ถ้ากรอกไม่ครบ 13 หลัก ให้เจนรหัส TEMP ให้เลย
+            if (docId.length !== 13) {
                 const now = new Date();
-                const newId = `HN-${now.getFullYear()}${String(now.getMonth()+1).padStart(2,'0')}${String(now.getDate()).padStart(2,'0')}-${String(now.getHours()).padStart(2,'0')}${String(now.getMinutes()).padStart(2,'0')}${String(now.getSeconds()).padStart(2,'0')}`;
+                const randomNum = Math.floor(Math.random() * 1000).toString().padStart(3, '0');
+                docId = `TEMP-${now.getFullYear()}${String(now.getMonth()+1).padStart(2,'0')}${String(now.getDate()).padStart(2,'0')}-${randomNum}`;
+            }
+
+            try {
+                // เช็คว่าเลขบัตรนี้มีอยู่แล้วหรือไม่
+                const docRef = db.collection('Patients').doc(docId);
+                const docSnap = await docRef.get();
                 
-                await db.collection('Patients').doc(newId).set({
-                    id: newId, status: 'Active', group: 'ยังไม่ประเมิน', adl: '-', dep_status: '-',
+                if (docSnap.exists) {
+                    alert(`เลขบัตรประชาชน ${idCard} มีอยู่ในระบบแล้วครับ!`);
+                    window.location.href = `patient_profile.html?id=${docId}`;
+                    return;
+                }
+
+                await docRef.set({
+                    id: docId, 
+                    id_card: idCard.length === 13 ? idCard : '', // เซฟฟิลด์เลขบัตรไว้แสดงผล
+                    status: 'Active', 
+                    group: 'ยังไม่ประเมิน', 
+                    adl: '-', 
+                    dep_status: '-',
                     timestamp: firebase.firestore.FieldValue.serverTimestamp()
                 });
-                window.location.href = `patient_edit.html?id=${newId}`;
+                
+                window.location.href = `patient_edit.html?id=${docId}`;
             } catch (error) { alert('ไม่สามารถสร้างข้อมูลได้: ' + error.message); }
         }
 
@@ -242,7 +271,10 @@
                     const data = doc.data();
                     let hasPermissionToView = true;
                     if (currentUserRole === 'SUB_ADMIN') hasPermissionToView = assignedVillages.includes(String(data.village_no).trim());
-                    if (hasPermissionToView) tempPatients.push(data);
+                    if (hasPermissionToView) {
+                        data.docId = doc.id; // เก็บชื่อไฟล์ไว้เช็คด้วย
+                        tempPatients.push(data);
+                    }
                 });
 
                 allPatients = tempPatients.sort((a, b) => parseInt(a.village_no) - parseInt(b.village_no));
@@ -252,7 +284,6 @@
             } catch (error) { alert("ดึงฐานข้อมูลล้มเหลว"); }
         }
 
-        // 🌟 อัปเกรดฟังก์ชัน Filter ให้รองรับการกรองตาม "กลุ่มผู้ป่วย" 🌟
         function filterPatients() {
             const searchKeyword = document.getElementById('search-input').value.trim().toLowerCase();
             const villageFilter = document.getElementById('village-filter').value;
@@ -298,7 +329,7 @@
                             ${avatarHtml}
                             <div class="flex-1 min-w-0">
                                 <h3 class="font-bold text-slate-800 text-[15px] truncate">${p.prefix || ''}${p.name || 'ไม่ระบุชื่อ'}</h3>
-                                <p class="text-xs text-slate-500 truncate mt-0.5"><span class="font-medium text-slate-400">HN:</span> ${p.id || '-'}</p>
+                                <p class="text-[11px] text-slate-500 truncate mt-0.5"><span class="font-bold text-blue-500">CID:</span> ${p.id_card || p.id || '-'}</p>
                             </div>
                             <span class="${badgeColor} text-[10px] font-bold px-3 py-1 rounded-full border shadow-sm flex-shrink-0">${groupDisplay}</span>
                         </div>
@@ -359,6 +390,104 @@
                 document.getElementById('file-name-display').innerHTML = `<span class="text-blue-600 font-bold">${file.name}</span>`;
                 document.getElementById('btn-process-import').disabled = false;
             }
+        }
+
+        // 🌟 อัปเกรด: ระบบอ่านและประมวลผล Excel แบบทรงพลัง (อัปเดต ADL & Group อัตโนมัติ) 🌟
+        async function processExcelImport() {
+            if (!selectedExcelFile) return alert('กรุณาเลือกไฟล์ก่อนครับ');
+
+            const btn = document.getElementById('btn-process-import');
+            btn.innerHTML = '<div class="loader-small mr-2" style="border-color:white;border-bottom-color:transparent"></div> กำลังประมวลผล...';
+            btn.disabled = true;
+
+            const reader = new FileReader();
+            reader.onload = async function(e) {
+                try {
+                    const data = new Uint8Array(e.target.result);
+                    const workbook = XLSX.read(data, {type: 'array'});
+                    const firstSheetName = workbook.SheetNames[0];
+                    const worksheet = workbook.Sheets[firstSheetName];
+                    const jsonRows = XLSX.utils.sheet_to_json(worksheet, {defval: ""}); 
+
+                    if (jsonRows.length === 0) throw new Error("ไม่พบข้อมูลในไฟล์ Excel");
+
+                    const batch = db.batch();
+                    let batchCount = 0;
+
+                    for (let row of jsonRows) {
+                        // 1. ตรวจสอบเลขบัตรประชาชน (Primary Key)
+                        let rawIdCard = String(row['เลขบัตรประชาชน'] || row['เลขประจำตัวประชาชน'] || row['ID_CARD'] || row['CID'] || '').trim();
+                        rawIdCard = rawIdCard.replace(/[^0-9]/g, ''); // กรองเอาเฉพาะตัวเลข 13 หลัก
+
+                        let docId = rawIdCard;
+                        if (docId.length !== 13) {
+                            // ถ้าไม่มีเลขบัตร ให้เจนรหัส TEMP
+                            const now = new Date();
+                            const randomNum = Math.floor(Math.random() * 1000).toString().padStart(3, '0');
+                            docId = `TEMP-${now.getFullYear()}${String(now.getMonth()+1).padStart(2,'0')}${String(now.getDate()).padStart(2,'0')}-${randomNum}`;
+                        }
+
+                        // 2. ดึงและวิเคราะห์คะแนน ADL เพื่อจัดกลุ่มอัตโนมัติ
+                        let rawAdl = String(row['ADL'] || row['คะแนน ADL'] || row['adl'] || '').trim();
+                        let adlScore = '-';
+                        let group = 'ยังไม่ประเมิน';
+
+                        if (rawAdl !== '') {
+                            const parsedAdl = parseInt(rawAdl);
+                            if (!isNaN(parsedAdl)) {
+                                adlScore = String(parsedAdl);
+                                // ตรรกะการจัดกลุ่มผู้ป่วยตาม ADL
+                                if (parsedAdl >= 12) group = 'ติดสังคม';
+                                else if (parsedAdl >= 5) group = 'ติดบ้าน';
+                                else if (parsedAdl >= 0) group = 'ติดเตียง';
+                            }
+                        }
+
+                        // 3. เตรียมข้อมูล
+                        const patientData = {
+                            id: docId,
+                            id_card: rawIdCard,
+                            prefix: row['คำนำหน้า'] || '',
+                            name: row['ชื่อ-สกุล'] || row['ชื่อ-นามสกุล'] || row['ชื่อ'] || 'ไม่ระบุชื่อ',
+                            house_no: row['บ้านเลขที่'] || row['ที่อยู่'] || '-',
+                            village_no: row['หมู่ที่'] || row['หมู่'] || '-',
+                            phone: row['เบอร์โทรศัพท์'] || row['เบอร์โทร'] || '-',
+                            adl: adlScore,
+                            group: group,
+                            status: 'Active',
+                            disease: row['โรคประจำตัว'] || '-',
+                            updated_at: firebase.firestore.FieldValue.serverTimestamp()
+                        };
+
+                        // 4. บันทึกทับ (Merge) หากมีอยู่แล้ว ข้อมูลเก่าเช่นพิกัดจะไม่หาย
+                        const docRef = db.collection('Patients').doc(docId);
+                        batch.set(docRef, patientData, { merge: true });
+                        batchCount++;
+
+                        // ป้องกัน Batch Limit ของ Firebase (จำกัดรอบละ 500)
+                        if (batchCount === 450) {
+                            await batch.commit();
+                            batchCount = 0;
+                        }
+                    }
+
+                    if (batchCount > 0) {
+                        await batch.commit();
+                    }
+
+                    alert(`นำเข้าข้อมูลเรียบร้อยแล้วจำนวน ${jsonRows.length} รายการ\n(ระบบได้จัดกลุ่มผู้ป่วยตามคะแนน ADL ให้เรียบร้อยแล้วครับ)`);
+                    closeImportModal();
+                    loadPatientData(); 
+
+                } catch (err) {
+                    console.error(err);
+                    alert("เกิดข้อผิดพลาด: " + err.message);
+                } finally {
+                    btn.innerHTML = 'เริ่มนำเข้าข้อมูล';
+                    btn.disabled = false;
+                }
+            };
+            reader.readAsArrayBuffer(selectedExcelFile);
         }
     </script>
 </body>
