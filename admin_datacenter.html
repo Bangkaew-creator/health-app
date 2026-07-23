@@ -337,7 +337,7 @@
                             </div>
                             <div class="flex items-start gap-2 text-xs">
                                 <span class="material-symbols-outlined text-[16px] text-slate-400">call</span>
-                                <span class="text-slate-600">เบอร์ญาติ: <strong class="text-slate-800">${p.caregiver_phone || '-'}</strong></span>
+                                <span class="text-slate-600">เบอร์ญาติ: <strong class="text-slate-800">${p.caregiver_phone || p.phone || '-'}</strong></span>
                             </div>
                         </div>
                         <div class="flex gap-2">
@@ -389,24 +389,38 @@
             }
         }
 
-        // 🌟 ฟังก์ชันตัวช่วยดึงข้อมูล ตัดช่องว่าง แปลงตัวพิมพ์เล็ก 🌟
+        // 🌟 ฟังก์ชันตัวช่วยดึงข้อมูลแบบสแกนหาคำหลัก (ล้างอักขระพิเศษทิ้งหมด) 🌟
         function getNormalizedValue(row, possibleKeys) {
-            const normRow = {};
-            for (let key in row) {
-                const cleanKey = String(key).replace(/[\s\r\n_\-]/g, '').toLowerCase();
-                normRow[cleanKey] = row[key];
+            const cleanObj = {};
+            for (let k in row) {
+                // ลบทุกอย่างที่ไม่ใช่ตัวอักษรหรือตัวเลข (ลบช่องว่าง, -, _, (, ))
+                let cleanK = String(k).replace(/[^a-zA-Z0-9ก-๙]/g, '').toLowerCase();
+                cleanObj[cleanK] = row[k];
             }
 
-            for (let pKey of possibleKeys) {
-                const cleanPKey = String(pKey).replace(/[\s\r\n_\-]/g, '').toLowerCase();
-                if (normRow[cleanPKey] !== undefined && normRow[cleanPKey] !== null && normRow[cleanPKey] !== "") {
-                    return normRow[cleanPKey];
+            // 1. หาแบบตรงตัวเป๊ะๆ ก่อน (หลังคลีนอักขระ)
+            for (let pk of possibleKeys) {
+                let cleanPK = String(pk).replace(/[^a-zA-Z0-9ก-๙]/g, '').toLowerCase();
+                if (cleanObj[cleanPK] !== undefined && cleanObj[cleanPK] !== null && cleanObj[cleanPK] !== "") {
+                    return cleanObj[cleanPK];
                 }
-                // ถ้าค่าเป็นเลข 0 ให้ส่งคืนเลข 0 เลย
-                if (normRow[cleanPKey] === 0 || normRow[cleanPKey] === "0") {
-                    return 0; 
+                if (cleanObj[cleanPK] === 0 || cleanObj[cleanPK] === "0") {
+                    return 0;
                 }
             }
+
+            // 2. หาแบบ includes (ถ้ามีคำหลักซ่อนอยู่ เช่น "เลขบัตรประชาชน(13หลัก)" มีคำว่า "เลขบัตรประชาชน")
+            for (let cleanK in cleanObj) {
+                for (let pk of possibleKeys) {
+                    let cleanPK = String(pk).replace(/[^a-zA-Z0-9ก-๙]/g, '').toLowerCase();
+                    if (cleanPK.length > 0 && cleanK.includes(cleanPK)) {
+                        let val = cleanObj[cleanK];
+                        if (val !== undefined && val !== null && val !== "") return val;
+                        if (val === 0 || val === "0") return 0;
+                    }
+                }
+            }
+
             return '';
         }
 
@@ -433,11 +447,11 @@
 
                     for (let row of jsonRows) {
                         
-                        // 1. ดึงและกรองเลขบัตรประชาชน
-                        let rawIdCard = String(getNormalizedValue(row, ['เลขบัตรประชาชน', 'เลขประจำตัวประชาชน', 'เลขที่บัตรประชาชน', 'บัตรประชาชน', 'idcard', 'cid', 'เลขบัตร'])).trim();
+                        // 1. ดึงและกรองเลขบัตรประชาชน (เพิ่มคีย์ให้ครอบคลุม)
+                        let rawIdCard = String(getNormalizedValue(row, ['เลขบัตรประชาชน', 'เลขประจำตัวประชาชน', 'idcard', 'cid', 'บัตรประชาชน'])).trim();
                         rawIdCard = rawIdCard.replace(/[^0-9]/g, ''); 
 
-                        // ✅ ป้องกัน Excel หั่นเลข 0 ตัวหน้าทิ้ง (กรณีเลขบัตรไทย 13 หลักที่ขึ้นต้นด้วย 0)
+                        // ✅ ป้องกัน Excel หั่นเลข 0 ตัวหน้าทิ้ง
                         if (rawIdCard.length === 12) {
                             rawIdCard = '0' + rawIdCard;
                         }
@@ -449,7 +463,7 @@
                             docId = `TEMP-${now.getFullYear()}${String(now.getMonth()+1).padStart(2,'0')}${String(now.getDate()).padStart(2,'0')}-${randomNum}`;
                         }
 
-                        // 2. ดึงและวิเคราะห์คะแนน ADL (รองรับเลข 0 สมบูรณ์แบบ)
+                        // 2. ดึงและวิเคราะห์คะแนน ADL
                         let rawAdl = String(getNormalizedValue(row, ['adl', 'คะแนนadl', 'ผลadl', 'คะแนน', 'คะแนนประเมินadl'])).trim();
                         let adlScore = '-';
                         let group = 'ยังไม่ประเมิน';
@@ -464,19 +478,22 @@
                             }
                         }
 
-                        // 3. จัดเตรียมข้อมูลผู้ป่วย
+                        // 3. จัดเตรียมข้อมูลผู้ป่วย (เพิ่มคีย์ เบอร์โทรศัพท์ญาติ)
                         const patientData = {
                             id: docId,
                             id_card: rawIdCard,
                             prefix: String(getNormalizedValue(row, ['คำนำหน้า', 'คำนำหน้านาม', 'ยศ'])).trim(),
-                            name: String(getNormalizedValue(row, ['ชื่อสกุล', 'ชื่อนามสกุล', 'ชื่อ', 'ชื่อผู้ป่วย'])).trim() || 'ไม่ระบุชื่อ',
-                            house_no: String(getNormalizedValue(row, ['บ้านเลขที่', 'ที่อยู่', 'เลขที่'])).trim() || '-',
-                            village_no: String(getNormalizedValue(row, ['หมู่ที่', 'หมู่', 'ม', 'moo'])).trim() || '-',
-                            phone: String(getNormalizedValue(row, ['เบอร์โทรศัพท์', 'เบอร์โทร', 'เบอร์ญาติ', 'โทรศัพท์', 'เบอร์ติดต่อ'])).trim() || '-',
+                            name: String(getNormalizedValue(row, ['ชื่อสกุล', 'ชื่อนามสกุล', 'ชื่อผู้ป่วย', 'ชื่อ'])).trim() || 'ไม่ระบุชื่อ',
+                            house_no: String(getNormalizedValue(row, ['บ้านเลขที่', 'ที่อยู่', 'เลขที่บ้าน'])).trim() || '-',
+                            village_no: String(getNormalizedValue(row, ['หมู่ที่', 'หมู่', 'moo'])).trim() || '-',
+                            
+                            // เปลี่ยนตัวแปรเบอร์โทรให้ครอบคลุม และนำไปโชว์ใน caregiver_phone ได้เลย
+                            caregiver_phone: String(getNormalizedValue(row, ['เบอร์โทรศัพท์ญาติ', 'เบอร์โทรศัพท์', 'เบอร์โทร', 'เบอร์ญาติ', 'โทรศัพท์', 'เบอร์ติดต่อ'])).trim() || '-',
+                            
                             adl: adlScore,
                             group: group,
                             status: 'Active',
-                            disease: String(getNormalizedValue(row, ['โรคประจำตัว', 'โรค', 'โรคเรื้อรัง'])).trim() || '-',
+                            disease: String(getNormalizedValue(row, ['โรคประจำตัว', 'โรคเรื้อรัง', 'โรค'])).trim() || '-',
                             updated_at: firebase.firestore.FieldValue.serverTimestamp()
                         };
 
