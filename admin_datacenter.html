@@ -222,7 +222,6 @@
             } catch (error) { bounceToLogin(); }
         }
 
-        // 🌟 อัปเกรด: บังคับกรอกเลขบัตรประชาชนเพื่อใช้เป็น Primary Key 🌟
         async function addNewPatient() {
             let idCard = prompt("กรุณาระบุเลขบัตรประชาชน 13 หลัก\n(หากไม่มี หรือยังไม่ทราบ ให้เว้นว่างไว้เพื่อสร้างรหัสชั่วคราวก่อนได้ครับ):");
             if (idCard === null) return; // กดยกเลิก
@@ -230,7 +229,6 @@
             idCard = idCard.replace(/[^0-9]/g, ''); // กรองเอาเฉพาะตัวเลข
 
             let docId = idCard;
-            // ถ้ากรอกไม่ครบ 13 หลัก ให้เจนรหัส TEMP ให้เลย
             if (docId.length !== 13) {
                 const now = new Date();
                 const randomNum = Math.floor(Math.random() * 1000).toString().padStart(3, '0');
@@ -238,7 +236,6 @@
             }
 
             try {
-                // เช็คว่าเลขบัตรนี้มีอยู่แล้วหรือไม่
                 const docRef = db.collection('Patients').doc(docId);
                 const docSnap = await docRef.get();
                 
@@ -250,7 +247,7 @@
 
                 await docRef.set({
                     id: docId, 
-                    id_card: idCard.length === 13 ? idCard : '', // เซฟฟิลด์เลขบัตรไว้แสดงผล
+                    id_card: idCard.length === 13 ? idCard : '', 
                     status: 'Active', 
                     group: 'ยังไม่ประเมิน', 
                     adl: '-', 
@@ -272,7 +269,7 @@
                     let hasPermissionToView = true;
                     if (currentUserRole === 'SUB_ADMIN') hasPermissionToView = assignedVillages.includes(String(data.village_no).trim());
                     if (hasPermissionToView) {
-                        data.docId = doc.id; // เก็บชื่อไฟล์ไว้เช็คด้วย
+                        data.docId = doc.id; 
                         tempPatients.push(data);
                     }
                 });
@@ -392,7 +389,23 @@
             }
         }
 
-        // 🌟 อัปเกรด: ระบบอ่านและประมวลผล Excel แบบทรงพลัง (อัปเดต ADL & Group อัตโนมัติ) 🌟
+        // 🌟 ตัวช่วยดึงข้อมูลจากคอลัมน์ Excel ป้องกันปัญหาเลข 0 🌟
+        function getExcelValue(row, possibleKeys) {
+            // เช็คว่ามีค่าปกติหรือไม่
+            for (let key of possibleKeys) {
+                if (row[key] !== undefined && row[key] !== null && row[key] !== "") {
+                    return row[key];
+                }
+            }
+            // ถ้าระบบปัดตกไป เช็คอีกรอบว่าค่านั้นเป็นเลข 0 ตรงๆ หรือไม่
+            for (let key of possibleKeys) {
+                if (row[key] === 0 || row[key] === "0") {
+                    return 0;
+                }
+            }
+            return '';
+        }
+
         async function processExcelImport() {
             if (!selectedExcelFile) return alert('กรุณาเลือกไฟล์ก่อนครับ');
 
@@ -415,20 +428,20 @@
                     let batchCount = 0;
 
                     for (let row of jsonRows) {
-                        // 1. ตรวจสอบเลขบัตรประชาชน (Primary Key)
-                        let rawIdCard = String(row['เลขบัตรประชาชน'] || row['เลขประจำตัวประชาชน'] || row['ID_CARD'] || row['CID'] || '').trim();
-                        rawIdCard = rawIdCard.replace(/[^0-9]/g, ''); // กรองเอาเฉพาะตัวเลข 13 หลัก
+                        
+                        // ใช้ฟังก์ชัน getExcelValue เพื่อดึงข้อมูลอย่างแม่นยำ
+                        let rawIdCard = String(getExcelValue(row, ['เลขบัตรประชาชน', 'เลขประจำตัวประชาชน', 'ID_CARD', 'CID'])).trim();
+                        rawIdCard = rawIdCard.replace(/[^0-9]/g, ''); 
 
                         let docId = rawIdCard;
                         if (docId.length !== 13) {
-                            // ถ้าไม่มีเลขบัตร ให้เจนรหัส TEMP
                             const now = new Date();
                             const randomNum = Math.floor(Math.random() * 1000).toString().padStart(3, '0');
                             docId = `TEMP-${now.getFullYear()}${String(now.getMonth()+1).padStart(2,'0')}${String(now.getDate()).padStart(2,'0')}-${randomNum}`;
                         }
 
-                        // 2. ดึงและวิเคราะห์คะแนน ADL เพื่อจัดกลุ่มอัตโนมัติ
-                        let rawAdl = String(row['ADL'] || row['คะแนน ADL'] || row['adl'] || '').trim();
+                        // 🌟 ดึงค่า ADL (รองรับเลข 0) 🌟
+                        let rawAdl = String(getExcelValue(row, ['ADL', 'คะแนน ADL', 'adl'])).trim();
                         let adlScore = '-';
                         let group = 'ยังไม่ประเมิน';
 
@@ -436,35 +449,31 @@
                             const parsedAdl = parseInt(rawAdl);
                             if (!isNaN(parsedAdl)) {
                                 adlScore = String(parsedAdl);
-                                // ตรรกะการจัดกลุ่มผู้ป่วยตาม ADL
                                 if (parsedAdl >= 12) group = 'ติดสังคม';
                                 else if (parsedAdl >= 5) group = 'ติดบ้าน';
                                 else if (parsedAdl >= 0) group = 'ติดเตียง';
                             }
                         }
 
-                        // 3. เตรียมข้อมูล
                         const patientData = {
                             id: docId,
                             id_card: rawIdCard,
-                            prefix: row['คำนำหน้า'] || '',
-                            name: row['ชื่อ-สกุล'] || row['ชื่อ-นามสกุล'] || row['ชื่อ'] || 'ไม่ระบุชื่อ',
-                            house_no: row['บ้านเลขที่'] || row['ที่อยู่'] || '-',
-                            village_no: row['หมู่ที่'] || row['หมู่'] || '-',
-                            phone: row['เบอร์โทรศัพท์'] || row['เบอร์โทร'] || '-',
+                            prefix: String(getExcelValue(row, ['คำนำหน้า'])).trim(),
+                            name: String(getExcelValue(row, ['ชื่อ-สกุล', 'ชื่อ-นามสกุล', 'ชื่อ'])).trim() || 'ไม่ระบุชื่อ',
+                            house_no: String(getExcelValue(row, ['บ้านเลขที่', 'ที่อยู่'])).trim() || '-',
+                            village_no: String(getExcelValue(row, ['หมู่ที่', 'หมู่'])).trim() || '-',
+                            phone: String(getExcelValue(row, ['เบอร์โทรศัพท์', 'เบอร์โทร', 'เบอร์ญาติ'])).trim() || '-',
                             adl: adlScore,
                             group: group,
                             status: 'Active',
-                            disease: row['โรคประจำตัว'] || '-',
+                            disease: String(getExcelValue(row, ['โรคประจำตัว'])).trim() || '-',
                             updated_at: firebase.firestore.FieldValue.serverTimestamp()
                         };
 
-                        // 4. บันทึกทับ (Merge) หากมีอยู่แล้ว ข้อมูลเก่าเช่นพิกัดจะไม่หาย
                         const docRef = db.collection('Patients').doc(docId);
                         batch.set(docRef, patientData, { merge: true });
                         batchCount++;
 
-                        // ป้องกัน Batch Limit ของ Firebase (จำกัดรอบละ 500)
                         if (batchCount === 450) {
                             await batch.commit();
                             batchCount = 0;
