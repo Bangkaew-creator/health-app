@@ -5,7 +5,7 @@
     <meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" name="viewport"/>
     <title>คัดกรองภาวะซึมเศร้า (2Q/9Q)</title>
     <script src="https://cdn.tailwindcss.com?plugins=forms"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700&family=Sarabun:wght@300;400;500;600;700&display=swap" rel="stylesheet"/>
+    <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700&display=swap" rel="stylesheet"/>
     <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
     
     <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-app-compat.js"></script>
@@ -38,14 +38,12 @@
     </header>
 
     <main class="max-w-2xl mx-auto p-4 space-y-6">
-        
         <section id="section-2q" class="space-y-4">
             <div class="flex items-center gap-2 pb-2 border-b border-gray-200">
                 <span class="material-symbols-outlined text-[#F59E0B]">psychology_alt</span>
                 <h2 class="font-bold text-lg text-[#111c2d]">แบบคัดกรอง 2Q</h2>
             </div>
             <p class="text-sm text-gray-500 mb-2">ในช่วง 2 สัปดาห์ที่ผ่านมา รวมทั้งวันนี้ ท่านมีอาการเหล่านี้หรือไม่?</p>
-            
             <div id="container-2q" class="space-y-4"></div>
         </section>
 
@@ -57,10 +55,8 @@
             <p class="text-sm text-[#ba1a1a] font-medium mb-2 bg-[#ffdad6]/30 p-3 rounded-lg border border-[#ffdad6]">
                 พบความเสี่ยงจาก 2Q กรุณาประเมินความถี่ของอาการต่อไปนี้
             </p>
-            
             <div id="container-9q" class="space-y-4"></div>
         </section>
-
     </main>
 
     <div class="fixed bottom-0 left-0 w-full bg-white border-t border-gray-200 shadow-[0_-4px_20px_rgba(0,0,0,0.05)] p-4 flex justify-between items-center z-50">
@@ -86,16 +82,32 @@
         document.getElementById('patient-id-display').innerText = `รหัส: ${patientId || 'ไม่ระบุ'}`;
 
         let currentUserUid = "";
+        let currentAssessorName = "เจ้าหน้าที่ระบบ"; // 🌟 ตัวแปรเก็บชื่อคนประเมิน
+
         document.addEventListener("DOMContentLoaded", () => {
             liff.init({ liffId: LIFF_ID }).then(() => {
                 const mockUid = localStorage.getItem('dev_mock_uid');
                 if (mockUid) {
                     currentUserUid = mockUid;
+                    fetchAssessorData(mockUid);
                 } else if (liff.isLoggedIn()) {
-                    liff.getProfile().then(p => { currentUserUid = p.userId; });
+                    liff.getProfile().then(p => { 
+                        currentUserUid = p.userId; 
+                        fetchAssessorData(p.userId);
+                    });
                 } else { liff.login(); }
             });
         });
+
+        // 🌟 ฟังก์ชันดึงชื่อ-นามสกุลจากฐานข้อมูล VHVs
+        async function fetchAssessorData(uid) {
+            try {
+                const doc = await db.collection('VHVs').doc(String(uid)).get();
+                if(doc.exists) {
+                    currentAssessorName = doc.data().name || "เจ้าหน้าที่";
+                }
+            } catch(e) { console.error("ดึงข้อมูลผู้ประเมินไม่ได้", e); }
+        }
 
         const questions2Q = [
             { id: 'q2_1', text: "1. ท่านรู้สึกหดหู่ เศร้า หรือท้อแท้สิ้นหวัง หรือไม่?" },
@@ -283,20 +295,20 @@
                 const yyyy = now.getFullYear() + 543;
                 const formattedDate = `${dd}/${mm}/${yyyy}`;
 
-                // 1. อัปเดตสถานะซึมเศร้าในโปรไฟล์คนไข้
                 await db.collection('Patients').doc(String(patientId)).update({
                     dep_status: status
                 });
 
-                // 2. บันทึกประวัติพร้อมคำตอบละเอียดลง Assessments (Firebase Only)
+                // 🌟 เพิ่มการบันทึก assessor_name ลงไปด้วย
                 await db.collection('Assessments').add({
                     patient_id: String(patientId),
                     type: 'DEP',
-                    score1: finalScore2Q, // ใช้คะแนนที่บวกมาแบบถูกต้อง
-                    score2: finalScore9Q, // ใช้คะแนนที่บวกมาแบบถูกต้อง
+                    score1: finalScore2Q, 
+                    score2: finalScore9Q, 
                     result: status,
                     answers: answersDetail,
                     assessor_uid: currentUserUid, 
+                    assessor_name: currentAssessorName, // 🌟 เพิ่มตรงนี้
                     date: formattedDate,
                     timestamp: firebase.firestore.FieldValue.serverTimestamp()
                 });
