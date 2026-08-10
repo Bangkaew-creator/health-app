@@ -329,7 +329,6 @@
             return 0;
         };
 
-        // 🌟 อัปเกรดปุ่มย้อนกลับให้กลับไปเปิดการ์ดค้างไว้ 🌟
         function goBackToList() {
             if (document.referrer.includes('admin_datacenter.html')) {
                 sessionStorage.removeItem('return_to');
@@ -435,6 +434,7 @@
             return `${dd}/${mm}/${yyyy}`;
         }
 
+        // 🌟 อัปเกรด: เพิ่มชื่อผู้ประเมินในกระดาษ 🌟
         function printForm(type, recordDate = '') {
             if (!currentPatientData) return alert("ข้อมูลผู้ป่วยยังโหลดไม่เสร็จ");
 
@@ -646,9 +646,14 @@
                     });
                 });
 
+                // 🌟 เพิ่มผู้ประเมินในการปริ้น ADL 🌟
+                const printedAssessor = assess.assessor_name ? assess.assessor_name : currentUserName;
                 htmlContent += `
                 <table style="margin-top: 10px;">
                     <tr>
+                        <td style="background-color: #f0f0f0;">
+                            <b>ผู้ประเมิน:</b> ${printedAssessor}
+                        </td>
                         <td style="text-align: right; background-color: #f0f0f0;">
                             <b>รวมคะแนน ADL = ${assess.score1} คะแนน</b>
                         </td>
@@ -713,7 +718,10 @@
                         </table>`;
                     }
 
+                    // 🌟 เพิ่มผู้ประเมินในการปริ้น 2Q/9Q 🌟
+                    const printedAssessor = assess.assessor_name ? assess.assessor_name : currentUserName;
                     htmlContent += `<div style="text-align: right; font-size: 14pt; margin-top: 15px;"><b>การแปรผลสรุป: ${assess.result}</b></div>`;
+                    htmlContent += `<div style="text-align: left; font-size: 11pt; margin-top: 10px; background-color:#f0f0f0; padding:5px;"><b>ผู้ประเมิน:</b> ${printedAssessor}</div>`;
 
                 } else {
                     htmlContent += `<p>ไม่พบการบันทึกคำตอบรายข้อ กรุณาประเมินใหม่เพื่อพิมพ์แบบฟอร์ม</p>`;
@@ -726,6 +734,7 @@
             printWin.document.close();
         }
 
+        // 🌟 อัปเกรด: แสดงชื่อผู้ประเมินใน Modal History 🌟
         function openHistoryModal() {
             const modal = document.getElementById('history-modal');
             const content = document.getElementById('history-modal-content');
@@ -801,17 +810,24 @@
                         detailsHtml = `<div class="mt-3 pt-2 border-t border-gray-100 text-center"><p class="text-[10px] text-gray-400 italic">การประเมินครั้งนี้ไม่มีการบันทึกคำตอบรายข้อไว้</p></div>`;
                     }
 
+                    // 🌟 สร้าง HTML โชว์ชื่อผู้ประเมิน
+                    let assessorBadge = '';
+                    if (a.assessor_name) {
+                        assessorBadge = `<div class="flex items-center gap-1 text-[10px] text-gray-500 mt-1.5 bg-gray-100 inline-flex px-2 py-0.5 rounded-full"><span class="material-symbols-outlined text-[12px]">account_circle</span> ประเมินโดย: ${a.assessor_name}</div>`;
+                    }
+
                     list.insertAdjacentHTML('beforeend', `
                         <div class="bg-white border border-gray-200 p-4 rounded-2xl shadow-sm relative overflow-hidden">
                             <div class="absolute left-0 top-0 bottom-0 w-1 ${isADL ? 'bg-amber-500' : 'bg-blue-600'}"></div>
-                            <div class="flex justify-between items-center mb-3">
+                            <div class="flex justify-between items-center mb-1">
                                 <span class="${badgeColor} text-[10px] font-bold px-2 py-0.5 rounded border">${title}</span>
                                 <div class="flex items-center gap-2">
                                     <span class="text-[11px] text-gray-500 font-medium">${a.date}</span>
                                     ${printBtnHtml}
                                 </div>
                             </div>
-                            <p class="text-sm font-bold text-gray-800">ผลประเมิน: <span class="${isADL ? 'text-amber-600' : 'text-blue-600'}">${a.result}</span></p>
+                            <p class="text-sm font-bold text-gray-800 mt-2">ผลประเมิน: <span class="${isADL ? 'text-amber-600' : 'text-blue-600'}">${a.result}</span></p>
+                            ${assessorBadge}
                             ${detailsHtml}
                         </div>
                     `);
