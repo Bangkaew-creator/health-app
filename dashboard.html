@@ -9,7 +9,6 @@
     <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
     <script charset="utf-8" src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
     
-    <!-- โหลดเครื่องมือ Firebase -->
     <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore-compat.js"></script>
     <script src="config.js"></script>
@@ -165,7 +164,6 @@
 
         document.addEventListener("DOMContentLoaded", () => {
             liff.init({ liffId: LIFF_ID }).then(() => {
-                // ระบบสับขาหลอกสำหรับโหมดทดสอบ
                 const mockUid = localStorage.getItem('dev_mock_uid');
                 
                 if (mockUid) {
@@ -190,9 +188,16 @@
             });
         });
 
-        // [อัปเดต] ดึงข้อมูลโปรไฟล์ของ อสม. จาก Firebase เพียงอย่างเดียว
+        // 🌟 แก้ไข: ดึง SystemConfig เข้ามาตรวจสอบร่วมกับ Profile อสม.
         async function fetchVHVProfile(uid) {
             try {
+                // 1. ดึงชื่อหน่วยงานจาก SystemConfig ก่อน เพื่อเป็นค่าเริ่มต้นให้ระบบ
+                let dynamicHospital = DEFAULT_CONFIGS.HOSPITAL_NAME;
+                try {
+                    const sysSnap = await db.collection('SystemConfig').doc('HOSPITAL_NAME').get();
+                    if (sysSnap.exists) dynamicHospital = sysSnap.data().value || dynamicHospital;
+                } catch (e) {}
+
                 const docSnap = await db.collection('VHVs').doc(String(uid)).get();
                 if (docSnap.exists) {
                     const data = docSnap.data();
@@ -200,10 +205,10 @@
 
                     document.getElementById('header-vhv-name').innerText = data.name;
                     
-                    const hospital = data.hospital_name || 'เทศบาลเมืองบางแก้ว';
                     if (data.village_no) {
                         vhvCurrentVillage = data.village_no;
-                        document.getElementById('header-vhv-village').innerText = 'หมู่ที่ ' + data.village_no + ' | ' + hospital;
+                        // 2. ใช้ dynamicHospital ที่ดึงมาจากฐานข้อมูล (หรือถ้า อสม. มีระบุไว้ส่วนตัวก็ให้ใช้ของส่วนตัว)
+                        document.getElementById('header-vhv-village').innerText = 'หมู่ที่ ' + data.village_no + ' | ' + (data.hospital_name || dynamicHospital);
                         document.getElementById('my-village-number').innerText = data.village_no;
                     }
                     
@@ -222,8 +227,8 @@
         }
 
         function setDefaultVHVProfile() {
-            document.getElementById('header-vhv-name').innerText = 'อสม. เทศบาลบางแก้ว';
-            document.getElementById('header-vhv-village').innerText = 'อสม.สามารถ (Orsomo Smart)';
+            document.getElementById('header-vhv-name').innerText = 'อสม.';
+            document.getElementById('header-vhv-village').innerText = DEFAULT_CONFIGS.SYSTEM_NAME;
             document.getElementById('header-profile-pic').innerHTML = 'อส';
             document.getElementById('my-village-number').innerText = '-';
         }
