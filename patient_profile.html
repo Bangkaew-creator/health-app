@@ -308,6 +308,10 @@
         
         let currentUserRole = 'VHV';
         let currentUserName = "เจ้าหน้าที่";
+        
+        // 🌟 เพิ่มตัวแปรเพื่อเก็บชื่อหน่วยงานแบบไดนามิก 🌟
+        let currentHospitalName = DEFAULT_CONFIGS.HOSPITAL_NAME;
+
         let currentPatientData = null;
         let globalAssessments = []; 
         let latestADLDate = 0;
@@ -372,6 +376,12 @@
 
         async function checkUserRole(uid) {
             try {
+                // 🌟 ดึงชื่อหน่วยงานจาก SystemConfig 🌟
+                try {
+                    const sysSnap = await db.collection('SystemConfig').doc('HOSPITAL_NAME').get();
+                    if(sysSnap.exists) currentHospitalName = sysSnap.data().value || currentHospitalName;
+                } catch(e) {}
+
                 const userDoc = await db.collection('VHVs').doc(String(uid)).get();
                 if (userDoc.exists) {
                     const data = userDoc.data();
@@ -434,7 +444,6 @@
             return `${dd}/${mm}/${yyyy}`;
         }
 
-        // 🌟 อัปเกรด: เพิ่มชื่อผู้ประเมินในกระดาษ 🌟
         function printForm(type, recordDate = '') {
             if (!currentPatientData) return alert("ข้อมูลผู้ป่วยยังโหลดไม่เสร็จ");
 
@@ -442,10 +451,13 @@
             const pName = `${p.prefix||''}${p.name||'-'}`;
             const pId = p.id_card || '-';
             const pPhone = p.caregiver_phone || p.phone || '-';
-            const pAddress = `บ้านเลขที่ ${p.house_no||'-'} หมู่ที่ ${p.village_no||'-'} ${DEFAULT_CONFIGS.HOSPITAL_NAME}`;
+            
+            // 🌟 ใช้ชื่อหน่วยงานที่ดึงมาจากฐานข้อมูล 🌟
+            const hospitalName = currentHospitalName; 
+            const pAddress = `บ้านเลขที่ ${p.house_no||'-'} หมู่ที่ ${p.village_no||'-'} ${hospitalName}`;
+            
             const pAge = p.age || '-';
             const pDob = p.dob || '-';
-            const hospitalName = DEFAULT_CONFIGS.HOSPITAL_NAME;
 
             let htmlContent = `
             <html>
@@ -646,7 +658,6 @@
                     });
                 });
 
-                // 🌟 เพิ่มผู้ประเมินในการปริ้น ADL 🌟
                 const printedAssessor = assess.assessor_name ? assess.assessor_name : currentUserName;
                 htmlContent += `
                 <table style="margin-top: 10px;">
@@ -718,7 +729,6 @@
                         </table>`;
                     }
 
-                    // 🌟 เพิ่มผู้ประเมินในการปริ้น 2Q/9Q 🌟
                     const printedAssessor = assess.assessor_name ? assess.assessor_name : currentUserName;
                     htmlContent += `<div style="text-align: right; font-size: 14pt; margin-top: 15px;"><b>การแปรผลสรุป: ${assess.result}</b></div>`;
                     htmlContent += `<div style="text-align: left; font-size: 11pt; margin-top: 10px; background-color:#f0f0f0; padding:5px;"><b>ผู้ประเมิน:</b> ${printedAssessor}</div>`;
@@ -734,7 +744,6 @@
             printWin.document.close();
         }
 
-        // 🌟 อัปเกรด: แสดงชื่อผู้ประเมินใน Modal History 🌟
         function openHistoryModal() {
             const modal = document.getElementById('history-modal');
             const content = document.getElementById('history-modal-content');
@@ -810,7 +819,6 @@
                         detailsHtml = `<div class="mt-3 pt-2 border-t border-gray-100 text-center"><p class="text-[10px] text-gray-400 italic">การประเมินครั้งนี้ไม่มีการบันทึกคำตอบรายข้อไว้</p></div>`;
                     }
 
-                    // 🌟 สร้าง HTML โชว์ชื่อผู้ประเมิน
                     let assessorBadge = '';
                     if (a.assessor_name) {
                         assessorBadge = `<div class="flex items-center gap-1 text-[10px] text-gray-500 mt-1.5 bg-gray-100 inline-flex px-2 py-0.5 rounded-full"><span class="material-symbols-outlined text-[12px]">account_circle</span> ประเมินโดย: ${a.assessor_name}</div>`;
