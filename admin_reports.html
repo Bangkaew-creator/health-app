@@ -83,7 +83,6 @@
                         <h3 class="text-base font-bold text-slate-800">จัดเตรียมข้อมูล กปท.</h3>
                         <p class="text-xs text-slate-500 mt-0.5">ติ๊กเลือกผู้ป่วย บันทึกมติจัดสรร หรือนำเข้าประวัติย้อนหลัง</p>
                     </div>
-                    <!-- 🌟 อัปเกรด: เพิ่มปุ่มนำเข้าประวัติ (Excel) 🌟 -->
                     <div class="flex flex-wrap gap-2 w-full xl:w-auto">
                         <button onclick="openImportAllocModal()" class="flex-1 xl:flex-none bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-xl font-bold text-xs flex items-center justify-center gap-1.5 shadow-sm active:scale-95"><span class="material-symbols-outlined text-[16px]">upload_file</span> อัปโหลด Excel (ประวัติ)</button>
                         <button onclick="openCommitteeModal()" class="flex-1 xl:flex-none bg-amber-500 hover:bg-amber-600 text-white px-4 py-2 rounded-xl font-bold text-xs flex items-center justify-center gap-1.5 shadow-sm active:scale-95"><span class="material-symbols-outlined text-[16px]">gavel</span> บันทึกมติ (<span id="select-count-1">0</span>)</button>
@@ -183,7 +182,6 @@
             </div>
         </div>
 
-        <!-- 🌟 Modal นำเข้าข้อมูลประวัติผ้าอ้อม (Import Allocations) 🌟 -->
         <div id="import-alloc-modal" class="fixed inset-0 bg-[#111c2d]/40 backdrop-blur-sm z-[100] hidden flex items-center justify-center p-4 opacity-0 transition-opacity duration-300">
             <div class="bg-white rounded-[24px] w-full max-w-md overflow-hidden shadow-2xl transform scale-95 transition-transform duration-300" id="import-alloc-modal-content">
                 <div class="p-6 border-b border-slate-100 flex justify-between items-center bg-slate-50">
@@ -313,7 +311,7 @@
                     if (currentUserRole === 'SUB_ADMIN') hasPermissionToView = assignedVillages.includes(String(data.village_no).trim());
                     
                     if (hasPermissionToView) {
-                        data.docId = doc.id; // เก็บไว้ใช้อ้างอิง
+                        data.docId = doc.id; 
                         allPatients.push(data);
                         const d = cleanJSON(data.diaper);
                         if(d && Array.isArray(d.allocations)) {
@@ -340,7 +338,7 @@
                 renderKPTTable();
                 document.getElementById('loading-state').classList.add('hidden');
                 switchTab('kpt'); 
-            } catch (error) { alert("ดึงข้อมูลล้มเหลว กรุณารีเฟรชหน้าเว็บ"); }
+            } catch (error) { showToast("ดึงข้อมูลล้มเหลว กรุณารีเฟรชหน้าเว็บ", "error"); }
         }
 
         function switchTab(tab) {
@@ -429,7 +427,7 @@
 
         function openCommitteeModal() {
             const count = document.querySelectorAll('.row-checkbox:checked').length;
-            if (count === 0) return alert('กรุณาติ๊กเลือกรายชื่ออย่างน้อย 1 รายการก่อนครับ');
+            if (count === 0) return showToast('กรุณาติ๊กเลือกรายชื่ออย่างน้อย 1 รายการก่อน', 'error');
             document.getElementById('modal-selected-count').innerText = count;
             const m = document.getElementById('committee-modal');
             const c = document.getElementById('committee-modal-content');
@@ -475,15 +473,14 @@
                 });
                 await batch.commit();
 
-                alert('บันทึกมติคณะกรรมการเรียบร้อยแล้ว');
+                showToast('บันทึกมติคณะกรรมการเรียบร้อยแล้ว');
                 closeCommitteeModal(); 
                 document.getElementById('check-all').checked = false; 
                 updateSelectCount(); 
                 
                 await loadReportData(); 
             } catch (e) { 
-                console.error(e);
-                alert("บันทึกล้มเหลว กรุณาลองใหม่"); 
+                showToast("บันทึกล้มเหลว กรุณาลองใหม่", "error"); 
             }
             
             btn.disabled = false; btn.innerText = 'บันทึกมติ';
@@ -491,7 +488,7 @@
 
         function exportToExcel() {
             const checkedBoxes = document.querySelectorAll('.row-checkbox:checked');
-            if (checkedBoxes.length === 0) return alert('กรุณาติ๊กเลือกรายชื่อที่ต้องการออกรายงาน');
+            if (checkedBoxes.length === 0) return showToast('กรุณาติ๊กเลือกรายชื่อที่ต้องการออกรายงาน', 'error');
             const exportData = []; let runningNumber = 1;
 
             checkedBoxes.forEach(cb => {
@@ -524,8 +521,6 @@
             XLSX.writeFile(workbook, `รายงานเบิกผ้าอ้อม_กปท_${getTodayDateStr()}.xlsx`);
         }
 
-        // ==========================================
-        // 🌟 ระบบนำเข้าประวัติจัดสรรผ้าอ้อม (Excel Import) 🌟
         // ==========================================
         function openImportAllocModal() {
             const m = document.getElementById('import-alloc-modal');
@@ -579,7 +574,7 @@
         }
 
         async function processAllocImport() {
-            if (!selectedAllocFile) return alert('กรุณาเลือกไฟล์ก่อนครับ');
+            if (!selectedAllocFile) return showToast('กรุณาเลือกไฟล์ก่อนครับ', 'error');
 
             const btn = document.getElementById('btn-process-alloc');
             btn.innerHTML = '<div class="loader-small mr-2" style="border-color:white;border-bottom-color:transparent"></div> กำลังประมวลผล...';
@@ -608,7 +603,6 @@
                         let alloc = String(getNormalizedValue(row, ['รอบจัดสรร', 'รอบ', 'รอบประวัติ'])).trim();
 
                         if (rawIdCard.length === 13) {
-                            // หาคนไข้ในระบบ
                             const p = allPatients.find(x => x.id_card === rawIdCard || x.id === rawIdCard);
                             if (p) {
                                 let d = cleanJSON(p.diaper) || {};
@@ -637,7 +631,6 @@
                                     batchCount++;
                                     updateCount++;
 
-                                    // ป้องกัน Firebase limit
                                     if (batchCount === 450) {
                                         await batch.commit();
                                         batchCount = 0;
@@ -649,13 +642,12 @@
 
                     if (batchCount > 0) { await batch.commit(); }
 
-                    alert(`นำเข้าประวัติการจัดสรรสำเร็จ!\nอัปเดตข้อมูลผู้ป่วยไปทั้งสิ้น ${updateCount} รายการ`);
+                    showToast(`นำเข้าประวัติจัดสรรสำเร็จ! อัปเดต ${updateCount} รายการ`);
                     closeImportAllocModal();
                     await loadReportData(); 
 
                 } catch (err) {
-                    console.error(err);
-                    alert("เกิดข้อผิดพลาด: " + err.message);
+                    showToast("เกิดข้อผิดพลาด: " + err.message, 'error');
                 } finally {
                     btn.innerHTML = 'เริ่มนำเข้าข้อมูล';
                     btn.disabled = false;
@@ -709,7 +701,7 @@
             const filteredVHVs = allVHVs.filter(v => vFilter === '' || String(v.village_no) === vFilter);
 
             if (filteredVHVs.length === 0) {
-                return alert('ไม่พบรายชื่อ อสม. ในเขตรับผิดชอบที่เลือกครับ');
+                return showToast('ไม่พบรายชื่อ อสม. ในเขตรับผิดชอบที่เลือกครับ', 'error');
             }
 
             filteredVHVs.forEach(v => {
