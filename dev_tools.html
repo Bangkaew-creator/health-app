@@ -14,7 +14,7 @@
 <body class="p-6 md:p-12">
     <div class="max-w-2xl mx-auto bg-white rounded-3xl shadow-xl p-8 border border-slate-200">
         <h1 class="text-2xl font-black text-slate-800 mb-2">🛠️ เครื่องมือนักพัฒนา (Developer Tools)</h1>
-        <p class="text-sm text-slate-500 mb-8">ใช้สำหรับสร้างข้อมูลจำลองและสลับบทบาทเพื่อทดสอบระบบ โดยไม่ต้องใช้หลายบัญชี LINE</p>
+        <p class="text-sm text-slate-500 mb-8">ใช้สำหรับสร้างข้อมูลจำลอง ซ่อมแซมข้อมูล และสลับบทบาทเพื่อทดสอบระบบ</p>
 
         <!-- โซนที่ 1: สร้างข้อมูล -->
         <div class="bg-blue-50 p-5 rounded-2xl mb-8 border border-blue-100">
@@ -25,8 +25,17 @@
             </button>
         </div>
 
-        <!-- โซนที่ 2: สลับบทบาท -->
-        <h2 class="font-bold text-slate-800 mb-4">2. สลับบทบาทการเข้าสู่ระบบ (Role Switcher)</h2>
+        <!-- 🌟 โซนที่ 2: ซ่อมแซมข้อมูล 🌟 -->
+        <div class="bg-red-50 p-5 rounded-2xl mb-8 border border-red-100">
+            <h2 class="font-bold text-red-800 mb-2">2. ซ่อมแซมข้อมูล (Data Repair)</h2>
+            <p class="text-xs text-red-600 mb-4">ซ่อมแซมคำว่า "กลุ่ม" ที่ติดมากับการประเมินเก่า ให้เหลือแค่ ติดเตียง/ติดบ้าน/ติดสังคม เพื่อให้ Dashboard นับเลขได้ตรงกัน</p>
+            <button onclick="repairPatientGroups()" id="btn-repair" class="bg-red-600 text-white font-bold px-6 py-2.5 rounded-xl hover:bg-red-700 active:scale-95 transition-all text-sm">
+                🛠️ เริ่มสแกนและซ่อมแซมคำว่า "กลุ่ม"
+            </button>
+        </div>
+
+        <!-- โซนที่ 3: สลับบทบาท -->
+        <h2 class="font-bold text-slate-800 mb-4">3. สลับบทบาทการเข้าสู่ระบบ (Role Switcher)</h2>
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
             <button onclick="loginAs('MOCK_ADMIN', 'admin_dashboard.html')" class="p-4 bg-white border-2 border-slate-200 hover:border-amber-500 rounded-xl text-left transition-colors group">
                 <span class="block text-xs font-bold text-amber-500 mb-1">สิทธิ์: ADMIN</span>
@@ -46,7 +55,7 @@
             </button>
         </div>
 
-        <!-- โซนที่ 3: รีเซ็ตระบบ -->
+        <!-- โซนที่ 4: รีเซ็ตระบบ -->
         <div class="border-t border-slate-200 pt-6">
             <button onclick="clearTestMode()" class="w-full bg-slate-100 text-slate-600 font-bold px-6 py-3 rounded-xl hover:bg-slate-200 active:scale-95 transition-all text-sm flex justify-center items-center gap-2">
                 ❌ ออกจากโหมดทดสอบ (กลับไปใช้ LINE ปัจจุบัน)
@@ -58,16 +67,41 @@
         firebase.initializeApp(firebaseConfig);
         const db = firebase.firestore();
 
+        // 🌟 ฟังก์ชันซ่อมแซมข้อมูลอัตโนมัติ
+        async function repairPatientGroups() {
+            if(!confirm("ยืนยันการสแกนและซ่อมแซมคำว่า 'กลุ่ม' ออกจากชื่อกลุ่มผู้ป่วยทุกคนใช่หรือไม่?")) return;
+            const btn = document.getElementById('btn-repair');
+            btn.innerText = "กำลังสแกนและซ่อมแซม..."; btn.disabled = true;
+            try {
+                const snap = await db.collection('Patients').get();
+                const batch = db.batch();
+                let fixCount = 0;
+                snap.forEach(doc => {
+                    const data = doc.data();
+                    if(data.group && data.group.includes('กลุ่ม')) {
+                        const newGroup = data.group.replace('กลุ่ม', '').trim();
+                        batch.update(doc.ref, { group: newGroup });
+                        fixCount++;
+                    }
+                });
+                if(fixCount > 0) {
+                    await batch.commit();
+                    alert(`ซ่อมแซมข้อมูลสำเร็จ! ตัดคำว่า "กลุ่ม" ออกไปทั้งหมด ${fixCount} รายการ (ลองรีเฟรชหน้า Dashboard ดูนะครับ)`);
+                } else {
+                    alert('ไม่มีข้อมูลที่ต้องซ่อมแซม (ทุกรายการถูกต้องอยู่แล้ว)');
+                }
+            } catch(e) {
+                alert("เกิดข้อผิดพลาด: " + e.message);
+            }
+            btn.innerText = '🛠️ เริ่มสแกนและซ่อมแซมคำว่า "กลุ่ม"'; btn.disabled = false;
+        }
+
         async function createMockAccounts() {
             try {
                 const batch = db.batch();
-                // 1. แอดมินหลัก
                 batch.set(db.collection('VHVs').doc('MOCK_ADMIN'), { name: 'แอดมินใหญ่ (จำลอง)', role: 'ADMIN', status: 'Active', phone: '0800000000' });
-                // 2. รพ.สต. ย่อย (สมมติให้ดูแลหมู่ 1 และ 2)
                 batch.set(db.collection('VHVs').doc('MOCK_SUB'), { name: 'รพ.สต. จำลอง', role: 'SUB_ADMIN', status: 'Active', assigned_villages: ['1', '2'], phone: '0811111111' });
-                // 3. อสม. หมู่ 1
                 batch.set(db.collection('VHVs').doc('MOCK_VHV1'), { name: 'อสม. สมชาย (หมู่ 1)', role: 'VHV', status: 'Active', village_no: '1', phone: '0822222222' });
-                // 4. อสม. หมู่ 2
                 batch.set(db.collection('VHVs').doc('MOCK_VHV2'), { name: 'อสม. สมหญิง (หมู่ 2)', role: 'VHV', status: 'Active', village_no: '2', phone: '0833333333' });
                 
                 await batch.commit();
@@ -76,7 +110,6 @@
         }
 
         function loginAs(uid, targetUrl) {
-            // เซ็ตค่าลง LocalStorage เพื่อให้หน้าอื่นๆ สับขาหลอกเอา UID นี้ไปใช้
             localStorage.setItem('dev_mock_uid', uid);
             alert('สลับบทบาทสำเร็จ! กำลังพาคุณไปที่หน้าเว็บ...');
             window.location.href = targetUrl;
