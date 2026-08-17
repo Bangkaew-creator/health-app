@@ -80,7 +80,9 @@
 
                         <div class="bg-blue-50/50 p-4 rounded-xl border border-blue-100 flex flex-col justify-center">
                             <p class="text-[11px] font-bold text-blue-800 uppercase tracking-wider mb-3">2. จำนวนชิ้นรวมที่ต้องใช้ตามเวลาที่กำหนด</p>
-                            <div class="grid grid-cols-2 lg:grid-cols-4 gap-2 text-center">
+                            <!-- 🌟 แก้ไข: จัด Grid ใหม่เป็น 5 คอลัมน์ และเพิ่ม ไซส์ S 🌟 -->
+                            <div class="grid grid-cols-3 lg:grid-cols-5 gap-2 text-center">
+                                <div class="bg-white p-2 rounded-lg border border-slate-100"><span class="text-[10px] text-slate-400 block">ไซส์ S</span><span class="font-bold text-navy text-base" id="sum-s">0</span></div>
                                 <div class="bg-white p-2 rounded-lg border border-slate-100"><span class="text-[10px] text-slate-400 block">ไซส์ M</span><span class="font-bold text-navy text-base" id="sum-m">0</span></div>
                                 <div class="bg-white p-2 rounded-lg border border-slate-100"><span class="text-[10px] text-slate-400 block">ไซส์ L</span><span class="font-bold text-navy text-base" id="sum-l">0</span></div>
                                 <div class="bg-white p-2 rounded-lg border border-slate-100"><span class="text-[10px] text-slate-400 block">ไซส์ XL</span><span class="font-bold text-navy text-base" id="sum-xl">0</span></div>
@@ -239,26 +241,29 @@
             } catch (error) { showToast("ดึงข้อมูลทรัพยากรล้มเหลว", "error"); }
         }
 
+        // 🌟 แก้ไข: เพิ่มการคำนวณ totalS สำหรับไซส์ S 🌟
         function calculateBudget() {
             const targetDays = parseInt(document.getElementById('forecast-days').value) || 0;
-            let totalM = 0, totalL = 0, totalXL = 0, totalPad = 0;
+            let totalS = 0, totalM = 0, totalL = 0, totalXL = 0, totalPad = 0;
 
             activeApprovedPatients.forEach(p => {
                 const calcDiaper = Math.ceil((p.diaperQty / 30) * targetDays);
                 if (calcDiaper > 0) {
-                    if (p.size === 'M') totalM += calcDiaper;
+                    if (p.size === 'S') totalS += calcDiaper;
+                    else if (p.size === 'M') totalM += calcDiaper;
                     else if (p.size === 'XL') totalXL += calcDiaper;
-                    else totalL += calcDiaper;
+                    else totalL += calcDiaper; // เป็นค่า default ถ้าไม่ระบุไซส์ที่เข้าพวก
                 }
                 totalPad += Math.ceil((p.underpadQty / 30) * targetDays);
             });
 
+            document.getElementById('sum-s').innerText = totalS.toLocaleString();
             document.getElementById('sum-m').innerText = totalM.toLocaleString();
             document.getElementById('sum-l').innerText = totalL.toLocaleString();
             document.getElementById('sum-xl').innerText = totalXL.toLocaleString();
             document.getElementById('sum-pad').innerText = totalPad.toLocaleString();
 
-            const totalCost = ((totalM + totalL + totalXL) * configDiaperPrice) + (totalPad * configUnderpadPrice);
+            const totalCost = ((totalS + totalM + totalL + totalXL) * configDiaperPrice) + (totalPad * configUnderpadPrice);
             document.getElementById('sum-cost').innerHTML = totalCost.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2}) + ' <span class="text-base text-amber-500 font-bold">฿</span>';
         }
 
@@ -297,7 +302,6 @@
                 const isPending = currentTab === 'pending';
                 const statusBadge = !r.isActive ? `<span class="bg-red-50 text-red-600 text-[10px] font-bold px-2 py-0.5 rounded border border-red-200 mt-1 inline-block">ยุติการดูแล</span>` : '';
 
-                // 🌟 อัปเกรด: เพิ่มปุ่ม "แก้ไข/ยกเลิกการอนุมัติ" ในสถานะ อนุมัติแล้ว 🌟
                 const actionSection = isPending ? `
                     <div class="mt-4 pt-4 border-t border-slate-100 space-y-3">
                         ${d.req_diaper ? `<div class="flex items-center justify-between"><label class="text-sm font-bold text-slate-600">ผ้าอ้อม (ชิ้น/เดือน)</label><input type="number" id="diaper_${p.id}" class="w-20 px-2 py-1 border border-slate-200 rounded text-center focus:ring-amber-500" placeholder="0"></div>` : ''}
@@ -370,7 +374,6 @@
             }
         }
 
-        // 🌟 ฟังก์ชันใหม่: ดึงกลับไปแก้ไข (Revoke) 🌟
         async function revokeApproval(id) {
             if (!confirm('ต้องการยกเลิกการอนุมัติ เพื่อกลับไปแก้ไขจำนวนใหม่ ใช่หรือไม่?')) return;
 
@@ -382,7 +385,6 @@
                     let p = docSnap.data();
                     let diaperObj = cleanAndParseJSON(p.diaper) || {};
                     
-                    // เปลี่ยนสถานะและล้างยอดอนุมัติทิ้ง
                     diaperObj.approve_status = 'รออนุมัติ';
                     diaperObj.approved_diaper = 0;
                     diaperObj.approved_underpad = 0;
