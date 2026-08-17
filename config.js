@@ -20,32 +20,64 @@ const firebaseConfig = {
 
 // ==========================================
 // ค่าเริ่มต้นของระบบ (Default Fallback)
-// ระบบจะใช้ค่าเหล่านี้ หากใน Firebase ยังไม่มีการตั้งค่า
-// ใช้สำหรับการนำไปติดตั้งในหน่วยงานใหม่ (White-label)
 // ==========================================
 const DEFAULT_CONFIGS = {
-    HOSPITAL_NAME: "เทศบาลเมืองบางแก้ว",           // ชื่อหน่วยงานตั้งต้น
-    SYSTEM_NAME: "อสม.สามารถ (Orsomo Smart)",     // ชื่อระบบ/โปรเจกต์ตั้งต้น
-    VILLAGE_COUNT: 16,                            // จำนวนหมู่บ้านตั้งต้น
-    DIAPER_PRICE: 9.50,                           // ราคาผ้าอ้อมผู้ใหญ่ตั้งต้น (บาท/ชิ้น)
-    UNDERPAD_PRICE: 6.00                          // ราคาแผ่นรองซับตั้งต้น (บาท/ชิ้น)
+    HOSPITAL_NAME: "รพ.สต.บ้านปางงู",           
+    SYSTEM_NAME: "อสม.สามารถ (Orsomo Smart)",     
+    VILLAGE_COUNT: 11,                            
+    DIAPER_PRICE: 9.50,                           
+    UNDERPAD_PRICE: 6.00                          
+};
+
+// ==========================================
+// 🚀 ระบบแจ้งเตือนอัจฉริยะ (Toast Notification สำหรับ Admin)
+// ==========================================
+window.showToast = function(message, type = 'success', redirectUrl = null) {
+    let container = document.getElementById('orsomo-toast-container');
+    if (!container) {
+        container = document.createElement('div');
+        container.id = 'orsomo-toast-container';
+        container.className = 'fixed top-5 left-1/2 transform -translate-x-1/2 z-[99999] flex flex-col gap-3 pointer-events-none w-full max-w-sm px-4';
+        document.body.appendChild(container);
+    }
+
+    const toast = document.createElement('div');
+    const bgColor = type === 'success' ? 'bg-[#00694a]' : (type === 'error' ? 'bg-red-600' : 'bg-amber-500');
+    const icon = type === 'success' ? 'check_circle' : (type === 'error' ? 'error' : 'info');
+    
+    toast.className = `${bgColor} text-white px-6 py-4 rounded-2xl shadow-2xl flex items-center gap-3 transform transition-all duration-300 -translate-y-10 opacity-0`;
+    toast.innerHTML = `<span class="material-symbols-outlined text-[24px]">${icon}</span><span class="font-bold text-sm">${message}</span>`;
+    
+    container.appendChild(toast);
+
+    requestAnimationFrame(() => {
+        toast.classList.remove('-translate-y-10', 'opacity-0');
+        toast.classList.add('translate-y-0', 'opacity-100');
+    });
+
+    setTimeout(() => {
+        toast.classList.remove('translate-y-0', 'opacity-100');
+        toast.classList.add('-translate-y-10', 'opacity-0');
+        setTimeout(() => {
+            toast.remove();
+            if (redirectUrl) {
+                if (redirectUrl === 'reload') window.location.reload();
+                else if (redirectUrl === 'back') window.history.back();
+                else window.location.href = redirectUrl;
+            }
+        }, 300); 
+    }, 3000); // แสดง 3 วินาที
 };
 
 // ==========================================
 // 🛡️ DIGITAL WATERMARK & DEVELOPER CREDIT
-// (รูปแบบ Sidebar / Menu)
 // ==========================================
 document.addEventListener("DOMContentLoaded", function() {
-    // ฟังก์ชันสำหรับแทรกเครดิตลงใน Sidebar
     function injectCreditToSidebar() {
-        // หา <nav> ใน sidebar
         const sidebarNav = document.querySelector('aside nav');
-        
-        // ถ้าหาเจอ และยังไม่มีเครดิต
         if (sidebarNav && !document.getElementById('dev-credit-sidebar')) {
             const creditDiv = document.createElement("div");
             creditDiv.id = "dev-credit-sidebar";
-            // ใช้ mt-auto เพื่อดันกล่องนี้ให้ไปอยู่ล่างสุดของเมนูเสมอ
             creditDiv.className = "mt-auto pt-8 pb-4 px-4 text-center select-none pointer-events-none";
             creditDiv.innerHTML = `
                 <div class="border-t border-slate-700/50 pt-4">
@@ -60,29 +92,10 @@ document.addEventListener("DOMContentLoaded", function() {
             sidebarNav.appendChild(creditDiv);
         }
     }
-
-    // เรียกใช้ฟังก์ชันครั้งแรก
-    setTimeout(injectCreditToSidebar, 500); // ดีเลย์นิดนึงรอ DOM โหลดเสร็จ
-
-    // ระบบป้องกันการลบ (MutationObserver) จะคอยเฝ้าดูว่า sidebar ถูกแก้หรือลบเครดิตออกหรือไม่
+    setTimeout(injectCreditToSidebar, 500); 
     const observer = new MutationObserver(function(mutations) {
         const sidebarNav = document.querySelector('aside nav');
-        if (sidebarNav && !document.getElementById('dev-credit-sidebar')) {
-            injectCreditToSidebar();
-        }
+        if (sidebarNav && !document.getElementById('dev-credit-sidebar')) { injectCreditToSidebar(); }
     });
-    
-    // เริ่มสังเกตการณ์
-    if(document.body) {
-        observer.observe(document.body, { childList: true, subtree: true });
-    }
-
-    // พิมพ์ลายน้ำลงใน Console
-    console.log(
-        "%c🏥 Orsomo Smart System%c\n\nDeveloped by: Suppawut Asunee\nPosition: Public Health Technical Officer\nOrganization: Bang Kaeo Town Municipality\n\n%c© All Rights Reserved.", 
-        "color: #00694a; font-size: 20px; font-weight: bold;", 
-        "color: #333; font-size: 14px;", 
-        "color: red; font-size: 12px; font-weight: bold;"
-    );
+    if(document.body) { observer.observe(document.body, { childList: true, subtree: true }); }
 });
-
