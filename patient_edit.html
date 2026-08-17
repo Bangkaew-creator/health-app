@@ -126,6 +126,17 @@
                         </label>
                     </div>
                 </div>
+
+                <!-- 🌟 เพิ่มระบบประวัติการจัดสรรผ้าอ้อม 🌟 -->
+                <div class="mt-5 pt-4 border-t border-blue-100">
+                    <span class="text-sm font-bold text-gray-700 block mb-2">4. ประวัติได้รับจัดสรร (รอบ/ปีงบประมาณ)</span>
+                    <div class="flex gap-2 mb-3">
+                        <input type="text" id="new_alloc" class="input-field py-2 text-sm bg-white" placeholder="เช่น 1/2569">
+                        <button type="button" onclick="addAllocation()" class="bg-blue-600 hover:bg-blue-700 text-white px-4 rounded-xl text-sm font-bold shadow-sm transition-colors whitespace-nowrap">เพิ่มรอบ</button>
+                    </div>
+                    <div id="alloc-list" class="flex flex-wrap gap-2 empty:hidden"></div>
+                    <p class="text-[10px] text-gray-400 mt-2">* ระบบในหน้า กปท. จะนำรอบเหล่านี้ไปแสดงผลและใช้กรองข้อมูล</p>
+                </div>
             </div>
 
             <div id="sec-equipment" class="bg-white rounded-[20px] p-5 shadow-sm border border-orange-100">
@@ -188,6 +199,8 @@
 
         const medicalEquipments = ['เตียงผู้ป่วย', 'เตียงลมแผลกดทับ', 'รถเข็นนั่ง (Wheelchair)', 'เครื่องผลิตออกซิเจน', 'เครื่องดูดเสมหะ', 'วอล์กเกอร์ / ไม้เท้า', 'ชุดทำแผลปลอดเชื้อ', 'สายดูดเสมหะ/ถุงมือ'];
         const commonDiseases = ['เบาหวาน', 'ความดันโลหิตสูง', 'ไตวาย', 'หลอดเลือดหัวใจ', 'หลอดเลือดสมอง', 'กล้ามเนื้ออ่อนแรง'];
+        
+        let currentAllocations = []; // ตัวแปรเก็บประวัติรับผ้าอ้อม
 
         function cleanAndParseJSON(rawStr) {
             if (!rawStr || String(rawStr).trim() === '') return null;
@@ -249,7 +262,6 @@
             });
         }
 
-        // 🌟 อัปเกรดระบบบีบอัดภาพให้เร็วปรื๊ดดด! (ลดขนาดเหลือ 600px และลดคุณภาพเหลือ 50%) 🌟
         function compressImage(file, callback) {
             const reader = new FileReader();
             reader.readAsDataURL(file);
@@ -259,7 +271,7 @@
                 img.onload = () => {
                     const canvas = document.createElement('canvas');
                     let width = img.width; let height = img.height;
-                    const max_size = 600; // ล็อกความกว้าง/ยาวสูงสุดไว้ที่ 600px
+                    const max_size = 600;
 
                     if (width > height && width > max_size) {
                         height *= max_size / width; width = max_size;
@@ -270,8 +282,6 @@
                     canvas.width = width; canvas.height = height;
                     const ctx = canvas.getContext('2d');
                     ctx.drawImage(img, 0, 0, width, height);
-                    
-                    // บีบอัดคุณภาพรูปเหลือ 50% (0.5) เพื่อให้โหลดไวสุดๆ
                     const dataUrl = canvas.toDataURL('image/jpeg', 0.5); 
                     callback(dataUrl);
                 }
@@ -337,6 +347,37 @@
             }
         }
 
+        // 🌟 ระบบจัดการประวัติรับผ้าอ้อม 🌟
+        function renderAllocations() {
+            const list = document.getElementById('alloc-list');
+            list.innerHTML = '';
+            currentAllocations.forEach((alloc, index) => {
+                list.innerHTML += `
+                    <div class="bg-blue-100 text-blue-800 text-xs font-bold px-3 py-1.5 rounded-full flex items-center gap-1.5 border border-blue-200 shadow-sm">
+                        ${alloc}
+                        <button type="button" onclick="removeAllocation(${index})" class="text-blue-500 hover:text-red-500 flex items-center"><span class="material-symbols-outlined text-[14px]">cancel</span></button>
+                    </div>
+                `;
+            });
+        }
+
+        function addAllocation() {
+            const input = document.getElementById('new_alloc');
+            const val = input.value.trim();
+            if(val) {
+                if(!currentAllocations.includes(val)) {
+                    currentAllocations.push(val);
+                    renderAllocations();
+                }
+                input.value = '';
+            }
+        }
+
+        function removeAllocation(index) {
+            currentAllocations.splice(index, 1);
+            renderAllocations();
+        }
+
         function getLocation() {
             if (!navigator.geolocation) return alert("อุปกรณ์ของคุณไม่รองรับการดึงพิกัด GPS");
             const btnLocation = document.querySelector('button[onclick="getLocation()"]');
@@ -390,7 +431,6 @@
                     document.getElementById('disease_other').value = otherDiseases.join(', ');
                 }
 
-                // โหลดข้อมูลยาแบบ Array
                 let medList = [];
                 if (Array.isArray(data.medication)) {
                     medList = data.medication;
@@ -423,6 +463,12 @@
                     document.getElementById('req_diaper').checked = dp.req_diaper || false;
                     document.getElementById('diaper_size').value = dp.size || '-';
                     document.getElementById('req_underpad').checked = dp.req_underpad || false;
+                    
+                    // โหลดประวัติจัดสรรผ้าอ้อมมาแสดง
+                    if (dp.allocations && Array.isArray(dp.allocations)) {
+                        currentAllocations = dp.allocations;
+                        renderAllocations();
+                    }
                 }
 
                 if(data.equipment) {
@@ -508,7 +554,8 @@
                 indications: indications,
                 req_diaper: document.getElementById('req_diaper').checked,
                 size: document.getElementById('diaper_size').value,
-                req_underpad: document.getElementById('req_underpad').checked
+                req_underpad: document.getElementById('req_underpad').checked,
+                allocations: currentAllocations // 🌟 บันทึกประวัติผ้าอ้อมที่อัปเดต
             };
 
             if((diaperObj.req_diaper || diaperObj.req_underpad) && diaperObj.approve_status !== 'อนุมัติแล้ว') {
