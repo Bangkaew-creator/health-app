@@ -67,9 +67,20 @@
                         </p>
                     </div>
                 </div>
-                <div class="mt-3 pt-3 border-t border-[#bdcac1]/30">
-                    <p class="text-[10px] text-[#526069] font-bold">ผลคัดกรองภาวะซึมเศร้า (2Q/9Q)</p>
-                    <span id="profile-depression" class="bg-gray-100 text-gray-600 px-3 py-1 rounded-full text-xs font-bold inline-block mt-1 shadow-sm">-</span>
+                
+                <!-- 🌟 เพิ่มส่วนของ หมายเหตุ (Remark) ตรงนี้ 🌟 -->
+                <div class="grid grid-cols-2 gap-3 mt-3 pt-3 border-t border-[#bdcac1]/30">
+                    <div>
+                        <p class="text-[10px] text-[#526069] font-bold">ผลคัดกรองซึมเศร้า</p>
+                        <span id="profile-depression" class="bg-gray-100 text-gray-600 px-3 py-1 rounded-full text-xs font-bold inline-block mt-1 shadow-sm">-</span>
+                    </div>
+                    <div>
+                        <div class="flex justify-between items-center mb-1">
+                            <p class="text-[10px] text-amber-600 font-bold flex items-center gap-1"><span class="material-symbols-outlined text-[12px]">push_pin</span> หมายเหตุสำคัญ</p>
+                            <button onclick="openRemarkModal()" class="text-[10px] text-blue-600 hover:text-blue-800 font-bold flex items-center gap-0.5 bg-blue-50 px-2 py-0.5 rounded-md transition-colors"><span class="material-symbols-outlined text-[12px]">edit</span> แก้ไข</button>
+                        </div>
+                        <p id="profile-remark" class="text-xs text-amber-800 bg-amber-50 p-2 rounded-lg border border-amber-200 min-h-[32px] break-words whitespace-pre-line">-</p>
+                    </div>
                 </div>
 
                 <button onclick="printForm('SUMMARY')" class="w-full bg-[#f0fdf4] text-[#00694a] border border-[#bbf7d0] py-2.5 rounded-xl text-sm font-bold shadow-sm hover:bg-[#dcfce7] active:scale-95 transition-all flex items-center justify-center gap-2 mt-4">
@@ -224,6 +235,23 @@
         </div>
     </main>
 
+    <!-- 🌟 Modal หมายเหตุ 🌟 -->
+    <div id="remark-modal" class="fixed inset-0 bg-black/50 z-[100] hidden flex items-center justify-center opacity-0 transition-opacity duration-300">
+        <div id="remark-modal-content" class="bg-white rounded-[24px] w-[90%] max-w-sm p-6 transform scale-95 transition-transform duration-300 shadow-2xl">
+            <h3 class="text-lg font-bold text-amber-600 mb-2 flex items-center gap-2">
+                <span class="material-symbols-outlined">edit_note</span> บันทึกหมายเหตุสำคัญ
+            </h3>
+            <p class="text-xs text-gray-500 mb-4">ข้อความนี้จะแสดงอยู่ส่วนบนสุดของโปรไฟล์ เพื่อใช้เป็นหลักฐานและแจ้งเตือนข้อมูลสำคัญให้เจ้าหน้าที่ท่านอื่นทราบ</p>
+            
+            <textarea id="remark-input" class="w-full border border-amber-200 bg-amber-50 rounded-xl p-3 text-sm text-amber-900 focus:ring-2 focus:ring-amber-400 focus:border-amber-400 focus:outline-none min-h-[100px]" placeholder="เช่น ลงพื้นที่แล้วญาติปฏิเสธ, โทรไม่ติด 3 วันติดต่อกัน เป็นต้น"></textarea>
+
+            <div class="flex gap-3 mt-6">
+                <button onclick="closeRemarkModal()" class="flex-1 py-3 bg-gray-100 text-gray-700 rounded-xl font-bold hover:bg-gray-200 transition-colors">ยกเลิก</button>
+                <button onclick="saveRemark()" id="btn-save-remark" class="flex-1 py-3 bg-amber-500 text-white rounded-xl font-bold hover:bg-amber-600 transition-colors flex justify-center items-center gap-2">บันทึก</button>
+            </div>
+        </div>
+    </div>
+
     <!-- Modal เปลี่ยนสถานะ -->
     <div id="status-modal" class="fixed inset-0 bg-black/50 z-[100] hidden flex items-center justify-center opacity-0 transition-opacity duration-300">
         <div id="status-modal-content" class="bg-white rounded-[24px] w-[90%] max-w-sm p-6 transform scale-95 transition-transform duration-300">
@@ -308,8 +336,6 @@
         
         let currentUserRole = 'VHV';
         let currentUserName = "เจ้าหน้าที่";
-        
-        // 🌟 เพิ่มตัวแปรเพื่อเก็บชื่อหน่วยงานแบบไดนามิก 🌟
         let currentHospitalName = DEFAULT_CONFIGS.HOSPITAL_NAME;
 
         let currentPatientData = null;
@@ -376,7 +402,6 @@
 
         async function checkUserRole(uid) {
             try {
-                // 🌟 ดึงชื่อหน่วยงานจาก SystemConfig 🌟
                 try {
                     const sysSnap = await db.collection('SystemConfig').doc('HOSPITAL_NAME').get();
                     if(sysSnap.exists) currentHospitalName = sysSnap.data().value || currentHospitalName;
@@ -436,6 +461,43 @@
             if(currentMedImageToExpand) openModal(currentMedImageToExpand);
         }
 
+        // 🌟 ฟังก์ชันจัดการ Modal หมายเหตุ 🌟
+        function openRemarkModal() {
+            const modal = document.getElementById('remark-modal');
+            const content = document.getElementById('remark-modal-content');
+            document.getElementById('remark-input').value = currentPatientData.remark || '';
+            modal.classList.remove('hidden');
+            setTimeout(() => { modal.classList.remove('opacity-0'); content.classList.remove('scale-95'); }, 10);
+        }
+
+        function closeRemarkModal() {
+            const modal = document.getElementById('remark-modal');
+            const content = document.getElementById('remark-modal-content');
+            modal.classList.add('opacity-0'); content.classList.add('scale-95');
+            setTimeout(() => modal.classList.add('hidden'), 300);
+        }
+
+        async function saveRemark() {
+            const newRemark = document.getElementById('remark-input').value.trim();
+            const btn = document.getElementById('btn-save-remark');
+            btn.innerHTML = '<div class="loader-small" style="width:16px; height:16px; border-width:2px; border-bottom-color:white; display:inline-block; vertical-align:middle; margin-right:5px;"></div>';
+            btn.disabled = true;
+
+            try {
+                await db.collection('Patients').doc(String(patientId)).update({ remark: newRemark });
+                currentPatientData.remark = newRemark;
+                document.getElementById('profile-remark').innerText = newRemark || '-';
+                closeRemarkModal();
+                if(typeof showToast === 'function') showToast('บันทึกหมายเหตุสำเร็จ');
+                else alert('บันทึกหมายเหตุสำเร็จ');
+            } catch(e) {
+                if(typeof showToast === 'function') showToast('การบันทึกล้มเหลว', 'error');
+                else alert('บันทึกล้มเหลว');
+            }
+            btn.innerHTML = 'บันทึก';
+            btn.disabled = false;
+        }
+
         function getTodayDateStr() {
             const now = new Date();
             const dd = String(now.getDate()).padStart(2, '0');
@@ -452,7 +514,6 @@
             const pId = p.id_card || '-';
             const pPhone = p.caregiver_phone || p.phone || '-';
             
-            // 🌟 ใช้ชื่อหน่วยงานที่ดึงมาจากฐานข้อมูล 🌟
             const hospitalName = currentHospitalName; 
             const pAddress = `บ้านเลขที่ ${p.house_no||'-'} หมู่ที่ ${p.village_no||'-'} ${hospitalName}`;
             
@@ -522,6 +583,7 @@
                     <tr><td style="background-color:#f0f0f0;"><b>คะแนน ADL ล่าสุด</b></td><td>${p.adl || '-'} คะแนน</td></tr>
                     <tr><td style="background-color:#f0f0f0;"><b>ภาวะซึมเศร้า (2Q/9Q)</b></td><td>${p.dep_status || '-'}</td></tr>
                     <tr><td style="background-color:#f0f0f0;"><b>ประเมินล่าสุดเมื่อ</b></td><td>${p.last_assess || '-'}</td></tr>
+                    <tr><td style="background-color:#fef3c7;"><b>หมายเหตุสำคัญ</b></td><td style="color:#b45309;">${p.remark || '-'}</td></tr>
                 </table>
 
                 <h3>สิทธิ์การดูแลและอุปกรณ์การแพทย์</h3>
@@ -911,6 +973,9 @@
 
                 document.getElementById('profile-disease').innerText = data.disease || '-';
                 
+                // 🌟 โหลดหมายเหตุสำคัญ 🌟
+                document.getElementById('profile-remark').innerText = data.remark || '-';
+                
                 const medContainer = document.getElementById('profile-medication');
                 let meds = [];
                 
@@ -1200,10 +1265,12 @@
                     status: newStatus 
                 });
                 
-                alert('เปลี่ยนสถานะผู้ป่วยสำเร็จ\nผู้ป่วยรายนี้ถูกนำออกจากรายชื่อที่ต้องติดตามแล้ว');
+                if(typeof showToast === 'function') showToast('เปลี่ยนสถานะผู้ป่วยสำเร็จ');
+                else alert('เปลี่ยนสถานะผู้ป่วยสำเร็จ');
                 goBackToList(); 
             } catch (error) {
-                alert('การเชื่อมต่อล้มเหลว กรุณาลองอีกครั้ง');
+                if(typeof showToast === 'function') showToast('การเชื่อมต่อล้มเหลว', 'error');
+                else alert('การเชื่อมต่อล้มเหลว กรุณาลองอีกครั้ง');
                 resetBtn(btn);
             }
         }
