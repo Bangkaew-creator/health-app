@@ -89,6 +89,20 @@
                     </div>
                 </div>
 
+                <!-- 🌟 กล่องค้นหาและตัวกรองรอบผ้าอ้อม 🌟 -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-3 mb-4">
+                    <div class="relative">
+                        <span class="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-slate-400">search</span>
+                        <input type="text" id="kpt-search" oninput="renderKPTTable()" class="w-full pl-12 pr-4 py-2.5 bg-white border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-amber-500 shadow-sm outline-none" placeholder="ค้นหาชื่อ, เลขบัตร, บ้านเลขที่...">
+                    </div>
+                    <select id="kpt-alloc-filter" onchange="renderKPTTable()" class="w-full px-4 py-2.5 bg-white border border-slate-200 rounded-xl text-sm font-bold text-slate-600 focus:ring-2 focus:ring-amber-500 shadow-sm outline-none">
+                        <option value="all">แสดงผู้ป่วยทั้งหมด</option>
+                        <option value="never">ยังไม่เคยได้รับการจัดสรรผ้าอ้อม</option>
+                        <option value="ever">ผู้ที่เคยได้รับการจัดสรรผ้าอ้อมแล้ว</option>
+                        <optgroup label="ดูเฉพาะรอบ" id="kpt-alloc-options"></optgroup>
+                    </select>
+                </div>
+
                 <div id="table-container" class="bg-white border border-slate-200 rounded-[20px] shadow-sm overflow-hidden">
                     <div class="overflow-x-auto">
                         <table class="w-full text-left border-collapse min-w-[1000px]">
@@ -98,7 +112,7 @@
                                     <th class="p-4 font-bold border-b border-slate-200">ชื่อ-นามสกุล / ที่อยู่</th>
                                     <th class="p-4 font-bold border-b border-slate-200 text-center">คะแนน ADL</th>
                                     <th class="p-4 font-bold border-b border-slate-200 text-center">ประเมินฟอร์ม</th>
-                                    <th class="p-4 font-bold border-b border-slate-200 text-center">มติจัดสรร กปท.</th>
+                                    <th class="p-4 font-bold border-b border-slate-200 text-center">ประวัติได้รับจัดสรร (รอบล่าสุด)</th>
                                     <th class="p-4 font-bold border-b border-slate-200">ความต้องการ (ต่อเดือน)</th>
                                 </tr>
                             </thead>
@@ -108,7 +122,6 @@
                 </div>
             </div>
 
-            <!-- 🌟 อัปเกรดหมวดทะเบียนสุขภาพ (เหลือปุ่มเดียว ตาม Requirement) 🌟 -->
             <div id="content-registry" class="hidden p-4 lg:p-6">
                 <div class="bg-white rounded-[24px] p-8 lg:p-12 shadow-sm border border-slate-200 text-center max-w-3xl mx-auto mt-6">
                     <span class="material-symbols-outlined text-[70px] text-[#00694a] mb-4 bg-emerald-50 w-24 h-24 rounded-full flex items-center justify-center mx-auto">health_metrics</span>
@@ -225,13 +238,9 @@
                     const userData = userDoc.data();
                     const role = String(userData.role || '').toUpperCase();
                     if (role === 'ADMIN') {
-                        hasAccess = true;
-                        currentUserRole = 'ADMIN';
-                        hospital = userData.hospital_name || hospital;
+                        hasAccess = true; currentUserRole = 'ADMIN'; hospital = userData.hospital_name || hospital;
                     } else if (role === 'SUB_ADMIN') {
-                        hasAccess = true;
-                        currentUserRole = 'SUB_ADMIN';
-                        hospital = userData.hospital_name || hospital;
+                        hasAccess = true; currentUserRole = 'SUB_ADMIN'; hospital = userData.hospital_name || hospital;
                         assignedVillages = userData.assigned_villages || [];
                     }
                 }
@@ -245,14 +254,9 @@
                     if (currentUserRole === 'SUB_ADMIN') {
                         const navSettings = document.getElementById('nav-settings');
                         if (navSettings) navSettings.style.display = 'none';
-                        
-                        assignedVillages.forEach(v => {
-                            vhvFilter.insertAdjacentHTML('beforeend', `<option value="${v}">หมู่ที่ ${v}</option>`);
-                        });
+                        assignedVillages.forEach(v => { vhvFilter.insertAdjacentHTML('beforeend', `<option value="${v}">หมู่ที่ ${v}</option>`); });
                     } else {
-                        for(let i=1; i<=vCount; i++){ 
-                            vhvFilter.insertAdjacentHTML('beforeend', `<option value="${i}">หมู่ที่ ${i}</option>`); 
-                        }
+                        for(let i=1; i<=vCount; i++){ vhvFilter.insertAdjacentHTML('beforeend', `<option value="${i}">หมู่ที่ ${i}</option>`); }
                     }
 
                     loadReportData();
@@ -268,13 +272,28 @@
                 ]);
                 
                 allPatients = [];
+                let uniqueAllocations = new Set(); // 🌟 เก็บรายชื่อรอบจัดสรร
+
                 patientsSnap.forEach(doc => {
                     const data = doc.data();
                     let hasPermissionToView = true;
-                    if (currentUserRole === 'SUB_ADMIN') {
-                        hasPermissionToView = assignedVillages.includes(String(data.village_no).trim());
+                    if (currentUserRole === 'SUB_ADMIN') hasPermissionToView = assignedVillages.includes(String(data.village_no).trim());
+                    
+                    if (hasPermissionToView) {
+                        allPatients.push(data);
+                        // วิเคราะห์รอบผ้าอ้อม
+                        const d = cleanJSON(data.diaper);
+                        if(d && Array.isArray(d.allocations)) {
+                            d.allocations.forEach(alloc => uniqueAllocations.add(alloc));
+                        }
                     }
-                    if (hasPermissionToView) allPatients.push(data);
+                });
+
+                // สร้างตัวเลือกรอบผ้าอ้อมใน Dropdown
+                const allocGroup = document.getElementById('kpt-alloc-options');
+                allocGroup.innerHTML = '';
+                Array.from(uniqueAllocations).sort().reverse().forEach(alloc => {
+                    allocGroup.insertAdjacentHTML('beforeend', `<option value="${alloc}">เฉพาะรอบ ${alloc}</option>`);
                 });
                 
                 allVHVs = [];
@@ -282,12 +301,8 @@
                     const v = doc.data();
                     const vRole = String(v.role || '').toUpperCase();
                     let hasPermissionToView = true;
-                    if (currentUserRole === 'SUB_ADMIN') {
-                        hasPermissionToView = assignedVillages.includes(String(v.village_no).trim());
-                    }
-                    if (vRole !== 'ADMIN' && vRole !== 'SUB_ADMIN' && hasPermissionToView) {
-                        allVHVs.push(v);
-                    }
+                    if (currentUserRole === 'SUB_ADMIN') hasPermissionToView = assignedVillages.includes(String(v.village_no).trim());
+                    if (vRole !== 'ADMIN' && vRole !== 'SUB_ADMIN' && hasPermissionToView) allVHVs.push(v);
                 });
                 
                 renderKPTTable();
@@ -309,11 +324,29 @@
             const tbody = document.getElementById('report-list');
             tbody.innerHTML = '';
             
+            const searchKeyword = document.getElementById('kpt-search').value.trim().toLowerCase();
+            const allocFilter = document.getElementById('kpt-alloc-filter').value;
+
             allPatients.forEach(p => {
                 if (String(p.status || 'Active').trim().toLowerCase() !== 'active') return;
+
+                // ระบบค้นหา
+                const nameMatch = p.name ? String(p.name).toLowerCase().includes(searchKeyword) : false;
+                const idMatch = p.id_card ? String(p.id_card).toLowerCase().includes(searchKeyword) : false;
+                const houseMatch = p.house_no ? String(p.house_no).toLowerCase().includes(searchKeyword) : false;
+                if (searchKeyword && !nameMatch && !idMatch && !houseMatch) return;
+
                 const d = cleanJSON(p.diaper);
-                const adlScore = (p.adl && p.adl !== '-') ? parseInt(p.adl) : null;
                 
+                // ระบบกรองประวัติรับผ้าอ้อม
+                const hasAllocations = (d && Array.isArray(d.allocations) && d.allocations.length > 0);
+                if (allocFilter === 'never' && hasAllocations) return;
+                if (allocFilter === 'ever' && !hasAllocations) return;
+                if (allocFilter !== 'all' && allocFilter !== 'never' && allocFilter !== 'ever') {
+                    if (!hasAllocations || !d.allocations.includes(allocFilter)) return;
+                }
+
+                const adlScore = (p.adl && p.adl !== '-') ? parseInt(p.adl) : null;
                 let adlBadge = `<span class="bg-red-50 text-red-600 font-bold px-2 py-1 rounded text-xs border border-red-100 flex items-center justify-center gap-1"><span class="material-symbols-outlined text-[14px]">warning</span> ยังไม่ประเมิน</span>`;
                 if (adlScore !== null) adlBadge = `<span class="bg-blue-50 text-blue-700 font-bold px-3 py-1 rounded-full text-sm">${adlScore}</span>`;
 
@@ -329,8 +362,9 @@
                 }
 
                 let historyBadge = `<span class="text-slate-400 text-[11px] font-medium">รอเข้าคณะกรรมการ</span>`;
-                if (d && d.committee_status === 'จัดสรรแล้ว') {
-                    historyBadge = `<span class="bg-amber-100 text-amber-700 font-bold px-2 py-1 rounded text-[10px] border border-amber-200">ปีงบ ${d.fy} รอบ ${d.round} (${d.alloc_months} ด.)</span>`;
+                if (hasAllocations) {
+                    const latestAlloc = d.allocations[d.allocations.length - 1]; // แสดงรอบล่าสุด
+                    historyBadge = `<span class="bg-amber-100 text-amber-700 font-bold px-2 py-1 rounded text-[10px] border border-amber-200" title="รอบทั้งหมด: ${d.allocations.join(', ')}">ได้รับรอบ ${latestAlloc}</span>`;
                 }
 
                 const rawData = { id: p.id, name: p.name, id_card: p.id_card, house_no: p.house_no, village_no: p.village_no, adl: p.adl, phone: p.phone, detail: d };
@@ -348,6 +382,8 @@
                 tr.dataset.rawData = JSON.stringify(rawData);
                 tbody.appendChild(tr);
             });
+            document.getElementById('check-all').checked = false;
+            updateSelectCount();
         }
 
         function toggleAll(source) {
@@ -389,6 +425,8 @@
 
             try {
                 const batch = db.batch();
+                const allocStr = `${round}/${fy}`; // สร้างรอบจัดสรร เช่น 1/2567
+
                 patientIds.forEach(id => {
                     const ref = db.collection('Patients').doc(String(id));
                     const p = allPatients.find(x => x.id === String(id));
@@ -398,6 +436,11 @@
                         diaperObj.fy = fy;
                         diaperObj.round = round;
                         diaperObj.alloc_months = months;
+                        
+                        // 🌟 ยัดรอบประวัติลงใน Array 🌟
+                        if (!diaperObj.allocations) diaperObj.allocations = [];
+                        if (!diaperObj.allocations.includes(allocStr)) diaperObj.allocations.push(allocStr);
+
                         batch.update(ref, { diaper: JSON.stringify(diaperObj) });
                     }
                 });
@@ -435,7 +478,7 @@
                     const allocMonths = parseInt(d.alloc_months) || 1; 
                     if (d.req_diaper && parseInt(d.approved_diaper) > 0) { diaperSize = d.size || '-'; diaperQty = parseInt(d.approved_diaper) * allocMonths; }
                     if (d.req_underpad && parseInt(d.approved_underpad) > 0) { underpadSize = 'แผ่นรองซับ'; underpadQty = parseInt(d.approved_underpad) * allocMonths; }
-                    if (d.committee_status === 'จัดสรรแล้ว') { remarkText = `อนุมัติปีงบ ${d.fy} รอบ ${d.round} (${allocMonths} เดือน)`; }
+                    if (d.allocations && d.allocations.length > 0) { remarkText = `ได้รับรอบ ${d.allocations.join(', ')}`; }
                 }
 
                 exportData.push({
@@ -452,7 +495,6 @@
             XLSX.writeFile(workbook, `รายงานเบิกผ้าอ้อม_กปท_${getTodayDateStr()}.xlsx`);
         }
 
-        // 🌟 แก้ไข: ไฟล์ Export Registry ให้มีแค่ 7 คอลัมน์ที่ต้องการ 🌟
         function exportRegistryExcel() {
             const exportData = [];
             allPatients.forEach(p => {
