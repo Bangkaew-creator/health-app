@@ -181,11 +181,14 @@
                 let vCount = DEFAULT_CONFIGS.VILLAGE_COUNT;
 
                 try {
-                    const sysSnap = await db.collection('SystemConfig').doc('HOSPITAL_NAME').get();
-                    if(sysSnap.exists) hospital = sysSnap.data().value || hospital;
-                    const sysCountSnap = await collection('SystemConfig').doc('VILLAGE_COUNT').get();
-                    if(sysCountSnap.exists) vCount = parseInt(sysCountSnap.data().value) || vCount;
-                } catch(e) {}
+    const sysSnap = await db.collection('SystemConfig').doc('HOSPITAL_NAME').get();
+    if(sysSnap.exists) hospital = sysSnap.data().value || hospital;
+    
+    // ❌ ของเดิม: const sysCountSnap = await collection('SystemConfig').doc('VILLAGE_COUNT').get();
+    // ✅ ให้เปลี่ยนเป็น:
+    const sysCountSnap = await db.collection('SystemConfig').doc('VILLAGE_COUNT').get();
+    if(sysCountSnap.exists) vCount = parseInt(sysCountSnap.data().value) || vCount;
+} catch(e) {}
 
                 if (userDoc.exists) {
                     const userData = userDoc.data();
