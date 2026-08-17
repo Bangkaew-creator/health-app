@@ -3,7 +3,7 @@
 <head>
     <meta charset="utf-8"/>
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
-    <title>จัดการรูปภาพสภาพแวดล้อม</title>
+    <title>จัดการรูปภาพ - อสม.สามารถ</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700&display=swap" rel="stylesheet"/>
     <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
@@ -25,7 +25,7 @@
         <button type="button" onclick="window.location.href='patient_profile.html?id=' + patientId" class="w-10 h-10 flex items-center justify-center rounded-full bg-gray-50 text-[#00694a] hover:bg-gray-100">
             <span class="material-symbols-outlined">arrow_back</span>
         </button>
-        <h1 class="text-base font-bold text-[#00694a]">สภาพแวดล้อมบ้านผู้ป่วย</h1>
+        <h1 class="text-base font-bold text-[#00694a]">รูปภาพผู้ป่วย & สภาพแวดล้อม</h1>
     </header>
 
     <main class="max-w-2xl mx-auto p-4 space-y-5">
@@ -38,11 +38,25 @@
         <div id="main-content" class="hidden space-y-5">
             <div class="bg-blue-50 p-4 rounded-xl border border-blue-100 text-sm text-blue-800">
                 <p class="font-bold mb-1 flex items-center gap-1"><span class="material-symbols-outlined text-[18px]">info</span> คำแนะนำการถ่ายภาพ</p>
-                <p class="text-xs">แตะที่ช่องว่างเพื่อเปิดกล้องหรือเลือกรูปภาพ ระบบจะทำการบีบอัดรูปภาพให้อัตโนมัติเพื่อให้ประหยัดพื้นที่จัดเก็บและแสดงผลได้รวดเร็ว</p>
+                <p class="text-xs">แตะที่ช่องว่างเพื่อเปิดกล้องหรือเลือกรูปภาพ ระบบจะทำการบีบอัดรูปภาพให้อัตโนมัติเพื่อให้โหลดได้รวดเร็ว</p>
             </div>
 
             <div class="grid grid-cols-2 gap-4">
                 
+                <!-- 🌟 กล่องที่ 5 (เพิ่มใหม่): รูปโปรไฟล์ 🌟 -->
+                <div class="space-y-1 col-span-2 mb-2">
+                    <p class="text-[12px] font-bold text-blue-700 pl-1 flex items-center gap-1"><span class="material-symbols-outlined text-[16px]">face</span> รูปถ่ายหน้าตรงผู้ป่วย (Profile)</p>
+                    <div class="relative border-2 border-dashed border-blue-300 rounded-[20px] h-48 flex flex-col items-center justify-center overflow-hidden cursor-pointer hover:bg-blue-50 transition-colors group" onclick="document.getElementById('file_profile').click()">
+                        <input type="file" id="file_profile" accept="image/*" capture="user" class="hidden" onchange="handleImageUpload(this, 'profile')">
+                        <div id="preview_profile" class="w-full h-full absolute inset-0 flex flex-col items-center justify-center bg-blue-50/50">
+                            <span id="icon_profile" class="material-symbols-outlined text-4xl text-blue-300 group-hover:text-blue-500 transition-colors">add_a_photo</span>
+                            <img id="img_tag_profile" src="" class="w-full h-full object-contain hidden p-2">
+                            <div id="loader_profile" class="loader-small hidden absolute" style="border-bottom-color:#2563eb;"></div>
+                        </div>
+                        <textarea id="b64_profile" class="hidden"></textarea>
+                    </div>
+                </div>
+
                 <!-- กล่องที่ 1: เตียงนอน -->
                 <div class="space-y-1">
                     <p class="text-[11px] font-bold text-gray-600 pl-1">1. สภาพที่นอน/เตียง</p>
@@ -103,8 +117,8 @@
         </div>
     </main>
 
-    <div class="fixed bottom-0 left-0 w-full bg-white border-t p-4 z-50 shadow-[0_-4px_10px_rgba(0,0,0,0.05)] hidden" id="save-bar">
-        <button onclick="saveImages()" id="btn-save" class="w-full bg-[#00694a] text-white py-3.5 rounded-xl font-bold shadow-md hover:bg-[#005239] flex justify-center items-center gap-2">
+    <div class="fixed bottom-0 left-0 w-full bg-white/90 backdrop-blur-md border-t p-4 z-50 shadow-[0_-4px_10px_rgba(0,0,0,0.05)] hidden" id="save-bar">
+        <button onclick="saveImages()" id="btn-save" class="w-full bg-[#00694a] text-white py-3.5 rounded-xl font-bold shadow-md hover:bg-[#005239] flex justify-center items-center gap-2 active:scale-95 transition-all">
             บันทึกรูปภาพ <span class="material-symbols-outlined text-sm">cloud_upload</span>
         </button>
     </div>
@@ -130,7 +144,6 @@
                     
                     const setPreview = (type, url) => {
                         if(url) {
-                            // รองรับทั้งรูปเก่า (Drive URL) และรูประบบใหม่ (Base64)
                             let finalUrl = url;
                             if (!url.startsWith('data:image')) {
                                 const match = url.match(/d\/([a-zA-Z0-9_-]+)/) || url.match(/id=([a-zA-Z0-9_-]+)/);
@@ -144,6 +157,7 @@
                         }
                     };
 
+                    setPreview('profile', data.profile_pic); // 🌟 โหลดรูปโปรไฟล์
                     setPreview('bed', data.pic_bed);
                     setPreview('bath', data.pic_bath);
                     setPreview('entrance', data.pic_entrance);
@@ -209,6 +223,7 @@
             btn.disabled = true;
 
             const updateData = {
+                profile_pic: document.getElementById('b64_profile').value, // 🌟 บันทึกรูปโปรไฟล์
                 pic_bed: document.getElementById('b64_bed').value,
                 pic_bath: document.getElementById('b64_bath').value,
                 pic_entrance: document.getElementById('b64_entrance').value,
