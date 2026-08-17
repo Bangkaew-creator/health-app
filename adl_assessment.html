@@ -63,7 +63,7 @@
         document.getElementById('patient-id-display').innerText = `รหัส: ${patientId || 'ไม่ระบุ'}`;
 
         let currentUserUid = "";
-        let currentAssessorName = "เจ้าหน้าที่ระบบ"; // 🌟 ตัวแปรเก็บชื่อคนประเมิน
+        let currentAssessorName = "เจ้าหน้าที่ระบบ"; 
 
         document.addEventListener("DOMContentLoaded", () => {
             liff.init({ liffId: LIFF_ID }).then(() => {
@@ -80,7 +80,6 @@
             });
         });
 
-        // 🌟 ฟังก์ชันดึงชื่อ-นามสกุลจากฐานข้อมูล VHVs
         async function fetchAssessorData(uid) {
             try {
                 const doc = await db.collection('VHVs').doc(String(uid)).get();
@@ -191,14 +190,15 @@
                 return;
             }
 
+            // 🌟 แก้ไข: ตัดคำว่า "กลุ่ม" ออก เพื่อให้ยอดใน Dashboard นับรวมกันได้ถูกต้อง
             if (total >= 12) {
-                badge.innerText = 'กลุ่มติดสังคม';
+                badge.innerText = 'ติดสังคม';
                 badge.className = 'bg-[#00694a] text-white px-2 py-0.5 rounded-md text-[10px] font-bold shadow-sm ml-2';
             } else if (total >= 5) {
-                badge.innerText = 'กลุ่มติดบ้าน';
+                badge.innerText = 'ติดบ้าน';
                 badge.className = 'bg-[#F59E0B] text-white px-2 py-0.5 rounded-md text-[10px] font-bold shadow-sm ml-2';
             } else {
-                badge.innerText = 'กลุ่มติดเตียง';
+                badge.innerText = 'ติดเตียง';
                 badge.className = 'bg-[#ba1a1a] text-white px-2 py-0.5 rounded-md text-[10px] font-bold shadow-sm ml-2';
             }
         }
@@ -251,7 +251,7 @@
                     result: status,
                     answers: answersDetail,
                     assessor_uid: currentUserUid, 
-                    assessor_name: currentAssessorName, // 🌟 เพิ่มตรงนี้
+                    assessor_name: currentAssessorName, 
                     date: formattedDate,
                     timestamp: firebase.firestore.FieldValue.serverTimestamp()
                 });
