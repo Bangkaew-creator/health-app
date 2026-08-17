@@ -9,7 +9,6 @@
     <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
     <script charset="utf-8" src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
     
-    <!-- โหลดเครื่องมือ Firebase -->
     <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore-compat.js"></script>
     <script src="config.js"></script>
@@ -40,6 +39,7 @@
             <a href="admin_dashboard.html" class="flex items-center gap-3 px-4 py-3.5 text-slate-400 hover:bg-white/5 hover:text-white rounded-xl font-medium transition-all"><span class="material-symbols-outlined">dashboard</span> ภาพรวมระบบ</a>
             <a href="admin_resources.html" class="flex items-center justify-between px-4 py-3.5 bg-white/10 text-amber-400 rounded-xl font-bold transition-all"><span class="flex items-center gap-3"><span class="material-symbols-outlined">inventory_2</span> บริหารทรัพยากร</span><span class="w-1.5 h-1.5 rounded-full bg-amber-400"></span></a>
             <a href="admin_datacenter.html" class="flex items-center gap-3 px-4 py-3.5 text-slate-400 hover:bg-white/5 hover:text-white rounded-xl font-medium transition-all"><span class="material-symbols-outlined">folder_shared</span> ศูนย์ข้อมูลผู้ป่วย</a>
+            <a href="admin_map.html" class="flex items-center gap-3 px-4 py-3.5 text-slate-400 hover:bg-white/5 hover:text-white rounded-xl font-medium transition-all"><span class="material-symbols-outlined">map</span> แผนที่พิกัดผู้ป่วย</a>
             <a href="admin_delegation.html" class="flex items-center gap-3 px-4 py-3.5 text-slate-400 hover:bg-white/5 hover:text-white rounded-xl font-medium transition-all"><span class="material-symbols-outlined">assignment_ind</span> มอบหมายงาน อสม.</a>
             <a href="admin_reports.html" class="flex items-center gap-3 px-4 py-3.5 text-slate-400 hover:bg-white/5 hover:text-white rounded-xl font-medium transition-all"><span class="material-symbols-outlined">summarize</span> รายงาน (Export)</a>
             <a href="admin_settings.html" id="nav-settings" class="flex items-center gap-3 px-4 py-3.5 text-slate-400 hover:bg-white/5 hover:text-white rounded-xl font-medium transition-all"><span class="material-symbols-outlined">settings</span> ตั้งค่าระบบ</a>        
@@ -297,6 +297,7 @@
                 const isPending = currentTab === 'pending';
                 const statusBadge = !r.isActive ? `<span class="bg-red-50 text-red-600 text-[10px] font-bold px-2 py-0.5 rounded border border-red-200 mt-1 inline-block">ยุติการดูแล</span>` : '';
 
+                // 🌟 อัปเกรด: เพิ่มปุ่ม "แก้ไข/ยกเลิกการอนุมัติ" ในสถานะ อนุมัติแล้ว 🌟
                 const actionSection = isPending ? `
                     <div class="mt-4 pt-4 border-t border-slate-100 space-y-3">
                         ${d.req_diaper ? `<div class="flex items-center justify-between"><label class="text-sm font-bold text-slate-600">ผ้าอ้อม (ชิ้น/เดือน)</label><input type="number" id="diaper_${p.id}" class="w-20 px-2 py-1 border border-slate-200 rounded text-center focus:ring-amber-500" placeholder="0"></div>` : ''}
@@ -304,7 +305,10 @@
                         <button onclick="approveRequest('${p.id}', ${d.req_diaper}, ${d.req_underpad})" id="btn_${p.id}" class="w-full mt-2 py-2.5 bg-navy text-white text-sm font-bold rounded-lg hover:bg-opacity-90 transition-all active:scale-95">บันทึกอนุมัติ</button>
                     </div>
                 ` : `
-                    <div class="mt-4 pt-4 border-t border-slate-100 bg-slate-50 rounded-xl p-3">
+                    <div class="mt-4 pt-4 border-t border-slate-100 bg-slate-50 rounded-xl p-3 relative group">
+                        <button onclick="revokeApproval('${p.id}')" class="absolute -top-3 -right-2 bg-red-100 text-red-600 w-8 h-8 rounded-full flex items-center justify-center hover:bg-red-500 hover:text-white transition-colors shadow-sm opacity-0 group-hover:opacity-100" title="ดึงกลับไปแก้ไข">
+                            <span class="material-symbols-outlined text-[16px]">edit</span>
+                        </button>
                         <p class="text-[10px] text-slate-500 mb-2">อนุมัติเมื่อ: <strong class="text-slate-700">${d.approve_date || '-'}</strong></p>
                         <div class="flex gap-2 text-center">
                             ${d.req_diaper ? `<div class="flex-1 bg-white p-2 rounded border border-slate-100"><p class="text-[9px] text-slate-400">ผ้าอ้อม/ด.</p><p class="font-bold text-navy text-base">${d.approved_diaper || 0} ชิ้น</p></div>` : ''}
@@ -363,6 +367,33 @@
             } catch (error) { 
                 showToast('การเชื่อมต่อขัดข้อง กรุณาลองใหม่', 'error'); 
                 btn.disabled = false; btn.innerHTML = 'บันทึกอนุมัติ'; 
+            }
+        }
+
+        // 🌟 ฟังก์ชันใหม่: ดึงกลับไปแก้ไข (Revoke) 🌟
+        async function revokeApproval(id) {
+            if (!confirm('ต้องการยกเลิกการอนุมัติ เพื่อกลับไปแก้ไขจำนวนใหม่ ใช่หรือไม่?')) return;
+
+            try {
+                const docRef = db.collection('Patients').doc(String(id));
+                const docSnap = await docRef.get();
+                
+                if(docSnap.exists) {
+                    let p = docSnap.data();
+                    let diaperObj = cleanAndParseJSON(p.diaper) || {};
+                    
+                    // เปลี่ยนสถานะและล้างยอดอนุมัติทิ้ง
+                    diaperObj.approve_status = 'รออนุมัติ';
+                    diaperObj.approved_diaper = 0;
+                    diaperObj.approved_underpad = 0;
+
+                    await docRef.update({ diaper: JSON.stringify(diaperObj) });
+                    
+                    showToast('ดึงรายการกลับไปที่ "รอการอนุมัติ" สำเร็จ! เข้าไปแก้ไขตัวเลขได้เลยครับ');
+                    await loadResourceData(); 
+                }
+            } catch (error) { 
+                showToast('การเชื่อมต่อขัดข้อง กรุณาลองใหม่', 'error'); 
             }
         }
     </script>
