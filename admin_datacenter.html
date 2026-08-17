@@ -228,7 +228,7 @@
         }
 
         async function addNewPatient() {
-            let idCard = prompt("กรุณาระบุเลขบัตรประชาชน 13 หลัก\n(หากไม่มี ให้เว้นว่างไว้เพื่อสร้างรหัสชั่วคราวก่อนได้ครับ):");
+            let idCard = prompt("กรุณาระบุเลขบัตรประชาชน 13 หลัก\n(หากไม่มี หรือยังไม่ทราบ ให้เว้นว่างไว้เพื่อสร้างรหัสชั่วคราวก่อนได้ครับ):");
             if (idCard === null) return; 
             
             idCard = idCard.replace(/[^0-9]/g, ''); 
@@ -245,7 +245,6 @@
                 const docSnap = await docRef.get();
                 
                 if (docSnap.exists) {
-                    // 🌟 โชว์ Toast แบบรอเปลี่ยนหน้าอัตโนมัติ 🌟
                     showToast(`เลขบัตร ${idCard} มีอยู่ในระบบแล้ว! กำลังพาวาร์ป...`, 'info', `patient_profile.html?id=${docId}`);
                     return;
                 }
@@ -361,16 +360,27 @@
                     allocBadge = `<span class="bg-blue-50 text-blue-600 border border-blue-200 text-[9px] font-bold px-2 py-0.5 rounded shadow-sm flex items-center gap-0.5 mt-1"><span class="material-symbols-outlined text-[10px]">inventory_2</span> ได้รับรอบ ${latestAlloc}</span>`;
                 }
 
+                // 🌟 เพิ่มป้ายสัญลักษณ์หมายเหตุ (Remark) ตรงนี้ 🌟
+                let remarkBadge = '';
+                if (p.remark && p.remark !== '-' && p.remark.trim() !== '') {
+                    remarkBadge = `<div class="flex items-center gap-1 text-amber-600 bg-amber-50 border border-amber-200 text-[9px] font-bold px-2 py-0.5 rounded shadow-sm mt-1" title="${p.remark}">
+                        <span class="material-symbols-outlined text-[12px]">push_pin</span> มีหมายเหตุ
+                    </div>`;
+                }
+
                 container.insertAdjacentHTML('beforeend', `
                     <div class="bg-white rounded-[24px] p-5 shadow-sm border border-slate-200 relative hover:shadow-md transition-shadow group">
-                        <div class="flex items-center gap-4 border-b border-slate-100 pb-4 mb-4">
+                        <div class="flex items-start gap-4 border-b border-slate-100 pb-4 mb-4">
                             ${avatarHtml}
                             <div class="flex-1 min-w-0">
                                 <h3 class="font-bold text-slate-800 text-[15px] truncate">${p.prefix || ''}${p.name || 'ไม่ระบุชื่อ'}</h3>
                                 <p class="text-[11px] text-slate-500 truncate mt-0.5"><span class="font-bold text-blue-500">CID:</span> ${p.id_card || p.id || '-'}</p>
                                 ${allocBadge}
                             </div>
-                            <span class="${badgeColor} text-[10px] font-bold px-3 py-1 rounded-full border shadow-sm flex-shrink-0">${groupDisplay}</span>
+                            <div class="flex flex-col items-end flex-shrink-0 gap-1">
+                                <span class="${badgeColor} text-[10px] font-bold px-3 py-1 rounded-full border shadow-sm">${groupDisplay}</span>
+                                ${remarkBadge}
+                            </div>
                         </div>
                         <div class="space-y-2 mb-5">
                             <div class="flex items-start gap-2 text-xs">
@@ -395,7 +405,6 @@
         }
 
         async function updatePatientStatus(patientId, newStatus) {
-            // Confirm จำเป็นสำหรับการเตือนสติแอดมินก่อนลบข้อมูลสำคัญ
             const actionText = newStatus === 'Inactive' ? 'ยุติการดูแล (Soft Delete)' : 'นำกลับมาดูแล (Active)';
             if (!confirm(`คุณต้องการ ${actionText} ผู้ป่วยรหัส ${patientId} ใช่หรือไม่?`)) return;
 
@@ -404,7 +413,7 @@
                 const index = allPatients.findIndex(p => p.id === patientId);
                 if(index > -1) allPatients[index].status = newStatus;
                 
-                showToast('อัปเดตสถานะสำเร็จ!'); // 🌟 โชว์ Toast
+                showToast('อัปเดตสถานะสำเร็จ!'); 
                 filterPatients(); 
             } catch (error) { showToast('เกิดข้อผิดพลาดในการเชื่อมต่อฐานข้อมูล', 'error'); }
         }
@@ -530,7 +539,6 @@
 
                     if (batchCount > 0) { await batch.commit(); }
 
-                    // 🌟 โชว์ Toast แจ้งเตือนเมื่อเสร็จสิ้น
                     showToast(`นำเข้าข้อมูล ${jsonRows.length} รายการสำเร็จ!`);
                     closeImportModal();
                     loadPatientData(); 
