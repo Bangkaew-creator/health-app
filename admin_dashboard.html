@@ -75,7 +75,6 @@
                 </div>
             </div>
             
-            <!-- 🌟 เพิ่มรูปโปรไฟล์กลับมาตรงนี้ 🌟 -->
             <div class="flex items-center gap-3 cursor-pointer" onclick="window.location.href='admin_settings.html'">
                 <div class="hidden md:block text-right">
                     <p class="text-sm font-bold text-slate-700 leading-tight" id="header-user-name">กำลังโหลด...</p>
@@ -219,7 +218,6 @@
                     verifyAdminAccess(mockUid); 
                 } else if (liff.isLoggedIn()) { 
                     liff.getProfile().then(p => {
-                        // 🌟 อัปเดตรูปและชื่อจาก LINE ทันที 🌟
                         document.getElementById('header-user-name').innerText = p.displayName;
                         if(p.pictureUrl) {
                             document.getElementById('header-profile-pic').src = p.pictureUrl;
@@ -318,7 +316,7 @@
                     window.history.replaceState(null, '', window.location.pathname);
                 }
 
-            } catch (error) { alert("ดึงฐานข้อมูลล้มเหลว"); }
+            } catch (error) { showToast("ดึงฐานข้อมูลล้มเหลว", "error"); }
         }
 
         function viewPatient(id, group) {
@@ -346,7 +344,12 @@
                     groupedByVillage[v].push(p);
                 });
 
-                const sortedVillages = Object.keys(groupedByVillage).sort((a,b) => parseInt(a) - parseInt(b));
+                // 🌟 แก้ไข: เรียงลำดับหมู่ให้ถูกต้อง (1, 2, 3... 10) 🌟
+                const sortedVillages = Object.keys(groupedByVillage).sort((a,b) => {
+                    const numA = parseInt(String(a).replace(/\D/g, '')) || 999;
+                    const numB = parseInt(String(b).replace(/\D/g, '')) || 999;
+                    return numA - numB;
+                });
 
                 let html = '';
                 sortedVillages.forEach(v => {
