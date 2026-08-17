@@ -122,7 +122,6 @@
         let configDiaperPrice = DEFAULT_CONFIGS.DIAPER_PRICE;
         let configUnderpadPrice = DEFAULT_CONFIGS.UNDERPAD_PRICE;
         
-        // ตัวแปรเก็บสิทธิ์การเข้าถึง
         let currentUserRole = "ADMIN";
         let assignedVillages = [];
 
@@ -211,7 +210,6 @@
                     const p = doc.data();
                     const isActive = String(p.status || 'Active').trim().toLowerCase() === 'active';
                     
-                    // ระบบกรองสิทธิ์ รพ.สต. ย่อย
                     let hasPermissionToView = true;
                     if (currentUserRole === 'SUB_ADMIN') {
                         hasPermissionToView = assignedVillages.includes(String(p.village_no).trim());
@@ -238,7 +236,7 @@
                 calculateBudget(); 
                 updateBadges(); 
                 renderList();
-            } catch (error) { alert("ดึงข้อมูลทรัพยากรล้มเหลว"); }
+            } catch (error) { showToast("ดึงข้อมูลทรัพยากรล้มเหลว", "error"); }
         }
 
         function calculateBudget() {
@@ -330,7 +328,7 @@
         async function approveRequest(id, hasDiaper, hasUnderpad) {
             const diaperQty = hasDiaper ? document.getElementById(`diaper_${id}`).value : 0;
             const underpadQty = hasUnderpad ? document.getElementById(`underpad_${id}`).value : 0;
-            if ((hasDiaper && !diaperQty) || (hasUnderpad && !underpadQty)) return alert('กรุณาระบุจำนวนชิ้นให้ครบถ้วน');
+            if ((hasDiaper && !diaperQty) || (hasUnderpad && !underpadQty)) return showToast('กรุณาระบุจำนวนชิ้นให้ครบถ้วน', 'error');
 
             const btn = document.getElementById(`btn_${id}`);
             btn.disabled = true; btn.innerHTML = 'กำลังบันทึก...';
@@ -356,14 +354,14 @@
 
                     await docRef.update({ diaper: JSON.stringify(diaperObj) });
                     
-                    alert('อนุมัติรายการและอัปเดตงบประมาณสำเร็จ!');
+                    showToast('อนุมัติรายการและอัปเดตงบประมาณสำเร็จ!');
                     await loadResourceData(); 
                 } else {
-                    alert('ไม่พบข้อมูลผู้ป่วยในระบบ');
+                    showToast('ไม่พบข้อมูลผู้ป่วยในระบบ', 'error');
                     btn.disabled = false; btn.innerHTML = 'บันทึกอนุมัติ';
                 }
             } catch (error) { 
-                alert('การเชื่อมต่อขัดข้อง กรุณาลองใหม่'); 
+                showToast('การเชื่อมต่อขัดข้อง กรุณาลองใหม่', 'error'); 
                 btn.disabled = false; btn.innerHTML = 'บันทึกอนุมัติ'; 
             }
         }
