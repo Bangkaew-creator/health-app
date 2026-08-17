@@ -78,18 +78,19 @@
             </div>
 
             <div id="content-kpt" class="hidden p-4 lg:p-6">
-                <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-4">
+                <div class="flex flex-col xl:flex-row justify-between items-start xl:items-center gap-4 mb-4">
                     <div>
                         <h3 class="text-base font-bold text-slate-800">จัดเตรียมข้อมูล กปท.</h3>
-                        <p class="text-xs text-slate-500 mt-0.5">ติ๊กเลือกผู้ป่วย บันทึกมติจัดสรร และโหลด Excel</p>
+                        <p class="text-xs text-slate-500 mt-0.5">ติ๊กเลือกผู้ป่วย บันทึกมติจัดสรร หรือนำเข้าประวัติย้อนหลัง</p>
                     </div>
-                    <div class="flex gap-2 w-full md:w-auto">
-                        <button onclick="openCommitteeModal()" class="flex-1 md:flex-none bg-amber-500 hover:bg-amber-600 text-white px-4 py-2 rounded-xl font-bold text-xs flex items-center justify-center gap-1.5 shadow-sm active:scale-95"><span class="material-symbols-outlined text-[16px]">gavel</span> บันทึกมติ (<span id="select-count-1">0</span>)</button>
-                        <button onclick="exportToExcel()" class="flex-1 md:flex-none bg-[#00694a] hover:bg-[#005239] text-white px-4 py-2 rounded-xl font-bold text-xs flex items-center justify-center gap-1.5 shadow-sm active:scale-95"><span class="material-symbols-outlined text-[16px]">download</span> โหลด Excel (<span id="select-count-2">0</span>)</button>
+                    <!-- 🌟 อัปเกรด: เพิ่มปุ่มนำเข้าประวัติ (Excel) 🌟 -->
+                    <div class="flex flex-wrap gap-2 w-full xl:w-auto">
+                        <button onclick="openImportAllocModal()" class="flex-1 xl:flex-none bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-xl font-bold text-xs flex items-center justify-center gap-1.5 shadow-sm active:scale-95"><span class="material-symbols-outlined text-[16px]">upload_file</span> อัปโหลด Excel (ประวัติ)</button>
+                        <button onclick="openCommitteeModal()" class="flex-1 xl:flex-none bg-amber-500 hover:bg-amber-600 text-white px-4 py-2 rounded-xl font-bold text-xs flex items-center justify-center gap-1.5 shadow-sm active:scale-95"><span class="material-symbols-outlined text-[16px]">gavel</span> บันทึกมติ (<span id="select-count-1">0</span>)</button>
+                        <button onclick="exportToExcel()" class="flex-1 xl:flex-none bg-[#00694a] hover:bg-[#005239] text-white px-4 py-2 rounded-xl font-bold text-xs flex items-center justify-center gap-1.5 shadow-sm active:scale-95"><span class="material-symbols-outlined text-[16px]">download</span> โหลด Excel (<span id="select-count-2">0</span>)</button>
                     </div>
                 </div>
 
-                <!-- 🌟 กล่องค้นหาและตัวกรองรอบผ้าอ้อม 🌟 -->
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-3 mb-4">
                     <div class="relative">
                         <span class="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-slate-400">search</span>
@@ -181,6 +182,37 @@
                 </div>
             </div>
         </div>
+
+        <!-- 🌟 Modal นำเข้าข้อมูลประวัติผ้าอ้อม (Import Allocations) 🌟 -->
+        <div id="import-alloc-modal" class="fixed inset-0 bg-[#111c2d]/40 backdrop-blur-sm z-[100] hidden flex items-center justify-center p-4 opacity-0 transition-opacity duration-300">
+            <div class="bg-white rounded-[24px] w-full max-w-md overflow-hidden shadow-2xl transform scale-95 transition-transform duration-300" id="import-alloc-modal-content">
+                <div class="p-6 border-b border-slate-100 flex justify-between items-center bg-slate-50">
+                    <h3 class="text-lg font-bold text-slate-800 flex items-center gap-2">
+                        <span class="material-symbols-outlined text-blue-600">upload_file</span> นำเข้าประวัติจัดสรร (Excel)
+                    </h3>
+                    <button onclick="closeImportAllocModal()" class="text-slate-400 hover:text-slate-600 bg-white p-1 rounded-full"><span class="material-symbols-outlined">close</span></button>
+                </div>
+                <div class="p-6 space-y-4">
+                    <div class="bg-blue-50 p-4 rounded-xl border border-blue-200 text-sm text-blue-800">
+                        <p class="font-bold mb-1 flex items-center gap-1"><span class="material-symbols-outlined text-[16px]">info</span> ข้อแนะนำก่อนนำเข้า</p>
+                        <p class="text-xs leading-relaxed">
+                            - ใช้ <b>เลขประจำตัวประชาชน</b> เป็นตัวอ้างอิงเพื่อดึงข้อมูล<br>
+                            - หัวคอลัมน์ที่รองรับ: เลขประจำตัวประชาชน, ผ้าอ้อมผู้ใหญ่ (ขนาด), รอบจัดสรร<br>
+                            - ข้อมูลจะถูกอัปเดตเข้าไปรวมกับประวัติเดิมของคนไข้
+                        </p>
+                    </div>
+                    <div class="relative border-2 border-dashed border-blue-300 rounded-xl p-6 text-center hover:bg-blue-50 transition-colors cursor-pointer" onclick="document.getElementById('alloc-excel-file').click()">
+                        <span class="material-symbols-outlined text-blue-500 text-[40px] mb-2">note_add</span>
+                        <p class="text-sm font-bold text-blue-700">คลิกเพื่อเลือกไฟล์ Excel (.xlsx)</p>
+                        <p class="text-xs text-slate-400 mt-1" id="alloc-file-name-display">หรือลากไฟล์มาวางที่นี่</p>
+                        <input type="file" id="alloc-excel-file" accept=".xlsx, .xls" class="hidden" onchange="handleAllocFileSelect(this)">
+                    </div>
+                    <button onclick="processAllocImport()" id="btn-process-alloc" class="w-full bg-blue-600 text-white font-bold py-3.5 rounded-xl shadow-md hover:bg-blue-700 disabled:opacity-50 flex items-center justify-center gap-2" disabled>
+                        เริ่มนำเข้าข้อมูล
+                    </button>
+                </div>
+            </div>
+        </div>
     </main>
 
     <script>
@@ -191,6 +223,7 @@
         let allVHVs = [];
         let currentUserRole = "ADMIN";
         let assignedVillages = [];
+        let selectedAllocFile = null;
 
         function toggleSidebar() { document.getElementById('sidebar').classList.toggle('-translate-x-full'); }
 
@@ -272,7 +305,7 @@
                 ]);
                 
                 allPatients = [];
-                let uniqueAllocations = new Set(); // 🌟 เก็บรายชื่อรอบจัดสรร
+                let uniqueAllocations = new Set();
 
                 patientsSnap.forEach(doc => {
                     const data = doc.data();
@@ -280,8 +313,8 @@
                     if (currentUserRole === 'SUB_ADMIN') hasPermissionToView = assignedVillages.includes(String(data.village_no).trim());
                     
                     if (hasPermissionToView) {
+                        data.docId = doc.id; // เก็บไว้ใช้อ้างอิง
                         allPatients.push(data);
-                        // วิเคราะห์รอบผ้าอ้อม
                         const d = cleanJSON(data.diaper);
                         if(d && Array.isArray(d.allocations)) {
                             d.allocations.forEach(alloc => uniqueAllocations.add(alloc));
@@ -289,7 +322,6 @@
                     }
                 });
 
-                // สร้างตัวเลือกรอบผ้าอ้อมใน Dropdown
                 const allocGroup = document.getElementById('kpt-alloc-options');
                 allocGroup.innerHTML = '';
                 Array.from(uniqueAllocations).sort().reverse().forEach(alloc => {
@@ -330,7 +362,6 @@
             allPatients.forEach(p => {
                 if (String(p.status || 'Active').trim().toLowerCase() !== 'active') return;
 
-                // ระบบค้นหา
                 const nameMatch = p.name ? String(p.name).toLowerCase().includes(searchKeyword) : false;
                 const idMatch = p.id_card ? String(p.id_card).toLowerCase().includes(searchKeyword) : false;
                 const houseMatch = p.house_no ? String(p.house_no).toLowerCase().includes(searchKeyword) : false;
@@ -338,7 +369,6 @@
 
                 const d = cleanJSON(p.diaper);
                 
-                // ระบบกรองประวัติรับผ้าอ้อม
                 const hasAllocations = (d && Array.isArray(d.allocations) && d.allocations.length > 0);
                 if (allocFilter === 'never' && hasAllocations) return;
                 if (allocFilter === 'ever' && !hasAllocations) return;
@@ -363,7 +393,7 @@
 
                 let historyBadge = `<span class="text-slate-400 text-[11px] font-medium">รอเข้าคณะกรรมการ</span>`;
                 if (hasAllocations) {
-                    const latestAlloc = d.allocations[d.allocations.length - 1]; // แสดงรอบล่าสุด
+                    const latestAlloc = d.allocations[d.allocations.length - 1];
                     historyBadge = `<span class="bg-amber-100 text-amber-700 font-bold px-2 py-1 rounded text-[10px] border border-amber-200" title="รอบทั้งหมด: ${d.allocations.join(', ')}">ได้รับรอบ ${latestAlloc}</span>`;
                 }
 
@@ -425,7 +455,7 @@
 
             try {
                 const batch = db.batch();
-                const allocStr = `${round}/${fy}`; // สร้างรอบจัดสรร เช่น 1/2567
+                const allocStr = `${round}/${fy}`;
 
                 patientIds.forEach(id => {
                     const ref = db.collection('Patients').doc(String(id));
@@ -437,7 +467,6 @@
                         diaperObj.round = round;
                         diaperObj.alloc_months = months;
                         
-                        // 🌟 ยัดรอบประวัติลงใน Array 🌟
                         if (!diaperObj.allocations) diaperObj.allocations = [];
                         if (!diaperObj.allocations.includes(allocStr)) diaperObj.allocations.push(allocStr);
 
@@ -494,6 +523,148 @@
             worksheet['!cols'] = [{wch:6},{wch:25},{wch:20},{wch:12},{wch:8},{wch:6},{wch:15},{wch:15},{wch:8},{wch:18},{wch:8},{wch:30}];
             XLSX.writeFile(workbook, `รายงานเบิกผ้าอ้อม_กปท_${getTodayDateStr()}.xlsx`);
         }
+
+        // ==========================================
+        // 🌟 ระบบนำเข้าประวัติจัดสรรผ้าอ้อม (Excel Import) 🌟
+        // ==========================================
+        function openImportAllocModal() {
+            const m = document.getElementById('import-alloc-modal');
+            const c = document.getElementById('import-alloc-modal-content');
+            m.classList.remove('hidden'); setTimeout(() => { m.classList.remove('opacity-0'); c.classList.remove('scale-95'); }, 10);
+        }
+
+        function closeImportAllocModal() {
+            const m = document.getElementById('import-alloc-modal');
+            const c = document.getElementById('import-alloc-modal-content');
+            m.classList.add('opacity-0'); c.classList.add('scale-95');
+            setTimeout(() => { m.classList.add('hidden'); }, 300);
+            document.getElementById('alloc-excel-file').value = "";
+            document.getElementById('alloc-file-name-display').innerText = "หรือลากไฟล์มาวางที่นี่";
+            document.getElementById('btn-process-alloc').disabled = true;
+        }
+
+        function handleAllocFileSelect(input) {
+            const file = input.files[0];
+            if (file) {
+                selectedAllocFile = file;
+                document.getElementById('alloc-file-name-display').innerHTML = `<span class="text-blue-600 font-bold">${file.name}</span>`;
+                document.getElementById('btn-process-alloc').disabled = false;
+            }
+        }
+
+        function getNormalizedValue(row, possibleKeys) {
+            const cleanObj = {};
+            for (let k in row) {
+                let cleanK = String(k).replace(/[^a-zA-Z0-9ก-๙]/g, '').toLowerCase();
+                cleanObj[cleanK] = row[k];
+            }
+            for (let pk of possibleKeys) {
+                let cleanPK = String(pk).replace(/[^a-zA-Z0-9ก-๙]/g, '').toLowerCase();
+                if (cleanObj[cleanPK] !== undefined && cleanObj[cleanPK] !== null && cleanObj[cleanPK] !== "") {
+                    return cleanObj[cleanPK];
+                }
+                if (cleanObj[cleanPK] === 0 || cleanObj[cleanPK] === "0") return 0;
+            }
+            for (let cleanK in cleanObj) {
+                for (let pk of possibleKeys) {
+                    let cleanPK = String(pk).replace(/[^a-zA-Z0-9ก-๙]/g, '').toLowerCase();
+                    if (cleanPK.length > 0 && cleanK.includes(cleanPK)) {
+                        let val = cleanObj[cleanK];
+                        if (val !== undefined && val !== null && val !== "") return val;
+                        if (val === 0 || val === "0") return 0;
+                    }
+                }
+            }
+            return '';
+        }
+
+        async function processAllocImport() {
+            if (!selectedAllocFile) return alert('กรุณาเลือกไฟล์ก่อนครับ');
+
+            const btn = document.getElementById('btn-process-alloc');
+            btn.innerHTML = '<div class="loader-small mr-2" style="border-color:white;border-bottom-color:transparent"></div> กำลังประมวลผล...';
+            btn.disabled = true;
+
+            const reader = new FileReader();
+            reader.onload = async function(e) {
+                try {
+                    const data = new Uint8Array(e.target.result);
+                    const workbook = XLSX.read(data, {type: 'array', cellDates: true, cellText: false});
+                    const firstSheetName = workbook.SheetNames[0];
+                    const worksheet = workbook.Sheets[firstSheetName];
+                    const jsonRows = XLSX.utils.sheet_to_json(worksheet, {defval: "", raw: true}); 
+
+                    if (jsonRows.length === 0) throw new Error("ไม่พบข้อมูลในไฟล์ Excel");
+
+                    const batch = db.batch();
+                    let batchCount = 0;
+                    let updateCount = 0;
+
+                    for (let row of jsonRows) {
+                        let rawIdCard = String(getNormalizedValue(row, ['เลขประจำตัวประชาชน', 'เลขบัตรประชาชน', 'idcard', 'cid'])).trim().replace(/[^0-9]/g, ''); 
+                        if (rawIdCard.length === 12) rawIdCard = '0' + rawIdCard; 
+
+                        let size = String(getNormalizedValue(row, ['ผ้าอ้อมผู้ใหญ่', 'ขนาด', 'size'])).trim().toUpperCase();
+                        let alloc = String(getNormalizedValue(row, ['รอบจัดสรร', 'รอบ', 'รอบประวัติ'])).trim();
+
+                        if (rawIdCard.length === 13) {
+                            // หาคนไข้ในระบบ
+                            const p = allPatients.find(x => x.id_card === rawIdCard || x.id === rawIdCard);
+                            if (p) {
+                                let d = cleanJSON(p.diaper) || {};
+                                let isModified = false;
+
+                                if (size && size !== '-') {
+                                    if(size.includes('รองซับ') || size === 'แผ่นรองซับ') {
+                                        d.req_underpad = true;
+                                    } else {
+                                        d.req_diaper = true;
+                                        d.size = size;
+                                    }
+                                    isModified = true;
+                                }
+
+                                if (alloc && alloc !== '-') {
+                                    if (!d.allocations) d.allocations = [];
+                                    if (!d.allocations.includes(alloc)) d.allocations.push(alloc);
+                                    d.committee_status = 'จัดสรรแล้ว';
+                                    isModified = true;
+                                }
+
+                                if (isModified) {
+                                    const ref = db.collection('Patients').doc(String(p.docId || p.id));
+                                    batch.update(ref, { diaper: JSON.stringify(d) });
+                                    batchCount++;
+                                    updateCount++;
+
+                                    // ป้องกัน Firebase limit
+                                    if (batchCount === 450) {
+                                        await batch.commit();
+                                        batchCount = 0;
+                                    }
+                                }
+                            }
+                        }
+                    }
+
+                    if (batchCount > 0) { await batch.commit(); }
+
+                    alert(`นำเข้าประวัติการจัดสรรสำเร็จ!\nอัปเดตข้อมูลผู้ป่วยไปทั้งสิ้น ${updateCount} รายการ`);
+                    closeImportAllocModal();
+                    await loadReportData(); 
+
+                } catch (err) {
+                    console.error(err);
+                    alert("เกิดข้อผิดพลาด: " + err.message);
+                } finally {
+                    btn.innerHTML = 'เริ่มนำเข้าข้อมูล';
+                    btn.disabled = false;
+                }
+            };
+            reader.readAsArrayBuffer(selectedAllocFile);
+        }
+
+        // ==========================================
 
         function exportRegistryExcel() {
             const exportData = [];
