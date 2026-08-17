@@ -75,7 +75,6 @@
                 </div>
             </div>
             
-            <!-- 🌟 เพิ่มรูปโปรไฟล์กลับมาตรงนี้ด้วย 🌟 -->
             <div class="flex items-center gap-3">
                 <div class="w-10 h-10 rounded-full bg-slate-200 border-2 border-white shadow-sm overflow-hidden flex items-center justify-center">
                     <img id="header-profile-pic" src="" class="w-full h-full object-cover hidden">
@@ -94,7 +93,6 @@
                 <div class="bg-white rounded-[24px] p-6 shadow-sm border border-slate-200 relative overflow-hidden">
                     <div class="absolute top-0 right-0 w-32 h-32 bg-blue-50 rounded-bl-full -z-10"></div>
                     
-                    <!-- 🌟 อัปเกรดให้มีรูปโปรไฟล์อยู่ข้างๆ หัวข้อ 🌟 -->
                     <div class="flex items-center gap-4 mb-6 pb-4 border-b border-slate-100">
                         <div class="w-16 h-16 rounded-full bg-slate-200 border-4 border-white shadow-md overflow-hidden flex items-center justify-center flex-shrink-0">
                             <img id="main-profile-pic" src="" class="w-full h-full object-cover hidden">
@@ -225,7 +223,6 @@
                 } else if (liff.isLoggedIn()) { 
                     liff.getProfile().then(p => {
                         currentUserUid = p.userId;
-                        // 🌟 อัปเดตรูปจาก LINE ทันที 🌟
                         if(p.pictureUrl) {
                             document.getElementById('header-profile-pic').src = p.pictureUrl;
                             document.getElementById('header-profile-pic').classList.remove('hidden');
@@ -312,20 +309,16 @@
         async function saveProfile() {
             const newName = document.getElementById('profile-name').value.trim();
             const newPhone = document.getElementById('profile-phone').value.trim();
-            
-            if(!newName) return alert('กรุณาระบุชื่อ-นามสกุล');
+            if(!newName) { showToast('กรุณาระบุชื่อ-นามสกุล', 'error'); return; }
 
             const btn = document.getElementById('btn-save-profile');
-            btn.innerHTML = '<div class="loader-small" style="width:16px;height:16px;border-color:white;border-bottom-color:transparent"></div> กำลังบันทึก...';
+            btn.innerHTML = '<div class="loader-small" style="border-bottom-color:transparent"></div> กำลังบันทึก...';
             btn.disabled = true;
 
             try {
-                await db.collection('VHVs').doc(currentUserUid).update({
-                    name: newName,
-                    phone: newPhone
-                });
-                alert('อัปเดตข้อมูลส่วนตัวเรียบร้อยแล้ว!');
-            } catch(e) { alert('เกิดข้อผิดพลาดในการบันทึกข้อมูล'); console.error(e); }
+                await db.collection('VHVs').doc(currentUserUid).update({ name: newName, phone: newPhone });
+                showToast('อัปเดตข้อมูลส่วนตัวเรียบร้อยแล้ว!'); // 🌟 โชว์ Toast แทน Alert
+            } catch(e) { showToast('เกิดข้อผิดพลาดในการบันทึกข้อมูล', 'error'); }
 
             btn.innerHTML = 'บันทึกโปรไฟล์';
             btn.disabled = false;
@@ -337,10 +330,10 @@
             const dpPrice = document.getElementById('sys-diaper-price').value.trim();
             const upPrice = document.getElementById('sys-underpad-price').value.trim();
             
-            if(!newHosp || !newCount || !dpPrice || !upPrice) return alert('กรุณากรอกข้อมูลให้ครบถ้วน');
+            if(!newHosp || !newCount || !dpPrice || !upPrice) { showToast('กรุณากรอกข้อมูลให้ครบถ้วน', 'error'); return; }
 
             const btn = document.getElementById('btn-save-sys');
-            btn.innerHTML = '<div class="loader-small" style="width:16px;height:16px;border-color:white;border-bottom-color:transparent"></div> กำลังบันทึก...';
+            btn.innerHTML = '<div class="loader-small" style="border-bottom-color:transparent"></div> กำลังบันทึก...';
             btn.disabled = true;
 
             try {
@@ -349,11 +342,11 @@
                 await db.collection('SystemConfig').doc('DIAPER_PRICE').set({ value: parseFloat(dpPrice) });
                 await db.collection('SystemConfig').doc('UNDERPAD_PRICE').set({ value: parseFloat(upPrice) });
                 
-                alert('บันทึกการตั้งค่าระบบเรียบร้อยแล้ว!\n(ระบบจะโหลดหน้าต่างใหม่เพื่ออัปเดตข้อมูล)');
-                window.location.reload();
+                // 🌟 โชว์ Toast แล้วรีเฟรชหน้าเว็บอัตโนมัติ
+                showToast('บันทึกการตั้งค่าระบบเรียบร้อยแล้ว!', 'success', 'reload');
             } catch(e) {
-                alert('เกิดข้อผิดพลาดในการบันทึกข้อมูล');
-                btn.innerHTML = 'บันทึกตั้งค่าระบบ';
+                showToast('เกิดข้อผิดพลาดในการบันทึกข้อมูล', 'error');
+                btn.innerHTML = 'บันทึกการตั้งค่าระบบ';
                 btn.disabled = false;
             }
         }
@@ -403,14 +396,12 @@
             const subVillages = document.getElementById('sub-villages').value.trim();
             const subToken = document.getElementById('sub-token').value.trim();
 
-            if (!subName || !subVillages || !subToken) {
-                return alert('กรุณากรอกข้อมูล ชื่อหน่วยงาน, หมู่ที่รับผิดชอบ และรหัสผ่านลับให้ครบถ้วน');
-            }
+            if (!subName || !subVillages || !subToken) { showToast('กรุณากรอกข้อมูลให้ครบถ้วน', 'error'); return; }
 
             const villageArray = subVillages.split(',').map(v => v.trim()).filter(v => v !== '');
 
             const btn = document.getElementById('btn-create-sub');
-            btn.innerHTML = '<div class="loader-small" style="width:16px;height:16px;border-color:white;border-bottom-color:transparent"></div> กำลังบันทึก...';
+            btn.innerHTML = '<div class="loader-small" style="border-bottom-color:transparent"></div> กำลังบันทึก...';
             btn.disabled = true;
 
             try {
@@ -428,7 +419,7 @@
                 }
 
                 if(centers.find(c => String(c.secret_code).trim() === subToken)) {
-                    alert('รหัสผ่านลับนี้ถูกใช้งานแล้ว กรุณาตั้งรหัสอื่นครับ');
+                    showToast('รหัสผ่านลับนี้ถูกใช้งานแล้ว กรุณาตั้งรหัสอื่น', 'error');
                     btn.innerHTML = 'บันทึกหน่วยงานย่อย';
                     btn.disabled = false;
                     return;
@@ -442,14 +433,14 @@
 
                 await docRef.set({ value: JSON.stringify(centers) }, {merge: true});
                 
-                alert('สร้างรหัสสำหรับหน่วยงานย่อยสำเร็จ!');
+                showToast('สร้างรหัสสำหรับหน่วยงานย่อยสำเร็จ!'); // 🌟 โชว์ Toast
                 document.getElementById('sub-name').value = '';
                 document.getElementById('sub-villages').value = '';
                 document.getElementById('sub-token').value = '';
                 
                 loadSubAgencies(); 
             } catch(e) { 
-                alert('เกิดข้อผิดพลาด กรุณาลองใหม่'); 
+                showToast('เกิดข้อผิดพลาด กรุณาลองใหม่', 'error'); 
             }
 
             btn.innerHTML = 'บันทึกหน่วยงานย่อย';
@@ -457,6 +448,7 @@
         }
 
         async function deleteSubAgency(code) {
+            // ยังคงใช้ Confirm ดักไว้ก่อนลบข้อมูลสำคัญ
             if (!confirm(`คุณต้องการลบรหัสผ่าน "${code}" ใช่หรือไม่?\n(จะทำให้ไม่สามารถใช้รหัสนี้สมัครใหม่ได้อีก แต่ไม่มีผลกับบัญชีที่สมัครไปแล้ว)`)) return;
             
             try {
@@ -475,9 +467,10 @@
                     centers = centers.filter(c => String(c.secret_code) !== String(code));
                     
                     await docRef.set({ value: JSON.stringify(centers) }, {merge: true});
+                    showToast('ลบหน่วยงานย่อยเรียบร้อยแล้ว'); // 🌟 โชว์ Toast หลังลบสำเร็จ
                     loadSubAgencies();
                 }
-            } catch(e) { alert('ลบข้อมูลไม่สำเร็จ'); }
+            } catch(e) { showToast('ลบข้อมูลไม่สำเร็จ', 'error'); }
         }
     </script>
 </body>
