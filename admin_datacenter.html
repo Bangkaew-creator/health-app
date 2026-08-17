@@ -94,7 +94,6 @@
                 </div>
             </div>
             
-            <!-- 🌟 อัปเกรด: เพิ่มตัวกรองประวัติรับผ้าอ้อม เป็นแบบ 4 คอลัมน์ 🌟 -->
             <div class="grid grid-cols-1 md:grid-cols-4 gap-2">
                 <select id="village-filter" onchange="filterPatients()" class="w-full px-4 py-2.5 bg-white border border-slate-200 rounded-xl text-sm font-bold text-slate-600 focus:ring-2 focus:ring-emerald-500 shadow-sm outline-none">
                     <option value="">ดูทุกหมู่ (ทั้งหมด)</option>
@@ -133,7 +132,6 @@
             </div>
         </div>
 
-        <!-- Modal นำเข้าข้อมูล (Import) -->
         <div id="import-modal" class="fixed inset-0 bg-[#111c2d]/40 backdrop-blur-sm z-[100] hidden flex items-center justify-center p-4 opacity-0 transition-opacity duration-300">
             <div class="bg-white rounded-[24px] w-full max-w-md overflow-hidden shadow-2xl transform scale-95 transition-transform duration-300" id="import-modal-content">
                 <div class="p-6 border-b border-slate-100 flex justify-between items-center bg-slate-50">
@@ -230,7 +228,7 @@
         }
 
         async function addNewPatient() {
-            let idCard = prompt("กรุณาระบุเลขบัตรประชาชน 13 หลัก\n(หากไม่มี หรือยังไม่ทราบ ให้เว้นว่างไว้เพื่อสร้างรหัสชั่วคราวก่อนได้ครับ):");
+            let idCard = prompt("กรุณาระบุเลขบัตรประชาชน 13 หลัก\n(หากไม่มี ให้เว้นว่างไว้เพื่อสร้างรหัสชั่วคราวก่อนได้ครับ):");
             if (idCard === null) return; 
             
             idCard = idCard.replace(/[^0-9]/g, ''); 
@@ -247,8 +245,8 @@
                 const docSnap = await docRef.get();
                 
                 if (docSnap.exists) {
-                    alert(`เลขบัตรประชาชน ${idCard} มีอยู่ในระบบแล้วครับ!`);
-                    window.location.href = `patient_profile.html?id=${docId}`;
+                    // 🌟 โชว์ Toast แบบรอเปลี่ยนหน้าอัตโนมัติ 🌟
+                    showToast(`เลขบัตร ${idCard} มีอยู่ในระบบแล้ว! กำลังพาวาร์ป...`, 'info', `patient_profile.html?id=${docId}`);
                     return;
                 }
 
@@ -263,7 +261,7 @@
                 });
                 
                 window.location.href = `patient_edit.html?id=${docId}`;
-            } catch (error) { alert('ไม่สามารถสร้างข้อมูลได้: ' + error.message); }
+            } catch (error) { showToast('ไม่สามารถสร้างข้อมูลได้', 'error'); }
         }
 
         function cleanJSON(rawStr) {
@@ -278,7 +276,7 @@
             try {
                 const snapshot = await db.collection('Patients').get();
                 const tempPatients = [];
-                let uniqueAllocations = new Set(); // 🌟 เก็บประวัติรอบเพื่อทำตัวกรอง
+                let uniqueAllocations = new Set(); 
 
                 snapshot.forEach(doc => {
                     const data = doc.data();
@@ -288,7 +286,6 @@
                         data.docId = doc.id; 
                         tempPatients.push(data);
                         
-                        // วิเคราะห์รอบจัดสรร
                         const d = cleanJSON(data.diaper);
                         if(d && Array.isArray(d.allocations)) {
                             d.allocations.forEach(alloc => uniqueAllocations.add(alloc));
@@ -298,7 +295,6 @@
 
                 allPatients = tempPatients.sort((a, b) => parseInt(a.village_no) - parseInt(b.village_no));
                 
-                // 🌟 สร้าง Dropdown รอบจัดสรร 🌟
                 const allocGroup = document.getElementById('alloc-options');
                 allocGroup.innerHTML = '';
                 Array.from(uniqueAllocations).sort().reverse().forEach(alloc => {
@@ -333,7 +329,6 @@
                 const groupDisplay = (p.group && p.group !== '-' && p.group !== 'ยังไม่ประเมิน') ? p.group : 'ยังไม่ประเมิน';
                 if (groupFilter !== '' && groupDisplay !== groupFilter) return;
 
-                // 🌟 กรองประวัติจัดสรร 🌟
                 const d = cleanJSON(p.diaper);
                 const hasAllocations = (d && Array.isArray(d.allocations) && d.allocations.length > 0);
                 if (allocFilter === 'never' && hasAllocations) return;
@@ -360,7 +355,6 @@
                     avatarHtml = `<img src="${p.profile_pic}" class="w-14 h-14 rounded-full object-cover flex-shrink-0 border-2 border-white shadow-sm">`;
                 }
 
-                // สัญลักษณ์การได้รับผ้าอ้อม
                 let allocBadge = '';
                 if(hasAllocations) {
                     const latestAlloc = d.allocations[d.allocations.length - 1];
@@ -401,6 +395,7 @@
         }
 
         async function updatePatientStatus(patientId, newStatus) {
+            // Confirm จำเป็นสำหรับการเตือนสติแอดมินก่อนลบข้อมูลสำคัญ
             const actionText = newStatus === 'Inactive' ? 'ยุติการดูแล (Soft Delete)' : 'นำกลับมาดูแล (Active)';
             if (!confirm(`คุณต้องการ ${actionText} ผู้ป่วยรหัส ${patientId} ใช่หรือไม่?`)) return;
 
@@ -408,9 +403,10 @@
                 await db.collection('Patients').doc(String(patientId)).update({ status: newStatus });
                 const index = allPatients.findIndex(p => p.id === patientId);
                 if(index > -1) allPatients[index].status = newStatus;
-                alert('อัปเดตสถานะสำเร็จ!');
+                
+                showToast('อัปเดตสถานะสำเร็จ!'); // 🌟 โชว์ Toast
                 filterPatients(); 
-            } catch (error) { alert('เกิดข้อผิดพลาดในการเชื่อมต่อฐานข้อมูล'); }
+            } catch (error) { showToast('เกิดข้อผิดพลาดในการเชื่อมต่อฐานข้อมูล', 'error'); }
         }
 
         function openImportModal() {
@@ -443,17 +439,11 @@
                 let cleanK = String(k).replace(/[^a-zA-Z0-9ก-๙]/g, '').toLowerCase();
                 cleanObj[cleanK] = row[k];
             }
-
             for (let pk of possibleKeys) {
                 let cleanPK = String(pk).replace(/[^a-zA-Z0-9ก-๙]/g, '').toLowerCase();
-                if (cleanObj[cleanPK] !== undefined && cleanObj[cleanPK] !== null && cleanObj[cleanPK] !== "") {
-                    return cleanObj[cleanPK];
-                }
-                if (cleanObj[cleanPK] === 0 || cleanObj[cleanPK] === "0") {
-                    return 0;
-                }
+                if (cleanObj[cleanPK] !== undefined && cleanObj[cleanPK] !== null && cleanObj[cleanPK] !== "") return cleanObj[cleanPK];
+                if (cleanObj[cleanPK] === 0 || cleanObj[cleanPK] === "0") return 0;
             }
-
             for (let cleanK in cleanObj) {
                 for (let pk of possibleKeys) {
                     let cleanPK = String(pk).replace(/[^a-zA-Z0-9ก-๙]/g, '').toLowerCase();
@@ -464,12 +454,11 @@
                     }
                 }
             }
-
             return '';
         }
 
         async function processExcelImport() {
-            if (!selectedExcelFile) return alert('กรุณาเลือกไฟล์ก่อนครับ');
+            if (!selectedExcelFile) return showToast('กรุณาเลือกไฟล์ก่อนครับ', 'error');
 
             const btn = document.getElementById('btn-process-import');
             btn.innerHTML = '<div class="loader-small mr-2" style="border-color:white;border-bottom-color:transparent"></div> กำลังประมวลผล...';
@@ -490,12 +479,9 @@
                     let batchCount = 0;
 
                     for (let row of jsonRows) {
+                        let rawIdCard = String(getNormalizedValue(row, ['เลขบัตรประชาชน', 'เลขประจำตัวประชาชน', 'idcard', 'cid', 'บัตรประชาชน'])).trim().replace(/[^0-9]/g, ''); 
+                        if (rawIdCard.length === 12) rawIdCard = '0' + rawIdCard; 
                         
-                        let rawIdCard = String(getNormalizedValue(row, ['เลขบัตรประชาชน', 'เลขประจำตัวประชาชน', 'idcard', 'cid', 'บัตรประชาชน'])).trim();
-                        rawIdCard = rawIdCard.replace(/[^0-9]/g, ''); 
-
-                        if (rawIdCard.length === 12) { rawIdCard = '0' + rawIdCard; }
-
                         let docId = rawIdCard;
                         if (docId.length !== 13) {
                             const now = new Date();
@@ -544,13 +530,13 @@
 
                     if (batchCount > 0) { await batch.commit(); }
 
-                    alert(`นำเข้าข้อมูลเรียบร้อยแล้วจำนวน ${jsonRows.length} รายการ\n(ระบบได้จัดกลุ่มผู้ป่วยตามคะแนน ADL ให้เรียบร้อยแล้วครับ)`);
+                    // 🌟 โชว์ Toast แจ้งเตือนเมื่อเสร็จสิ้น
+                    showToast(`นำเข้าข้อมูล ${jsonRows.length} รายการสำเร็จ!`);
                     closeImportModal();
                     loadPatientData(); 
 
                 } catch (err) {
-                    console.error(err);
-                    alert("เกิดข้อผิดพลาด: " + err.message);
+                    showToast("เกิดข้อผิดพลาด: " + err.message, 'error');
                 } finally {
                     btn.innerHTML = 'เริ่มนำเข้าข้อมูล';
                     btn.disabled = false;
