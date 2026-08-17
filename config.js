@@ -22,9 +22,9 @@ const firebaseConfig = {
 // ค่าเริ่มต้นของระบบ (Default Fallback)
 // ==========================================
 const DEFAULT_CONFIGS = {
-    HOSPITAL_NAME: "รพ.สต.บ้านปางงู",           
+    HOSPITAL_NAME: "เทศบาลเมืองบางแก้ว",           
     SYSTEM_NAME: "อสม.สามารถ (Orsomo Smart)",     
-    VILLAGE_COUNT: 11,                            
+    VILLAGE_COUNT: 16,                            
     DIAPER_PRICE: 9.50,                           
     UNDERPAD_PRICE: 6.00                          
 };
