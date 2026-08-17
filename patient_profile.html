@@ -68,7 +68,6 @@
                     </div>
                 </div>
                 
-                <!-- 🌟 เพิ่มส่วนของ หมายเหตุ (Remark) ตรงนี้ 🌟 -->
                 <div class="grid grid-cols-2 gap-3 mt-3 pt-3 border-t border-[#bdcac1]/30">
                     <div>
                         <p class="text-[10px] text-[#526069] font-bold">ผลคัดกรองซึมเศร้า</p>
@@ -181,10 +180,17 @@
                 <div><canvas id="depChart" height="120"></canvas></div>
             </div>
 
+            <!-- 🌟 อัปเกรด: เพิ่มปุ่ม "ประวัติย้อนหลัง" ให้หมวดสัญญาณชีพ & น้ำตาล 🌟 -->
             <div class="bg-white rounded-[20px] p-5 shadow-sm border border-[#bdcac1]/30">
-                <h3 class="text-sm font-bold flex items-center gap-2 mb-4 text-[#0284c7]">
-                    <span class="material-symbols-outlined text-[18px]">trending_up</span> กราฟสัญญาณชีพ & น้ำตาล
-                </h3>
+                <div class="flex justify-between items-center mb-4 border-b border-gray-50 pb-3">
+                    <h3 class="text-sm font-bold flex items-center gap-2 text-[#0284c7]">
+                        <span class="material-symbols-outlined text-[18px]">trending_up</span> กราฟสัญญาณชีพ & น้ำตาล
+                    </h3>
+                    <button onclick="openVitalsHistoryModal()" class="text-[10px] bg-blue-50 text-blue-600 hover:bg-blue-100 px-3 py-1.5 rounded-full font-bold flex items-center gap-1 transition-colors">
+                        <span class="material-symbols-outlined text-[14px]">history</span> ประวัติย้อนหลัง
+                    </button>
+                </div>
+                
                 <div class="mb-4"><canvas id="bpChart" height="150"></canvas></div>
                 <div><canvas id="sugarChart" height="120"></canvas></div>
                 
@@ -235,7 +241,7 @@
         </div>
     </main>
 
-    <!-- 🌟 Modal หมายเหตุ 🌟 -->
+    <!-- Modal หมายเหตุ -->
     <div id="remark-modal" class="fixed inset-0 bg-black/50 z-[100] hidden flex items-center justify-center opacity-0 transition-opacity duration-300">
         <div id="remark-modal-content" class="bg-white rounded-[24px] w-[90%] max-w-sm p-6 transform scale-95 transition-transform duration-300 shadow-2xl">
             <h3 class="text-lg font-bold text-amber-600 mb-2 flex items-center gap-2">
@@ -307,7 +313,7 @@
         </div>
     </div>
 
-    <!-- Modal ประวัติประเมินรายข้อ -->
+    <!-- Modal ประวัติประเมินรายข้อ (ADL/DEP) -->
     <div id="history-modal" class="fixed inset-0 bg-black/50 z-[100] hidden flex-col items-center justify-center opacity-0 transition-opacity duration-300 p-4">
         <div id="history-modal-content" class="bg-white rounded-[24px] w-full max-w-lg max-h-[85vh] flex flex-col transform scale-95 transition-transform duration-300 overflow-hidden shadow-2xl">
             <div class="p-5 border-b border-gray-100 flex justify-between items-center bg-gray-50">
@@ -317,6 +323,38 @@
                 <button onclick="closeHistoryModal()" class="text-gray-400 hover:text-gray-600 bg-gray-200 rounded-full w-8 h-8 flex justify-center items-center"><span class="material-symbols-outlined text-[18px]">close</span></button>
             </div>
             <div id="history-list" class="p-5 overflow-y-auto flex-1 space-y-4 bg-slate-50">
+            </div>
+        </div>
+    </div>
+
+    <!-- 🌟 Modal ประวัติสัญญาณชีพ (Vitals) 🌟 -->
+    <div id="vitals-history-modal" class="fixed inset-0 bg-black/50 z-[100] hidden flex-col items-center justify-center opacity-0 transition-opacity duration-300 p-4">
+        <div id="vitals-history-modal-content" class="bg-white rounded-[24px] w-full max-w-2xl max-h-[85vh] flex flex-col transform scale-95 transition-transform duration-300 overflow-hidden shadow-2xl">
+            <div class="p-5 border-b border-gray-100 flex justify-between items-center bg-gray-50">
+                <h3 class="text-base font-bold text-[#0284c7] flex items-center gap-2">
+                    <span class="material-symbols-outlined text-[20px]">monitor_heart</span> ประวัติการตรวจความดัน และน้ำตาลในเลือด
+                </h3>
+                <button onclick="closeVitalsHistoryModal()" class="text-gray-400 hover:text-gray-600 bg-gray-200 rounded-full w-8 h-8 flex justify-center items-center"><span class="material-symbols-outlined text-[18px]">close</span></button>
+            </div>
+            <div class="p-4 overflow-y-auto flex-1 bg-slate-50">
+                <div class="bg-white rounded-xl border border-gray-200 shadow-sm overflow-x-auto">
+                    <table class="w-full text-left border-collapse min-w-[500px]">
+                        <thead>
+                            <tr class="bg-blue-50 text-blue-800 text-[11px] uppercase tracking-wider border-b border-blue-100">
+                                <th class="p-3 text-center border-r border-blue-100 whitespace-nowrap">วันที่ตรวจ</th>
+                                <th class="p-3 text-center">SYS<br><span class="text-[9px] font-normal">(ตัวบน)</span></th>
+                                <th class="p-3 text-center border-r border-blue-100">DIA<br><span class="text-[9px] font-normal">(ตัวล่าง)</span></th>
+                                <th class="p-3 text-center border-r border-blue-100">HR<br><span class="text-[9px] font-normal">(ชีพจร)</span></th>
+                                <th class="p-3 text-center">น้ำตาล<br><span class="text-[9px] font-normal">(mg/dL)</span></th>
+                                <th class="p-3 text-center">อดอาหาร<br><span class="text-[9px] font-normal">(ก่อนอาหาร)</span></th>
+                                <th class="p-3 text-center">หลังอาหาร</th>
+                            </tr>
+                        </thead>
+                        <tbody id="vitals-history-list" class="text-sm divide-y divide-gray-100">
+                            <!-- Data will be injected here -->
+                        </tbody>
+                    </table>
+                </div>
             </div>
         </div>
     </div>
@@ -340,6 +378,8 @@
 
         let currentPatientData = null;
         let globalAssessments = []; 
+        let globalVitals = []; // 🌟 เพิ่มตัวแปรเก็บประวัติ Vitals
+        
         let latestADLDate = 0;
         let latestDEPDate = 0;
         let latestVitalDate = 0;
@@ -461,7 +501,6 @@
             if(currentMedImageToExpand) openModal(currentMedImageToExpand);
         }
 
-        // 🌟 ฟังก์ชันจัดการ Modal หมายเหตุ 🌟
         function openRemarkModal() {
             const modal = document.getElementById('remark-modal');
             const content = document.getElementById('remark-modal-content');
@@ -916,8 +955,53 @@
             setTimeout(() => modal.classList.add('hidden'), 300);
         }
 
-        function toggleHistoryDetails(id) {
-            document.getElementById(id).classList.toggle('hidden');
+        // 🌟 ฟังก์ชันจัดการตารางประวัติ Vitals 🌟
+        function openVitalsHistoryModal() {
+            const modal = document.getElementById('vitals-history-modal');
+            const content = document.getElementById('vitals-history-modal-content');
+            const list = document.getElementById('vitals-history-list');
+            list.innerHTML = '';
+            
+            if(globalVitals.length === 0) {
+                list.innerHTML = '<tr><td colspan="7" class="text-center text-gray-400 py-8 text-sm">ไม่มีประวัติการบันทึก</td></tr>';
+            } else {
+                globalVitals.forEach(v => {
+                    let checkBefore = v.meal === 'ก่อนอาหาร' ? '☑' : '☐';
+                    let checkAfter = v.meal === 'หลังอาหาร' ? '☑' : '☐';
+                    
+                    let sys = v.sys || '-';
+                    let dia = v.dia || '-';
+                    let hr = v.hr || '-';
+                    let sugar = v.sugar || '-';
+                    
+                    let sysColor = (Number(sys) >= 140) ? 'text-red-600 font-bold' : 'text-gray-700';
+                    let diaColor = (Number(dia) >= 90) ? 'text-red-600 font-bold' : 'text-gray-700';
+                    let sugarColor = (Number(sugar) >= 126) ? 'text-orange-600 font-bold' : 'text-gray-700';
+
+                    list.insertAdjacentHTML('beforeend', `
+                        <tr class="hover:bg-blue-50/30 transition-colors">
+                            <td class="p-3 text-center text-xs font-medium text-gray-600 border-r border-gray-100">${v.date}</td>
+                            <td class="p-3 text-center text-sm ${sysColor}">${sys}</td>
+                            <td class="p-3 text-center text-sm ${diaColor} border-r border-gray-100">${dia}</td>
+                            <td class="p-3 text-center text-sm text-gray-700 border-r border-gray-100">${hr}</td>
+                            <td class="p-3 text-center text-sm ${sugarColor}">${sugar}</td>
+                            <td class="p-3 text-center text-lg text-[#0284c7] leading-none">${checkBefore}</td>
+                            <td class="p-3 text-center text-lg text-[#0284c7] leading-none">${checkAfter}</td>
+                        </tr>
+                    `);
+                });
+            }
+
+            modal.classList.remove('hidden');
+            setTimeout(() => { modal.classList.remove('opacity-0'); content.classList.remove('scale-95'); }, 10);
+        }
+
+        function closeVitalsHistoryModal() {
+            const modal = document.getElementById('vitals-history-modal');
+            const content = document.getElementById('vitals-history-modal-content');
+            modal.classList.add('opacity-0');
+            content.classList.add('scale-95');
+            setTimeout(() => modal.classList.add('hidden'), 300);
         }
 
         function cleanAndParseJSON(rawStr) {
@@ -973,7 +1057,6 @@
 
                 document.getElementById('profile-disease').innerText = data.disease || '-';
                 
-                // 🌟 โหลดหมายเหตุสำคัญ 🌟
                 document.getElementById('profile-remark').innerText = data.remark || '-';
                 
                 const medContainer = document.getElementById('profile-medication');
@@ -1122,6 +1205,9 @@
                 assessments.sort((a,b) => parseThaiDate(a.date) - parseThaiDate(b.date));
                 
                 globalAssessments = [...assessments].sort((a,b) => parseThaiDate(b.date) - parseThaiDate(a.date));
+                
+                // 🌟 เก็บประวัติ Vitals สำหรับใส่ตาราง 🌟
+                globalVitals = [...vitals].sort((a,b) => parseThaiDate(b.date) - parseThaiDate(a.date));
 
                 const formatLabel = (dateStr) => {
                     if (!dateStr) return '';
