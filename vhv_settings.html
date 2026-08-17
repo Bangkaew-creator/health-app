@@ -125,11 +125,11 @@
 
         async function fetchVHVData(uid) {
             try {
-                let vCount = 15;
-                try {
-                    const sysSnap = await db.collection('SystemConfig').doc('VILLAGE_COUNT').get();
-                    if(sysSnap.exists) vCount = parseInt(sysSnap.data().value) || 15;
-                } catch(e) {}
+                let vCount = DEFAULT_CONFIGS.VILLAGE_COUNT;
+try {
+    const sysSnap = await db.collection('SystemConfig').doc('VILLAGE_COUNT').get();
+    if(sysSnap.exists) vCount = parseInt(sysSnap.data().value) || DEFAULT_CONFIGS.VILLAGE_COUNT;
+} catch(e) {}
 
                 // ดึงข้อมูลส่วนตัวของ อสม. จาก Firebase ล้วนๆ
                 const docSnap = await db.collection('VHVs').doc(String(uid)).get();
