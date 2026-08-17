@@ -181,14 +181,12 @@
                 let vCount = DEFAULT_CONFIGS.VILLAGE_COUNT;
 
                 try {
-    const sysSnap = await db.collection('SystemConfig').doc('HOSPITAL_NAME').get();
-    if(sysSnap.exists) hospital = sysSnap.data().value || hospital;
-    
-    // ❌ ของเดิม: const sysCountSnap = await collection('SystemConfig').doc('VILLAGE_COUNT').get();
-    // ✅ ให้เปลี่ยนเป็น:
-    const sysCountSnap = await db.collection('SystemConfig').doc('VILLAGE_COUNT').get();
-    if(sysCountSnap.exists) vCount = parseInt(sysCountSnap.data().value) || vCount;
-} catch(e) {}
+                    const sysSnap = await db.collection('SystemConfig').doc('HOSPITAL_NAME').get();
+                    if(sysSnap.exists) hospital = sysSnap.data().value || hospital;
+                    // 🌟 ใช้โค้ดดึงข้อมูลให้ถูกต้อง 🌟
+                    const sysCountSnap = await db.collection('SystemConfig').doc('VILLAGE_COUNT').get();
+                    if(sysCountSnap.exists) vCount = parseInt(sysCountSnap.data().value) || vCount;
+                } catch(e) {}
 
                 if (userDoc.exists) {
                     const userData = userDoc.data();
@@ -271,7 +269,6 @@
                 vSnap.forEach(doc => {
                     const v = doc.data();
                     const vRole = String(v.role || '').toUpperCase();
-                    // กรอง: รพ.สต. ย่อย ดูแลเฉพาะ อสม. ในหมู่ตัวเอง
                     let hasPermissionToView = true;
                     if (currentUserRole === 'SUB_ADMIN') {
                         hasPermissionToView = assignedVillages.includes(String(v.village_no).trim());
@@ -291,7 +288,7 @@
                 document.getElementById('loading-state').classList.add('hidden');
                 document.getElementById('filter-wrapper').classList.remove('hidden');
                 switchTab(currentTab);
-            } catch (e) { alert("ดึงฐานข้อมูลล้มเหลว"); }
+            } catch (e) { showToast("ดึงฐานข้อมูลล้มเหลว", "error"); }
         }
 
         function switchTab(tab) {
@@ -344,9 +341,9 @@
                     role: actionType === 'Active' ? 'VHV' : 'None'
                 });
 
-                alert('ดำเนินการเรียบร้อยแล้ว');
+                showToast('ดำเนินการเรียบร้อยแล้ว');
                 loadDataChannels(); 
-            } catch(e) { alert("เชื่อมต่อล้มเหลว"); }
+            } catch(e) { showToast("เชื่อมต่อล้มเหลว", "error"); }
         }
 
         function distributePatients() {
@@ -484,8 +481,8 @@
             const vhvId = document.getElementById(`select_${patientId}`).value;
             const checkedTasks = Array.from(document.querySelectorAll(`.task-check-${patientId}:checked`)).map(cb => cb.value);
 
-            if(!vhvId) return alert('กรุณาเลือก อสม. ผู้รับผิดชอบก่อนบันทึกครับ');
-            if(checkedTasks.length === 0) return alert('กรุณาเลือกงานที่ต้องการมอบหมายอย่างน้อย 1 อย่างครับ');
+            if(!vhvId) return showToast('กรุณาเลือก อสม. ผู้รับผิดชอบก่อนบันทึกครับ', 'error');
+            if(checkedTasks.length === 0) return showToast('กรุณาเลือกงานที่ต้องการมอบหมายอย่างน้อย 1 อย่างครับ', 'error');
 
             const btn = document.getElementById(`btn_${patientId}`);
             btn.disabled = true; btn.innerText = 'กำลังประมวลผล...';
@@ -529,11 +526,11 @@
                     }).catch(e => console.log("ยิง Webhook ไม่สำเร็จ"));
                 }
 
-                alert('มอบหมายงานสำเร็จ!\n(และส่งแจ้งเตือน LINE ให้ อสม. แล้ว)');
+                showToast('มอบหมายงานสำเร็จ! (แจ้งเตือน LINE เรียบร้อย)');
                 loadDataChannels();
                 
             } catch(e) { 
-                alert("เชื่อมต่อขัดข้อง กรุณาลองใหม่"); 
+                showToast("เชื่อมต่อขัดข้อง กรุณาลองใหม่", "error"); 
                 btn.disabled = false; 
                 btn.innerText = 'บันทึกการมอบหมายงาน'; 
             }
