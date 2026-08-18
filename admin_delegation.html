@@ -68,7 +68,14 @@
         <nav class="flex-1 px-4 py-6 space-y-2 overflow-y-auto">
             <a href="admin_dashboard.html" class="flex items-center gap-3 px-4 py-3.5 text-slate-400 hover:bg-white/5 hover:text-white rounded-xl font-medium transition-all"><span class="material-symbols-outlined">dashboard</span> ภาพรวมระบบ</a>
             <a href="admin_resources.html" class="flex items-center gap-3 px-4 py-3.5 text-slate-400 hover:bg-white/5 hover:text-white rounded-xl font-medium transition-all"><span class="material-symbols-outlined">inventory_2</span> บริหารทรัพยากร</a>
+            
+            <!-- เมนูคลังพัสดุ -->
+            <a href="admin_inventory.html" id="nav-inventory" class="flex items-center gap-3 px-4 py-3.5 text-slate-400 hover:bg-white/5 hover:text-white rounded-xl font-medium transition-all">
+                <span class="material-symbols-outlined">warehouse</span> ระบบคลังพัสดุ กปท.
+            </a>
+
             <a href="admin_datacenter.html" class="flex items-center gap-3 px-4 py-3.5 text-slate-400 hover:bg-white/5 hover:text-white rounded-xl font-medium transition-all"><span class="material-symbols-outlined">folder_shared</span> ศูนย์ข้อมูลผู้ป่วย</a>
+            <a href="admin_map.html" class="flex items-center gap-3 px-4 py-3.5 text-slate-400 hover:bg-white/5 hover:text-white rounded-xl font-medium transition-all"><span class="material-symbols-outlined">map</span> แผนที่พิกัดผู้ป่วย</a>
             <a href="admin_delegation.html" class="flex items-center justify-between px-4 py-3.5 bg-white/10 text-amber-400 rounded-xl font-bold transition-all"><span class="flex items-center gap-3"><span class="material-symbols-outlined">assignment_ind</span> มอบหมายงาน อสม.</span><span class="w-1.5 h-1.5 rounded-full bg-amber-400"></span></a>
             <a href="admin_reports.html" class="flex items-center gap-3 px-4 py-3.5 text-slate-400 hover:bg-white/5 hover:text-white rounded-xl font-medium transition-all"><span class="material-symbols-outlined">summarize</span> รายงาน (Export)</a>
             <a href="admin_settings.html" id="nav-settings" class="flex items-center gap-3 px-4 py-3.5 text-slate-400 hover:bg-white/5 hover:text-white rounded-xl font-medium transition-all"><span class="material-symbols-outlined">settings</span> ตั้งค่าระบบ</a>
@@ -110,7 +117,6 @@
                 <div class="loader-small"></div><p class="text-sm text-slate-400 animate-pulse">กำลังตรวจสอบข้อมูลจาก Firebase...</p>
             </div>
 
-            <!-- 🌟 อัปเกรด: ระบบตัวกรองแบบเต็มรูปแบบ 🌟 -->
             <div id="filter-wrapper" class="hidden flex flex-col gap-3 mb-5">
                 <div class="relative w-full">
                     <span class="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-slate-400">search</span>
@@ -230,9 +236,15 @@
                     document.getElementById('sidebar-hospital-name').innerText = hospital;
                     
                     const villageSelect = document.getElementById('village-filter');
+                    
                     if (currentUserRole === 'SUB_ADMIN') {
                         const navSettings = document.getElementById('nav-settings');
                         if (navSettings) navSettings.style.display = 'none';
+                        
+                        // 🌟 ล็อกสิทธิ์การมองเห็นเมนูคลังพัสดุ 🌟
+                        const navInventory = document.getElementById('nav-inventory');
+                        if (navInventory) navInventory.style.display = 'none';
+                        
                         assignedVillages.forEach(v => { villageSelect.insertAdjacentHTML('beforeend', `<option value="${v}">หมู่ที่ ${v}</option>`); });
                     } else {
                         for(let i=1; i<=vCount; i++){ villageSelect.insertAdjacentHTML('beforeend', `<option value="${i}">หมู่ที่ ${i}</option>`); }
@@ -320,7 +332,7 @@
             } else if (tab === 'new') {
                 filterWrap.classList.remove('hidden');
                 wrapGroup.classList.remove('hidden');
-                wrapTime.classList.add('hidden'); // ซ่อนกรองเวลาในแท็บเคสใหม่
+                wrapTime.classList.add('hidden');
                 filterGrid.className = "grid grid-cols-1 md:grid-cols-2 gap-2";
                 searchInput.placeholder = "ค้นหาชื่อผู้ป่วย, เลขบัตร, บ้านเลขที่...";
                 filterDataDisplay();
@@ -383,7 +395,6 @@
             document.getElementById('badge-pending-vhv').innerText = pendingVHVs.length;
         }
 
-        // 🌟 อัปเกรด: ฟังก์ชันตัวกรองแบบรวมศูนย์ 🌟
         function filterDataDisplay() {
             const searchKeyword = document.getElementById('search-input').value.trim().toLowerCase();
             const vFilter = document.getElementById('village-filter').value;
