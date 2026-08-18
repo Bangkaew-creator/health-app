@@ -47,6 +47,12 @@
             <a href="admin_resources.html" class="flex items-center gap-3 px-4 py-3.5 text-slate-400 hover:bg-white/5 hover:text-white rounded-xl font-medium transition-all">
                 <span class="material-symbols-outlined">inventory_2</span> บริหารทรัพยากร
             </a>
+            
+            <!-- เมนูคลังพัสดุ กปท. -->
+            <a href="admin_inventory.html" id="nav-inventory" class="flex items-center gap-3 px-4 py-3.5 text-slate-400 hover:bg-white/5 hover:text-white rounded-xl font-medium transition-all">
+                <span class="material-symbols-outlined">warehouse</span> ระบบคลังพัสดุ กปท.
+            </a>
+
             <a href="admin_datacenter.html" class="flex items-center gap-3 px-4 py-3.5 text-slate-400 hover:bg-white/5 hover:text-white rounded-xl font-medium transition-all">
                 <span class="material-symbols-outlined">folder_shared</span> ศูนย์ข้อมูลผู้ป่วย
             </a>
@@ -58,9 +64,6 @@
             </a>
             <a href="admin_reports.html" class="flex items-center gap-3 px-4 py-3.5 text-slate-400 hover:bg-white/5 hover:text-white rounded-xl font-medium transition-all">
                 <span class="material-symbols-outlined">summarize</span> รายงาน (Export)
-            </a>
-            <a href="admin_inventory.html" id="nav-inventory" class="flex items-center justify-between px-4 py-3.5 bg-white/10 text-amber-400 rounded-xl font-bold transition-all">
-                <span class="flex items-center gap-3"><span class="material-symbols-outlined">warehouse</span> ระบบคลังพัสดุ กปท.</span>
             </a>
             <a href="admin_settings.html" class="flex items-center gap-3 px-4 py-3.5 text-slate-400 hover:bg-white/5 hover:text-white rounded-xl font-medium transition-all" id="nav-settings">
                 <span class="material-symbols-outlined">settings</span> ตั้งค่าระบบ
@@ -260,14 +263,16 @@
                 if (hasAccess) {
                     document.getElementById('sidebar-hospital-name').innerText = hospital;
                     document.getElementById('header-hospital-name').innerText = `ข้อมูลสำหรับ ${hospital}`;
+                    
                     if (currentUserRole === 'SUB_ADMIN') {
-                    const navSettings = document.getElementById('nav-settings');
-                    if (navSettings) navSettings.style.display = 'none';
-    
-                    // 👇 เพิ่ม 2 บรรทัดนี้ 👇
-                    const navInventory = document.getElementById('nav-inventory');
-                    if (navInventory) navInventory.style.display = 'none';
-                    } 
+                        const navSettings = document.getElementById('nav-settings');
+                        if (navSettings) navSettings.style.display = 'none'; 
+                        
+                        // 🌟 ล็อกสิทธิ์: ซ่อนเมนูคลังพัสดุ 🌟
+                        const navInventory = document.getElementById('nav-inventory');
+                        if (navInventory) navInventory.style.display = 'none';
+                    }
+                    
                     loadDashboardData(); 
                 } else window.location.href = 'dashboard.html'; 
             } catch (error) { bounceToLogin(); }
@@ -326,7 +331,7 @@
                     window.history.replaceState(null, '', window.location.pathname);
                 }
 
-            } catch (error) { showToast("ดึงฐานข้อมูลล้มเหลว", "error"); }
+            } catch (error) { alert("ดึงฐานข้อมูลล้มเหลว"); }
         }
 
         function viewPatient(id, group) {
@@ -354,7 +359,7 @@
                     groupedByVillage[v].push(p);
                 });
 
-                // 🌟 แก้ไข: เรียงลำดับหมู่ให้ถูกต้อง (1, 2, 3... 10) 🌟
+                // เรียงลำดับหมู่ให้ถูกต้อง
                 const sortedVillages = Object.keys(groupedByVillage).sort((a,b) => {
                     const numA = parseInt(String(a).replace(/\D/g, '')) || 999;
                     const numB = parseInt(String(b).replace(/\D/g, '')) || 999;
