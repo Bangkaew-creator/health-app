@@ -260,7 +260,14 @@
                 if (hasAccess) {
                     document.getElementById('sidebar-hospital-name').innerText = hospital;
                     document.getElementById('header-hospital-name').innerText = `ข้อมูลสำหรับ ${hospital}`;
-                    if (currentUserRole === 'SUB_ADMIN') document.getElementById('nav-settings').style.display = 'none'; 
+                    if (currentUserRole === 'SUB_ADMIN') {
+                    const navSettings = document.getElementById('nav-settings');
+                    if (navSettings) navSettings.style.display = 'none';
+    
+                    // 👇 เพิ่ม 2 บรรทัดนี้ 👇
+                    const navInventory = document.getElementById('nav-inventory');
+                    if (navInventory) navInventory.style.display = 'none';
+                    } 
                     loadDashboardData(); 
                 } else window.location.href = 'dashboard.html'; 
             } catch (error) { bounceToLogin(); }
