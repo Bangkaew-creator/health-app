@@ -180,7 +180,6 @@
                 <div><canvas id="depChart" height="120"></canvas></div>
             </div>
 
-            <!-- 🌟 อัปเกรด: เพิ่มปุ่ม "ประวัติย้อนหลัง" ให้หมวดสัญญาณชีพ & น้ำตาล 🌟 -->
             <div class="bg-white rounded-[20px] p-5 shadow-sm border border-[#bdcac1]/30">
                 <div class="flex justify-between items-center mb-4 border-b border-gray-50 pb-3">
                     <h3 class="text-sm font-bold flex items-center gap-2 text-[#0284c7]">
@@ -241,7 +240,6 @@
         </div>
     </main>
 
-    <!-- Modal หมายเหตุ -->
     <div id="remark-modal" class="fixed inset-0 bg-black/50 z-[100] hidden flex items-center justify-center opacity-0 transition-opacity duration-300">
         <div id="remark-modal-content" class="bg-white rounded-[24px] w-[90%] max-w-sm p-6 transform scale-95 transition-transform duration-300 shadow-2xl">
             <h3 class="text-lg font-bold text-amber-600 mb-2 flex items-center gap-2">
@@ -258,7 +256,6 @@
         </div>
     </div>
 
-    <!-- Modal เปลี่ยนสถานะ -->
     <div id="status-modal" class="fixed inset-0 bg-black/50 z-[100] hidden flex items-center justify-center opacity-0 transition-opacity duration-300">
         <div id="status-modal-content" class="bg-white rounded-[24px] w-[90%] max-w-sm p-6 transform scale-95 transition-transform duration-300">
             <h3 class="text-lg font-bold text-[#ba1a1a] mb-2 flex items-center gap-2">
@@ -284,7 +281,6 @@
         </div>
     </div>
 
-    <!-- Modal รายละเอียดรายการยา -->
     <div id="med-detail-modal" class="fixed inset-0 bg-black/60 z-[100] hidden flex-col items-center justify-center opacity-0 transition-opacity duration-300 p-4">
         <div id="med-detail-content" class="bg-white rounded-[24px] w-full max-w-sm overflow-hidden shadow-2xl transform scale-95 transition-transform duration-300">
             <div class="p-4 border-b border-gray-100 flex justify-between items-center bg-gray-50">
@@ -313,7 +309,6 @@
         </div>
     </div>
 
-    <!-- Modal ประวัติประเมินรายข้อ (ADL/DEP) -->
     <div id="history-modal" class="fixed inset-0 bg-black/50 z-[100] hidden flex-col items-center justify-center opacity-0 transition-opacity duration-300 p-4">
         <div id="history-modal-content" class="bg-white rounded-[24px] w-full max-w-lg max-h-[85vh] flex flex-col transform scale-95 transition-transform duration-300 overflow-hidden shadow-2xl">
             <div class="p-5 border-b border-gray-100 flex justify-between items-center bg-gray-50">
@@ -327,7 +322,6 @@
         </div>
     </div>
 
-    <!-- 🌟 Modal ประวัติสัญญาณชีพ (Vitals) 🌟 -->
     <div id="vitals-history-modal" class="fixed inset-0 bg-black/50 z-[100] hidden flex-col items-center justify-center opacity-0 transition-opacity duration-300 p-4">
         <div id="vitals-history-modal-content" class="bg-white rounded-[24px] w-full max-w-2xl max-h-[85vh] flex flex-col transform scale-95 transition-transform duration-300 overflow-hidden shadow-2xl">
             <div class="p-5 border-b border-gray-100 flex justify-between items-center bg-gray-50">
@@ -351,15 +345,13 @@
                             </tr>
                         </thead>
                         <tbody id="vitals-history-list" class="text-sm divide-y divide-gray-100">
-                            <!-- Data will be injected here -->
-                        </tbody>
+                            </tbody>
                     </table>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- Modal ดูรูปภาพขยาย -->
     <div id="imageModal" class="fixed inset-0 bg-black/90 z-[110] hidden flex-col items-center justify-center opacity-0 transition-opacity duration-300">
         <button onclick="closeModal()" class="absolute top-4 right-4 text-white p-3 bg-white/10 rounded-full hover:bg-white/20"><span class="material-symbols-outlined">close</span></button>
         <img id="modalImage" src="" class="max-w-[95%] max-h-[90%] object-contain rounded-lg shadow-2xl">
@@ -378,7 +370,7 @@
 
         let currentPatientData = null;
         let globalAssessments = []; 
-        let globalVitals = []; // 🌟 เพิ่มตัวแปรเก็บประวัติ Vitals
+        let globalVitals = []; 
         
         let latestADLDate = 0;
         let latestDEPDate = 0;
@@ -786,7 +778,7 @@
                 </table>`;
 
                 if (assess.answers && assess.answers.length > 0) {
-                    const q2Answers = assess.answers.filter(a => a.q.includes('ท่านรู้สึกหดหู่') || a.q.includes('ท่านรู้สึกเบื่อ'));
+                    const q2Answers = assess.answers.filter(a => (a.q||'').includes('ท่านรู้สึกหดหู่') || (a.q||'').includes('ท่านรู้สึกเบื่อ'));
                     
                     htmlContent += `<h3>แบบคัดกรอง 2 คำถาม (2Q)</h3>`;
                     htmlContent += `<table><tr><th style="text-align:left;">คำถาม</th><th style="width:80px; text-align:center;">มี</th><th style="width:80px; text-align:center;">ไม่มี</th></tr>`;
@@ -796,7 +788,7 @@
                     });
                     htmlContent += `</table>`;
 
-                    const q9Answers = assess.answers.filter(a => !a.q.includes('ท่านรู้สึกหดหู่') && !a.q.includes('ท่านรู้สึกเบื่อ'));
+                    const q9Answers = assess.answers.filter(a => !(a.q||'').includes('ท่านรู้สึกหดหู่') && !(a.q||'').includes('ท่านรู้สึกเบื่อ'));
                     
                     if(q9Answers.length > 0) {
                         htmlContent += `<h3>แบบประเมินโรคซึมเศร้า 9 คำถาม (9Q)</h3>`;
@@ -845,6 +837,20 @@
             printWin.document.close();
         }
 
+        // 🌟 เพิ่ม Template สำรองเพื่อฟื้นฟูข้อมูลเก่า 🌟
+        const fallbackADL = [
+            { q: "1. การรับประทานอาหาร", c: [{s:0, t:"ทำไม่ได้ (มีคนป้อน)"}, {s:1, t:"ทำได้บ้าง (คนช่วยเตรียม)"}, {s:2, t:"ปกติ"}] },
+            { q: "2. ล้างหน้า หวีผม แปรงฟัน", c: [{s:0, t:"ต้องการความช่วยเหลือ"}, {s:1, t:"ทำเองได้"}] },
+            { q: "3. ลุกนั่งจากที่นอนไปยังเก้าอี้", c: [{s:0, t:"ทำไม่ได้/ใช้ 2 คนยก"}, {s:1, t:"ต้องการคนพยุงอย่างมาก"}, {s:2, t:"พยุงเล็กน้อย"}, {s:3, t:"ทำได้เอง"}] },
+            { q: "4. การใช้ห้องน้ำ", c: [{s:0, t:"ช่วยตัวเองไม่ได้"}, {s:1, t:"ทำเองได้บ้าง"}, {s:2, t:"ปกติ"}] },
+            { q: "5. การเคลื่อนที่ภายในบ้าน", c: [{s:0, t:"เคลื่อนที่ไม่ได้"}, {s:1, t:"ใช้รถเข็น"}, {s:2, t:"เดินโดยมีคนช่วย"}, {s:3, t:"เดินได้เอง"}] },
+            { q: "6. การสวมใส่เสื้อผ้า", c: [{s:0, t:"ทำไม่ได้"}, {s:1, t:"ทำได้ 50%"}, {s:2, t:"ปกติ"}] },
+            { q: "7. การขึ้นลงบันได 1 ชั้น", c: [{s:0, t:"ทำไม่ได้"}, {s:1, t:"ต้องการคนช่วย"}, {s:2, t:"ทำได้เอง"}] },
+            { q: "8. การอาบน้ำ", c: [{s:0, t:"ต้องมีคนช่วย"}, {s:1, t:"อาบเองได้"}] },
+            { q: "9. การกลั้นการถ่ายอุจจาระ", c: [{s:0, t:"กลั้นไม่ได้"}, {s:1, t:"กลั้นไม่ได้บางครั้ง"}, {s:2, t:"ปกติ"}] },
+            { q: "10. การกลั้นการถ่ายปัสสาวะ", c: [{s:0, t:"กลั้นไม่ได้"}, {s:1, t:"กลั้นไม่ได้บางครั้ง"}, {s:2, t:"ปกติ"}] }
+        ];
+
         function openHistoryModal() {
             const modal = document.getElementById('history-modal');
             const content = document.getElementById('history-modal-content');
@@ -871,19 +877,27 @@
 
                         if (a.type === 'DEP') {
                             let q2List = ''; let q9List = '';
-                            a.answers.forEach(ans => {
+                            a.answers.forEach((ans, idx) => {
+                                let qText = ans.q || `คำถามข้อที่ ${idx+1}`;
+                                let aText = ans.a || '-';
+                                let sVal = ans.score || 0;
+
                                 const itemHtml = `<div class="flex justify-between items-start border-b border-gray-200 py-2 last:border-0">
-                                                    <span class="text-[12px] text-gray-700 flex-1 pr-3 leading-tight">${ans.q}</span>
-                                                    <span class="text-[12px] font-bold text-[#00694a] text-right w-1/3 flex-shrink-0">${ans.a} <span class="text-gray-400 font-normal">(${ans.score})</span></span>
+                                                    <span class="text-[12px] text-gray-700 flex-1 pr-3 leading-tight">${qText}</span>
+                                                    <span class="text-[12px] font-bold text-[#00694a] text-right w-1/3 flex-shrink-0">${aText} <span class="text-gray-400 font-normal">(${sVal})</span></span>
                                                 </div>`;
-                                if(ans.q.includes('ท่านรู้สึกหดหู่') || ans.q.includes('ท่านรู้สึกเบื่อ')) q2List += itemHtml;
+                                // 🌟 ป้องกัน Error โดยใช้ตัวแปร qText 🌟
+                                if(qText.includes('ท่านรู้สึกหดหู่') || qText.includes('ท่านรู้สึกเบื่อ')) q2List += itemHtml;
                                 else q9List += itemHtml;
                             });
                             
                             let ansListHtml = `<div class="mb-3"><p class="text-xs font-bold text-amber-600 border-b pb-1 mb-1">ส่วนที่ 1: แบบคัดกรอง 2Q</p>${q2List}</div>`;
                             if(q9List) {
                                 let true9QScore = 0;
-                                a.answers.forEach(ans => { if(!ans.q.includes('ท่านรู้สึกหดหู่') && !ans.q.includes('ท่านรู้สึกเบื่อ')) true9QScore += Number(ans.score); });
+                                a.answers.forEach(ans => { 
+                                    let qText = ans.q || '';
+                                    if(!qText.includes('ท่านรู้สึกหดหู่') && !qText.includes('ท่านรู้สึกเบื่อ')) true9QScore += Number(ans.score || 0); 
+                                });
                                 ansListHtml += `<div><p class="text-xs font-bold text-red-600 border-b pb-1 mb-1">ส่วนที่ 2: แบบประเมิน 9Q (รวม ${true9QScore} คะแนน)</p>${q9List}</div>`;
                             }
                             
@@ -898,12 +912,25 @@
                                 </div>
                             `;
                         } else {
-                            const ansList = a.answers.map(ans => `
-                                <div class="flex justify-between items-start border-b border-gray-200 py-2 last:border-0">
-                                    <span class="text-[12px] text-gray-700 flex-1 pr-3 leading-tight">${ans.q}</span>
-                                    <span class="text-[12px] font-bold text-[#00694a] text-right w-1/3 flex-shrink-0">${ans.a} <span class="text-gray-400 font-normal">(${ans.score})</span></span>
-                                </div>
-                            `).join('');
+                            // 🌟 ระบบดึงแม่แบบสำรองสำหรับ ADL ที่มาจากระบบเก่า 🌟
+                            const ansList = a.answers.map((ans, idx) => {
+                                let qText = ans.q;
+                                let aText = ans.a;
+                                let sVal = ans.score;
+
+                                if (!qText && fallbackADL[idx]) {
+                                    qText = fallbackADL[idx].q;
+                                    const matchOpt = fallbackADL[idx].c.find(opt => opt.s === sVal);
+                                    aText = matchOpt ? matchOpt.t : `ได้ ${sVal} คะแนน`;
+                                }
+
+                                return `
+                                    <div class="flex justify-between items-start border-b border-gray-200 py-2 last:border-0">
+                                        <span class="text-[12px] text-gray-700 flex-1 pr-3 leading-tight">${qText || `ข้อที่ ${idx+1}`}</span>
+                                        <span class="text-[12px] font-bold text-[#00694a] text-right w-1/3 flex-shrink-0">${aText || '-'} <span class="text-gray-400 font-normal">(${sVal})</span></span>
+                                    </div>
+                                `;
+                            }).join('');
                             
                             detailsHtml = `
                                 <div class="mt-3 pt-3 border-t border-gray-100">
@@ -955,7 +982,10 @@
             setTimeout(() => modal.classList.add('hidden'), 300);
         }
 
-        // 🌟 ฟังก์ชันจัดการตารางประวัติ Vitals 🌟
+        function toggleHistoryDetails(id) {
+            document.getElementById(id).classList.toggle('hidden');
+        }
+
         function openVitalsHistoryModal() {
             const modal = document.getElementById('vitals-history-modal');
             const content = document.getElementById('vitals-history-modal-content');
@@ -1206,7 +1236,6 @@
                 
                 globalAssessments = [...assessments].sort((a,b) => parseThaiDate(b.date) - parseThaiDate(a.date));
                 
-                // 🌟 เก็บประวัติ Vitals สำหรับใส่ตาราง 🌟
                 globalVitals = [...vitals].sort((a,b) => parseThaiDate(b.date) - parseThaiDate(a.date));
 
                 const formatLabel = (dateStr) => {
