@@ -37,12 +37,21 @@
         </div>
         <nav class="flex-1 px-4 py-6 space-y-2 overflow-y-auto">
             <a href="admin_dashboard.html" class="flex items-center gap-3 px-4 py-3.5 text-slate-400 hover:bg-white/5 hover:text-white rounded-xl font-medium transition-all"><span class="material-symbols-outlined">dashboard</span> ภาพรวมระบบ</a>
-            <a href="admin_resources.html" class="flex items-center justify-between px-4 py-3.5 bg-white/10 text-amber-400 rounded-xl font-bold transition-all"><span class="flex items-center gap-3"><span class="material-symbols-outlined">inventory_2</span> บริหารทรัพยากร</span><span class="w-1.5 h-1.5 rounded-full bg-amber-400"></span></a>
+            
+            <a href="admin_resources.html" class="flex items-center justify-between px-4 py-3.5 bg-white/10 text-amber-400 rounded-xl font-bold transition-all">
+                <span class="flex items-center gap-3"><span class="material-symbols-outlined">inventory_2</span> บริหารทรัพยากร</span>
+                <span class="w-1.5 h-1.5 rounded-full bg-amber-400"></span>
+            </a>
+            
+            <!-- เมนูคลังพัสดุ กปท. -->
+            <a href="admin_inventory.html" id="nav-inventory" class="flex items-center gap-3 px-4 py-3.5 text-slate-400 hover:bg-white/5 hover:text-white rounded-xl font-medium transition-all">
+                <span class="material-symbols-outlined">warehouse</span> ระบบคลังพัสดุ กปท.
+            </a>
+
             <a href="admin_datacenter.html" class="flex items-center gap-3 px-4 py-3.5 text-slate-400 hover:bg-white/5 hover:text-white rounded-xl font-medium transition-all"><span class="material-symbols-outlined">folder_shared</span> ศูนย์ข้อมูลผู้ป่วย</a>
             <a href="admin_map.html" class="flex items-center gap-3 px-4 py-3.5 text-slate-400 hover:bg-white/5 hover:text-white rounded-xl font-medium transition-all"><span class="material-symbols-outlined">map</span> แผนที่พิกัดผู้ป่วย</a>
             <a href="admin_delegation.html" class="flex items-center gap-3 px-4 py-3.5 text-slate-400 hover:bg-white/5 hover:text-white rounded-xl font-medium transition-all"><span class="material-symbols-outlined">assignment_ind</span> มอบหมายงาน อสม.</a>
             <a href="admin_reports.html" class="flex items-center gap-3 px-4 py-3.5 text-slate-400 hover:bg-white/5 hover:text-white rounded-xl font-medium transition-all"><span class="material-symbols-outlined">summarize</span> รายงาน (Export)</a>
-            <a href="admin_inventory.html" id="nav-inventory" class="flex items-center justify-between px-4 py-3.5 bg-white/10 text-amber-400 rounded-xl font-bold transition-all"><span class="flex items-center gap-3"><span class="material-symbols-outlined">warehouse</span> ระบบคลังพัสดุ กปท.</span></a>
             <a href="admin_settings.html" id="nav-settings" class="flex items-center gap-3 px-4 py-3.5 text-slate-400 hover:bg-white/5 hover:text-white rounded-xl font-medium transition-all"><span class="material-symbols-outlined">settings</span> ตั้งค่าระบบ</a>        
         </nav>
     </aside>
@@ -81,7 +90,6 @@
 
                         <div class="bg-blue-50/50 p-4 rounded-xl border border-blue-100 flex flex-col justify-center">
                             <p class="text-[11px] font-bold text-blue-800 uppercase tracking-wider mb-3">2. จำนวนชิ้นรวมที่ต้องใช้ตามเวลาที่กำหนด</p>
-                            <!-- 🌟 แก้ไข: จัด Grid ใหม่เป็น 5 คอลัมน์ และเพิ่ม ไซส์ S 🌟 -->
                             <div class="grid grid-cols-3 lg:grid-cols-5 gap-2 text-center">
                                 <div class="bg-white p-2 rounded-lg border border-slate-100"><span class="text-[10px] text-slate-400 block">ไซส์ S</span><span class="font-bold text-navy text-base" id="sum-s">0</span></div>
                                 <div class="bg-white p-2 rounded-lg border border-slate-100"><span class="text-[10px] text-slate-400 block">ไซส์ M</span><span class="font-bold text-navy text-base" id="sum-m">0</span></div>
@@ -192,15 +200,13 @@
                     document.getElementById('label-price-underpad').innerText = configUnderpadPrice.toFixed(2);
                     
                     if (currentUserRole === 'SUB_ADMIN') {
-    const navSettings = document.getElementById('nav-settings');
-    if (navSettings) navSettings.style.display = 'none';
-    
-    // 👇 โค้ดที่เพิ่มใหม่ สำหรับซ่อนเมนูคลังพัสดุ 👇
-    const navInventory = document.getElementById('nav-inventory');
-    if (navInventory) navInventory.style.display = 'none';
-    
-    // (โค้ดอื่นๆ ที่มีอยู่เดิม ปล่อยไว้เหมือนเดิมครับ)
-}
+                        const navSettings = document.getElementById('nav-settings');
+                        if (navSettings) navSettings.style.display = 'none';
+                        
+                        // 🌟 ล็อกสิทธิ์: ซ่อนเมนูคลังพัสดุ 🌟
+                        const navInventory = document.getElementById('nav-inventory');
+                        if (navInventory) navInventory.style.display = 'none';
+                    }
 
                     loadResourceData();
                 } else {
@@ -248,7 +254,6 @@
             } catch (error) { showToast("ดึงข้อมูลทรัพยากรล้มเหลว", "error"); }
         }
 
-        // 🌟 แก้ไข: เพิ่มการคำนวณ totalS สำหรับไซส์ S 🌟
         function calculateBudget() {
             const targetDays = parseInt(document.getElementById('forecast-days').value) || 0;
             let totalS = 0, totalM = 0, totalL = 0, totalXL = 0, totalPad = 0;
@@ -259,7 +264,7 @@
                     if (p.size === 'S') totalS += calcDiaper;
                     else if (p.size === 'M') totalM += calcDiaper;
                     else if (p.size === 'XL') totalXL += calcDiaper;
-                    else totalL += calcDiaper; // เป็นค่า default ถ้าไม่ระบุไซส์ที่เข้าพวก
+                    else totalL += calcDiaper;
                 }
                 totalPad += Math.ceil((p.underpadQty / 30) * targetDays);
             });
