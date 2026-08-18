@@ -78,15 +78,51 @@
             </div>
 
             <div id="content-kpt" class="hidden p-4 lg:p-6">
+                
                 <div class="flex flex-col xl:flex-row justify-between items-start xl:items-center gap-4 mb-4">
                     <div>
                         <h3 class="text-base font-bold text-slate-800">จัดเตรียมข้อมูล กปท.</h3>
-                        <p class="text-xs text-slate-500 mt-0.5">ติ๊กเลือกผู้ป่วย บันทึกมติจัดสรร หรือนำเข้าประวัติย้อนหลัง</p>
+                        <p class="text-xs text-slate-500 mt-0.5">ติ๊กเลือกผู้ป่วยเพื่อคาดการณ์งบประมาณ บันทึกมติ หรือโหลดตาราง Excel</p>
                     </div>
                     <div class="flex flex-wrap gap-2 w-full xl:w-auto">
                         <button onclick="openImportAllocModal()" class="flex-1 xl:flex-none bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-xl font-bold text-xs flex items-center justify-center gap-1.5 shadow-sm active:scale-95"><span class="material-symbols-outlined text-[16px]">upload_file</span> อัปโหลด Excel (ประวัติ)</button>
                         <button onclick="openCommitteeModal()" class="flex-1 xl:flex-none bg-amber-500 hover:bg-amber-600 text-white px-4 py-2 rounded-xl font-bold text-xs flex items-center justify-center gap-1.5 shadow-sm active:scale-95"><span class="material-symbols-outlined text-[16px]">gavel</span> บันทึกมติ (<span id="select-count-1">0</span>)</button>
                         <button onclick="exportToExcel()" class="flex-1 xl:flex-none bg-[#00694a] hover:bg-[#005239] text-white px-4 py-2 rounded-xl font-bold text-xs flex items-center justify-center gap-1.5 shadow-sm active:scale-95"><span class="material-symbols-outlined text-[16px]">download</span> โหลด Excel (<span id="select-count-2">0</span>)</button>
+                    </div>
+                </div>
+
+                <!-- 🌟 อัปเกรด: ส่วนคำนวณงบประมาณ (Real-time) 🌟 -->
+                <div class="bg-white p-5 rounded-2xl shadow-sm border-t-4 border-navy mb-5">
+                    <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-4 mb-4 border-b border-slate-100 pb-4">
+                        <div>
+                            <h3 class="text-sm font-bold text-navy flex items-center gap-2"><span class="material-symbols-outlined text-amber-500 text-[20px]">account_balance_wallet</span> คาดการณ์งบประมาณสำหรับผู้ป่วยที่เลือก</h3>
+                            <p class="text-[11px] text-slate-500 mt-1">ยอดจะเปลี่ยนไปตามจำนวนคนที่คุณติ๊ก <strong class="text-blue-600">✓ เลือก</strong> ในตารางด้านล่าง</p>
+                        </div>
+                        <div class="flex items-center gap-2 bg-slate-50 p-2 rounded-xl border border-slate-200">
+                            <label class="text-xs font-bold text-slate-700 pl-2 whitespace-nowrap">ระยะเวลาคำนวณ</label>
+                            <input type="number" id="kpt-forecast-days" value="30" oninput="updateSelectCount()" class="w-16 px-2 py-1 border border-slate-300 rounded-lg text-center font-bold text-navy text-sm">
+                            <span class="text-xs text-slate-500 pr-2">วัน</span>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-1 lg:grid-cols-4 gap-4">
+                        <div class="lg:col-span-3 bg-blue-50/50 p-3 lg:p-4 rounded-xl border border-blue-100 flex flex-col justify-center">
+                            <div class="flex justify-between items-center mb-3">
+                                <p class="text-[11px] font-bold text-blue-800 uppercase tracking-wider">จำนวนชิ้นรวมที่ต้องใช้</p>
+                                <span class="bg-blue-600 text-white text-[10px] font-bold px-2 py-0.5 rounded-full shadow-sm">เลือกไว้ <span id="summary-selected-count">0</span> คน</span>
+                            </div>
+                            <div class="grid grid-cols-3 lg:grid-cols-5 gap-2 text-center">
+                                <div class="bg-white p-2 rounded-lg border border-slate-100"><span class="text-[10px] text-slate-400 block">ไซส์ S</span><span class="font-bold text-navy text-sm lg:text-base" id="sum-s">0</span></div>
+                                <div class="bg-white p-2 rounded-lg border border-slate-100"><span class="text-[10px] text-slate-400 block">ไซส์ M</span><span class="font-bold text-navy text-sm lg:text-base" id="sum-m">0</span></div>
+                                <div class="bg-white p-2 rounded-lg border border-slate-100"><span class="text-[10px] text-slate-400 block">ไซส์ L</span><span class="font-bold text-navy text-sm lg:text-base" id="sum-l">0</span></div>
+                                <div class="bg-white p-2 rounded-lg border border-slate-100"><span class="text-[10px] text-slate-400 block">ไซส์ XL</span><span class="font-bold text-navy text-sm lg:text-base" id="sum-xl">0</span></div>
+                                <div class="bg-white p-2 rounded-lg border border-emerald-100"><span class="text-[10px] text-emerald-600 font-bold block">แผ่นรอง</span><span class="font-bold text-emerald-700 text-sm lg:text-base" id="sum-pad">0</span></div>
+                            </div>
+                        </div>
+                        <div class="bg-gradient-to-br from-amber-50 to-orange-50 p-3 lg:p-4 rounded-xl border border-amber-200 flex flex-col justify-center items-center text-center shadow-sm">
+                            <p class="text-[11px] font-bold text-amber-800 uppercase tracking-wider mb-1">งบประมาณรวม (THB)</p>
+                            <h3 class="text-xl lg:text-2xl font-black text-amber-600 tracking-tight mt-1" id="sum-cost">0.00 <span class="text-sm text-amber-500 font-bold">฿</span></h3>
+                        </div>
                     </div>
                 </div>
 
@@ -160,6 +196,7 @@
             </div>
         </div>
 
+        <!-- Modals ต่างๆ ... (คงไว้เหมือนเดิม) -->
         <div id="committee-modal" class="fixed inset-0 bg-[#111c2d]/40 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4 opacity-0 transition-opacity duration-300">
             <div class="bg-white rounded-[24px] w-full max-w-sm overflow-hidden shadow-2xl transform scale-95 transition-transform duration-300" id="committee-modal-content">
                 <div class="p-6">
@@ -223,6 +260,10 @@
         let assignedVillages = [];
         let selectedAllocFile = null;
 
+        // 🌟 เพิ่มตัวแปรเก็บราคา 🌟
+        let configDiaperPrice = DEFAULT_CONFIGS.DIAPER_PRICE || 9.50;
+        let configUnderpadPrice = DEFAULT_CONFIGS.UNDERPAD_PRICE || 6.00;
+
         function toggleSidebar() { document.getElementById('sidebar').classList.toggle('-translate-x-full'); }
 
         function cleanJSON(rawStr) {
@@ -263,6 +304,13 @@
                     if(sysSnap.exists) hospital = sysSnap.data().value || hospital;
                     const sysCountSnap = await db.collection('SystemConfig').doc('VILLAGE_COUNT').get();
                     if(sysCountSnap.exists) vCount = parseInt(sysCountSnap.data().value) || vCount;
+                    
+                    // 🌟 ดึงราคาสำหรับคำนวณงบ 🌟
+                    const sysSnapDiaper = await db.collection('SystemConfig').doc('DIAPER_PRICE').get();
+                    if(sysSnapDiaper.exists) configDiaperPrice = parseFloat(sysSnapDiaper.data().value) || configDiaperPrice;
+                    const sysSnapUnderpad = await db.collection('SystemConfig').doc('UNDERPAD_PRICE').get();
+                    if(sysSnapUnderpad.exists) configUnderpadPrice = parseFloat(sysSnapUnderpad.data().value) || configUnderpadPrice;
+
                 } catch(e) {}
 
                 if (userDoc.exists) {
@@ -348,6 +396,7 @@
             });
             document.getElementById(`tab-${tab}`).classList.add('active');
             document.getElementById(`content-${tab}`).classList.remove('hidden');
+            updateSelectCount(); // 🌟 อัปเดตตัวเลขเมื่อเปลี่ยนแท็บ
         }
 
         function renderKPTTable() {
@@ -395,7 +444,8 @@
                     historyBadge = `<span class="bg-amber-100 text-amber-700 font-bold px-2 py-1 rounded text-[10px] border border-amber-200" title="รอบทั้งหมด: ${d.allocations.join(', ')}">ได้รับรอบ ${latestAlloc}</span>`;
                 }
 
-                const rawData = { id: p.id, name: p.name, id_card: p.id_card, house_no: p.house_no, village_no: p.village_no, adl: p.adl, phone: p.phone, detail: d };
+                // 🌟 แก้ไข: ดึง caregiver_phone มารวมใน rawData ด้วย 🌟
+                const rawData = { id: p.id, name: p.name, id_card: p.id_card, house_no: p.house_no, village_no: p.village_no, adl: p.adl, phone: p.caregiver_phone || p.phone || '-', detail: d };
                 
                 const tr = document.createElement('tr');
                 tr.className = "border-b border-slate-100 hover:bg-slate-50 transition-colors";
@@ -419,10 +469,55 @@
             updateSelectCount();
         }
 
+        // 🌟 อัปเกรด: ฟังก์ชันคำนวณงบประมาณ Real-time 🌟
         function updateSelectCount() {
-            const count = document.querySelectorAll('.row-checkbox:checked').length;
+            const checkedBoxes = document.querySelectorAll('.row-checkbox:checked');
+            const count = checkedBoxes.length;
+            
             document.getElementById('select-count-1').innerText = count;
             document.getElementById('select-count-2').innerText = count;
+            document.getElementById('summary-selected-count').innerText = count;
+
+            const days = parseInt(document.getElementById('kpt-forecast-days').value) || 30;
+            let totalS = 0, totalM = 0, totalL = 0, totalXL = 0, totalPad = 0;
+
+            checkedBoxes.forEach(cb => {
+                const tr = cb.closest('tr');
+                const p = JSON.parse(tr.dataset.rawData);
+                const d = p.detail;
+
+                if (d && (d.req_diaper || d.req_underpad)) {
+                    let diaperPerMonth = parseInt(d.approved_diaper) || 0;
+                    let padPerMonth = parseInt(d.approved_underpad) || 0;
+
+                    // ถ้ายังไม่มีการอนุมัติยอด (approved_diaper = 0) แต่มีการขอสิทธิ์มา ให้ดึงค่ามาตรฐานมาจำลองคำนวณให้ก่อน
+                    if (diaperPerMonth === 0 && d.req_diaper) diaperPerMonth = d.req_underpad ? 30 : 90;
+                    if (padPerMonth === 0 && d.req_underpad) padPerMonth = d.req_diaper ? 90 : 150;
+
+                    const calcDiaper = Math.ceil((diaperPerMonth / 30) * days);
+                    const calcPad = Math.ceil((padPerMonth / 30) * days);
+
+                    if (calcDiaper > 0 && d.req_diaper) {
+                        const size = String(d.size || 'L').toUpperCase().trim();
+                        if (size === 'S') totalS += calcDiaper;
+                        else if (size === 'M') totalM += calcDiaper;
+                        else if (size === 'XL') totalXL += calcDiaper;
+                        else totalL += calcDiaper;
+                    }
+                    if (calcPad > 0 && d.req_underpad) {
+                        totalPad += calcPad;
+                    }
+                }
+            });
+
+            document.getElementById('sum-s').innerText = totalS.toLocaleString();
+            document.getElementById('sum-m').innerText = totalM.toLocaleString();
+            document.getElementById('sum-l').innerText = totalL.toLocaleString();
+            document.getElementById('sum-xl').innerText = totalXL.toLocaleString();
+            document.getElementById('sum-pad').innerText = totalPad.toLocaleString();
+
+            const totalCost = ((totalS + totalM + totalL + totalXL) * configDiaperPrice) + (totalPad * configUnderpadPrice);
+            document.getElementById('sum-cost').innerHTML = totalCost.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2}) + ' <span class="text-sm text-amber-500 font-bold">฿</span>';
         }
 
         function openCommitteeModal() {
@@ -508,9 +603,18 @@
                 }
 
                 exportData.push({
-                    "ลำดับ": runningNumber++, "ชื่อ-สกุล": p.name || '-', "เลขประจำตัวประชาชน": p.id_card || '-', "บ้านเลขที่": p.house_no || '-',
-                    "หมู่ที่": p.village_no || '-', "ADL": p.adl || '-', "เบอร์โทรศัพท์": p.phone || '-', "ขนาดผ้าอ้อม": diaperSize, "จำนวน": diaperQty,
-                    "ขนาดแผ่นรองซับ": underpadSize, "จำนวน ": underpadQty, "หมายเหตุ": remarkText
+                    "ลำดับ": runningNumber++, 
+                    "ชื่อ-สกุล": p.name || '-', 
+                    "เลขประจำตัวประชาชน": p.id_card || '-', 
+                    "บ้านเลขที่": p.house_no || '-',
+                    "หมู่ที่": p.village_no || '-', 
+                    "ADL": p.adl || '-', 
+                    "เบอร์โทรศัพท์": p.phone || '-', // 🌟 ตรงนี้ถูกส่งข้อมูลมาจาก rawData.phone แล้ว
+                    "ขนาดผ้าอ้อม": diaperSize, 
+                    "จำนวน": diaperQty,
+                    "ขนาดแผ่นรองซับ": underpadSize, 
+                    "จำนวน ": underpadQty, 
+                    "หมายเหตุ": remarkText
                 });
             });
 
