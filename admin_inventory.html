@@ -1,0 +1,755 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="utf-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title>ระบบคลังพัสดุ - อสม.สามารถ (Orsomo Smart)</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700&display=swap" rel="stylesheet"/>
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+    <script charset="utf-8" src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+    
+    <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore-compat.js"></script>
+    <script src="config.js"></script>
+    
+    <style>
+        body { font-family: 'Sarabun', sans-serif; background-color: #f4f7fa; }
+        .material-symbols-outlined { font-variation-settings: 'FILL' 1, 'wght' 400, 'GRAD' 0, 'opsz' 24; }
+        .bg-navy { background-color: #0f172a; } .text-navy { color: #0f172a; }
+        .loader-small { border: 2px solid #f3f3f3; border-bottom-color: #00694a; border-radius: 50%; width: 30px; height: 30px; animation: spin 1s linear infinite; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        .tab-btn { padding: 12px 16px; font-weight: bold; font-size: 13px; border-bottom: 3px solid transparent; color: #64748b; transition: all 0.2s; cursor: pointer; white-space: nowrap; }
+        .tab-btn.active { color: #00694a; border-bottom-color: #00694a; }
+        .check-row { accent-color: #00694a; width: 18px; height: 18px; cursor: pointer; }
+    </style>
+</head>
+<body class="flex h-[100dvh] overflow-hidden text-slate-800 relative">
+
+    <div id="sidebar-overlay" class="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-40 hidden lg:hidden" onclick="toggleSidebar()"></div>
+    <aside id="sidebar" class="fixed inset-y-0 left-0 w-72 bg-navy text-white flex flex-col z-50 transform -translate-x-full lg:translate-x-0 lg:static transition-transform duration-300 ease-in-out">
+        <div class="p-6 flex items-center justify-between border-b border-slate-700/40">
+            <div class="flex items-center gap-3">
+                <div class="w-11 h-11 rounded-xl bg-white/10 flex items-center justify-center border border-amber-400/30"><span class="material-symbols-outlined text-amber-400 text-[26px]">local_hospital</span></div>
+                <div><h1 id="sidebar-hospital-name" class="font-bold text-[15px] tracking-wide text-white">กำลังโหลด...</h1><p id="sidebar-system-name" class="text-[10px] text-amber-400 font-medium">ระบบบริหารจัดการ</p></div>
+            </div>
+            <button onclick="toggleSidebar()" class="lg:hidden text-slate-400 p-1"><span class="material-symbols-outlined">close</span></button>
+        </div>
+        <nav class="flex-1 px-4 py-6 space-y-2 overflow-y-auto">
+            <a href="admin_dashboard.html" class="flex items-center gap-3 px-4 py-3.5 text-slate-400 hover:bg-white/5 hover:text-white rounded-xl font-medium transition-all"><span class="material-symbols-outlined">dashboard</span> ภาพรวมระบบ</a>
+            <a href="admin_resources.html" class="flex items-center gap-3 px-4 py-3.5 text-slate-400 hover:bg-white/5 hover:text-white rounded-xl font-medium transition-all"><span class="material-symbols-outlined">inventory_2</span> บริหารทรัพยากร</a>
+            
+            <!-- เมนูคลังพัสดุใหม่ -->
+            <a href="admin_inventory.html" class="flex items-center justify-between px-4 py-3.5 bg-white/10 text-amber-400 rounded-xl font-bold transition-all"><span class="flex items-center gap-3"><span class="material-symbols-outlined">warehouse</span> ระบบคลังพัสดุ กปท.</span><span class="w-1.5 h-1.5 rounded-full bg-amber-400"></span></a>
+            
+            <a href="admin_datacenter.html" class="flex items-center gap-3 px-4 py-3.5 text-slate-400 hover:bg-white/5 hover:text-white rounded-xl font-medium transition-all"><span class="material-symbols-outlined">folder_shared</span> ศูนย์ข้อมูลผู้ป่วย</a>
+            <a href="admin_delegation.html" class="flex items-center gap-3 px-4 py-3.5 text-slate-400 hover:bg-white/5 hover:text-white rounded-xl font-medium transition-all"><span class="material-symbols-outlined">assignment_ind</span> มอบหมายงาน อสม.</a>
+            <a href="admin_reports.html" class="flex items-center gap-3 px-4 py-3.5 text-slate-400 hover:bg-white/5 hover:text-white rounded-xl font-medium transition-all"><span class="material-symbols-outlined">summarize</span> ศูนย์รายงาน (Export)</a>
+            <a href="admin_settings.html" id="nav-settings" class="flex items-center gap-3 px-4 py-3.5 text-slate-400 hover:bg-white/5 hover:text-white rounded-xl font-medium transition-all"><span class="material-symbols-outlined">settings</span> ตั้งค่าระบบ</a>
+        </nav>
+    </aside>
+
+    <main class="flex-1 flex flex-col min-h-0 bg-slate-50 overflow-y-auto">
+        <header class="h-20 min-h-[80px] bg-white shadow-sm flex items-center justify-between px-6 lg:px-8 z-10 flex-shrink-0 border-b border-slate-100">
+            <div class="flex items-center">
+                <button onclick="toggleSidebar()" class="lg:hidden p-2.5 -ml-2 mr-3 text-slate-600 hover:bg-slate-100 rounded-xl transition-colors"><span class="material-symbols-outlined text-[26px]">menu</span></button>
+                <div>
+                    <h2 class="text-base lg:text-lg font-bold text-slate-900 leading-tight">ระบบคลังพัสดุ (Inventory)</h2>
+                    <p id="header-hospital-name" class="text-[11px] lg:text-xs text-slate-400 font-medium mt-0.5">จัดการสต๊อกผ้าอ้อมและอุปกรณ์</p>
+                </div>
+            </div>
+        </header>
+
+        <div class="flex-1 pb-20">
+            <div class="bg-white border-b border-slate-200 flex overflow-x-auto shadow-sm z-10 sticky top-0 flex-shrink-0 hide-scrollbar px-4 lg:px-8">
+                <button class="tab-btn active flex items-center gap-2" id="tab-overview" onclick="switchTab('overview')"><span class="material-symbols-outlined text-[18px]">inventory_2</span> 1. ภาพรวมคลัง</button>
+                <button class="tab-btn flex items-center gap-2" id="tab-in" onclick="switchTab('in')"><span class="material-symbols-outlined text-[18px]">file_download</span> 2. รับของเข้า</button>
+                <button class="tab-btn flex items-center gap-2 text-amber-600" id="tab-out" onclick="switchTab('out')"><span class="material-symbols-outlined text-[18px]">how_to_vote</span> 3. จ่ายตามมติ กปท.</button>
+                <button class="tab-btn flex items-center gap-2" id="tab-adjust" onclick="switchTab('adjust')"><span class="material-symbols-outlined text-[18px]">manage_history</span> 4. ปรับปรุงยอด</button>
+                <button class="tab-btn flex items-center gap-2" id="tab-history" onclick="switchTab('history')"><span class="material-symbols-outlined text-[18px]">receipt_long</span> 5. ประวัติการทำรายการ</button>
+            </div>
+
+            <div id="loading-state" class="flex flex-col items-center justify-center py-24 space-y-3">
+                <div class="loader-small"></div><p class="text-sm text-slate-400 animate-pulse">กำลังซิงค์ข้อมูลคลังพัสดุ...</p>
+            </div>
+
+            <!-- Tab 1: ภาพรวมคลัง -->
+            <div id="content-overview" class="hidden p-4 lg:p-6 max-w-5xl mx-auto space-y-6 mt-4">
+                <div class="flex justify-between items-end">
+                    <div>
+                        <h3 class="font-bold text-lg text-slate-800">ยอดคงเหลือปัจจุบัน</h3>
+                        <p class="text-xs text-slate-500">แสดงรายการสิ่งของทั้งหมดที่มีในระบบ</p>
+                    </div>
+                    <button onclick="openNewItemModal()" class="bg-blue-50 text-blue-600 hover:bg-blue-100 font-bold text-xs px-4 py-2 rounded-xl flex items-center gap-1 transition-colors border border-blue-200">
+                        <span class="material-symbols-outlined text-[16px]">add</span> เพิ่มรายการสินค้าใหม่
+                    </button>
+                </div>
+                <div id="inventory-grid" class="grid grid-cols-2 lg:grid-cols-4 gap-4"></div>
+            </div>
+
+            <!-- Tab 2: รับของเข้า -->
+            <div id="content-in" class="hidden p-4 lg:p-6 max-w-3xl mx-auto mt-4">
+                <div class="bg-white rounded-[24px] shadow-sm border border-slate-200 p-6 lg:p-8">
+                    <h3 class="font-bold text-lg text-emerald-700 flex items-center gap-2 mb-4"><span class="material-symbols-outlined">move_to_inbox</span> บันทึกรับพัสดุเข้าคลัง</h3>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6 pb-6 border-b border-slate-100">
+                        <div>
+                            <label class="text-xs font-bold text-slate-600 mb-1 block">ประเภทการรับเข้า</label>
+                            <select id="in-type" onchange="toggleInFields()" class="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-emerald-500">
+                                <option value="INITIAL">ยอดยกมา (Initial Balance)</option>
+                                <option value="PURCHASE" selected>จัดซื้อตามรอบ กปท.</option>
+                            </select>
+                        </div>
+                        <div id="in-round-wrap">
+                            <label class="text-xs font-bold text-slate-600 mb-1 block">รอบจัดซื้อ (เช่น 1/2569)</label>
+                            <input type="text" id="in-round" class="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-emerald-500" placeholder="ระบุรอบ/ปีงบ">
+                        </div>
+                    </div>
+
+                    <div class="space-y-3 mb-6" id="in-item-list">
+                        <!-- รายการที่เลือกรับเข้าจะแสดงที่นี่ -->
+                    </div>
+                    
+                    <button onclick="addInItemRow()" class="w-full py-3 border-2 border-dashed border-slate-300 text-slate-500 rounded-xl font-bold text-sm hover:bg-slate-50 mb-6 flex justify-center items-center gap-1">
+                        <span class="material-symbols-outlined text-[18px]">add</span> เพิ่มรายการที่รับเข้า
+                    </button>
+
+                    <button onclick="submitStockIn()" id="btn-submit-in" class="w-full bg-[#00694a] hover:bg-[#005239] text-white py-3.5 rounded-xl font-bold flex items-center justify-center gap-2 shadow-md">
+                        <span class="material-symbols-outlined">save</span> บันทึกรับเข้าคลัง
+                    </button>
+                </div>
+            </div>
+
+            <!-- Tab 3: จ่ายตามมติ -->
+            <div id="content-out" class="hidden p-4 lg:p-6 max-w-5xl mx-auto mt-4">
+                <div class="bg-amber-50 p-4 rounded-xl border border-amber-200 mb-5">
+                    <h3 class="font-bold text-amber-800 text-sm flex items-center gap-2 mb-2"><span class="material-symbols-outlined text-[18px]">psychology</span> การตัดจ่ายตามมติ กปท. อัจฉริยะ</h3>
+                    <p class="text-xs text-amber-700">เลือกรอบมติที่ต้องการ ระบบจะดึงรายชื่อมาคำนวณจำนวนชิ้นให้อัตโนมัติ หากผู้ป่วยรายใดไม่ได้รับของ (เช่น เสียชีวิต/ปฏิเสธรับ) ให้เอาเครื่องหมาย ✓ ออกเพื่อไม่ให้ตัดสต๊อกครับ</p>
+                </div>
+
+                <div class="flex items-end gap-3 mb-6 bg-white p-4 rounded-2xl shadow-sm border border-slate-200">
+                    <div class="flex-1">
+                        <label class="text-xs font-bold text-slate-600 mb-1 block">เลือกรอบมติที่ต้องการตัดจ่าย</label>
+                        <select id="out-round-select" class="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-amber-500">
+                            <option value="">-- กำลังโหลดรอบมติ --</option>
+                        </select>
+                    </div>
+                    <button onclick="fetchPatientsForRound()" class="bg-navy text-white px-6 py-2.5 rounded-xl text-sm font-bold shadow-sm active:scale-95">ดึงข้อมูล</button>
+                </div>
+
+                <div id="out-workspace" class="hidden space-y-6">
+                    <div class="bg-white rounded-[20px] shadow-sm border border-slate-200 overflow-hidden">
+                        <div class="p-4 border-b border-slate-100 bg-slate-50 flex justify-between items-center">
+                            <h4 class="font-bold text-slate-700 text-sm">รายชื่อผู้มีสิทธิ์ได้รับผ้าอ้อมในรอบนี้</h4>
+                            <span class="bg-blue-100 text-blue-700 text-xs font-bold px-3 py-1 rounded-full" id="out-selected-count">เลือก 0 คน</span>
+                        </div>
+                        <div class="overflow-x-auto max-h-[400px] overflow-y-auto">
+                            <table class="w-full text-left border-collapse text-sm">
+                                <thead class="bg-white sticky top-0 z-10 shadow-sm">
+                                    <tr class="text-slate-500 text-[11px] uppercase">
+                                        <th class="p-3 w-12 text-center border-b border-slate-200"><input type="checkbox" id="out-check-all" onchange="toggleOutAll(this)" class="check-row" checked></th>
+                                        <th class="p-3 font-bold border-b border-slate-200">ชื่อ-นามสกุล</th>
+                                        <th class="p-3 font-bold border-b border-slate-200 text-center">สิทธิ์ที่ได้รับตามมติ (ชิ้น)</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="out-patient-list" class="divide-y divide-slate-100"></tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <div class="bg-white rounded-[20px] shadow-sm border border-slate-200 p-5">
+                        <h4 class="font-bold text-slate-700 text-sm mb-3">สรุปยอดผ้าอ้อมที่กำลังจะถูกตัดสต๊อก</h4>
+                        <div class="grid grid-cols-2 md:grid-cols-5 gap-2" id="out-diaper-summary"></div>
+                    </div>
+
+                    <div class="bg-white rounded-[20px] shadow-sm border border-slate-200 p-5">
+                        <div class="flex justify-between items-center mb-4">
+                            <h4 class="font-bold text-slate-700 text-sm flex items-center gap-1"><span class="material-symbols-outlined text-[18px]">add_box</span> จ่ายพัสดุอื่นๆ เพิ่มเติม (ไม่ระบุตัวตน)</h4>
+                            <button onclick="addOutOtherItem()" class="text-xs font-bold text-blue-600 hover:underline">+ เพิ่มรายการ</button>
+                        </div>
+                        <div id="out-other-items" class="space-y-3 empty:hidden mb-4"></div>
+                        <p class="text-[10px] text-slate-400">ใช้สำหรับตัดสต๊อกของส่วนกลาง เช่น ปิโตรเลียมเจล ที่เบิกไปแจกจ่ายรวมๆ ในรอบนี้</p>
+                    </div>
+
+                    <button onclick="submitStockOutRound()" id="btn-submit-out" class="w-full bg-amber-500 hover:bg-amber-600 text-white py-4 rounded-xl font-bold flex items-center justify-center gap-2 shadow-lg text-[15px]">
+                        <span class="material-symbols-outlined">inventory</span> ยืนยันการตัดจ่ายสต๊อกทั้งหมด
+                    </button>
+                </div>
+            </div>
+
+            <!-- Tab 4: ปรับปรุงยอด -->
+            <div id="content-adjust" class="hidden p-4 lg:p-6 max-w-2xl mx-auto mt-4">
+                <div class="bg-white rounded-[24px] shadow-sm border border-slate-200 p-6 lg:p-8">
+                    <h3 class="font-bold text-lg text-slate-800 flex items-center gap-2 mb-4"><span class="material-symbols-outlined">manage_history</span> ปรับปรุงยอด (Manual Adjustment)</h3>
+                    
+                    <div class="space-y-4 mb-6">
+                        <div>
+                            <label class="text-xs font-bold text-slate-600 mb-1 block">ประเภทการปรับปรุง</label>
+                            <div class="flex gap-4">
+                                <label class="flex items-center gap-2 cursor-pointer"><input type="radio" name="adj-type" value="ADJUST_IN" class="accent-emerald-600 w-4 h-4" checked> <span class="text-sm font-bold text-emerald-700">รับคืน / เพิ่มยอด (+)</span></label>
+                                <label class="flex items-center gap-2 cursor-pointer"><input type="radio" name="adj-type" value="ADJUST_OUT" class="accent-red-600 w-4 h-4"> <span class="text-sm font-bold text-red-600">ตัดทิ้ง / ลดยอด (-)</span></label>
+                            </div>
+                        </div>
+
+                        <div>
+                            <label class="text-xs font-bold text-slate-600 mb-1 block">รายการวัสดุ</label>
+                            <select id="adj-item" class="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-blue-500"></select>
+                        </div>
+
+                        <div>
+                            <label class="text-xs font-bold text-slate-600 mb-1 block">จำนวน (ชิ้น)</label>
+                            <input type="number" id="adj-qty" class="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-blue-500" min="1" placeholder="ระบุตัวเลข">
+                        </div>
+
+                        <div>
+                            <label class="text-xs font-bold text-slate-600 mb-1 block">เหตุผลประกอบการปรับปรุง</label>
+                            <input type="text" id="adj-reason" class="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-blue-500" placeholder="เช่น ผู้ป่วยเสียชีวิตนำมาส่งคืน, ชำรุดสูญหาย เป็นต้น">
+                        </div>
+                    </div>
+
+                    <button onclick="submitAdjustment()" id="btn-submit-adj" class="w-full bg-navy text-white py-3.5 rounded-xl font-bold flex items-center justify-center gap-2 shadow-md">
+                        <span class="material-symbols-outlined">save</span> บันทึกการปรับปรุงยอด
+                    </button>
+                </div>
+            </div>
+
+            <!-- Tab 5: ประวัติ -->
+            <div id="content-history" class="hidden p-4 lg:p-6 max-w-5xl mx-auto mt-4">
+                <div class="bg-white rounded-[24px] shadow-sm border border-slate-200 overflow-hidden">
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left border-collapse text-sm">
+                            <thead class="bg-slate-50 border-b border-slate-200 text-slate-600 text-[11px] uppercase">
+                                <tr>
+                                    <th class="p-4 font-bold">วัน/เวลา</th>
+                                    <th class="p-4 font-bold">ประเภท / อ้างอิงรอบ</th>
+                                    <th class="p-4 font-bold">รายการสินค้า (จำนวน)</th>
+                                    <th class="p-4 font-bold">หมายเหตุ</th>
+                                    <th class="p-4 font-bold">ผู้ทำรายการ</th>
+                                </tr>
+                            </thead>
+                            <tbody id="history-list" class="divide-y divide-slate-100"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Modal เพิ่มรายการใหม่ -->
+        <div id="new-item-modal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4 opacity-0 transition-opacity duration-300">
+            <div class="bg-white rounded-[24px] w-full max-w-sm overflow-hidden shadow-2xl transform scale-95 transition-transform duration-300" id="new-item-content">
+                <div class="p-6">
+                    <h3 class="text-lg font-bold text-blue-700 mb-4 flex items-center gap-2"><span class="material-symbols-outlined">add_box</span> เพิ่มรายการสินค้าใหม่</h3>
+                    <div class="space-y-3">
+                        <div><label class="text-xs font-bold text-slate-600 block mb-1">ชื่อรายการ (เช่น ผ้าอ้อมไซส์ XXL)</label><input type="text" id="new-item-name" class="w-full px-3 py-2 border rounded-xl bg-slate-50 text-sm"></div>
+                        <div><label class="text-xs font-bold text-slate-600 block mb-1">หน่วยนับ (เช่น ชิ้น, กระปุก)</label><input type="text" id="new-item-unit" value="ชิ้น" class="w-full px-3 py-2 border rounded-xl bg-slate-50 text-sm"></div>
+                        <div><label class="text-xs font-bold text-slate-600 block mb-1">หมวดหมู่</label>
+                            <select id="new-item-cat" class="w-full px-3 py-2 border rounded-xl bg-slate-50 text-sm">
+                                <option value="diaper">ผ้าอ้อมผู้ใหญ่</option><option value="pad">แผ่นรองซับ</option><option value="other" selected>วัสดุอื่นๆ</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+                <div class="flex border-t border-slate-100 bg-slate-50">
+                    <button onclick="closeNewItemModal()" class="flex-1 py-3 text-sm font-bold text-slate-500">ยกเลิก</button>
+                    <button onclick="saveNewItem()" class="flex-1 py-3 text-sm font-bold text-white bg-blue-600">บันทึก</button>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.firestore();
+
+        let inventoryItems = [];
+        let allPatients = [];
+        let currentTab = 'overview';
+        let currentUserRole = "ADMIN";
+        let currentUserName = "Admin";
+        let currentUserUid = "";
+
+        // Standard Default Items
+        const STANDARD_ITEMS = [
+            { id: "item_s", name: "ผ้าอ้อมไซส์ S", category: "diaper", unit: "ชิ้น", balance: 0 },
+            { id: "item_m", name: "ผ้าอ้อมไซส์ M", category: "diaper", unit: "ชิ้น", balance: 0 },
+            { id: "item_l", name: "ผ้าอ้อมไซส์ L", category: "diaper", unit: "ชิ้น", balance: 0 },
+            { id: "item_xl", name: "ผ้าอ้อมไซส์ XL", category: "diaper", unit: "ชิ้น", balance: 0 },
+            { id: "item_pad", name: "แผ่นรองซับ", category: "pad", unit: "ชิ้น", balance: 0 },
+            { id: "item_jelly", name: "ปิโตรเลียมเจล", category: "other", unit: "กระปุก", balance: 0 }
+        ];
+
+        function toggleSidebar() { document.getElementById('sidebar').classList.toggle('-translate-x-full'); }
+
+        function cleanJSON(rawStr) {
+            if (!rawStr || String(rawStr).trim() === '') return null;
+            let cleanStr = String(rawStr).trim();
+            if (cleanStr.includes('""')) cleanStr = cleanStr.replace(/""/g, '"');
+            if (cleanStr.startsWith('"') && cleanStr.endsWith('"')) cleanStr = cleanStr.substring(1, cleanStr.length - 1);
+            try { return JSON.parse(cleanStr); } catch(e) { return null; }
+        }
+
+        document.addEventListener("DOMContentLoaded", () => {
+            document.getElementById('sidebar-hospital-name').innerText = DEFAULT_CONFIGS.HOSPITAL_NAME;
+            liff.init({ liffId: LIFF_ID }).then(() => {
+                const mockUid = localStorage.getItem('dev_mock_uid');
+                if (mockUid) verifyAdminAccess(mockUid);
+                else if (liff.isLoggedIn()) liff.getProfile().then(p => { currentUserName = p.displayName; verifyAdminAccess(p.userId); }).catch(() => window.location.href='index.html');
+                else window.location.href='index.html';
+            });
+        });
+
+        async function verifyAdminAccess(uid) {
+            currentUserUid = uid;
+            try {
+                const userDoc = await db.collection('VHVs').doc(String(uid)).get();
+                if (userDoc.exists) {
+                    const data = userDoc.data();
+                    if(data.name) currentUserName = data.name;
+                    currentUserRole = String(data.role || '').toUpperCase();
+                    
+                    // 🌟 ล็อกสิทธิ์: ให้เข้าได้เฉพาะ ADMIN ส่วนกลางเท่านั้น 🌟
+                    if (currentUserRole === 'ADMIN') {
+                        await initializeInventory();
+                        return;
+                    }
+                }
+                
+                // ถ้าเป็น SUB_ADMIN (รพ.สต.) ให้เด้งกลับไปหน้าแดชบอร์ด, ถ้าเป็น อสม. ให้เด้งออกไปหน้าแรก
+                if (currentUserRole === 'SUB_ADMIN') {
+                    window.location.href = 'admin_dashboard.html';
+                } else {
+                    window.location.href = 'index.html';
+                }
+            } catch (error) { window.location.href = 'index.html'; }
+        }
+
+        // ==========================================
+        // 1. Core Inventory Logic
+        // ==========================================
+        async function initializeInventory() {
+            try {
+                const snap = await db.collection('Inventory_Items').get();
+                if (snap.empty) {
+                    // ถ้ายังไม่มีฐานข้อมูลคลังเลย ให้เสกของมาตรฐานลงไปให้
+                    const batch = db.batch();
+                    STANDARD_ITEMS.forEach(item => {
+                        const ref = db.collection('Inventory_Items').doc(item.id);
+                        batch.set(ref, item);
+                    });
+                    await batch.commit();
+                    await fetchInventory();
+                } else {
+                    await fetchInventory();
+                }
+                
+                // โหลดรอบมติรอไว้เลย
+                await fetchAvailableRounds();
+                
+                document.getElementById('loading-state').classList.add('hidden');
+                switchTab('overview');
+            } catch(e) { showToast('เกิดข้อผิดพลาดในการโหลดคลังพัสดุ', 'error'); }
+        }
+
+        async function fetchInventory() {
+            const snap = await db.collection('Inventory_Items').get();
+            inventoryItems = [];
+            snap.forEach(doc => inventoryItems.push({ docId: doc.id, ...doc.data() }));
+            inventoryItems.sort((a,b) => {
+                if(a.category === b.category) return a.name.localeCompare(b.name);
+                return a.category.localeCompare(b.category);
+            });
+            populateItemDropdowns();
+        }
+
+        function populateItemDropdowns() {
+            let html = '<option value="">-- เลือกรายการ --</option>';
+            inventoryItems.forEach(i => { html += `<option value="${i.docId}">${i.name} (คงเหลือ: ${i.balance} ${i.unit})</option>`; });
+            document.getElementById('adj-item').innerHTML = html;
+        }
+
+        function switchTab(tab) {
+            currentTab = tab;
+            ['overview', 'in', 'out', 'adjust', 'history'].forEach(t => {
+                document.getElementById(`tab-${t}`).classList.remove('active');
+                document.getElementById(`content-${t}`).classList.add('hidden');
+            });
+            document.getElementById(`tab-${tab}`).classList.add('active');
+            document.getElementById(`content-${tab}`).classList.remove('hidden');
+
+            if(tab === 'overview') renderOverview();
+            else if(tab === 'in') renderStockInInitial();
+            else if(tab === 'history') loadHistory();
+        }
+
+        // ==========================================
+        // Tab 1: ภาพรวม
+        // ==========================================
+        function renderOverview() {
+            const grid = document.getElementById('inventory-grid');
+            grid.innerHTML = '';
+            inventoryItems.forEach(i => {
+                const color = i.category === 'diaper' ? 'blue' : (i.category === 'pad' ? 'emerald' : 'amber');
+                const icon = i.category === 'diaper' ? 'wc' : (i.category === 'pad' ? 'layers' : 'category');
+                
+                grid.insertAdjacentHTML('beforeend', `
+                    <div class="bg-white p-5 rounded-[20px] shadow-sm border border-${color}-100 flex flex-col items-center text-center">
+                        <div class="w-12 h-12 rounded-full bg-${color}-50 text-${color}-600 flex items-center justify-center mb-3">
+                            <span class="material-symbols-outlined">${icon}</span>
+                        </div>
+                        <h4 class="font-bold text-sm text-slate-700 leading-tight">${i.name}</h4>
+                        <p class="text-2xl font-black text-navy mt-2">${Number(i.balance).toLocaleString()} <span class="text-[10px] font-normal text-slate-500">${i.unit}</span></p>
+                    </div>
+                `);
+            });
+        }
+
+        function openNewItemModal() {
+            document.getElementById('new-item-name').value = '';
+            document.getElementById('new-item-modal').classList.remove('hidden');
+            setTimeout(() => { document.getElementById('new-item-modal').classList.remove('opacity-0'); document.getElementById('new-item-content').classList.remove('scale-95'); }, 10);
+        }
+        function closeNewItemModal() {
+            document.getElementById('new-item-modal').classList.add('opacity-0'); document.getElementById('new-item-content').classList.add('scale-95');
+            setTimeout(() => { document.getElementById('new-item-modal').classList.add('hidden'); }, 300);
+        }
+        async function saveNewItem() {
+            const name = document.getElementById('new-item-name').value.trim();
+            const unit = document.getElementById('new-item-unit').value.trim();
+            const cat = document.getElementById('new-item-cat').value;
+            if(!name || !unit) return showToast('กรุณากรอกข้อมูลให้ครบ', 'error');
+            
+            const id = 'item_' + Date.now();
+            try {
+                await db.collection('Inventory_Items').doc(id).set({ id: id, name: name, unit: unit, category: cat, balance: 0, created_at: firebase.firestore.FieldValue.serverTimestamp() });
+                showToast('เพิ่มรายการใหม่สำเร็จ');
+                closeNewItemModal();
+                await fetchInventory();
+                renderOverview();
+            } catch(e) { showToast('บันทึกล้มเหลว', 'error'); }
+        }
+
+        // ==========================================
+        // Tab 2: รับเข้า
+        // ==========================================
+        function toggleInFields() {
+            const type = document.getElementById('in-type').value;
+            if(type === 'INITIAL') document.getElementById('in-round-wrap').classList.add('hidden');
+            else document.getElementById('in-round-wrap').classList.remove('hidden');
+        }
+
+        function renderStockInInitial() {
+            const list = document.getElementById('in-item-list');
+            if(list.children.length === 0) addInItemRow();
+        }
+
+        function addInItemRow() {
+            const rowId = 'in_' + Date.now();
+            let optHtml = '<option value="">- เลือกรายการ -</option>';
+            inventoryItems.forEach(i => optHtml += `<option value="${i.docId}">${i.name}</option>`);
+
+            const html = `
+                <div class="flex gap-2 items-center bg-slate-50 p-3 rounded-xl border border-slate-200" id="${rowId}">
+                    <select class="flex-1 px-3 py-2 rounded-lg text-sm border-slate-300 focus:ring-emerald-500 in-item-select">${optHtml}</select>
+                    <input type="number" class="w-24 px-3 py-2 rounded-lg text-sm border-slate-300 text-center in-item-qty" placeholder="จำนวน" min="1">
+                    <button onclick="document.getElementById('${rowId}').remove()" class="text-red-400 hover:text-red-600"><span class="material-symbols-outlined">delete</span></button>
+                </div>
+            `;
+            document.getElementById('in-item-list').insertAdjacentHTML('beforeend', html);
+        }
+
+        async function submitStockIn() {
+            const type = document.getElementById('in-type').value;
+            const round = document.getElementById('in-round').value.trim();
+            if(type === 'PURCHASE' && !round) return showToast('กรุณาระบุรอบจัดซื้อ', 'error');
+
+            const rows = document.querySelectorAll('#in-item-list > div');
+            let itemsToSave = [];
+            let isValid = true;
+
+            rows.forEach(r => {
+                const itemId = r.querySelector('.in-item-select').value;
+                const qty = parseInt(r.querySelector('.in-item-qty').value);
+                if(!itemId || !qty || qty <= 0) isValid = false;
+                else {
+                    const itemData = inventoryItems.find(i => i.docId === itemId);
+                    itemsToSave.push({ itemId: itemId, name: itemData.name, qty: qty, unit: itemData.unit });
+                }
+            });
+
+            if(!isValid || itemsToSave.length === 0) return showToast('กรุณาเลือกรายการและใส่จำนวนให้ถูกต้อง', 'error');
+
+            const btn = document.getElementById('btn-submit-in');
+            btn.innerHTML = 'กำลังบันทึก...'; btn.disabled = true;
+
+            try {
+                await executeTransaction(type === 'INITIAL' ? 'INITIAL' : 'IN_PURCHASE', itemsToSave, round, type === 'INITIAL' ? 'ยอดยกมาเริ่มต้น' : `จัดซื้อรอบ ${round}`);
+                showToast('บันทึกรับเข้าคลังสำเร็จ!');
+                document.getElementById('in-item-list').innerHTML = '';
+                addInItemRow();
+                document.getElementById('in-round').value = '';
+            } catch(e) { showToast('บันทึกไม่สำเร็จ', 'error'); }
+            
+            btn.innerHTML = '<span class="material-symbols-outlined">save</span> บันทึกรับเข้าคลัง'; btn.disabled = false;
+        }
+
+        // ==========================================
+        // Tab 3: จ่ายตามมติ กปท. (พระเอกของเรา)
+        // ==========================================
+        async function fetchAvailableRounds() {
+            const snap = await db.collection('Patients').get();
+            let rounds = new Set();
+            snap.forEach(doc => {
+                const d = cleanJSON(doc.data().diaper);
+                if(d && Array.isArray(d.allocations)) d.allocations.forEach(r => rounds.add(r));
+            });
+            const sel = document.getElementById('out-round-select');
+            sel.innerHTML = '<option value="">-- เลือกรอบมติ --</option>';
+            Array.from(rounds).sort().reverse().forEach(r => { sel.insertAdjacentHTML('beforeend', `<option value="${r}">รอบ ${r}</option>`); });
+        }
+
+        async function fetchPatientsForRound() {
+            const round = document.getElementById('out-round-select').value;
+            if(!round) return showToast('กรุณาเลือกรอบมติก่อน', 'error');
+
+            showToast('กำลังดึงข้อมูล...','info');
+            const snap = await db.collection('Patients').get();
+            let targetPatients = [];
+
+            snap.forEach(doc => {
+                const p = doc.data();
+                if(String(p.status).toLowerCase() !== 'active') return;
+                const d = cleanJSON(p.diaper);
+                if(d && Array.isArray(d.allocations) && d.allocations.includes(round)) {
+                    // คำนวณชิ้นให้เลย
+                    const allocDays = parseInt(d.alloc_days) || (parseInt(d.alloc_months)*30) || 30;
+                    const dQty = d.req_diaper ? Math.ceil((parseInt(d.approved_diaper||0)/30)*allocDays) : 0;
+                    const pQty = d.req_underpad ? Math.ceil((parseInt(d.approved_underpad||0)/30)*allocDays) : 0;
+                    
+                    targetPatients.push({ id: doc.id, name: p.name, size: String(d.size||'L').toUpperCase(), diaperQty: dQty, padQty: pQty });
+                }
+            });
+
+            if(targetPatients.length === 0) return showToast('ไม่พบผู้ป่วยในรอบนี้', 'error');
+
+            const tbody = document.getElementById('out-patient-list');
+            tbody.innerHTML = '';
+            targetPatients.forEach(p => {
+                let detailTxt = [];
+                if(p.diaperQty > 0) detailTxt.push(`ผ้าอ้อมไซส์ ${p.size} (${p.diaperQty} ชิ้น)`);
+                if(p.padQty > 0) detailTxt.push(`แผ่นรอง (${p.padQty} ชิ้น)`);
+                
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td class="p-3 text-center"><input type="checkbox" class="check-row out-row-cb" onchange="calculateOutSummary()" checked></td>
+                    <td class="p-3 font-bold text-slate-700">${p.name}</td>
+                    <td class="p-3 text-[11px] text-blue-600 font-medium">${detailTxt.join(' + ')}</td>
+                `;
+                tr.dataset.info = JSON.stringify(p);
+                tbody.appendChild(tr);
+            });
+
+            document.getElementById('out-workspace').classList.remove('hidden');
+            document.getElementById('out-other-items').innerHTML = ''; // reset other items
+            calculateOutSummary();
+        }
+
+        function toggleOutAll(source) {
+            document.querySelectorAll('.out-row-cb').forEach(cb => cb.checked = source.checked);
+            calculateOutSummary();
+        }
+
+        let currentOutPayload = []; // เก็บยอดรวมเพื่อเตรียมตัด
+
+        function calculateOutSummary() {
+            let sums = { S:0, M:0, L:0, XL:0, PAD:0 };
+            let count = 0;
+
+            document.querySelectorAll('.out-row-cb:checked').forEach(cb => {
+                count++;
+                const p = JSON.parse(cb.closest('tr').dataset.info);
+                if(p.diaperQty > 0) {
+                    if(sums.hasOwnProperty(p.size)) sums[p.size] += p.diaperQty;
+                    else sums['L'] += p.diaperQty; // default fallback
+                }
+                if(p.padQty > 0) sums['PAD'] += p.padQty;
+            });
+
+            document.getElementById('out-selected-count').innerText = `เลือก ${count} คน`;
+            
+            const sumContainer = document.getElementById('out-diaper-summary');
+            sumContainer.innerHTML = '';
+            
+            // Map กับ Inventory Items จริง
+            currentOutPayload = [];
+            const mapping = { 'S': 'item_s', 'M': 'item_m', 'L': 'item_l', 'XL': 'item_xl', 'PAD': 'item_pad' };
+            
+            Object.keys(sums).forEach(key => {
+                if(sums[key] > 0) {
+                    const itemId = inventoryItems.find(i => i.docId === mapping[key])?.docId || mapping[key];
+                    const itemName = key === 'PAD' ? 'แผ่นรองซับ' : `ผ้าอ้อมไซส์ ${key}`;
+                    currentOutPayload.push({ itemId: itemId, name: itemName, qty: sums[key] });
+                    
+                    sumContainer.insertAdjacentHTML('beforeend', `
+                        <div class="bg-slate-50 p-2 rounded-xl border border-slate-200 text-center">
+                            <p class="text-[10px] text-slate-500">${itemName}</p>
+                            <p class="font-bold text-navy text-lg">${sums[key]} <span class="text-[10px]">ชิ้น</span></p>
+                        </div>
+                    `);
+                }
+            });
+            if(currentOutPayload.length === 0) sumContainer.innerHTML = '<p class="text-xs text-slate-400 col-span-full">ไม่มียอดที่ต้องตัด</p>';
+        }
+
+        function addOutOtherItem() {
+            const rowId = 'out_other_' + Date.now();
+            let optHtml = '<option value="">- เลือกวัสดุอื่นๆ -</option>';
+            inventoryItems.filter(i => i.category === 'other').forEach(i => optHtml += `<option value="${i.docId}">${i.name} (คงเหลือ: ${i.balance})</option>`);
+
+            const html = `
+                <div class="flex gap-2 items-center bg-slate-50 p-2.5 rounded-xl border border-slate-200" id="${rowId}">
+                    <select class="flex-1 px-3 py-1.5 rounded-lg text-xs border-slate-300 out-other-select">${optHtml}</select>
+                    <input type="number" class="w-20 px-3 py-1.5 rounded-lg text-xs border-slate-300 text-center out-other-qty" placeholder="จำนวน" min="1">
+                    <button onclick="document.getElementById('${rowId}').remove()" class="text-red-400 hover:text-red-600"><span class="material-symbols-outlined text-[16px]">close</span></button>
+                </div>
+            `;
+            document.getElementById('out-other-items').insertAdjacentHTML('beforeend', html);
+        }
+
+        async function submitStockOutRound() {
+            if(currentOutPayload.length === 0) return showToast('ไม่มียอดผ้าอ้อมที่ต้องตัด', 'error');
+            const round = document.getElementById('out-round-select').value;
+            
+            // รวมยอดวัสดุอื่นๆ
+            let finalPayload = [...currentOutPayload];
+            const otherRows = document.querySelectorAll('#out-other-items > div');
+            otherRows.forEach(r => {
+                const itemId = r.querySelector('.out-other-select').value;
+                const qty = parseInt(r.querySelector('.out-other-qty').value);
+                if(itemId && qty > 0) {
+                    const itemData = inventoryItems.find(i => i.docId === itemId);
+                    finalPayload.push({ itemId: itemId, name: itemData.name, qty: qty, unit: itemData.unit });
+                }
+            });
+
+            // 🌟 ตรวจสอบว่าของพอตัดหรือไม่ 🌟
+            for (let item of finalPayload) {
+                const invItem = inventoryItems.find(i => i.docId === item.itemId);
+                if(!invItem || invItem.balance < item.qty) {
+                    return showToast(`สต๊อก "${item.name}" มีไม่พอตัดจ่าย! (คงเหลือ ${invItem ? invItem.balance : 0})`, 'error');
+                }
+            }
+
+            if(!confirm('ยืนยันการตัดสต๊อกทั้งหมดตามมติรอบ ' + round + ' ใช่หรือไม่?')) return;
+
+            const btn = document.getElementById('btn-submit-out');
+            btn.innerHTML = 'กำลังประมวลผล...'; btn.disabled = true;
+
+            try {
+                await executeTransaction('OUT_ROUND', finalPayload, round, `ตัดจ่ายตามมติรอบ ${round}`);
+                showToast('ตัดจ่ายสต๊อกเรียบร้อยแล้ว!');
+                document.getElementById('out-workspace').classList.add('hidden');
+                document.getElementById('out-round-select').value = '';
+            } catch(e) { showToast('ทำรายการไม่สำเร็จ', 'error'); }
+
+            btn.innerHTML = '<span class="material-symbols-outlined">inventory</span> ยืนยันการตัดจ่ายสต๊อกทั้งหมด'; btn.disabled = false;
+        }
+
+        // ==========================================
+        // Tab 4: ปรับปรุงยอด (Manual)
+        // ==========================================
+        async function submitAdjustment() {
+            const type = document.querySelector('input[name="adj-type"]:checked').value;
+            const itemId = document.getElementById('adj-item').value;
+            const qty = parseInt(document.getElementById('adj-qty').value);
+            const reason = document.getElementById('adj-reason').value.trim();
+
+            if(!itemId || !qty || qty <= 0 || !reason) return showToast('กรุณากรอกข้อมูลให้ครบถ้วนและระบุเหตุผล', 'error');
+
+            const itemData = inventoryItems.find(i => i.docId === itemId);
+
+            if(type === 'ADJUST_OUT' && itemData.balance < qty) {
+                return showToast(`สต๊อกไม่พอตัด! (คงเหลือ ${itemData.balance})`, 'error');
+            }
+
+            const btn = document.getElementById('btn-submit-adj');
+            btn.innerHTML = 'กำลังบันทึก...'; btn.disabled = true;
+
+            try {
+                const payload = [{ itemId: itemId, name: itemData.name, qty: qty, unit: itemData.unit }];
+                await executeTransaction(type, payload, '', reason);
+                showToast('ปรับปรุงยอดสำเร็จ!');
+                document.getElementById('adj-qty').value = '';
+                document.getElementById('adj-reason').value = '';
+            } catch(e) { showToast('ทำรายการไม่สำเร็จ', 'error'); }
+
+            btn.innerHTML = '<span class="material-symbols-outlined">save</span> บันทึกการปรับปรุงยอด'; btn.disabled = false;
+        }
+
+        // ==========================================
+        // Firebase Transaction Execution (Centralized)
+        // ==========================================
+        async function executeTransaction(type, itemsArr, round = '', note = '') {
+            const batch = db.batch();
+            
+            // 1. Update Inventory Balances
+            for (let item of itemsArr) {
+                const ref = db.collection('Inventory_Items').doc(item.itemId);
+                let modifier = (type === 'INITIAL' || type === 'IN_PURCHASE' || type === 'ADJUST_IN') ? item.qty : -Math.abs(item.qty);
+                batch.update(ref, { balance: firebase.firestore.FieldValue.increment(modifier) });
+            }
+
+            // 2. Save Log to Transactions
+            const logRef = db.collection('Inventory_Transactions').doc();
+            batch.set(logRef, {
+                type: type,
+                round: round,
+                items: itemsArr,
+                note: note,
+                actor_uid: currentUserUid,
+                actor_name: currentUserName,
+                timestamp: firebase.firestore.FieldValue.serverTimestamp()
+            });
+
+            await batch.commit();
+            await fetchInventory(); // refresh local memory
+        }
+
+        // ==========================================
+        // Tab 5: ประวัติ 
+        // ==========================================
+        async function loadHistory() {
+            const list = document.getElementById('history-list');
+            list.innerHTML = '<tr><td colspan="5" class="text-center py-10 text-slate-400">กำลังโหลดประวัติ...</td></tr>';
+            
+            try {
+                const snap = await db.collection('Inventory_Transactions').orderBy('timestamp', 'desc').limit(50).get();
+                if(snap.empty) { list.innerHTML = '<tr><td colspan="5" class="text-center py-10 text-slate-400">ยังไม่มีประวัติการทำรายการ</td></tr>'; return; }
+                
+                let html = '';
+                snap.forEach(doc => {
+                    const d = doc.data();
+                    const date = d.timestamp ? new Date(d.timestamp.toDate()).toLocaleString('th-TH') : '-';
+                    
+                    let badge = '';
+                    if(d.type.includes('IN')) badge = `<span class="bg-emerald-50 text-emerald-600 px-2 py-0.5 rounded text-[10px] font-bold">+ รับเข้า</span>`;
+                    else if(d.type.includes('OUT')) badge = `<span class="bg-amber-50 text-amber-600 px-2 py-0.5 rounded text-[10px] font-bold">- จ่ายออก</span>`;
+                    if(d.type === 'INITIAL') badge = `<span class="bg-blue-50 text-blue-600 px-2 py-0.5 rounded text-[10px] font-bold">ยอดยกมา</span>`;
+
+                    const itemsTxt = d.items.map(i => `${i.name} (${i.qty})`).join(', ');
+
+                    html += `
+                        <tr class="hover:bg-slate-50 transition-colors">
+                            <td class="p-4 text-[11px] text-slate-500 whitespace-nowrap">${date}</td>
+                            <td class="p-4">${badge} <span class="text-xs font-bold text-navy ml-1">${d.round ? `รอบ ${d.round}` : ''}</span></td>
+                            <td class="p-4 text-xs font-bold text-blue-600 leading-tight">${itemsTxt}</td>
+                            <td class="p-4 text-[11px] text-slate-600">${d.note || '-'}</td>
+                            <td class="p-4 text-[11px] text-slate-400">${d.actor_name}</td>
+                        </tr>
+                    `;
+                });
+                list.innerHTML = html;
+            } catch(e) { list.innerHTML = '<tr><td colspan="5" class="text-center py-10 text-red-500">โหลดข้อมูลไม่สำเร็จ</td></tr>'; }
+        }
+
+    </script>
+</body>
+</html>
