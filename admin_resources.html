@@ -42,6 +42,7 @@
             <a href="admin_map.html" class="flex items-center gap-3 px-4 py-3.5 text-slate-400 hover:bg-white/5 hover:text-white rounded-xl font-medium transition-all"><span class="material-symbols-outlined">map</span> แผนที่พิกัดผู้ป่วย</a>
             <a href="admin_delegation.html" class="flex items-center gap-3 px-4 py-3.5 text-slate-400 hover:bg-white/5 hover:text-white rounded-xl font-medium transition-all"><span class="material-symbols-outlined">assignment_ind</span> มอบหมายงาน อสม.</a>
             <a href="admin_reports.html" class="flex items-center gap-3 px-4 py-3.5 text-slate-400 hover:bg-white/5 hover:text-white rounded-xl font-medium transition-all"><span class="material-symbols-outlined">summarize</span> รายงาน (Export)</a>
+            <a href="admin_inventory.html" id="nav-inventory" class="flex items-center justify-between px-4 py-3.5 bg-white/10 text-amber-400 rounded-xl font-bold transition-all"><span class="flex items-center gap-3"><span class="material-symbols-outlined">warehouse</span> ระบบคลังพัสดุ กปท.</span></a>
             <a href="admin_settings.html" id="nav-settings" class="flex items-center gap-3 px-4 py-3.5 text-slate-400 hover:bg-white/5 hover:text-white rounded-xl font-medium transition-all"><span class="material-symbols-outlined">settings</span> ตั้งค่าระบบ</a>        
         </nav>
     </aside>
@@ -191,9 +192,15 @@
                     document.getElementById('label-price-underpad').innerText = configUnderpadPrice.toFixed(2);
                     
                     if (currentUserRole === 'SUB_ADMIN') {
-                        const navSettings = document.getElementById('nav-settings');
-                        if (navSettings) navSettings.style.display = 'none';
-                    }
+    const navSettings = document.getElementById('nav-settings');
+    if (navSettings) navSettings.style.display = 'none';
+    
+    // 👇 โค้ดที่เพิ่มใหม่ สำหรับซ่อนเมนูคลังพัสดุ 👇
+    const navInventory = document.getElementById('nav-inventory');
+    if (navInventory) navInventory.style.display = 'none';
+    
+    // (โค้ดอื่นๆ ที่มีอยู่เดิม ปล่อยไว้เหมือนเดิมครับ)
+}
 
                     loadResourceData();
                 } else {
