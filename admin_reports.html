@@ -205,11 +205,9 @@
                     <div class="space-y-4">
                         <div><label class="text-xs font-bold text-slate-600 mb-1 block">ปีงบประมาณ (พ.ศ.)</label><input type="number" id="input-fy" value="2567" class="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-amber-500"></div>
                         <div><label class="text-xs font-bold text-slate-600 mb-1 block">ครั้งที่ / รอบที่พิจารณา</label><input type="number" id="input-round" value="1" class="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-amber-500"></div>
-                        <div><label class="text-xs font-bold text-slate-600 mb-1 block">จำนวนเดือนที่อนุมัติ</label>
-                            <select id="input-months" class="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-amber-500">
-                                <option value="3">3 เดือน</option><option value="6" selected>6 เดือน</option><option value="9">9 เดือน</option><option value="12">12 เดือน</option>
-                            </select>
-                        </div>
+                        <div><label class="text-xs font-bold text-slate-600 mb-1 block">จำนวนวันที่อนุมัติ (วัน)</label>
+                        <input type="number" id="input-days" value="180" class="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-amber-500" placeholder="เช่น 180">
+                    </div>
                     </div>
                 </div>
                 <div class="flex border-t border-gray-100 bg-gray-50">
@@ -541,7 +539,7 @@
             const patientIds = Array.from(checkedBoxes).map(cb => cb.value);
             const fy = document.getElementById('input-fy').value;
             const round = document.getElementById('input-round').value;
-            const months = document.getElementById('input-months').value;
+            const days = document.getElementById('input-days').value;
 
             const btn = document.getElementById('btn-save-committee');
             btn.disabled = true; btn.innerText = 'กำลังบันทึก...';
@@ -558,7 +556,7 @@
                         diaperObj.committee_status = 'จัดสรรแล้ว';
                         diaperObj.fy = fy;
                         diaperObj.round = round;
-                        diaperObj.alloc_months = months;
+                        diaperObj.alloc_days = days;
                         
                         if (!diaperObj.allocations) diaperObj.allocations = [];
                         if (!diaperObj.allocations.includes(allocStr)) diaperObj.allocations.push(allocStr);
@@ -596,11 +594,19 @@
                 let remarkText = '';
 
                 if (d) {
-                    const allocMonths = parseInt(d.alloc_months) || 1; 
-                    if (d.req_diaper && parseInt(d.approved_diaper) > 0) { diaperSize = d.size || '-'; diaperQty = parseInt(d.approved_diaper) * allocMonths; }
-                    if (d.req_underpad && parseInt(d.approved_underpad) > 0) { underpadSize = 'แผ่นรองซับ'; underpadQty = parseInt(d.approved_underpad) * allocMonths; }
-                    if (d.allocations && d.allocations.length > 0) { remarkText = `ได้รับรอบ ${d.allocations.join(', ')}`; }
+                // รองรับทั้งระบบใหม่ (วัน) และระบบเก่า (เดือน)
+                const allocDays = d.alloc_days ? parseInt(d.alloc_days) : (parseInt(d.alloc_months) ? parseInt(d.alloc_months) * 30 : 30); 
+    
+                if (d.req_diaper && parseInt(d.approved_diaper) > 0) { 
+                    diaperSize = d.size || '-'; 
+                    diaperQty = Math.ceil((parseInt(d.approved_diaper) / 30) * allocDays); 
                 }
+                if (d.req_underpad && parseInt(d.approved_underpad) > 0) { 
+                    underpadSize = 'แผ่นรองซับ'; 
+                    underpadQty = Math.ceil((parseInt(d.approved_underpad) / 30) * allocDays); 
+                }
+                if (d.allocations && d.allocations.length > 0) { remarkText = `ได้รับรอบ ${d.allocations.join(', ')}`; }
+            }
 
                 exportData.push({
                     "ลำดับ": runningNumber++, 
