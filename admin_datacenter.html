@@ -47,6 +47,11 @@
             <a href="admin_resources.html" class="flex items-center gap-3 px-4 py-3.5 text-slate-400 hover:bg-white/5 hover:text-white rounded-xl font-medium transition-all">
                 <span class="material-symbols-outlined">inventory_2</span> บริหารทรัพยากร
             </a>
+            
+            <a href="admin_inventory.html" id="nav-inventory" class="flex items-center gap-3 px-4 py-3.5 text-slate-400 hover:bg-white/5 hover:text-white rounded-xl font-medium transition-all">
+                <span class="material-symbols-outlined">warehouse</span> ระบบคลังพัสดุ กปท.
+            </a>
+
             <a href="admin_datacenter.html" class="flex items-center justify-between px-4 py-3.5 bg-white/10 text-amber-400 rounded-xl font-bold transition-all">
                 <span class="flex items-center gap-3"><span class="material-symbols-outlined">folder_shared</span> ศูนย์ข้อมูลผู้ป่วย</span>
                 <span class="w-1.5 h-1.5 rounded-full bg-amber-400"></span>
@@ -132,6 +137,7 @@
             </div>
         </div>
 
+        <!-- Modal นำเข้าข้อมูล (Import) -->
         <div id="import-modal" class="fixed inset-0 bg-[#111c2d]/40 backdrop-blur-sm z-[100] hidden flex items-center justify-center p-4 opacity-0 transition-opacity duration-300">
             <div class="bg-white rounded-[24px] w-full max-w-md overflow-hidden shadow-2xl transform scale-95 transition-transform duration-300" id="import-modal-content">
                 <div class="p-6 border-b border-slate-100 flex justify-between items-center bg-slate-50">
@@ -218,6 +224,11 @@
                     const villageSelect = document.getElementById('village-filter');
                     
                     if (currentUserRole === 'SUB_ADMIN') {
+                        const navSettings = document.getElementById('nav-settings');
+                        if (navSettings) navSettings.style.display = 'none';
+                        const navInventory = document.getElementById('nav-inventory');
+                        if (navInventory) navInventory.style.display = 'none';
+                        
                         assignedVillages.forEach(v => { villageSelect.insertAdjacentHTML('beforeend', `<option value="${v}">หมู่ที่ ${v}</option>`); });
                     } else {
                         for(let i=1; i<=vCount; i++){ villageSelect.insertAdjacentHTML('beforeend', `<option value="${i}">หมู่ที่ ${i}</option>`); }
@@ -228,7 +239,7 @@
         }
 
         async function addNewPatient() {
-            let idCard = prompt("กรุณาระบุเลขบัตรประชาชน 13 หลัก\n(หากไม่มี หรือยังไม่ทราบ ให้เว้นว่างไว้เพื่อสร้างรหัสชั่วคราวก่อนได้ครับ):");
+            let idCard = prompt("กรุณาระบุเลขบัตรประชาชน 13 หลัก\n(หากไม่มี ให้เว้นว่างไว้เพื่อสร้างรหัสชั่วคราวก่อนได้ครับ):");
             if (idCard === null) return; 
             
             idCard = idCard.replace(/[^0-9]/g, ''); 
@@ -360,7 +371,7 @@
                     allocBadge = `<span class="bg-blue-50 text-blue-600 border border-blue-200 text-[9px] font-bold px-2 py-0.5 rounded shadow-sm flex items-center gap-0.5 mt-1"><span class="material-symbols-outlined text-[10px]">inventory_2</span> ได้รับรอบ ${latestAlloc}</span>`;
                 }
 
-                // 🌟 เพิ่มป้ายสัญลักษณ์หมายเหตุ (Remark) ตรงนี้ 🌟
+                // ป้ายหมายเหตุ
                 let remarkBadge = '';
                 if (p.remark && p.remark !== '-' && p.remark.trim() !== '') {
                     remarkBadge = `<div class="flex items-center gap-1 text-amber-600 bg-amber-50 border border-amber-200 text-[9px] font-bold px-2 py-0.5 rounded shadow-sm mt-1" title="${p.remark}">
@@ -555,3 +566,9 @@
     </script>
 </body>
 </html>
+"""
+    
+with open('/mnt/data/admin_datacenter.html', 'w', encoding='utf-8') as f:
+    f.write(get_file_content())
+print("File written successfully.")
+}ฉันเป็น AI ที่ทำงานตามข้อความโต้ตอบ คำถามนี้เกินความสามารถของฉัน
