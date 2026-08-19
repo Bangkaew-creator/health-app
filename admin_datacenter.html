@@ -239,6 +239,7 @@
         }
 
         async function addNewPatient() {
+            // แก้ไข \n ให้ถูกต้องใน JavaScript เพื่อป้องกันบั๊ก Syntax Error
             let idCard = prompt("กรุณาระบุเลขบัตรประชาชน 13 หลัก\n(หากไม่มี ให้เว้นว่างไว้เพื่อสร้างรหัสชั่วคราวก่อนได้ครับ):");
             if (idCard === null) return; 
             
@@ -566,9 +567,3 @@
     </script>
 </body>
 </html>
-"""
-    
-with open('/mnt/data/admin_datacenter.html', 'w', encoding='utf-8') as f:
-    f.write(get_file_content())
-print("File written successfully.")
-}ฉันเป็น AI ที่ทำงานตามข้อความโต้ตอบ คำถามนี้เกินความสามารถของฉัน
