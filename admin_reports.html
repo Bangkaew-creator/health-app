@@ -39,7 +39,9 @@
         <nav class="flex-1 px-4 py-6 space-y-2 overflow-y-auto">
             <a href="admin_dashboard.html" class="flex items-center gap-3 px-4 py-3.5 text-slate-400 hover:bg-white/5 hover:text-white rounded-xl font-medium transition-all"><span class="material-symbols-outlined">dashboard</span> ภาพรวมระบบ</a>
             <a href="admin_resources.html" class="flex items-center gap-3 px-4 py-3.5 text-slate-400 hover:bg-white/5 hover:text-white rounded-xl font-medium transition-all"><span class="material-symbols-outlined">inventory_2</span> บริหารทรัพยากร</a>
+            <a href="admin_inventory.html" id="nav-inventory" class="flex items-center gap-3 px-4 py-3.5 text-slate-400 hover:bg-white/5 hover:text-white rounded-xl font-medium transition-all"><span class="material-symbols-outlined">warehouse</span> ระบบคลังพัสดุ กปท.</a>
             <a href="admin_datacenter.html" class="flex items-center gap-3 px-4 py-3.5 text-slate-400 hover:bg-white/5 hover:text-white rounded-xl font-medium transition-all"><span class="material-symbols-outlined">folder_shared</span> ศูนย์ข้อมูลผู้ป่วย</a>
+            <a href="admin_map.html" class="flex items-center gap-3 px-4 py-3.5 text-slate-400 hover:bg-white/5 hover:text-white rounded-xl font-medium transition-all"><span class="material-symbols-outlined">map</span> แผนที่พิกัดผู้ป่วย</a>
             <a href="admin_delegation.html" class="flex items-center gap-3 px-4 py-3.5 text-slate-400 hover:bg-white/5 hover:text-white rounded-xl font-medium transition-all"><span class="material-symbols-outlined">assignment_ind</span> มอบหมายงาน อสม.</a>
             <a href="admin_reports.html" class="flex items-center justify-between px-4 py-3.5 bg-white/10 text-amber-400 rounded-xl font-bold transition-all"><span class="flex items-center gap-3"><span class="material-symbols-outlined">summarize</span> ศูนย์รายงาน (Export)</span><span class="w-1.5 h-1.5 rounded-full bg-amber-400"></span></a>
             <a href="admin_settings.html" id="nav-settings" class="flex items-center gap-3 px-4 py-3.5 text-slate-400 hover:bg-white/5 hover:text-white rounded-xl font-medium transition-all"><span class="material-symbols-outlined">settings</span> ตั้งค่าระบบ</a>
@@ -77,6 +79,7 @@
                 <div class="loader-small"></div><p class="text-sm text-slate-400 animate-pulse">กำลังโหลดข้อมูลจาก Firebase...</p>
             </div>
 
+            <!-- TAB 1: กปท. -->
             <div id="content-kpt" class="hidden p-4 lg:p-6">
                 <div class="flex flex-col xl:flex-row justify-between items-start xl:items-center gap-4 mb-4">
                     <div>
@@ -157,8 +160,8 @@
                 </div>
             </div>
 
+            <!-- TAB 2: ทะเบียนสุขภาพ -->
             <div id="content-registry" class="hidden p-4 lg:p-6">
-                <!-- เนื้อหา Registry เดิม -->
                 <div class="bg-white rounded-[24px] p-8 lg:p-12 shadow-sm border border-slate-200 text-center max-w-3xl mx-auto mt-6">
                     <span class="material-symbols-outlined text-[70px] text-[#00694a] mb-4 bg-emerald-50 w-24 h-24 rounded-full flex items-center justify-center mx-auto">health_metrics</span>
                     <h2 class="text-2xl font-bold text-slate-800">ทะเบียนประวัติและการคัดกรองสุขภาพ</h2>
@@ -169,8 +172,8 @@
                 </div>
             </div>
 
+            <!-- TAB 3: สถิติ อสม. -->
             <div id="content-vhv" class="hidden p-4 lg:p-6">
-                <!-- เนื้อหา VHV เดิม -->
                 <div class="bg-white rounded-[24px] p-8 lg:p-12 shadow-sm border border-slate-200 text-center max-w-3xl mx-auto mt-6">
                     <span class="material-symbols-outlined text-[70px] text-blue-600 mb-4 bg-blue-50 w-24 h-24 rounded-full flex items-center justify-center mx-auto">analytics</span>
                     <h2 class="text-2xl font-bold text-slate-800">รายงานสถิติและผลการปฏิบัติงาน อสม.</h2>
@@ -307,6 +310,7 @@
                     if(sysSnapDiaper.exists) configDiaperPrice = parseFloat(sysSnapDiaper.data().value) || configDiaperPrice;
                     const sysSnapUnderpad = await db.collection('SystemConfig').doc('UNDERPAD_PRICE').get();
                     if(sysSnapUnderpad.exists) configUnderpadPrice = parseFloat(sysSnapUnderpad.data().value) || configUnderpadPrice;
+
                 } catch(e) {}
 
                 if (userDoc.exists) {
@@ -329,13 +333,16 @@
                     if (currentUserRole === 'SUB_ADMIN') {
                         const navSettings = document.getElementById('nav-settings');
                         if (navSettings) navSettings.style.display = 'none';
+                        const navInventory = document.getElementById('nav-inventory');
+                        if (navInventory) navInventory.style.display = 'none';
+                        
                         assignedVillages.forEach(v => { vhvFilter.insertAdjacentHTML('beforeend', `<option value="${v}">หมู่ที่ ${v}</option>`); });
                     } else {
                         for(let i=1; i<=vCount; i++){ vhvFilter.insertAdjacentHTML('beforeend', `<option value="${i}">หมู่ที่ ${i}</option>`); }
                     }
 
                     loadReportData();
-                } else window.location.href = 'dashboard.html';
+                } else { window.location.href = 'dashboard.html'; }
             } catch (error) { window.location.href = 'index.html'; }
         }
 
@@ -529,7 +536,6 @@
             setTimeout(() => { m.classList.add('hidden'); }, 300);
         }
 
-        // 🌟 แก้ไขบั๊ก ข้อมูลหาย + ปรับการคำนวณเป็นแบบวัน 🌟
         async function saveCommitteeDecision() {
             const checkedBoxes = document.querySelectorAll('.row-checkbox:checked');
             if(checkedBoxes.length === 0) return;
@@ -553,13 +559,12 @@
                     const tr = cb.closest('tr');
                     const rawData = JSON.parse(tr.dataset.rawData);
                     
-                    // 🌟 ใช้ข้อมูลที่สมบูรณ์จากหน้าตาราง เพื่อป้องกันการโดนลบ 🌟
                     let diaperObj = rawData.detail || {}; 
                     
                     diaperObj.committee_status = 'จัดสรรแล้ว';
                     diaperObj.fy = fy;
                     diaperObj.round = round;
-                    diaperObj.alloc_days = days; // บันทึกเป็นจำนวนวัน
+                    diaperObj.alloc_days = days; 
                     
                     if (!diaperObj.allocations) diaperObj.allocations = [];
                     if (!diaperObj.allocations.includes(allocStr)) diaperObj.allocations.push(allocStr);
@@ -598,7 +603,6 @@
                 let remarkText = '';
 
                 if (d) {
-                    // 🌟 คำนวณจำนวนชิ้นตามจำนวนวันที่ได้รับอนุมัติ 🌟
                     const allocDays = d.alloc_days ? parseInt(d.alloc_days) : (parseInt(d.alloc_months) ? parseInt(d.alloc_months) * 30 : 30); 
                     
                     if (d.req_diaper && parseInt(d.approved_diaper) > 0) { 
@@ -619,7 +623,7 @@
                     "บ้านเลขที่": p.house_no || '-',
                     "หมู่ที่": p.village_no || '-', 
                     "ADL": p.adl || '-', 
-                    "เบอร์โทรศัพท์": p.phone || '-', // เบอร์ญาติรวมอยู่ในนี้แล้ว
+                    "เบอร์โทรศัพท์": p.phone || '-', 
                     "ขนาดผ้าอ้อม": diaperSize, 
                     "จำนวน": diaperQty,
                     "ขนาดแผ่นรองซับ": underpadSize, 
