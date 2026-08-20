@@ -1,331 +1,432 @@
-<!DOCTYPE html>
+    <!DOCTYPE html>
 <html lang="th">
 <head>
     <meta charset="utf-8"/>
-    <meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" name="viewport"/>
-    <title>คัดกรองภาวะซึมเศร้า (2Q/9Q)</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
+    <title>คัดกรองซึมเศร้า 2Q/9Q - อสม.สามารถ</title>
     <script src="https://cdn.tailwindcss.com?plugins=forms"></script>
     <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700&display=swap" rel="stylesheet"/>
     <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
-    
+    <script charset="utf-8" src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+
     <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore-compat.js"></script>
-    <script charset="utf-8" src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
     <script src="config.js"></script>
 
     <style>
-        body { font-family: 'Sarabun', sans-serif; background-color: #f9f9ff; padding-bottom: 120px; -webkit-tap-highlight-color: transparent;}
-        .material-symbols-outlined { font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24; }
-        input[type="radio"] { display: none; }
-        input[type="radio"]:checked + label { background-color: #1e3a8a; color: white; border-color: #1e3a8a; font-weight: bold; box-shadow: 0 4px 6px -1px rgba(30, 58, 138, 0.2); }
-        .smooth-slide { transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1); }
-        .loader-small { border: 2px solid #f3f3f3; border-bottom-color: transparent; border-radius: 50%; width: 16px; height: 16px; animation: spin 1s linear infinite; display: inline-block; vertical-align: middle; }
+        body { font-family: 'Sarabun', sans-serif; background-color: #f8fafc; -webkit-tap-highlight-color: transparent;}
+        .material-symbols-outlined { font-variation-settings: 'FILL' 1, 'wght' 400, 'GRAD' 0, 'opsz' 24; }
+        .loader-small { border: 3px solid #f3f3f3; border-bottom-color: #3b82f6; border-radius: 50%; width: 24px; height: 24px; animation: spin 1s linear infinite; }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        .radio-card input:checked + div { background-color: #eff6ff; border-color: #3b82f6; box-shadow: 0 4px 6px -1px rgba(59, 130, 246, 0.1); }
+        .radio-card input:checked + div .radio-icon { color: #3b82f6; }
     </style>
 </head>
-<body class="text-[#111c2d]">
+<body class="text-slate-800 pb-24">
 
-    <header class="bg-white sticky top-0 z-50 shadow-sm flex justify-between items-center w-full px-4 h-16 border-b border-gray-200">
+    <header class="bg-blue-600 sticky top-0 z-50 shadow-md flex justify-between items-center w-full px-4 h-16 text-white">
         <div class="flex items-center gap-3">
-            <button onclick="window.history.back()" class="w-10 h-10 flex items-center justify-center rounded-full bg-gray-50 text-[#1e3a8a] hover:bg-gray-100 transition-colors">
-                <span class="material-symbols-outlined">arrow_back</span>
+            <button onclick="goBack()" class="w-10 h-10 flex items-center justify-center rounded-full hover:bg-white/20 transition-colors active:scale-95">
+                <span class="material-symbols-outlined text-[24px]">arrow_back</span>
             </button>
             <div>
-                <h1 class="text-base font-bold text-[#1e3a8a]">คัดกรองภาวะซึมเศร้า</h1>
-                <p class="text-xs text-gray-500" id="patient-id-display">รหัส: กำลังโหลด...</p>
+                <h1 class="text-lg font-bold leading-tight">คัดกรองซึมเศร้า</h1>
+                <p class="text-[11px] text-blue-100 font-medium">แบบประเมิน 2Q และ 9Q</p>
             </div>
         </div>
     </header>
 
-    <main class="max-w-2xl mx-auto p-4 space-y-6">
-        <section id="section-2q" class="space-y-4">
-            <div class="flex items-center gap-2 pb-2 border-b border-gray-200">
-                <span class="material-symbols-outlined text-[#F59E0B]">psychology_alt</span>
-                <h2 class="font-bold text-lg text-[#111c2d]">แบบคัดกรอง 2Q</h2>
+    <main class="max-w-2xl mx-auto p-4 space-y-5">
+        
+        <div class="bg-white rounded-[20px] p-5 shadow-sm border border-slate-200 flex items-center gap-4 relative overflow-hidden">
+            <div class="absolute top-0 right-0 w-24 h-24 bg-blue-50 rounded-bl-full -z-10"></div>
+            <div class="w-14 h-14 rounded-full bg-slate-100 text-slate-400 border-2 border-white shadow-sm flex items-center justify-center font-bold text-xl flex-shrink-0" id="patient-initial">?</div>
+            <div class="flex-1 min-w-0">
+                <h2 class="text-lg font-bold text-slate-800 truncate" id="patient-name">กำลังโหลด...</h2>
+                <p class="text-xs text-slate-500 truncate mt-0.5">หมู่ที่ <span id="patient-village">-</span> • อายุ <span id="patient-age">-</span> ปี</p>
             </div>
-            <p class="text-sm text-gray-500 mb-2">ในช่วง 2 สัปดาห์ที่ผ่านมา รวมทั้งวันนี้ ท่านมีอาการเหล่านี้หรือไม่?</p>
-            <div id="container-2q" class="space-y-4"></div>
-        </section>
+        </div>
 
-        <section id="section-9q" class="space-y-4 hidden opacity-0 smooth-slide">
-            <div class="flex items-center gap-2 pb-2 border-b border-gray-200 mt-6">
-                <span class="material-symbols-outlined text-[#ba1a1a]">vital_signs</span>
-                <h2 class="font-bold text-lg text-[#111c2d]">แบบประเมิน 9Q</h2>
+        <div class="bg-white rounded-[20px] p-5 shadow-sm border border-slate-200">
+            <div class="flex items-center justify-between mb-4 pb-3 border-b border-slate-100">
+                <h3 class="font-bold text-slate-800 flex items-center gap-2"><span class="material-symbols-outlined text-blue-500 text-[20px]">calendar_today</span> วันที่ประเมิน</h3>
+                <input type="date" id="assess-date" class="px-3 py-2 border border-slate-200 rounded-xl text-sm font-medium text-slate-700 focus:ring-2 focus:ring-blue-500 outline-none">
             </div>
-            <p class="text-sm text-[#ba1a1a] font-medium mb-2 bg-[#ffdad6]/30 p-3 rounded-lg border border-[#ffdad6]">
-                พบความเสี่ยงจาก 2Q กรุณาประเมินความถี่ของอาการต่อไปนี้
-            </p>
-            <div id="container-9q" class="space-y-4"></div>
-        </section>
+
+            <!-- ส่วนคัดกรอง 2Q -->
+            <div id="section-2q">
+                <div class="bg-blue-50 text-blue-800 p-4 rounded-xl border border-blue-200 mb-6 shadow-inner">
+                    <h3 class="font-bold text-sm flex items-center gap-2"><span class="material-symbols-outlined text-[18px]">psychology_alt</span> ส่วนที่ 1: คัดกรอง 2Q</h3>
+                    <p class="text-[11px] mt-1 text-blue-600">ใน 2 สัปดาห์ที่ผ่านมารวมวันนี้ ท่านมีอาการเหล่านี้หรือไม่?</p>
+                </div>
+                <div id="q2-container" class="space-y-6"></div>
+                <button onclick="check2Q()" class="w-full mt-6 bg-blue-600 text-white py-4 rounded-xl font-bold shadow-lg hover:bg-blue-700 active:scale-95 transition-all text-base">
+                    ประมวลผล 2Q
+                </button>
+            </div>
+
+            <!-- ส่วนประเมิน 9Q (จะโชว์เมื่อ 2Q เป็นบวก) -->
+            <div id="section-9q" class="hidden">
+                <div class="bg-indigo-50 text-indigo-800 p-4 rounded-xl border border-indigo-200 mb-6 shadow-inner">
+                    <h3 class="font-bold text-sm flex items-center gap-2"><span class="material-symbols-outlined text-[18px]">assignment_late</span> ส่วนที่ 2: ประเมิน 9Q</h3>
+                    <p class="text-[11px] mt-1 text-indigo-600">เนื่องจากพบความเสี่ยงใน 2Q กรุณาประเมิน 9Q ต่อเพื่อหาระดับความรุนแรง (ใน 2 สัปดาห์ที่ผ่านมารวมวันนี้)</p>
+                </div>
+                <div id="q9-container" class="space-y-6"></div>
+                <button onclick="calculate9Q()" class="w-full mt-6 bg-indigo-600 text-white py-4 rounded-xl font-bold shadow-lg hover:bg-indigo-700 active:scale-95 transition-all text-base">
+                    ประมวลผล 9Q
+                </button>
+            </div>
+        </div>
+
     </main>
 
-    <div class="fixed bottom-0 left-0 w-full bg-white border-t border-gray-200 shadow-[0_-4px_20px_rgba(0,0,0,0.05)] p-4 flex justify-between items-center z-50">
-        <div class="flex-1">
-            <p class="text-[10px] text-gray-500 font-bold mb-0.5">ผลการคัดกรอง</p>
-            <div class="flex items-center gap-2">
-                <span id="result-status" class="bg-gray-200 text-gray-700 px-3 py-1 rounded-full text-xs font-bold shadow-sm">รอการประเมิน</span>
+    <!-- Modal ผลลัพธ์ -->
+    <div id="result-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[100] hidden flex items-center justify-center p-4 opacity-0 transition-opacity duration-300">
+        <div id="result-content" class="bg-white rounded-[24px] w-full max-w-sm overflow-hidden shadow-2xl transform scale-95 transition-transform duration-300">
+            <div class="p-6 text-center">
+                <div class="w-20 h-20 mx-auto rounded-full bg-blue-100 flex items-center justify-center mb-4 border-4 border-white shadow-sm" id="result-icon-container">
+                    <span class="material-symbols-outlined text-[40px] text-blue-600" id="result-icon" style="font-variation-settings: 'FILL' 1;">mood</span>
+                </div>
+                <h3 class="text-xl font-bold text-slate-800 mb-1">ผลการประเมินซึมเศร้า</h3>
+                <p class="text-sm text-slate-500 mb-6" id="result-subtitle">สรุปผลการคัดกรอง</p>
+                
+                <div class="bg-slate-50 rounded-2xl p-4 border border-slate-100 mb-6">
+                    <div id="score-display" class="hidden mb-2">
+                        <span class="text-[40px] font-black text-indigo-600 leading-none" id="result-score">0</span>
+                        <span class="text-sm font-bold text-slate-500 ml-1">คะแนน (9Q)</span>
+                    </div>
+                    <div class="pt-2">
+                        <span id="result-badge" class="px-4 py-1.5 rounded-full text-sm font-bold shadow-sm inline-block whitespace-normal leading-tight">-</span>
+                    </div>
+                </div>
+
+                <div class="space-y-3">
+                    <button onclick="saveDepression()" id="btn-save" class="w-full bg-[#00694a] text-white py-3.5 rounded-xl font-bold shadow-md hover:bg-[#005239] active:scale-95 transition-all flex items-center justify-center gap-2">
+                        <span class="material-symbols-outlined">save</span> บันทึกข้อมูล
+                    </button>
+                    <button onclick="closeResultModal()" class="w-full bg-slate-100 text-slate-600 py-3.5 rounded-xl font-bold hover:bg-slate-200 active:scale-95 transition-all">
+                        กลับไปแก้ไข
+                    </button>
+                </div>
             </div>
-            <p class="text-[10px] text-gray-400 mt-1" id="score-details">2Q: 0 | 9Q: 0</p>
         </div>
-        <button onclick="saveDepression()" id="btn-save" class="bg-[#1e3a8a] text-white px-6 py-3.5 rounded-xl font-bold shadow-md hover:bg-[#172554] active:scale-95 transition-all flex items-center gap-2">
-            บันทึกผล
-            <span class="material-symbols-outlined text-sm">save</span>
-        </button>
     </div>
 
     <script>
         firebase.initializeApp(firebaseConfig);
         const db = firebase.firestore();
-        
+
         const urlParams = new URLSearchParams(window.location.search);
         const patientId = urlParams.get('id');
-        document.getElementById('patient-id-display').innerText = `รหัส: ${patientId || 'ไม่ระบุ'}`;
+        let currentPatientData = null;
 
+        // 🌟 ตัวแปรเก็บข้อมูลผู้ประเมิน 🌟
         let currentUserUid = "";
-        let currentAssessorName = "เจ้าหน้าที่ระบบ"; // 🌟 ตัวแปรเก็บชื่อคนประเมิน
-
-        document.addEventListener("DOMContentLoaded", () => {
-            liff.init({ liffId: LIFF_ID }).then(() => {
-                const mockUid = localStorage.getItem('dev_mock_uid');
-                if (mockUid) {
-                    currentUserUid = mockUid;
-                    fetchAssessorData(mockUid);
-                } else if (liff.isLoggedIn()) {
-                    liff.getProfile().then(p => { 
-                        currentUserUid = p.userId; 
-                        fetchAssessorData(p.userId);
-                    });
-                } else { liff.login(); }
-            });
-        });
-
-        // 🌟 ฟังก์ชันดึงชื่อ-นามสกุลจากฐานข้อมูล VHVs
-        async function fetchAssessorData(uid) {
-            try {
-                const doc = await db.collection('VHVs').doc(String(uid)).get();
-                if(doc.exists) {
-                    currentAssessorName = doc.data().name || "เจ้าหน้าที่";
-                }
-            } catch(e) { console.error("ดึงข้อมูลผู้ประเมินไม่ได้", e); }
-        }
+        let currentUserName = "เจ้าหน้าที่";
 
         const questions2Q = [
-            { id: 'q2_1', text: "1. ท่านรู้สึกหดหู่ เศร้า หรือท้อแท้สิ้นหวัง หรือไม่?" },
-            { id: 'q2_2', text: "2. ท่านรู้สึกเบื่อ ทำอะไรก็ไม่เพลิดเพลิน หรือไม่?" }
+            { q: "1. ท่านรู้สึกหดหู่ เศร้า หรือท้อแท้สิ้นหวัง หรือไม่?", choices: [{score: 0, text: "ไม่มี"}, {score: 1, text: "มี"}] },
+            { q: "2. ท่านรู้สึกเบื่อ ทำอะไรก็ไม่เพลิดเพลิน หรือไม่?", choices: [{score: 0, text: "ไม่มี"}, {score: 1, text: "มี"}] }
         ];
 
         const questions9Q = [
-            { id: 'q9_1', text: "1. เบื่อหน่าย ไม่สนใจอยากทำอะไร" },
-            { id: 'q9_2', text: "2. ไม่สบายใจ ซึมเศร้า ท้อแท้" },
-            { id: 'q9_3', text: "3. หลับยาก หรือหลับๆ ตื่นๆ หรือหลับมากไป" },
-            { id: 'q9_4', text: "4. เหนื่อยง่าย หรือไม่ค่อยมีแรง" },
-            { id: 'q9_5', text: "5. เบื่ออาหาร หรือกินมากเกินไป" },
-            { id: 'q9_6', text: "6. รู้สึกไม่ดีกับตัวเอง คิดว่าตัวเองล้มเหลว หรือทำให้ตนเองหรือครอบครัวผิดหวัง" },
-            { id: 'q9_7', text: "7. สมาธิไม่ดีเวลาทำอะไร เช่น ดูโทรทัศน์ ฟังวิทยุ หรือทำงานที่ต้องใช้ความตั้งใจ" },
-            { id: 'q9_8', text: "8. พูดช้า ทำอะไรช้าลง จนคนอื่นสังเกตเห็น หรือกระสับกระส่ายไม่สามารถอยู่นิ่งได้เหมือนที่เคยเป็น" },
-            { id: 'q9_9', text: "9. คิดทำร้ายตนเอง หรือคิดว่าถ้าตายไปคงจะดี" }
+            { q: "1. เบื่อ ไม่สนใจอยากทำอะไร", choices: [{score: 0, text: "ไม่มีเลย"}, {score: 1, text: "เป็นบางวัน (1-7 วัน)"}, {score: 2, text: "เป็นบ่อย (>7 วัน)"}, {score: 3, text: "เป็นทุกวัน"}] },
+            { q: "2. ไม่สบายใจ ซึมเศร้า ท้อแท้", choices: [{score: 0, text: "ไม่มีเลย"}, {score: 1, text: "เป็นบางวัน (1-7 วัน)"}, {score: 2, text: "เป็นบ่อย (>7 วัน)"}, {score: 3, text: "เป็นทุกวัน"}] },
+            { q: "3. หลับยาก หรือหลับๆ ตื่นๆ หรือหลับมากไป", choices: [{score: 0, text: "ไม่มีเลย"}, {score: 1, text: "เป็นบางวัน (1-7 วัน)"}, {score: 2, text: "เป็นบ่อย (>7 วัน)"}, {score: 3, text: "เป็นทุกวัน"}] },
+            { q: "4. เหนื่อยง่าย หรือไม่ค่อยมีแรง", choices: [{score: 0, text: "ไม่มีเลย"}, {score: 1, text: "เป็นบางวัน (1-7 วัน)"}, {score: 2, text: "เป็นบ่อย (>7 วัน)"}, {score: 3, text: "เป็นทุกวัน"}] },
+            { q: "5. เบื่ออาหาร หรือกินมากเกินไป", choices: [{score: 0, text: "ไม่มีเลย"}, {score: 1, text: "เป็นบางวัน (1-7 วัน)"}, {score: 2, text: "เป็นบ่อย (>7 วัน)"}, {score: 3, text: "เป็นทุกวัน"}] },
+            { q: "6. รู้สึกไม่ดีกับตัวเอง คิดว่าตัวเองล้มเหลว หรือทำให้ตนเองหรือครอบครัวผิดหวัง", choices: [{score: 0, text: "ไม่มีเลย"}, {score: 1, text: "เป็นบางวัน (1-7 วัน)"}, {score: 2, text: "เป็นบ่อย (>7 วัน)"}, {score: 3, text: "เป็นทุกวัน"}] },
+            { q: "7. สมาธิไม่ดีเวลาทำอะไร เช่น ดูโทรทัศน์ ฟังวิทยุ หรือทำงานที่ต้องใช้ความตั้งใจ", choices: [{score: 0, text: "ไม่มีเลย"}, {score: 1, text: "เป็นบางวัน (1-7 วัน)"}, {score: 2, text: "เป็นบ่อย (>7 วัน)"}, {score: 3, text: "เป็นทุกวัน"}] },
+            { q: "8. พูดช้า ทำอะไรช้าลง จนคนอื่นสังเกตเห็นได้ หรือกระสับกระส่ายไม่สามารถอยู่นิ่งได้เหมือนที่เคยเป็น", choices: [{score: 0, text: "ไม่มีเลย"}, {score: 1, text: "เป็นบางวัน (1-7 วัน)"}, {score: 2, text: "เป็นบ่อย (>7 วัน)"}, {score: 3, text: "เป็นทุกวัน"}] },
+            { q: "9. คิดทำร้ายตนเอง หรือคิดว่าถ้าตายไปคงจะดี", choices: [{score: 0, text: "ไม่มีเลย"}, {score: 1, text: "เป็นบางวัน (1-7 วัน)"}, {score: 2, text: "เป็นบ่อย (>7 วัน)"}, {score: 3, text: "เป็นทุกวัน"}] }
         ];
 
-        const options9Q = [
-            { label: "ไม่มีเลย", score: 0 },
-            { label: "เป็นบางวัน (1-7 วัน)", score: 1 },
-            { label: "เป็นบ่อย (มากกว่า 7 วัน)", score: 2 },
-            { label: "เป็นทุกวัน", score: 3 }
-        ];
+        document.addEventListener("DOMContentLoaded", () => {
+            document.getElementById('assess-date').valueAsDate = new Date();
+            render2Q();
 
-        let need9Q = false;
+            liff.init({ liffId: LIFF_ID }).then(() => {
+                const mockUid = localStorage.getItem('dev_mock_uid');
+                if (mockUid) {
+                    verifyUserAccess(mockUid);
+                } else if (liff.isLoggedIn()) {
+                    liff.getProfile().then(profile => {
+                        verifyUserAccess(profile.userId);
+                    }).catch(err => console.error(err));
+                }
+            });
+
+            loadPatientData();
+        });
+
+        // 🌟 ดึงข้อมูลผู้ประเมินจาก Firebase VHVs 🌟
+        async function verifyUserAccess(uid) {
+            currentUserUid = uid;
+            try {
+                const userDoc = await db.collection('VHVs').doc(String(uid)).get();
+                if (userDoc.exists) {
+                    const data = userDoc.data();
+                    if(data.name) currentUserName = data.name;
+                }
+            } catch(e) { console.error(e); }
+        }
+
+        async function loadPatientData() {
+            if (!patientId) { goBack(); return; }
+            try {
+                const docRef = db.collection('Patients').doc(String(patientId));
+                const docSnap = await docRef.get();
+                if (docSnap.exists) {
+                    currentPatientData = docSnap.data();
+                    document.getElementById('patient-name').innerText = (currentPatientData.prefix || '') + (currentPatientData.name || '');
+                    document.getElementById('patient-village').innerText = currentPatientData.village_no || '-';
+                    document.getElementById('patient-age').innerText = currentPatientData.age || '-';
+                    document.getElementById('patient-initial').innerText = currentPatientData.name ? currentPatientData.name.substring(0, 1) : '?';
+                }
+            } catch (error) { console.error(error); }
+        }
 
         function render2Q() {
-            const container = document.getElementById('container-2q');
-            questions2Q.forEach(q => {
-                container.innerHTML += `
-                    <div class="bg-white p-5 rounded-2xl shadow-sm border border-gray-100">
-                        <h3 class="font-bold text-[#111c2d] mb-3 text-sm">${q.text}</h3>
-                        <div class="grid grid-cols-2 gap-2">
-                            <div>
-                                <input type="radio" id="${q.id}_0" name="${q.id}" value="0" onchange="calculateScore()">
-                                <label for="${q.id}_0" class="block text-center p-3 text-sm bg-white border border-gray-200 rounded-xl cursor-pointer hover:border-[#1e3a8a] transition-all">ไม่มี</label>
-                            </div>
-                            <div>
-                                <input type="radio" id="${q.id}_1" name="${q.id}" value="1" onchange="calculateScore()">
-                                <label for="${q.id}_1" class="block text-center p-3 text-sm bg-white border border-gray-200 rounded-xl cursor-pointer hover:border-[#1e3a8a] transition-all">มี</label>
-                            </div>
-                        </div>
-                    </div>
+            const container = document.getElementById('q2-container');
+            let html = '';
+            questions2Q.forEach((q, qIndex) => {
+                html += `
+                    <div class="bg-slate-50 p-4 rounded-[16px] border border-slate-100" id="q2-block-${qIndex}">
+                        <p class="font-bold text-slate-700 text-[15px] mb-3 leading-tight">${q.q}</p>
+                        <div class="grid grid-cols-2 gap-3">
                 `;
+                q.choices.forEach((c, cIndex) => {
+                    html += `
+                        <label class="radio-card relative block cursor-pointer">
+                            <input type="radio" name="q2_${qIndex}" value="${c.score}" class="peer sr-only" onchange="clearError('q2', ${qIndex})">
+                            <div class="flex flex-col items-center gap-2 p-3 rounded-xl border border-slate-200 bg-white transition-all text-center">
+                                <div class="text-slate-300 radio-icon material-symbols-outlined text-[28px]" style="font-variation-settings: 'FILL' 1;">radio_button_unchecked</div>
+                                <p class="text-sm font-bold text-slate-700 leading-snug">${c.text}</p>
+                            </div>
+                        </label>
+                    `;
+                });
+                html += `</div><p class="text-xs text-red-500 font-bold mt-2 hidden" id="err-q2-${qIndex}">กรุณาเลือกคำตอบข้อนี้</p></div>`;
             });
+            container.innerHTML = html;
+            setupRadioListeners();
         }
 
         function render9Q() {
-            const container = document.getElementById('container-9q');
-            questions9Q.forEach(q => {
-                let optionsHtml = '';
-                options9Q.forEach((opt, idx) => {
-                    optionsHtml += `
-                        <div class="col-span-1">
-                            <input type="radio" id="${q.id}_${idx}" name="${q.id}" value="${opt.score}" onchange="calculateScore()">
-                            <label for="${q.id}_${idx}" class="block text-center p-2 text-xs bg-white border border-gray-200 rounded-xl cursor-pointer hover:border-[#1e3a8a] transition-all h-full flex items-center justify-center">
-                                ${opt.label}
-                            </label>
-                        </div>
+            const container = document.getElementById('q9-container');
+            let html = '';
+            questions9Q.forEach((q, qIndex) => {
+                html += `
+                    <div class="bg-slate-50 p-4 rounded-[16px] border border-slate-100" id="q9-block-${qIndex}">
+                        <p class="font-bold text-slate-700 text-[15px] mb-3 leading-tight">${q.q}</p>
+                        <div class="space-y-2">
+                `;
+                q.choices.forEach((c, cIndex) => {
+                    html += `
+                        <label class="radio-card relative block cursor-pointer">
+                            <input type="radio" name="q9_${qIndex}" value="${c.score}" class="peer sr-only" onchange="clearError('q9', ${qIndex})">
+                            <div class="flex items-center gap-3 p-3 rounded-xl border border-slate-200 bg-white transition-all">
+                                <div class="text-slate-300 radio-icon material-symbols-outlined text-[20px]" style="font-variation-settings: 'FILL' 1;">radio_button_unchecked</div>
+                                <div class="flex-1">
+                                    <p class="text-[13px] font-bold text-slate-700 leading-snug">${c.text}</p>
+                                </div>
+                            </div>
+                        </label>
                     `;
                 });
+                html += `</div><p class="text-xs text-red-500 font-bold mt-2 hidden" id="err-q9-${qIndex}">กรุณาเลือกคำตอบข้อนี้</p></div>`;
+            });
+            container.innerHTML = html;
+            setupRadioListeners();
+        }
 
-                container.innerHTML += `
-                    <div class="bg-white p-4 rounded-2xl shadow-sm border border-gray-100">
-                        <h3 class="font-bold text-[#111c2d] mb-3 text-sm">${q.text}</h3>
-                        <div class="grid grid-cols-2 sm:grid-cols-4 gap-2">
-                            ${optionsHtml}
-                        </div>
-                    </div>
-                `;
+        function setupRadioListeners() {
+            document.addEventListener('change', function(e) {
+                if (e.target && e.target.matches('input[type="radio"]')) {
+                    const name = e.target.name;
+                    document.querySelectorAll(`input[name="${name}"]`).forEach(radio => {
+                        const icon = radio.nextElementSibling.querySelector('.radio-icon');
+                        if(radio.checked) { icon.innerText = 'radio_button_checked'; } 
+                        else { icon.innerText = 'radio_button_unchecked'; }
+                    });
+                }
             });
         }
 
-        function calculateScore() {
-            let score2Q = 0;
-            let answered2Q = 0;
-            
-            questions2Q.forEach(q => {
-                const selected = document.querySelector(`input[name="${q.id}"]:checked`);
+        function clearError(prefix, index) {
+            document.getElementById(`err-${prefix}-${index}`).classList.add('hidden');
+            document.getElementById(`${prefix}-block-${index}`).classList.remove('border-red-300', 'bg-red-50');
+        }
+
+        let currentAnswers = [];
+        let score2Q = 0;
+        let score9Q = 0;
+        let finalResult = '';
+
+        function check2Q() {
+            let allAnswered = true;
+            score2Q = 0;
+            currentAnswers = [];
+
+            questions2Q.forEach((q, index) => {
+                const selected = document.querySelector(`input[name="q2_${index}"]:checked`);
                 if (selected) {
-                    score2Q += parseInt(selected.value);
-                    answered2Q++;
-                }
-            });
-
-            const section9q = document.getElementById('section-9q');
-            
-            if (answered2Q === 2) {
-                if (score2Q > 0) {
-                    need9Q = true;
-                    section9q.classList.remove('hidden');
-                    setTimeout(() => section9q.classList.remove('opacity-0'), 50);
+                    const score = parseInt(selected.value);
+                    score2Q += score;
+                    const text = q.choices.find(c => c.score === score).text;
+                    currentAnswers.push({ q: q.q, score: score, a: text });
                 } else {
-                    need9Q = false;
-                    section9q.classList.add('opacity-0');
-                    setTimeout(() => section9q.classList.add('hidden'), 400);
-                    questions9Q.forEach(q => {
-                        const radios = document.getElementsByName(q.id);
-                        radios.forEach(r => r.checked = false);
-                    });
+                    allAnswered = false;
+                    document.getElementById(`err-q2-${index}`).classList.remove('hidden');
+                    document.getElementById(`q2-block-${index}`).classList.add('border-red-300', 'bg-red-50');
                 }
-            }
-
-            let score9Q = 0;
-            questions9Q.forEach(q => {
-                const selected = document.querySelector(`input[name="${q.id}"]:checked`);
-                if (selected) score9Q += parseInt(selected.value);
             });
 
-            document.getElementById('score-details').innerText = `2Q: ${score2Q} คะแนน | 9Q: ${need9Q ? score9Q : '-'} คะแนน`;
-            const badge = document.getElementById('result-status');
-            
-            if (answered2Q < 2) {
-                badge.innerText = 'รอการประเมิน';
-                badge.className = 'bg-gray-200 text-gray-700 px-3 py-1 rounded-full text-xs font-bold shadow-sm';
+            if (!allAnswered) {
+                const firstError = document.querySelector('.border-red-300');
+                if(firstError) firstError.scrollIntoView({ behavior: 'smooth', block: 'center' });
                 return;
             }
 
-            if (!need9Q) {
-                badge.innerText = 'ปกติ (ไม่มีภาวะซึมเศร้า)';
-                badge.className = 'bg-[#00694a] text-white px-3 py-1 rounded-full text-xs font-bold shadow-sm';
+            if (score2Q > 0) {
+                document.getElementById('section-2q').classList.add('hidden');
+                document.getElementById('section-9q').classList.remove('hidden');
+                render9Q();
+                window.scrollTo({ top: 0, behavior: 'smooth' });
             } else {
-                if (score9Q < 7) {
-                    badge.innerText = 'ปกติ / มีอาการน้อยมาก';
-                    badge.className = 'bg-[#00694a] text-white px-3 py-1 rounded-full text-xs font-bold shadow-sm';
-                } else if (score9Q >= 7 && score9Q <= 12) {
-                    badge.innerText = 'ซึมเศร้าระดับน้อย';
-                    badge.className = 'bg-[#eab308] text-white px-3 py-1 rounded-full text-xs font-bold shadow-sm';
-                } else if (score9Q >= 13 && score9Q <= 18) {
-                    badge.innerText = 'ซึมเศร้าระดับปานกลาง';
-                    badge.className = 'bg-[#f97316] text-white px-3 py-1 rounded-full text-xs font-bold shadow-sm';
-                } else {
-                    badge.innerText = 'ซึมเศร้าระดับรุนแรง';
-                    badge.className = 'bg-[#ba1a1a] text-white px-3 py-1 rounded-full text-xs font-bold shadow-sm';
-                }
+                finalResult = 'ปกติ (ไม่มีความเสี่ยง)';
+                showResultModal('bg-emerald-100', 'text-emerald-600', 'mood', finalResult, 'bg-emerald-100 text-emerald-700');
             }
+        }
+
+        function calculate9Q() {
+            let allAnswered = true;
+            score9Q = 0;
+            let temp9QAnswers = [];
+
+            questions9Q.forEach((q, index) => {
+                const selected = document.querySelector(`input[name="q9_${index}"]:checked`);
+                if (selected) {
+                    const score = parseInt(selected.value);
+                    score9Q += score;
+                    const text = q.choices.find(c => c.score === score).text;
+                    temp9QAnswers.push({ q: q.q, score: score, a: text });
+                } else {
+                    allAnswered = false;
+                    document.getElementById(`err-q9-${index}`).classList.remove('hidden');
+                    document.getElementById(`q9-block-${index}`).classList.add('border-red-300', 'bg-red-50');
+                }
+            });
+
+            if (!allAnswered) {
+                const firstError = document.querySelector('.border-red-300');
+                if(firstError) firstError.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                return;
+            }
+
+            currentAnswers = currentAnswers.filter(a => a.q.includes('ท่านรู้สึกหดหู่') || a.q.includes('ท่านรู้สึกเบื่อ'));
+            currentAnswers = currentAnswers.concat(temp9QAnswers);
+
+            let iconClass, iconName, badgeClass;
+            
+            if (score9Q < 7) {
+                finalResult = 'ปกติ หรือมีอาการน้อยมาก';
+                iconClass = 'bg-emerald-100 text-emerald-600'; iconName = 'sentiment_satisfied'; badgeClass = 'bg-emerald-100 text-emerald-700 border border-emerald-200';
+            } else if (score9Q <= 12) {
+                finalResult = 'มีอาการโรคซึมเศร้า ระดับน้อย';
+                iconClass = 'bg-amber-100 text-amber-500'; iconName = 'sentiment_dissatisfied'; badgeClass = 'bg-amber-100 text-amber-700 border border-amber-200';
+            } else if (score9Q <= 18) {
+                finalResult = 'มีอาการโรคซึมเศร้า ระดับปานกลาง';
+                iconClass = 'bg-orange-100 text-orange-500'; iconName = 'sentiment_very_dissatisfied'; badgeClass = 'bg-orange-100 text-orange-700 border border-orange-200';
+            } else {
+                finalResult = 'มีอาการโรคซึมเศร้า ระดับรุนแรง';
+                iconClass = 'bg-red-100 text-red-600'; iconName = 'mood_bad'; badgeClass = 'bg-red-100 text-red-700 border border-red-200';
+            }
+
+            document.getElementById('score-display').classList.remove('hidden');
+            document.getElementById('result-score').innerText = score9Q;
+            showResultModal(iconClass, iconClass.split(' ')[1], iconName, finalResult, badgeClass);
+        }
+
+        function showResultModal(bgClass, textClass, icon, resultText, badgeClass) {
+            const iconContainer = document.getElementById('result-icon-container');
+            iconContainer.className = `w-20 h-20 mx-auto rounded-full flex items-center justify-center mb-4 border-4 border-white shadow-sm ${bgClass.split(' ')[0]}`;
+            
+            const iconEl = document.getElementById('result-icon');
+            iconEl.className = `material-symbols-outlined text-[40px] ${textClass}`;
+            iconEl.innerText = icon;
+
+            document.getElementById('result-badge').innerText = resultText;
+            document.getElementById('result-badge').className = `px-4 py-2 rounded-xl text-sm font-bold shadow-sm inline-block whitespace-normal leading-tight ${badgeClass}`;
+
+            const m = document.getElementById('result-modal');
+            const c = document.getElementById('result-content');
+            m.classList.remove('hidden');
+            setTimeout(() => { m.classList.remove('opacity-0'); c.classList.remove('scale-95'); }, 10);
+        }
+
+        function closeResultModal() {
+            const m = document.getElementById('result-modal');
+            const c = document.getElementById('result-content');
+            m.classList.add('opacity-0'); c.classList.add('scale-95');
+            setTimeout(() => { m.classList.add('hidden'); }, 300);
         }
 
         async function saveDepression() {
-            if (!patientId) return alert("ไม่พบข้อมูลผู้ป่วย กรุณากลับไปหน้ารายชื่อ");
-
-            let answered2Q = 0;
-            let answersDetail = []; 
-            let finalScore2Q = 0; 
-            let finalScore9Q = 0; 
-
-            questions2Q.forEach(q => { 
-                const selected = document.querySelector(`input[name="${q.id}"]:checked`);
-                if(selected) {
-                    answered2Q++;
-                    const scoreVal = parseInt(selected.value);
-                    finalScore2Q += scoreVal;
-                    const labelText = scoreVal === 1 ? "มี" : "ไม่มี";
-                    answersDetail.push({ q: q.text, a: labelText, score: scoreVal });
-                }
-            });
-            if (answered2Q < 2) return alert('กรุณาตอบคำถาม 2Q ให้ครบถ้วน');
-
-            if (need9Q) {
-                let answered9Q = 0;
-                questions9Q.forEach(q => { 
-                    const selected = document.querySelector(`input[name="${q.id}"]:checked`);
-                    if(selected) {
-                        answered9Q++;
-                        const scoreVal = parseInt(selected.value);
-                        finalScore9Q += scoreVal;
-                        const optObj = options9Q.find(o => o.score === scoreVal);
-                        answersDetail.push({ q: q.text, a: optObj ? optObj.label : String(scoreVal), score: scoreVal });
-                    }
-                });
-                if (answered9Q < 9) return alert(`กรุณาตอบคำถาม 9Q ให้ครบถ้วน (ตอบแล้ว ${answered9Q}/9 ข้อ)`);
-            }
-
-            const status = document.getElementById('result-status').innerText;
-            
             const btn = document.getElementById('btn-save');
-            btn.innerHTML = '<div class="loader-small mr-2"></div> กำลังบันทึก...';
             btn.disabled = true;
+            btn.innerHTML = '<div class="loader-small" style="border-width:2px; width:20px; height:20px; border-bottom-color:transparent;"></div> กำลังบันทึก...';
+
+            const assessDate = document.getElementById('assess-date').value;
+            const dateParts = assessDate.split('-');
+            const thaiYear = parseInt(dateParts[0]) + 543;
+            const formattedDate = `${dateParts[2]}/${dateParts[1]}/${thaiYear}`;
+
+            // 🌟 1. สร้างก้อนข้อมูลสำหรับเก็บใน Collection Assessments 🌟
+            const assessmentData = {
+                patient_id: patientId,
+                type: 'DEP',
+                date: formattedDate,
+                score1: score2Q,
+                score2: score9Q,
+                result: finalResult,
+                answers: currentAnswers,
+                assessor_uid: currentUserUid,      // เก็บ UID คนประเมิน
+                assessor_name: currentUserName,    // เก็บชื่อคนประเมิน
+                timestamp: firebase.firestore.FieldValue.serverTimestamp()
+            };
 
             try {
-                const now = new Date();
-                const dd = String(now.getDate()).padStart(2, '0');
-                const mm = String(now.getMonth() + 1).padStart(2, '0');
-                const yyyy = now.getFullYear() + 543;
-                const formattedDate = `${dd}/${mm}/${yyyy}`;
-
-                await db.collection('Patients').doc(String(patientId)).update({
-                    dep_status: status
+                const batch = db.batch();
+                
+                // เก็บลง Assessments
+                const newAssessRef = db.collection('Assessments').doc();
+                batch.set(newAssessRef, assessmentData);
+                
+                // อัปเดตลง Patients
+                const patientRef = db.collection('Patients').doc(String(patientId));
+                batch.update(patientRef, {
+                    dep_status: finalResult,
+                    last_assess: formattedDate
                 });
 
-                // 🌟 เพิ่มการบันทึก assessor_name ลงไปด้วย
-                await db.collection('Assessments').add({
-                    patient_id: String(patientId),
-                    type: 'DEP',
-                    score1: finalScore2Q, 
-                    score2: finalScore9Q, 
-                    result: status,
-                    answers: answersDetail,
-                    assessor_uid: currentUserUid, 
-                    assessor_name: currentAssessorName, // 🌟 เพิ่มตรงนี้
-                    date: formattedDate,
-                    timestamp: firebase.firestore.FieldValue.serverTimestamp()
-                });
+                await batch.commit();
 
-                alert('บันทึกผลการประเมินซึมเศร้าสำเร็จ!');
+                // ส่งกลับไปหน้าข้อมูลผู้ป่วย
                 window.location.href = `patient_profile.html?id=${patientId}`;
 
-            } catch (err) {
-                console.error(err);
-                alert('การเชื่อมต่อฐานข้อมูลล้มเหลว กรุณาลองอีกครั้ง');
-                btn.innerHTML = 'บันทึกผล <span class="material-symbols-outlined text-sm">save</span>'; 
+            } catch (error) {
+                console.error(error);
+                alert("เกิดข้อผิดพลาดในการบันทึกข้อมูล กรุณาลองใหม่");
                 btn.disabled = false;
+                btn.innerHTML = '<span class="material-symbols-outlined">save</span> บันทึกข้อมูล';
             }
         }
 
-        render2Q();
-        render9Q();
+        function goBack() {
+            if(patientId) window.location.href = `patient_profile.html?id=${patientId}`;
+            else window.location.href = 'assessments.html';
+        }
     </script>
 </body>
 </html>
