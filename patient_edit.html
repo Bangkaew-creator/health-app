@@ -3,10 +3,11 @@
 <head>
     <meta charset="utf-8"/>
     <meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" name="viewport"/>
-    <title>แก้ไขประวัติและประเมินสิทธิ์</title>
+    <title>แก้ไขประวัติและประเมินสิทธิ์ - อสม.สามารถ</title>
     <script src="https://cdn.tailwindcss.com?plugins=forms"></script>
     <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700&display=swap" rel="stylesheet"/>
     <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+    <script charset="utf-8" src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
     
     <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore-compat.js"></script>
@@ -15,179 +16,211 @@
     <style>
         body { font-family: 'Sarabun', sans-serif; background-color: #f9f9ff; padding-bottom: 100px; -webkit-tap-highlight-color: transparent;}
         .material-symbols-outlined { font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24; }
-        .input-field { width: 100%; border: 1px solid #e2e8f0; border-radius: 12px; padding: 12px; font-size: 14px; outline: none; transition: border-color 0.2s; }
-        .input-field:focus { border-color: #00694a; box-shadow: 0 0 0 2px rgba(0,105,74,0.1); }
-        
-        .radio-card:checked + label { background-color: #eff6ff; border-color: #2563eb; color: #1d4ed8; font-weight: 600; }
-        .eq-cb:checked + label { background-color: #fff7ed; border-color: #ea580c; color: #ea580c; font-weight: 600; }
-        .disease-cb:checked + label { background-color: #ffe4e6; border-color: #e11d48; color: #e11d48; font-weight: 600; }
+        .input-field { w-full border border-slate-200 rounded-xl px-4 py-2.5 text-sm outline-none transition-all focus:ring-2 focus:ring-[#00694a] bg-slate-50 }
+        .eq-cb:checked + label { background-color: #fff7ed; border-color: #ea580c; color: #ea580c; font-weight: bold; }
+        .disease-cb:checked + label { background-color: #ffe4e6; border-color: #e11d48; color: #e11d48; font-weight: bold; }
         .loader-small { border: 2px solid #d8e3fb; border-bottom-color: #00694a; border-radius: 50%; width: 20px; height: 20px; animation: spin 1s linear infinite; }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        
+        .tab-btn { border-bottom: 2px solid transparent; color: #64748b; font-weight: 600; padding: 12px 4px; transition: all 0.2s; white-space: nowrap; }
+        .tab-btn.active { border-bottom-color: #00694a; color: #00694a; }
+        html { scroll-behavior: smooth; }
+        section { scroll-margin-top: 130px; }
     </style>
 </head>
 <body class="text-[#111c2d]">
 
-    <header class="bg-white sticky top-0 z-50 shadow-sm flex items-center w-full px-4 h-16 border-b border-gray-200 gap-3">
-        <button type="button" onclick="window.location.href='patient_profile.html?id=' + patientId" class="w-10 h-10 flex items-center justify-center rounded-full bg-gray-50 text-[#00694a] hover:bg-gray-100">
-            <span class="material-symbols-outlined">close</span>
-        </button>
-        <h1 class="text-base font-bold text-[#00694a]">แก้ไขประวัติ & ประเมินสิทธิ์</h1>
+    <header class="bg-white sticky top-0 z-50 shadow-sm flex flex-col w-full border-b border-gray-200">
+        <div class="flex items-center gap-3 px-4 h-16">
+            <button type="button" onclick="goBack()" class="w-10 h-10 flex items-center justify-center rounded-full bg-gray-50 text-[#00694a] hover:bg-gray-100 transition-colors">
+                <span class="material-symbols-outlined">close</span>
+            </button>
+            <h1 class="text-base font-bold text-[#00694a]">แก้ไขประวัติ & ประเมินสิทธิ์</h1>
+        </div>
+        <div class="bg-white text-sm flex overflow-x-auto hide-scrollbar px-4 gap-6">
+            <a href="#sec-personal" class="tab-btn active" id="tab-personal" onclick="setActiveTab('personal')">ข้อมูลส่วนตัว</a>
+            <a href="#sec-diaper" class="tab-btn" id="tab-diaper" onclick="setActiveTab('diaper')">สิทธิ์ผ้าอ้อม</a>
+            <a href="#sec-health" class="tab-btn" id="tab-health" onclick="setActiveTab('health')">สุขภาพและยา</a>
+        </div>
     </header>
 
-    <main class="max-w-2xl mx-auto p-4 space-y-5">
-        <form id="editForm" onsubmit="saveData(event)" class="space-y-5">
+    <main class="max-w-2xl mx-auto p-4 space-y-6">
+        
+        <div id="loading-state" class="flex flex-col items-center justify-center py-20 space-y-4">
+            <div class="loader-small"></div>
+            <p class="text-slate-500 text-sm animate-pulse">กำลังโหลดข้อมูลผู้ป่วย...</p>
+        </div>
+
+        <form id="editForm" onsubmit="saveData(event)" class="hidden space-y-6">
             
-            <div id="sec-personal" class="bg-white rounded-[20px] p-5 shadow-sm border border-gray-100">
+            <!-- SECTION 1: ข้อมูลส่วนตัว -->
+            <section id="sec-personal" class="bg-white rounded-[20px] p-5 shadow-sm border border-gray-100">
                 <h3 class="font-bold text-[#00694a] flex items-center gap-2 border-b pb-2 mb-4"><span class="material-symbols-outlined">person</span> ข้อมูลส่วนตัว</h3>
                 
-                <div class="grid grid-cols-3 gap-2 mb-3">
+                <div class="grid grid-cols-3 gap-3 mb-4">
                     <div class="col-span-1">
-                        <span class="text-xs text-gray-500 mb-1 block">คำนำหน้า</span>
-                        <select id="prefix" class="input-field bg-white" required>
+                        <span class="text-xs font-bold text-gray-500 mb-1 block">คำนำหน้า</span>
+                        <select id="inp-prefix" class="w-full border border-slate-200 rounded-xl px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-[#00694a] bg-slate-50" required>
                             <option value="นาย">นาย</option><option value="นาง">นาง</option><option value="นางสาว">นางสาว</option>
                             <option value="ด.ช.">ด.ช.</option><option value="ด.ญ.">ด.ญ.</option>
                         </select>
                     </div>
                     <div class="col-span-2">
-                        <span class="text-xs text-gray-500 mb-1 block">ชื่อ-นามสกุล</span>
-                        <input type="text" id="fullname" class="input-field" required>
+                        <span class="text-xs font-bold text-gray-500 mb-1 block">ชื่อ-นามสกุล <span class="text-red-500">*</span></span>
+                        <input type="text" id="inp-name" class="w-full border border-slate-200 rounded-xl px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-[#00694a] bg-slate-50" required>
                     </div>
                 </div>
 
-                <div class="grid grid-cols-2 gap-3 mb-3">
+                <div class="grid grid-cols-2 gap-3 mb-4">
                     <div>
-                        <span class="text-xs text-gray-500 mb-1 block">เลขบัตรประชาชน (13 หลัก)</span>
-                        <input type="tel" id="id_card" class="input-field" maxlength="13" placeholder="ระบุเลข 13 หลัก">
+                        <span class="text-xs font-bold text-gray-500 mb-1 block">เลขบัตรประชาชน <span class="text-red-500">*</span></span>
+                        <input type="tel" id="inp-idcard" class="w-full border border-slate-200 rounded-xl px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-[#00694a] bg-slate-50" maxlength="13" placeholder="13 หลัก">
                     </div>
                     <div>
-                        <span class="text-xs text-gray-500 mb-1 block">วันเดือนปีเกิด</span>
-                        <input type="date" id="dob" class="input-field">
+                        <span class="text-xs font-bold text-gray-500 mb-1 block">วันเดือนปีเกิด</span>
+                        <input type="date" id="inp-dob" class="w-full border border-slate-200 rounded-xl px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-[#00694a] bg-slate-50">
                     </div>
                 </div>
 
-                <div class="grid grid-cols-2 gap-3 mb-3 border-t border-gray-50 pt-3">
-                    <div><span class="text-xs text-gray-500 mb-1 block">บ้านเลขที่</span><input type="text" id="house_no" class="input-field" required></div>
-                    <div><span class="text-xs text-gray-500 mb-1 block">หมู่ที่</span><input type="number" id="village_no" class="input-field" required></div>
+                <div class="grid grid-cols-2 gap-3 mb-4 border-t border-gray-50 pt-4">
+                    <div><span class="text-xs font-bold text-gray-500 mb-1 block">บ้านเลขที่ <span class="text-red-500">*</span></span><input type="text" id="inp-house" class="w-full border border-slate-200 rounded-xl px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-[#00694a] bg-slate-50" required></div>
+                    <div><span class="text-xs font-bold text-gray-500 mb-1 block">หมู่ที่ <span class="text-red-500">*</span></span><input type="number" id="inp-village" class="w-full border border-slate-200 rounded-xl px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-[#00694a] bg-slate-50" required></div>
                 </div>
                 
-                <div class="pt-2">
-                    <span class="text-xs text-gray-500 mb-1 block">พิกัด GPS บ้านผู้ป่วย</span>
+                <div class="mb-4">
+                    <span class="text-xs font-bold text-gray-500 mb-1 block">พิกัด GPS บ้านผู้ป่วย</span>
                     <div class="flex gap-2">
-                        <input type="text" id="lat_long" class="input-field bg-gray-50 flex-1 text-xs text-gray-500" readonly placeholder="กดปุ่มเพื่อดึงพิกัด">
-                        <button type="button" onclick="getLocation()" class="bg-[#0284c7] text-white px-4 rounded-xl flex justify-center items-center"><span class="material-symbols-outlined text-[18px]">my_location</span></button>
+                        <input type="text" id="inp-gps" class="w-full border border-slate-200 rounded-xl px-4 py-2.5 text-xs outline-none bg-slate-50 text-gray-500" readonly placeholder="กดปุ่มเพื่อดึงพิกัด">
+                        <button type="button" onclick="getLocation()" class="bg-[#0284c7] text-white px-4 rounded-xl flex justify-center items-center hover:bg-sky-700 transition-colors"><span class="material-symbols-outlined text-[18px]">my_location</span></button>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-3 border-t border-gray-50 pt-4">
+                    <div>
+                        <span class="text-xs font-bold text-gray-500 mb-1 block">ชื่อญาติ / ผู้ดูแล</span>
+                        <input type="text" id="inp-caregiver-name" class="w-full border border-slate-200 rounded-xl px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-[#00694a] bg-slate-50">
+                    </div>
+                    <div>
+                        <span class="text-xs font-bold text-gray-500 mb-1 block">เบอร์โทรศัพท์</span>
+                        <input type="tel" id="inp-caregiver-phone" class="w-full border border-slate-200 rounded-xl px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-[#00694a] bg-slate-50">
                     </div>
                 </div>
             </div>
 
-            <div id="sec-diaper" class="bg-white rounded-[20px] p-5 shadow-sm border border-blue-100">
+            <!-- SECTION 2: สิทธิ์ผ้าอ้อม / อุปกรณ์ -->
+            <section id="sec-diaper" class="bg-white rounded-[20px] p-5 shadow-sm border border-blue-100">
                 <h3 class="font-bold text-[#2563eb] flex items-center gap-2 border-b border-blue-50 pb-2 mb-4">
-                    <span class="material-symbols-outlined">wc</span> แบบประเมินสิทธิ์ผ้าอ้อม
+                    <span class="material-symbols-outlined">wc</span> แบบประเมินสิทธิ์ผ้าอ้อม กปท.
                 </h3>
                 
                 <div class="mb-5">
-                    <span class="text-sm font-bold text-gray-700 block mb-2">1. ผลการประเมินภาวะขับถ่าย</span>
-                    <div class="space-y-2">
-                        <div><input type="radio" name="diaper_result" id="res1" value="มีภาวะกลั้นปัสสาวะไม่ได้" class="radio-card hidden"><label for="res1" class="block w-full p-3 text-sm border border-gray-200 rounded-xl cursor-pointer">มีภาวะกลั้นปัสสาวะไม่ได้</label></div>
-                        <div><input type="radio" name="diaper_result" id="res2" value="มีภาวะกลั้นอุจจาระไม่ได้" class="radio-card hidden"><label for="res2" class="block w-full p-3 text-sm border border-gray-200 rounded-xl cursor-pointer">มีภาวะกลั้นอุจจาระไม่ได้</label></div>
-                        <div><input type="radio" name="diaper_result" id="res3" value="มีภาวะกลั้นปัสสาวะและอุจจาระไม่ได้" class="radio-card hidden"><label for="res3" class="block w-full p-3 text-sm border border-gray-200 rounded-xl cursor-pointer">มีภาวะกลั้นปัสสาวะและอุจจาระไม่ได้</label></div>
-                        <div><input type="radio" name="diaper_result" id="res0" value="ปกติ" class="radio-card hidden"><label for="res0" class="block w-full p-3 text-sm border border-gray-200 rounded-xl cursor-pointer text-gray-400">ปกติ (ไม่ต้องการสิทธิ์)</label></div>
-                    </div>
+                    <span class="text-sm font-bold text-gray-700 block mb-2">1. ผลการประเมินปัญหาการขับถ่าย</span>
+                    <select id="inp-diaper-result" class="w-full px-4 py-3 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-blue-500 outline-none bg-blue-50/50 font-medium">
+                        <option value="">-- กรุณาเลือกผลประเมิน --</option>
+                        <option value="มีภาวะกลั้นปัสสาวะไม่ได้">มีภาวะกลั้นปัสสาวะไม่ได้</option>
+                        <option value="มีภาวะกลั้นอุจจาระไม่ได้">มีภาวะกลั้นอุจจาระไม่ได้</option>
+                        <option value="มีภาวะกลั้นปัสสาวะและอุจจาระไม่ได้">มีภาวะกลั้นปัสสาวะและอุจจาระไม่ได้</option>
+                        <option value="ปกติ">ปกติ (ไม่ต้องการสิทธิ์)</option>
+                    </select>
                 </div>
 
-                <div class="mb-5 bg-blue-50/50 p-4 rounded-xl border border-blue-50">
-                    <span class="text-sm font-bold text-gray-700 block mb-2">2. ข้อบ่งชี้ทางการแพทย์</span>
-                    <div class="space-y-2">
-                        <label class="flex items-start gap-2 text-sm"><input type="checkbox" value="มีประวัติกลั้นไม่ได้" class="diaper-ind mt-1 text-blue-600 rounded"> มีประวัติกลั้นปัสสาวะหรืออุจจาระไม่อยู่</label>
-                        <label class="flex items-start gap-2 text-sm"><input type="checkbox" value="ระบบประสาทบกพร่อง" class="diaper-ind mt-1 text-blue-600 rounded"> ตรวจร่างกายพบระบบประสาทบกพร่อง/อุ้งเชิงกรานหย่อน</label>
-                        <label class="flex items-start gap-2 text-sm"><input type="checkbox" value="มีใบรับรองแพทย์" class="diaper-ind mt-1 text-blue-600 rounded"> มีใบรับรองแพทย์ / มีผลการตรวจจากแพทย์</label>
-                    </div>
-                </div>
-
-                <div>
-                    <span class="text-sm font-bold text-gray-700 block mb-2">3. ความเห็นผู้ประเมินควรได้รับการสนับสนุน</span>
-                    <div class="border border-gray-200 rounded-xl p-3 mb-2 bg-gray-50">
-                        <label class="flex items-center gap-2 font-bold text-sm mb-2 text-[#0284c7]">
-                            <input type="checkbox" id="req_diaper" class="w-4 h-4 text-[#0284c7] rounded"> ผ้าอ้อมผู้ใหญ่
+                <div class="mb-5">
+                    <span class="text-sm font-bold text-gray-700 block mb-2">2. ข้อบ่งชี้ทางการแพทย์ (เลือกได้อย่างน้อย 1 ข้อ)</span>
+                    <div class="space-y-2 text-sm text-slate-600 bg-slate-50 p-4 rounded-xl border border-slate-100">
+                        <label class="flex items-start gap-3 cursor-pointer">
+                            <input type="checkbox" value="มีประวัติกลั้นไม่ได้" class="inp-diaper-ind mt-1 w-4 h-4 text-blue-600 focus:ring-blue-500 rounded border-slate-300">
+                            <span>มีประวัติกลั้นปัสสาวะหรืออุจจาระไม่ได้</span>
                         </label>
-                        <div class="pl-6">
-                            <span class="text-[10px] text-gray-500 block mb-1">ระบุไซส์ (Size)</span>
-                            <select id="diaper_size" class="input-field py-2 text-sm bg-white">
-                                <option value="-">- เลือกไซส์ -</option>
-                                <option value="S">ไซส์ S</option>
-                                <option value="M">ไซส์ M</option>
-                                <option value="L">ไซส์ L</option>
-                                <option value="XL">ไซส์ XL</option>
+                        <label class="flex items-start gap-3 cursor-pointer">
+                            <input type="checkbox" value="ระบบประสาทบกพร่อง" class="inp-diaper-ind mt-1 w-4 h-4 text-blue-600 focus:ring-blue-500 rounded border-slate-300">
+                            <span>ตรวจพบระบบประสาทบกพร่อง อุ้งเชิงกรานหย่อน ฯลฯ</span>
+                        </label>
+                        <label class="flex items-start gap-3 cursor-pointer">
+                            <input type="checkbox" value="มีใบรับรองแพทย์" class="inp-diaper-ind mt-1 w-4 h-4 text-blue-600 focus:ring-blue-500 rounded border-slate-300">
+                            <span>มีใบรับรองผลตรวจจากแพทย์ยืนยัน</span>
+                        </label>
+                    </div>
+                </div>
+
+                <div class="p-4 bg-blue-50/50 rounded-xl border border-blue-100 mb-5">
+                    <span class="text-sm font-bold text-blue-800 mb-3 block">3. สรุปความต้องการเบิกผ้าอ้อม</span>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <label class="flex items-center gap-3 p-3 bg-white border border-slate-200 rounded-xl cursor-pointer hover:border-blue-400 transition-colors">
+                            <input type="checkbox" id="inp-req-underpad" class="w-5 h-5 text-blue-600 focus:ring-blue-500 rounded border-slate-300">
+                            <span class="font-bold text-slate-700">ต้องการแผ่นรองซับ</span>
+                        </label>
+                        <div class="flex items-center gap-3 p-3 bg-white border border-slate-200 rounded-xl hover:border-blue-400 focus-within:border-blue-500 transition-colors">
+                            <label class="flex items-center gap-3 cursor-pointer flex-1">
+                                <input type="checkbox" id="inp-req-diaper" onchange="toggleDiaperSize()" class="w-5 h-5 text-blue-600 focus:ring-blue-500 rounded border-slate-300">
+                                <span class="font-bold text-slate-700">ผ้าอ้อมผู้ใหญ่</span>
+                            </label>
+                            <select id="inp-diaper-size" disabled class="w-24 px-2 py-1.5 border border-slate-200 rounded-lg text-sm bg-slate-50 focus:ring-2 focus:ring-blue-500 outline-none disabled:opacity-50">
+                                <option value="-">ไซส์</option>
+                                <option value="S">S</option><option value="M">M</option>
+                                <option value="L">L</option><option value="XL">XL</option>
                             </select>
                         </div>
                     </div>
-                    <div class="border border-gray-200 rounded-xl p-3 bg-gray-50">
-                        <label class="flex items-center gap-2 font-bold text-sm text-[#00694a]">
-                            <input type="checkbox" id="req_underpad" class="w-4 h-4 text-[#00694a] rounded"> แผ่นรองซับการขับถ่าย
-                        </label>
-                    </div>
                 </div>
 
-                <!-- 🌟 เพิ่มระบบประวัติการจัดสรรผ้าอ้อม 🌟 -->
-                <div class="mt-5 pt-4 border-t border-blue-100">
+                <div class="pt-4 border-t border-blue-100">
                     <span class="text-sm font-bold text-gray-700 block mb-2">4. ประวัติได้รับจัดสรร (รอบ/ปีงบประมาณ)</span>
                     <div class="flex gap-2 mb-3">
-                        <input type="text" id="new_alloc" class="input-field py-2 text-sm bg-white" placeholder="เช่น 1/2569">
-                        <button type="button" onclick="addAllocation()" class="bg-blue-600 hover:bg-blue-700 text-white px-4 rounded-xl text-sm font-bold shadow-sm transition-colors whitespace-nowrap">เพิ่มรอบ</button>
+                        <input type="text" id="new_alloc" class="w-full border border-slate-200 rounded-xl px-4 py-2 text-sm outline-none focus:ring-2 focus:ring-blue-500 bg-slate-50" placeholder="เช่น 1/2569">
+                        <button type="button" onclick="addAllocation()" class="bg-blue-600 hover:bg-blue-700 text-white px-5 rounded-xl text-sm font-bold shadow-sm transition-colors whitespace-nowrap">เพิ่มรอบ</button>
                     </div>
                     <div id="alloc-list" class="flex flex-wrap gap-2 empty:hidden"></div>
-                    <p class="text-[10px] text-gray-400 mt-2">* ระบบในหน้า กปท. จะนำรอบเหล่านี้ไปแสดงผลและใช้กรองข้อมูล</p>
                 </div>
-            </div>
+            </section>
 
-            <div id="sec-equipment" class="bg-white rounded-[20px] p-5 shadow-sm border border-orange-100">
+            <!-- SECTION 2.2: อุปกรณ์ -->
+            <section id="sec-equipment" class="bg-white rounded-[20px] p-5 shadow-sm border border-orange-100">
                 <h3 class="font-bold text-[#ea580c] flex items-center gap-2 border-b border-orange-50 pb-2 mb-4">
-                    <span class="material-symbols-outlined">medical_services</span> ความต้องการอุปกรณ์การแพทย์
+                    <span class="material-symbols-outlined">medical_services</span> ความต้องการอุปกรณ์การแพทย์อื่นๆ
                 </h3>
-                <div class="grid grid-cols-2 gap-2" id="equipment-list"></div>
-                <div class="mt-3">
-                    <span class="text-xs text-gray-500 mb-1 block">อุปกรณ์อื่นๆ (ระบุ)</span>
-                    <input type="text" id="equip_other" class="input-field" placeholder="เช่น เครื่องพ่นยา, เตียง 3 ไกร์...">
-                </div>
-            </div>
-
-            <div id="sec-health" class="bg-white rounded-[20px] p-5 shadow-sm border border-[#bdcac1]/30">
-                <h3 class="font-bold text-[#ba1a1a] flex items-center gap-2 border-b pb-2 mb-4"><span class="material-symbols-outlined">monitor_heart</span> โรคประจำตัว</h3>
-                <div class="grid grid-cols-2 gap-2 mb-3" id="disease-checkboxes"></div>
+                <div class="grid grid-cols-2 gap-2 mb-4" id="equipment-list"></div>
                 <div>
-                    <span class="text-xs text-gray-500 mb-1 block">โรคอื่นๆ (ระบุ)</span>
-                    <input type="text" id="disease_other" class="input-field" placeholder="พิมพ์ชื่อโรคอื่นๆ (ถ้ามี)...">
+                    <span class="text-xs font-bold text-gray-500 mb-1 block">อุปกรณ์อื่นๆ (ระบุ)</span>
+                    <input type="text" id="equip_other" class="w-full border border-slate-200 rounded-xl px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-orange-500 bg-slate-50" placeholder="เช่น เครื่องพ่นยา, เตียง 3 ไกร์...">
                 </div>
-            </div>
+            </section>
 
-            <!-- หมวดยา -->
-            <div id="sec-medication" class="bg-white rounded-[20px] p-5 shadow-sm border border-[#bdcac1]/30">
-                <div class="flex justify-between items-center border-b pb-2 mb-4">
+            <!-- SECTION 3: สุขภาพ โรคประจำตัว -->
+            <section id="sec-health" class="bg-white rounded-[20px] p-5 shadow-sm border border-red-100">
+                <h3 class="font-bold text-[#ba1a1a] flex items-center gap-2 border-b border-red-50 pb-2 mb-4"><span class="material-symbols-outlined">monitor_heart</span> โรคประจำตัว</h3>
+                <div class="grid grid-cols-2 gap-2 mb-4" id="disease-checkboxes"></div>
+                <div>
+                    <span class="text-xs font-bold text-gray-500 mb-1 block">โรคอื่นๆ (ระบุ)</span>
+                    <input type="text" id="disease_other" class="w-full border border-slate-200 rounded-xl px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-red-500 bg-slate-50" placeholder="พิมพ์ชื่อโรคอื่นๆ (ถ้ามี)...">
+                </div>
+            </section>
+
+            <!-- SECTION 4: หมวดยา (รูปภาพ) -->
+            <section id="sec-medication" class="bg-white rounded-[20px] p-5 shadow-sm border border-sky-100">
+                <div class="flex justify-between items-center border-b border-sky-50 pb-2 mb-4">
                     <h3 class="font-bold text-[#0284c7] flex items-center gap-2"><span class="material-symbols-outlined">medication</span> รายการยา</h3>
                 </div>
-                <p class="text-[11px] text-gray-500 mb-3 bg-blue-50 p-2 rounded-lg border border-blue-100">
-                    <span class="font-bold text-blue-600">💡 เคล็ดลับ:</span> สามารถกดที่รูปกล้องเพื่อถ่ายภาพซองยา แทนการพิมพ์ชื่อยาวๆ ได้ครับ!
+                <p class="text-[11px] text-sky-700 mb-4 bg-sky-50 p-3 rounded-xl border border-sky-100 shadow-inner">
+                    <span class="font-bold">💡 เคล็ดลับ:</span> กดที่รูปกล้องเพื่อถ่ายภาพซองยา แทนการพิมพ์ชื่อยาวๆ ได้ครับ!
                 </p>
                 
                 <div id="med-list-container" class="space-y-4 mb-4"></div>
                 
-                <button type="button" onclick="addMedRow()" class="w-full py-3 border-2 border-dashed border-[#bae6fd] text-[#0284c7] rounded-xl font-medium hover:bg-[#f0f9ff] transition-colors flex justify-center items-center gap-1 text-sm">
-                    <span class="material-symbols-outlined text-sm">add</span> เพิ่มรายการยา
+                <button type="button" onclick="addMedRow()" class="w-full py-3.5 border-2 border-dashed border-[#bae6fd] text-[#0284c7] rounded-xl font-bold hover:bg-[#f0f9ff] transition-colors flex justify-center items-center gap-1 text-sm bg-white">
+                    <span class="material-symbols-outlined text-lg">add</span> เพิ่มรายการยา
                 </button>
-            </div>
-
-            <div id="sec-caregiver" class="bg-white rounded-[20px] p-5 shadow-sm border border-gray-100">
-                <h3 class="font-bold text-[#F59E0B] flex items-center gap-2 border-b pb-2 mb-4"><span class="material-symbols-outlined">group</span> ญาติ / ผู้ดูแล</h3>
-                <div class="mb-3"><span class="text-xs text-gray-500 mb-1 block">ชื่อ-นามสกุล ผู้ดูแล</span><input type="text" id="caregiver_name" class="input-field"></div>
-                <div><span class="text-xs text-gray-500 mb-1 block">เบอร์โทรศัพท์</span><input type="tel" id="caregiver_phone" class="input-field"></div>
-            </div>
+            </section>
 
         </form>
     </main>
 
-    <div class="fixed bottom-0 left-0 w-full bg-white border-t p-4 z-50 shadow-[0_-4px_10px_rgba(0,0,0,0.05)]">
-        <button type="submit" form="editForm" id="btn-save" class="w-full bg-[#00694a] text-white py-3.5 rounded-xl font-bold shadow-md hover:bg-[#005239] flex justify-center items-center gap-2">
-            บันทึกการเปลี่ยนแปลง <span class="material-symbols-outlined text-sm">save</span>
-        </button>
+    <div class="fixed bottom-0 left-0 w-full bg-white/90 backdrop-blur-md border-t p-4 z-50 shadow-[0_-4px_10px_rgba(0,0,0,0.05)]">
+        <div class="max-w-2xl mx-auto flex gap-3">
+            <button type="button" onclick="goBack()" class="w-1/3 py-3.5 bg-slate-100 text-slate-600 rounded-xl font-bold shadow-sm hover:bg-slate-200 transition-colors">ยกเลิก</button>
+            <button type="submit" form="editForm" id="btn-save" class="w-2/3 bg-[#00694a] text-white py-3.5 rounded-xl font-bold shadow-md hover:bg-[#005239] active:scale-95 transition-all flex justify-center items-center gap-2 text-base">
+                <span class="material-symbols-outlined text-[20px]">save</span> บันทึกข้อมูล
+            </button>
+        </div>
     </div>
 
     <script>
@@ -200,27 +233,40 @@
         const medicalEquipments = ['เตียงผู้ป่วย', 'เตียงลมแผลกดทับ', 'รถเข็นนั่ง (Wheelchair)', 'เครื่องผลิตออกซิเจน', 'เครื่องดูดเสมหะ', 'วอล์กเกอร์ / ไม้เท้า', 'ชุดทำแผลปลอดเชื้อ', 'สายดูดเสมหะ/ถุงมือ'];
         const commonDiseases = ['เบาหวาน', 'ความดันโลหิตสูง', 'ไตวาย', 'หลอดเลือดหัวใจ', 'หลอดเลือดสมอง', 'กล้ามเนื้ออ่อนแรง'];
         
+        let currentPatientData = null;
         let currentAllocations = []; 
         
-        // 🌟 เพิ่มตัวแปรสำหรับเก็บข้อมูลผู้บันทึก 🌟
+        // 🌟 ตัวแปรเก็บข้อมูลผู้บันทึก 🌟
         let currentUserUid = "";
         let currentUserName = "ไม่ระบุชื่อ";
 
-        // 🌟 เพิ่มการดึงข้อมูล LIFF เมื่อเปิดหน้าเว็บ 🌟
         document.addEventListener("DOMContentLoaded", () => {
+            const sections = document.querySelectorAll("section");
+            const navLi = document.querySelectorAll(".tab-btn");
+            window.onscroll = () => {
+                var current = "";
+                sections.forEach((section) => {
+                    const sectionTop = section.offsetTop;
+                    if (scrollY >= sectionTop - 150) { current = section.getAttribute("id"); }
+                });
+                navLi.forEach((li) => {
+                    li.classList.remove("active");
+                    if (li.getAttribute("href").includes(current)) { li.classList.add("active"); }
+                });
+            };
+
             liff.init({ liffId: LIFF_ID }).then(() => {
                 const mockUid = localStorage.getItem('dev_mock_uid');
-                if (mockUid) {
-                    verifyUserAccess(mockUid);
-                } else if (liff.isLoggedIn()) {
-                    liff.getProfile().then(profile => {
-                        verifyUserAccess(profile.userId);
-                    }).catch(err => console.error(err));
+                if (mockUid) { verifyUserAccess(mockUid); } 
+                else if (liff.isLoggedIn()) {
+                    liff.getProfile().then(profile => { verifyUserAccess(profile.userId); }).catch(err => console.error(err));
                 }
             });
+
+            loadPatientData();
         });
 
-        // 🌟 ดึงชื่อเจ้าหน้าที่จาก Firebase 🌟
+        // 🌟 ดึงชื่อเจ้าหน้าที่ 🌟
         async function verifyUserAccess(uid) {
             currentUserUid = uid;
             try {
@@ -230,6 +276,18 @@
                     if(data.name) currentUserName = data.name;
                 }
             } catch(e) { console.error(e); }
+        }
+
+        function setActiveTab(tab) {
+            document.querySelectorAll('.tab-btn').forEach(t => t.classList.remove('active'));
+            document.getElementById(`tab-${tab}`).classList.add('active');
+        }
+
+        function toggleDiaperSize() {
+            const isChecked = document.getElementById('inp-req-diaper').checked;
+            const sizeSelect = document.getElementById('inp-diaper-size');
+            sizeSelect.disabled = !isChecked;
+            if(!isChecked) sizeSelect.value = '-';
         }
 
         function cleanAndParseJSON(rawStr) {
@@ -277,7 +335,7 @@
                 eqContainer.innerHTML += `
                     <div>
                         <input type="checkbox" id="eq_${idx}" value="${eq}" class="eq-cb hidden">
-                        <label for="eq_${idx}" class="block w-full text-center p-2 text-[11px] border border-gray-200 rounded-lg cursor-pointer bg-white text-gray-600 transition-colors h-full flex items-center justify-center">${eq}</label>
+                        <label for="eq_${idx}" class="block w-full text-center p-2 text-xs font-medium border border-slate-200 rounded-xl cursor-pointer bg-slate-50 text-slate-600 transition-colors h-full flex items-center justify-center">${eq}</label>
                     </div>`;
             });
 
@@ -287,7 +345,7 @@
                 disContainer.innerHTML += `
                     <div>
                         <input type="checkbox" id="disease_${index}" value="${disease}" class="disease-cb hidden">
-                        <label for="disease_${index}" class="block w-full text-center py-2 px-1 text-[13px] border border-gray-200 rounded-lg cursor-pointer transition-colors bg-white text-gray-600">${disease}</label>
+                        <label for="disease_${index}" class="block w-full text-center py-2.5 px-2 text-xs font-medium border border-slate-200 rounded-xl cursor-pointer transition-colors bg-slate-50 text-slate-600">${disease}</label>
                     </div>`;
             });
         }
@@ -339,26 +397,26 @@
             const rowId = 'med_' + Date.now() + Math.floor(Math.random() * 100);
             
             const html = `
-                <div id="${rowId}" class="bg-gray-50 p-3 rounded-2xl border border-gray-200 relative shadow-sm flex gap-3 items-stretch">
-                    <button type="button" onclick="document.getElementById('${rowId}').remove()" class="absolute -top-2 -right-2 bg-red-100 text-red-600 rounded-full w-6 h-6 flex justify-center items-center hover:bg-red-200 transition-colors shadow-sm z-10">
-                        <span class="material-symbols-outlined text-[14px]">close</span>
+                <div id="${rowId}" class="bg-slate-50 p-3 rounded-2xl border border-slate-200 relative shadow-sm flex gap-3 items-stretch">
+                    <button type="button" onclick="document.getElementById('${rowId}').remove()" class="absolute -top-2 -right-2 bg-red-100 text-red-600 rounded-full w-7 h-7 flex justify-center items-center hover:bg-red-200 transition-colors shadow-sm z-10">
+                        <span class="material-symbols-outlined text-[16px]">close</span>
                     </button>
                     
-                    <div class="w-20 sm:w-24 flex-shrink-0 cursor-pointer border-2 border-dashed border-gray-300 rounded-xl overflow-hidden relative group bg-gray-100 hover:bg-gray-200 transition-colors" onclick="document.getElementById('img_input_${rowId}').click()">
+                    <div class="w-20 sm:w-24 flex-shrink-0 cursor-pointer border-2 border-dashed border-slate-300 rounded-xl overflow-hidden relative group bg-white hover:bg-slate-100 transition-colors" onclick="document.getElementById('img_input_${rowId}').click()">
                         <input type="file" id="img_input_${rowId}" accept="image/*" capture="environment" class="hidden" onchange="handleMedImageUpload(this, '${rowId}')">
                         <div id="preview_${rowId}" class="w-full h-full absolute inset-0 flex items-center justify-center">
                             <img id="img_tag_${rowId}" src="" class="w-full h-full object-cover hidden">
-                            <span id="img_icon_${rowId}" class="material-symbols-outlined text-2xl text-gray-400">add_a_photo</span>
+                            <span id="img_icon_${rowId}" class="material-symbols-outlined text-2xl text-slate-400">add_a_photo</span>
                             <div id="loader_${rowId}" class="loader-small hidden"></div>
                         </div>
                         <textarea id="b64_${rowId}" class="hidden med-base64"></textarea>
                     </div>
 
                     <div class="flex-1 flex flex-col gap-2 justify-center">
-                        <input type="text" id="name_${rowId}" class="med-name input-field bg-white py-1.5 px-3 text-sm border-gray-200 w-full" placeholder="ชื่อยา (เว้นว่างถ้ามีรูป)">
+                        <input type="text" id="name_${rowId}" class="med-name w-full border border-slate-200 rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-sky-500 bg-white" placeholder="ชื่อยา (เว้นว่างถ้ามีรูป)">
                         <div class="grid grid-cols-2 gap-2">
-                            <input type="text" id="dose_${rowId}" class="med-dose input-field bg-white py-1.5 px-3 text-sm border-gray-200" placeholder="ขนาด">
-                            <input type="text" id="usage_${rowId}" class="med-usage input-field bg-white py-1.5 px-3 text-sm border-gray-200" placeholder="วิธีใช้">
+                            <input type="text" id="dose_${rowId}" class="med-dose w-full border border-slate-200 rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-sky-500 bg-white" placeholder="ขนาด">
+                            <input type="text" id="usage_${rowId}" class="med-usage w-full border border-slate-200 rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-sky-500 bg-white" placeholder="วิธีใช้">
                         </div>
                     </div>
                 </div>`;
@@ -377,6 +435,7 @@
             }
         }
 
+        // 🌟 ระบบจัดการประวัติรับผ้าอ้อม 🌟
         function renderAllocations() {
             const list = document.getElementById('alloc-list');
             list.innerHTML = '';
@@ -415,7 +474,7 @@
             
             navigator.geolocation.getCurrentPosition(
                 (pos) => {
-                    document.getElementById('lat_long').value = `${pos.coords.latitude.toFixed(6)}, ${pos.coords.longitude.toFixed(6)}`;
+                    document.getElementById('inp-gps').value = `${pos.coords.latitude.toFixed(6)}, ${pos.coords.longitude.toFixed(6)}`;
                     btnLocation.innerHTML = originalIcon;
                 },
                 (err) => {
@@ -429,37 +488,41 @@
             initUI();
             if (!patientId) return alert("ไม่พบรหัสผู้ป่วย");
             
-            const btnSave = document.getElementById('btn-save');
-            btnSave.innerHTML = '<div class="loader-small" style="border-color:white;border-bottom-color:transparent"></div> กำลังโหลดข้อมูล...'; 
-            btnSave.disabled = true;
-
             try {
                 const docSnap = await db.collection('Patients').doc(String(patientId)).get();
                 if(!docSnap.exists) { alert("ไม่พบข้อมูลผู้ป่วยในระบบ"); window.location.href = 'admin_datacenter.html'; return; }
 
-                const data = docSnap.data();
+                currentPatientData = docSnap.data();
+                const data = currentPatientData;
                 
-                document.getElementById('prefix').value = data.prefix || 'นาย';
-                document.getElementById('fullname').value = data.name || '';
-                document.getElementById('id_card').value = data.id_card || '';
-                document.getElementById('dob').value = convertThaiDateToInputFormat(data.dob);
-                document.getElementById('house_no').value = data.house_no || '';
-                document.getElementById('village_no').value = data.village_no || '';
-                document.getElementById('lat_long').value = data.lat_long || '';
-                document.getElementById('caregiver_name').value = data.caregiver_name || '';
-                document.getElementById('caregiver_phone').value = data.caregiver_phone || '';
+                // 1. ข้อมูลส่วนตัว
+                if(document.getElementById('inp-prefix')) document.getElementById('inp-prefix').value = data.prefix || 'นาย';
+                if(document.getElementById('inp-name')) document.getElementById('inp-name').value = data.name || '';
+                if(document.getElementById('inp-idcard')) document.getElementById('inp-idcard').value = data.id_card || '';
+                if(document.getElementById('inp-dob')) document.getElementById('inp-dob').value = convertThaiDateToInputFormat(data.dob);
+                if(document.getElementById('inp-house')) document.getElementById('inp-house').value = data.house_no || '';
+                if(document.getElementById('inp-village')) document.getElementById('inp-village').value = data.village_no || '';
+                if(document.getElementById('inp-gps')) document.getElementById('inp-gps').value = data.lat_long || '';
+                if(document.getElementById('inp-caregiver-name')) document.getElementById('inp-caregiver-name').value = data.caregiver_name || '';
+                if(document.getElementById('inp-caregiver-phone')) document.getElementById('inp-caregiver-phone').value = data.caregiver_phone || '';
 
+                // 2. โรคประจำตัว
                 if (data.disease) {
                     const savedDiseases = data.disease.split(',').map(item => item.trim());
                     let otherDiseases = [];
                     savedDiseases.forEach(d => {
                         const idx = commonDiseases.indexOf(d);
-                        if (idx !== -1) document.getElementById(`disease_${idx}`).checked = true;
-                        else if (d !== '' && d !== '-') otherDiseases.push(d);
+                        if (idx !== -1) {
+                            const cb = document.getElementById(`disease_${idx}`);
+                            if(cb) cb.checked = true;
+                        } else if (d !== '' && d !== '-') {
+                            otherDiseases.push(d);
+                        }
                     });
-                    document.getElementById('disease_other').value = otherDiseases.join(', ');
+                    if(document.getElementById('disease_other')) document.getElementById('disease_other').value = otherDiseases.join(', ');
                 }
 
+                // 3. ยา (Medication)
                 let medList = [];
                 if (Array.isArray(data.medication)) {
                     medList = data.medication;
@@ -478,20 +541,21 @@
                     medList.forEach(med => addMedRow(med.name, med.dose, med.usage, med.image || ''));
                 }
 
+                // 4. สิทธิ์ผ้าอ้อม
                 const dp = cleanAndParseJSON(data.diaper);
                 if(dp) {
-                    if(dp.result) {
-                        const rb = document.querySelector(`input[name="diaper_result"][value="${dp.result}"]`);
-                        if(rb) rb.checked = true;
-                    }
+                    if(document.getElementById('inp-diaper-result')) document.getElementById('inp-diaper-result').value = dp.result || '';
                     if(dp.indications) {
-                        document.querySelectorAll('.diaper-ind').forEach(cb => {
+                        document.querySelectorAll('.inp-diaper-ind').forEach(cb => {
                             if(dp.indications.includes(cb.value)) cb.checked = true;
                         });
                     }
-                    document.getElementById('req_diaper').checked = dp.req_diaper || false;
-                    document.getElementById('diaper_size').value = dp.size || '-';
-                    document.getElementById('req_underpad').checked = dp.req_underpad || false;
+                    if(document.getElementById('inp-req-diaper')) {
+                        document.getElementById('inp-req-diaper').checked = !!dp.req_diaper;
+                        toggleDiaperSize();
+                    }
+                    if(document.getElementById('inp-diaper-size')) document.getElementById('inp-diaper-size').value = dp.size || '-';
+                    if(document.getElementById('inp-req-underpad')) document.getElementById('inp-req-underpad').checked = !!dp.req_underpad;
                     
                     if (dp.allocations && Array.isArray(dp.allocations)) {
                         currentAllocations = dp.allocations;
@@ -499,19 +563,40 @@
                     }
                 }
 
+                // 5. อุปกรณ์
                 if(data.equipment) {
                     const savedEq = data.equipment.split(',').map(item => item.trim());
                     let otherEq = [];
                     savedEq.forEach(eq => {
                         const idx = medicalEquipments.indexOf(eq);
-                        if (idx !== -1) document.getElementById(`eq_${idx}`).checked = true;
-                        else if (eq !== '' && eq !== '-') otherEq.push(eq);
+                        if (idx !== -1) {
+                            const cb = document.getElementById(`eq_${idx}`);
+                            if(cb) cb.checked = true;
+                        } else if (eq !== '' && eq !== '-') {
+                            otherEq.push(eq);
+                        }
                     });
-                    document.getElementById('equip_other').value = otherEq.join(', ');
+                    if(document.getElementById('equip_other')) document.getElementById('equip_other').value = otherEq.join(', ');
                 }
 
-                btnSave.innerHTML = 'บันทึกการเปลี่ยนแปลง <span class="material-symbols-outlined text-sm">save</span>'; 
-                btnSave.disabled = false;
+                document.getElementById('loading-state').classList.add('hidden');
+                document.getElementById('editForm').classList.remove('hidden');
+
+                if (window.location.hash) {
+                    setTimeout(() => {
+                        const targetId = window.location.hash.substring(1);
+                        let targetElement = document.getElementById(targetId);
+                        if (targetElement) {
+                            const headerOffset = 110;
+                            const elementPosition = targetElement.getBoundingClientRect().top;
+                            const offsetPosition = elementPosition + window.pageYOffset - headerOffset;
+                            window.scrollTo({ top: offsetPosition, behavior: 'smooth' });
+                            targetElement.style.transition = "box-shadow 0.5s ease-in-out";
+                            targetElement.style.boxShadow = "0 0 0 4px rgba(2, 132, 199, 0.3)";
+                            setTimeout(() => targetElement.style.boxShadow = "none", 2500);
+                        }
+                    }, 400);
+                }
 
             } catch (error) { alert("โหลดข้อมูลล้มเหลว กรุณาตรวจสอบอินเทอร์เน็ต"); }
         }
@@ -532,6 +617,18 @@
 
         async function saveData(e) {
             e.preventDefault();
+            
+            const name = document.getElementById('inp-name').value.trim();
+            const idcard = document.getElementById('inp-idcard').value.trim();
+            const house = document.getElementById('inp-house').value.trim();
+            const village = document.getElementById('inp-village').value.trim();
+
+            if (!name || !idcard || !house || !village) {
+                alert("กรุณากรอกข้อมูลสำคัญ (ชื่อ, เลขบัตร, บ้านเลขที่, หมู่ที่) ให้ครบถ้วน");
+                window.location.hash = "#sec-personal";
+                return;
+            }
+
             const btn = document.getElementById('btn-save');
             btn.innerHTML = '<div class="loader-small" style="border-color:white;border-bottom-color:transparent"></div> กำลังบันทึกข้อมูล...'; 
             btn.disabled = true;
@@ -551,23 +648,24 @@
                 }
             });
 
-            const diaperResult = document.querySelector('input[name="diaper_result"]:checked');
-            const indications = Array.from(document.querySelectorAll('.diaper-ind:checked')).map(cb => cb.value);
+            const diaperResult = document.getElementById('inp-diaper-result').value;
+            const indications = Array.from(document.querySelectorAll('.inp-diaper-ind:checked')).map(cb => cb.value);
             
             let existingDiaperObj = {};
             try {
-                const pDoc = await db.collection('Patients').doc(String(patientId)).get();
-                if(pDoc.exists) existingDiaperObj = cleanAndParseJSON(pDoc.data().diaper) || {};
+                if(currentPatientData && currentPatientData.diaper) {
+                    existingDiaperObj = cleanAndParseJSON(currentPatientData.diaper) || {};
+                }
             } catch(err) {}
 
             // 🌟 เพิ่มตัวแปรชื่อผู้ประเมินลงในก้อนข้อมูล Diaper 🌟
             const diaperObj = {
                 ...existingDiaperObj, 
-                result: diaperResult ? diaperResult.value : '',
+                result: diaperResult,
                 indications: indications,
-                req_diaper: document.getElementById('req_diaper').checked,
-                size: document.getElementById('diaper_size').value,
-                req_underpad: document.getElementById('req_underpad').checked,
+                req_diaper: document.getElementById('inp-req-diaper').checked,
+                size: document.getElementById('inp-diaper-size').value,
+                req_underpad: document.getElementById('inp-req-underpad').checked,
                 allocations: currentAllocations,
                 assessor_uid: currentUserUid,      // 🌟 รหัสคนประเมิน
                 assessor_name: currentUserName     // 🌟 ชื่อคนประเมิน
@@ -580,36 +678,42 @@
             let eqArray = Array.from(document.querySelectorAll('.eq-cb:checked')).map(cb => cb.value);
             if (document.getElementById('equip_other').value.trim()) eqArray.push(document.getElementById('equip_other').value.trim());
 
-            const dobInputStr = document.getElementById('dob').value;
+            const dobInputStr = document.getElementById('inp-dob').value;
             const dobThaiFormat = convertInputDateToThaiFormat(dobInputStr);
             const calculatedAge = calculateAgeFromDOB(dobThaiFormat);
 
             const updateData = {
-                prefix: document.getElementById('prefix').value, 
-                name: document.getElementById('fullname').value.trim(),
-                id_card: document.getElementById('id_card').value.trim(),
+                prefix: document.getElementById('inp-prefix').value, 
+                name: name,
+                id_card: idcard,
                 dob: dobThaiFormat,
                 age: calculatedAge,
-                house_no: document.getElementById('house_no').value.trim(), 
-                village_no: document.getElementById('village_no').value.trim(),
-                lat_long: document.getElementById('lat_long').value.trim(), 
+                house_no: house, 
+                village_no: village,
+                lat_long: document.getElementById('inp-gps').value.trim(), 
                 disease: finalDiseases.length > 0 ? finalDiseases.join(', ') : '-',
                 medication: medArray, 
-                caregiver_name: document.getElementById('caregiver_name').value.trim(), 
-                caregiver_phone: document.getElementById('caregiver_phone').value.trim(),
+                caregiver_name: document.getElementById('inp-caregiver-name').value.trim(), 
+                caregiver_phone: document.getElementById('inp-caregiver-phone').value.trim(),
                 diaper: JSON.stringify(diaperObj), 
-                equipment: eqArray.length > 0 ? eqArray.join(', ') : '-'
+                equipment: eqArray.length > 0 ? eqArray.join(', ') : '-',
+                updated_at: firebase.firestore.FieldValue.serverTimestamp()
             };
 
             try {
                 await db.collection('Patients').doc(String(patientId)).update(updateData);
                 alert('อัปเดตข้อมูลเรียบร้อยแล้ว!');
-                window.location.href = `patient_profile.html?id=${patientId}`;
+                goBack();
             } catch (err) { 
                 alert('การบันทึกข้อมูลขัดข้อง กรุณาลองใหม่'); 
-                btn.innerHTML = 'บันทึกการเปลี่ยนแปลง <span class="material-symbols-outlined text-sm">save</span>'; 
+                btn.innerHTML = '<span class="material-symbols-outlined text-[20px]">save</span> บันทึกข้อมูล'; 
                 btn.disabled = false;
             }
+        }
+
+        function goBack() {
+            if(patientId) window.location.href = `patient_profile.html?id=${patientId}`;
+            else window.location.href = 'admin_datacenter.html';
         }
     </script>
 </body>
