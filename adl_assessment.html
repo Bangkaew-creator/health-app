@@ -1,273 +1,400 @@
-<!DOCTYPE html>
+    <!DOCTYPE html>
 <html lang="th">
 <head>
     <meta charset="utf-8"/>
-    <meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" name="viewport"/>
-    <title>ประเมิน ADL</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
+    <title>ประเมิน ADL - อสม.สามารถ</title>
     <script src="https://cdn.tailwindcss.com?plugins=forms"></script>
     <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700&display=swap" rel="stylesheet"/>
     <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
-    
+    <script charset="utf-8" src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+
     <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore-compat.js"></script>
-    <script charset="utf-8" src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
     <script src="config.js"></script>
 
     <style>
-        body { font-family: 'Sarabun', sans-serif; background-color: #f9f9ff; padding-bottom: 120px; -webkit-tap-highlight-color: transparent;}
-        .material-symbols-outlined { font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24; }
-        input[type="radio"] { display: none; }
-        input[type="radio"]:checked + label { background-color: #F59E0B; color: white; border-color: #F59E0B; font-weight: bold; box-shadow: 0 4px 6px -1px rgba(245, 158, 11, 0.2); }
-        .loader-small { border: 2px solid #f3f3f3; border-bottom-color: transparent; border-radius: 50%; width: 16px; height: 16px; animation: spin 1s linear infinite; display: inline-block; vertical-align: middle; }
+        body { font-family: 'Sarabun', sans-serif; background-color: #f8fafc; -webkit-tap-highlight-color: transparent;}
+        .material-symbols-outlined { font-variation-settings: 'FILL' 1, 'wght' 400, 'GRAD' 0, 'opsz' 24; }
+        .loader-small { border: 3px solid #f3f3f3; border-bottom-color: #F59E0B; border-radius: 50%; width: 24px; height: 24px; animation: spin 1s linear infinite; }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        .radio-card input:checked + div { background-color: #fffbeb; border-color: #F59E0B; box-shadow: 0 4px 6px -1px rgba(245, 158, 11, 0.1); }
+        .radio-card input:checked + div .radio-icon { color: #F59E0B; }
     </style>
 </head>
-<body class="text-[#111c2d]">
+<body class="text-slate-800 pb-24">
 
-    <header class="bg-white sticky top-0 z-50 shadow-sm flex justify-between items-center w-full px-4 h-16 border-b border-gray-200">
+    <header class="bg-amber-500 sticky top-0 z-50 shadow-md flex justify-between items-center w-full px-4 h-16 text-white">
         <div class="flex items-center gap-3">
-            <button onclick="window.history.back()" class="w-10 h-10 flex items-center justify-center rounded-full bg-gray-50 text-[#F59E0B] hover:bg-gray-100 transition-colors">
-                <span class="material-symbols-outlined">arrow_back</span>
+            <button onclick="goBack()" class="w-10 h-10 flex items-center justify-center rounded-full hover:bg-white/20 transition-colors active:scale-95">
+                <span class="material-symbols-outlined text-[24px]">arrow_back</span>
             </button>
             <div>
-                <h1 class="text-base font-bold text-[#F59E0B]">ประเมิน ADL</h1>
-                <p class="text-xs text-gray-500" id="patient-id-display">รหัส: กำลังโหลด...</p>
+                <h1 class="text-lg font-bold leading-tight">ประเมิน ADL</h1>
+                <p class="text-[11px] text-amber-100 font-medium">ดัชนีบาร์เธลเอดีแอล (Barthel ADL index)</p>
             </div>
         </div>
     </header>
 
-    <main class="max-w-2xl mx-auto p-4 space-y-4" id="adl-container">
-        <!-- คำถาม ADL จะถูกสร้างด้วย JavaScript -->
-    </main>
-
-    <div class="fixed bottom-0 left-0 w-full bg-white border-t border-gray-200 shadow-[0_-4px_20px_rgba(0,0,0,0.05)] p-4 flex justify-between items-center z-50">
-        <div class="flex-1">
-            <p class="text-[10px] text-gray-500 font-bold mb-0.5">รวมคะแนน ADL</p>
-            <div class="flex items-center gap-2">
-                <span id="total-score" class="text-2xl font-black text-[#F59E0B] leading-none">0</span>
-                <span id="result-status" class="bg-gray-200 text-gray-700 px-2 py-0.5 rounded-md text-[10px] font-bold shadow-sm">รอประเมิน</span>
+    <main class="max-w-2xl mx-auto p-4 space-y-5">
+        
+        <div class="bg-white rounded-[20px] p-5 shadow-sm border border-slate-200 flex items-center gap-4 relative overflow-hidden">
+            <div class="absolute top-0 right-0 w-24 h-24 bg-amber-50 rounded-bl-full -z-10"></div>
+            <div class="w-14 h-14 rounded-full bg-slate-100 text-slate-400 border-2 border-white shadow-sm flex items-center justify-center font-bold text-xl flex-shrink-0" id="patient-initial">?</div>
+            <div class="flex-1 min-w-0">
+                <h2 class="text-lg font-bold text-slate-800 truncate" id="patient-name">กำลังโหลด...</h2>
+                <p class="text-xs text-slate-500 truncate mt-0.5">หมู่ที่ <span id="patient-village">-</span> • อายุ <span id="patient-age">-</span> ปี</p>
             </div>
         </div>
-        <button onclick="saveADL()" id="btn-save" class="bg-[#F59E0B] text-white px-6 py-3.5 rounded-xl font-bold shadow-md hover:bg-[#D97706] active:scale-95 transition-all flex items-center gap-2">
-            บันทึกผล
-            <span class="material-symbols-outlined text-sm">save</span>
+
+        <div class="bg-white rounded-[20px] p-5 shadow-sm border border-slate-200">
+            <div class="flex items-center justify-between mb-4 pb-3 border-b border-slate-100">
+                <h3 class="font-bold text-slate-800 flex items-center gap-2"><span class="material-symbols-outlined text-amber-500 text-[20px]">calendar_today</span> วันที่ประเมิน</h3>
+                <input type="date" id="assess-date" class="px-3 py-2 border border-slate-200 rounded-xl text-sm font-medium text-slate-700 focus:ring-2 focus:ring-amber-500 outline-none">
+            </div>
+
+            <div id="questions-container" class="space-y-6"></div>
+        </div>
+
+        <button onclick="calculateScore()" class="w-full bg-amber-500 text-white py-4 rounded-xl font-bold shadow-lg hover:bg-amber-600 active:scale-95 transition-all flex items-center justify-center gap-2 text-lg">
+            <span class="material-symbols-outlined">calculate</span> คำนวณผลประเมิน
         </button>
+
+    </main>
+
+    <!-- Modal ผลลัพธ์ -->
+    <div id="result-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[100] hidden flex items-center justify-center p-4 opacity-0 transition-opacity duration-300">
+        <div id="result-content" class="bg-white rounded-[24px] w-full max-w-sm overflow-hidden shadow-2xl transform scale-95 transition-transform duration-300">
+            <div class="p-6 text-center">
+                <div class="w-20 h-20 mx-auto rounded-full bg-amber-100 flex items-center justify-center mb-4 border-4 border-white shadow-sm">
+                    <span class="material-symbols-outlined text-[40px] text-amber-500" style="font-variation-settings: 'FILL' 1;">assignment_turned_in</span>
+                </div>
+                <h3 class="text-xl font-bold text-slate-800 mb-1">ผลการประเมิน ADL</h3>
+                <p class="text-sm text-slate-500 mb-6">คะแนนรวมทั้งหมดของคุณ</p>
+                
+                <div class="bg-slate-50 rounded-2xl p-4 border border-slate-100 mb-6">
+                    <div class="text-[50px] font-black text-amber-500 leading-none mb-2" id="result-score">0</div>
+                    <p class="text-sm font-bold text-slate-700">คะแนน (เต็ม 20)</p>
+                    <div class="mt-3 pt-3 border-t border-slate-200">
+                        <span id="result-badge" class="px-4 py-1.5 rounded-full text-sm font-bold shadow-sm inline-block">-</span>
+                    </div>
+                </div>
+
+                <div class="space-y-3">
+                    <button onclick="saveADL()" id="btn-save" class="w-full bg-[#00694a] text-white py-3.5 rounded-xl font-bold shadow-md hover:bg-[#005239] active:scale-95 transition-all flex items-center justify-center gap-2">
+                        <span class="material-symbols-outlined">save</span> บันทึกข้อมูล
+                    </button>
+                    <button onclick="closeResultModal()" class="w-full bg-slate-100 text-slate-600 py-3.5 rounded-xl font-bold hover:bg-slate-200 active:scale-95 transition-all">
+                        กลับไปแก้ไข
+                    </button>
+                </div>
+            </div>
+        </div>
     </div>
 
     <script>
         firebase.initializeApp(firebaseConfig);
         const db = firebase.firestore();
-        
+
         const urlParams = new URLSearchParams(window.location.search);
         const patientId = urlParams.get('id');
-        document.getElementById('patient-id-display').innerText = `รหัส: ${patientId || 'ไม่ระบุ'}`;
-
+        let currentPatientData = null;
+        
+        // 🌟 ตัวแปรเก็บข้อมูลผู้ประเมิน 🌟
         let currentUserUid = "";
-        let currentAssessorName = "เจ้าหน้าที่ระบบ"; 
+        let currentUserName = "เจ้าหน้าที่";
+
+        const questions = [
+            {
+                q: "1. การรับประทานอาหารเมื่อเตรียมสำรับไว้ให้เรียบร้อยต่อหน้า (Feeding)",
+                choices: [
+                    { score: 0, text: "ไม่สามารถตักอาหารเข้าปากได้ ต้องมีคนป้อนให้" },
+                    { score: 1, text: "ตักอาหารเองได้แต่ต้องมีคนช่วย เช่น ช่วยใช้ช้อนตักเตรียมไว้ให้หรือตัดเป็นชิ้นเล็กๆไว้ล่วงหน้า" },
+                    { score: 2, text: "ตักอาหารและช่วยตัวเองได้เป็นปกติ" }
+                ]
+            },
+            {
+                q: "2. ล้างหน้า หวีผม แปรงฟัน โกนหนวด ในระยะเวลา 24-48 ชั่วโมงที่ผ่านมา (Grooming)",
+                choices: [
+                    { score: 0, text: "ต้องการความช่วยเหลือ" },
+                    { score: 1, text: "ทำเองได้ (รวมทั้งที่ทำได้เองถ้าเตรียมอุปกรณ์ไว้ให้)" }
+                ]
+            },
+            {
+                q: "3. ลุกนั่งจากที่นอน หรือจากเตียงไปยังเก้าอี้ (Transfer)",
+                choices: [
+                    { score: 0, text: "ไม่สามารถนั่งได้ (นั่งแล้วจะล้มเสมอ) หรือต้องใช้คนสองคนช่วยกันยกขึ้น" },
+                    { score: 1, text: "ต้องการความช่วยเหลืออย่างมากจึงจะนั่งได้ เช่น ต้องใช้คนที่แข็งแรงหรือมีทักษะ 1 คน หรือใช้คนทั่วไป 2 คนพยุงหรือดันขึ้นมาจึงจะนั่งอยู่ได้" },
+                    { score: 2, text: "ต้องการความช่วยเหลือบ้าง เช่น บอกให้ทำตาม หรือช่วยพยุงเล็กน้อย หรือต้องมีคนดูแลเพื่อความปลอดภัย" },
+                    { score: 3, text: "ทำได้เอง" }
+                ]
+            },
+            {
+                q: "4. การใช้ห้องน้ำ (Toilet use)",
+                choices: [
+                    { score: 0, text: "ช่วยตัวเองไม่ได้" },
+                    { score: 1, text: "ทำเองได้บ้าง (อย่างน้อยทำความสะอาดตัวเองได้หลังจากเสร็จธุระ) แต่ต้องการความช่วยเหลือในบางสิ่ง" },
+                    { score: 2, text: "ช่วยตัวเองได้ดี (ขึ้นนั่งและลงจากโถส้วมเองได้ ทำความสะอาดได้เรียบร้อยหลังจากเสร็จธุระ ถอดใส่เสื้อผ้าได้เรียบร้อย)" }
+                ]
+            },
+            {
+                q: "5. การเคลื่อนที่ภายในห้องหรือบ้าน (Mobility)",
+                choices: [
+                    { score: 0, text: "เคลื่อนที่ไปไหนไม่ได้" },
+                    { score: 1, text: "ต้องใช้รถเข็นช่วยตัวเองให้เคลื่อนที่ได้เอง (ไม่ต้องมีคนเข็นให้) และจะต้องเข้าออกมุมห้อง หรือประตูได้" },
+                    { score: 2, text: "เดินหรือเคลื่อนที่โดยมีคนช่วย เช่น พยุง หรือบอกให้ทำตาม หรือต้องให้ความสนใจดูแลเพื่อความปลอดภัย" },
+                    { score: 3, text: "เดินหรือเคลื่อนที่ได้เอง" }
+                ]
+            },
+            {
+                q: "6. การสวมใส่เสื้อผ้า (Dressing)",
+                choices: [
+                    { score: 0, text: "ต้องมีคนสวมใส่ให้ ช่วยตัวเองแทบไม่ได้หรือได้น้อย" },
+                    { score: 1, text: "ช่วยตัวเองได้ประมาณร้อยละ 50 ที่เหลือต้องมีคนช่วย" },
+                    { score: 2, text: "ช่วยตัวเองได้ดี (รวมทั้งการติดกระดุม รูดซิบ หรือใช้เสื้อผ้าที่ดัดแปลงให้เหมาะสมก็ได้)" }
+                ]
+            },
+            {
+                q: "7. การขึ้นลงบันได 1 ชั้น (Stairs)",
+                choices: [
+                    { score: 0, text: "ไม่สามารถทำได้" },
+                    { score: 1, text: "ต้องการคนช่วย" },
+                    { score: 2, text: "ขึ้นลงได้เอง (ถ้าต้องใช้เครื่องช่วยเดิน เช่น walker จะต้องเอาขึ้นลงได้ด้วย)" }
+                ]
+            },
+            {
+                q: "8. การอาบน้ำ (Bathing)",
+                choices: [
+                    { score: 0, text: "ต้องมีคนช่วยหรือทำให้" },
+                    { score: 1, text: "อาบน้ำเองได้" }
+                ]
+            },
+            {
+                q: "9. การกลั้นการถ่ายอุจจาระในระยะ 1 สัปดาห์ที่ผ่านมา (Bowels)",
+                choices: [
+                    { score: 0, text: "กลั้นไม่ได้ หรือต้องการการสวนอุจจาระอยู่เสมอ" },
+                    { score: 1, text: "กลั้นไม่ได้บางครั้ง (เป็นน้อยกว่า 1 ครั้งต่อสัปดาห์)" },
+                    { score: 2, text: "กลั้นได้เป็นปกติ" }
+                ]
+            },
+            {
+                q: "10. การกลั้นปัสสาวะในระยะ 1 สัปดาห์ที่ผ่านมา (Bladder)",
+                choices: [
+                    { score: 0, text: "กลั้นไม่ได้ หรือใส่สายสวนปัสสาวะแต่ไม่สามารถดูแลเองได้" },
+                    { score: 1, text: "กลั้นไม่ได้บางครั้ง (เป็นน้อยกว่าวันละ 1 ครั้ง)" },
+                    { score: 2, text: "กลั้นได้เป็นปกติ" }
+                ]
+            }
+        ];
 
         document.addEventListener("DOMContentLoaded", () => {
+            document.getElementById('assess-date').valueAsDate = new Date();
+            renderQuestions();
+
             liff.init({ liffId: LIFF_ID }).then(() => {
                 const mockUid = localStorage.getItem('dev_mock_uid');
                 if (mockUid) {
-                    currentUserUid = mockUid;
-                    fetchAssessorData(mockUid);
+                    verifyUserAccess(mockUid);
                 } else if (liff.isLoggedIn()) {
-                    liff.getProfile().then(p => { 
-                        currentUserUid = p.userId; 
-                        fetchAssessorData(p.userId);
-                    });
-                } else { liff.login(); }
+                    liff.getProfile().then(profile => {
+                        verifyUserAccess(profile.userId);
+                    }).catch(err => console.error(err));
+                }
             });
+
+            loadPatientData();
         });
 
-        async function fetchAssessorData(uid) {
+        // 🌟 ดึงข้อมูลผู้ประเมินจาก Firebase VHVs 🌟
+        async function verifyUserAccess(uid) {
+            currentUserUid = uid;
             try {
-                const doc = await db.collection('VHVs').doc(String(uid)).get();
-                if(doc.exists) {
-                    currentAssessorName = doc.data().name || "เจ้าหน้าที่";
+                const userDoc = await db.collection('VHVs').doc(String(uid)).get();
+                if (userDoc.exists) {
+                    const data = userDoc.data();
+                    if(data.name) currentUserName = data.name;
                 }
-            } catch(e) { console.error("ดึงข้อมูลผู้ประเมินไม่ได้", e); }
+            } catch(e) { console.error(e); }
         }
 
-        const questionsADL = [
-            { id: 'adl_1', text: "1. การรับประทานอาหารเมื่อเตรียมสำรับไว้ให้เรียบร้อยต่อหน้า", choices: [
-                { score: 0, text: "ตักกินเองไม่ได้ (มีคนป้อน)" },
-                { score: 1, text: "ตักกินเองได้บ้าง (มีคนช่วยเตรียม)" },
-                { score: 2, text: "ตักกินเองได้เป็นปกติ" }
-            ]},
-            { id: 'adl_2', text: "2. การล้างหน้า หวีผม แปรงฟัน โกนหนวด", choices: [
-                { score: 0, text: "ต้องการความช่วยเหลือ" },
-                { score: 1, text: "ทำเองได้" }
-            ]},
-            { id: 'adl_3', text: "3. การลุกนั่งจากที่นอน หรือเตียงไปยังเก้าอี้", choices: [
-                { score: 0, text: "นั่งไม่ได้ / ใช้คนยก 2 คน" },
-                { score: 1, text: "ต้องการคนพยุงอย่างมาก" },
-                { score: 2, text: "ต้องการคนพยุงเล็กน้อย" },
-                { score: 3, text: "ทำได้เอง" }
-            ]},
-            { id: 'adl_4', text: "4. การใช้ห้องน้ำ", choices: [
-                { score: 0, text: "ช่วยตัวเองไม่ได้" },
-                { score: 1, text: "ทำเองได้บ้าง (มีคนช่วยบางส่วน)" },
-                { score: 2, text: "ทำได้เองเรียบร้อยดี" }
-            ]},
-            { id: 'adl_5', text: "5. การเคลื่อนที่ภายในห้องหรือบ้าน", choices: [
-                { score: 0, text: "เคลื่อนที่ไม่ได้" },
-                { score: 1, text: "ใช้รถเข็นช่วยตัวเองได้" },
-                { score: 2, text: "เดินโดยมีคนช่วยพยุง" },
-                { score: 3, text: "เดินได้เอง" }
-            ]},
-            { id: 'adl_6', text: "6. การสวมใส่เสื้อผ้า", choices: [
-                { score: 0, text: "ต้องมีคนสวมให้ทั้งหมด" },
-                { score: 1, text: "ช่วยตัวเองได้ประมาณ 50%" },
-                { score: 2, text: "สวมใส่เองได้ดี" }
-            ]},
-            { id: 'adl_7', text: "7. การขึ้นลงบันได 1 ชั้น", choices: [
-                { score: 0, text: "ทำไม่ได้" },
-                { score: 1, text: "ต้องการคนช่วย" },
-                { score: 2, text: "ทำได้เอง" }
-            ]},
-            { id: 'adl_8', text: "8. การอาบน้ำ", choices: [
-                { score: 0, text: "ต้องมีคนช่วย" },
-                { score: 1, text: "อาบเองได้" }
-            ]},
-            { id: 'adl_9', text: "9. การกลั้นการถ่ายอุจจาระ", choices: [
-                { score: 0, text: "กลั้นไม่ได้เลย" },
-                { score: 1, text: "กลั้นไม่ได้บางครั้ง" },
-                { score: 2, text: "กลั้นได้ปกติ" }
-            ]},
-            { id: 'adl_10', text: "10. การกลั้นการถ่ายปัสสาวะ", choices: [
-                { score: 0, text: "กลั้นไม่ได้ / ใส่สายสวน" },
-                { score: 1, text: "กลั้นไม่ได้บางครั้ง" },
-                { score: 2, text: "กลั้นได้ปกติ" }
-            ]}
-        ];
+        async function loadPatientData() {
+            if (!patientId) { goBack(); return; }
+            try {
+                const docRef = db.collection('Patients').doc(String(patientId));
+                const docSnap = await docRef.get();
+                if (docSnap.exists) {
+                    currentPatientData = docSnap.data();
+                    document.getElementById('patient-name').innerText = (currentPatientData.prefix || '') + (currentPatientData.name || '');
+                    document.getElementById('patient-village').innerText = currentPatientData.village_no || '-';
+                    document.getElementById('patient-age').innerText = currentPatientData.age || '-';
+                    document.getElementById('patient-initial').innerText = currentPatientData.name ? currentPatientData.name.substring(0, 1) : '?';
+                }
+            } catch (error) { console.error(error); }
+        }
 
-        function renderADL() {
-            const container = document.getElementById('adl-container');
-            questionsADL.forEach((q, qIndex) => {
-                let optionsHtml = '';
-                q.choices.forEach((opt, idx) => {
-                    optionsHtml += `
-                        <div class="col-span-1">
-                            <input type="radio" id="${q.id}_${idx}" name="${q.id}" value="${opt.score}" onchange="calculateScore()">
-                            <label for="${q.id}_${idx}" class="block p-3 text-xs bg-white border border-gray-200 rounded-xl cursor-pointer hover:border-[#F59E0B] transition-all h-full flex flex-col justify-center">
-                                <span class="font-bold text-[#F59E0B] mb-1 text-center w-full block">ได้ ${opt.score} คะแนน</span>
-                                <span class="text-gray-600 text-center leading-tight">${opt.text}</span>
-                            </label>
-                        </div>
+        function renderQuestions() {
+            const container = document.getElementById('questions-container');
+            let html = '';
+
+            questions.forEach((q, qIndex) => {
+                html += `
+                    <div class="bg-slate-50 p-4 rounded-[16px] border border-slate-100" id="q-block-${qIndex}">
+                        <p class="font-bold text-slate-700 text-[15px] mb-3 leading-tight">${q.q}</p>
+                        <div class="space-y-2">
+                `;
+                q.choices.forEach((c, cIndex) => {
+                    const inputId = `q${qIndex}_c${cIndex}`;
+                    html += `
+                        <label class="radio-card relative block cursor-pointer">
+                            <input type="radio" name="q${qIndex}" value="${c.score}" class="peer sr-only" onchange="clearError(${qIndex})">
+                            <div class="flex items-start gap-3 p-3 rounded-xl border border-slate-200 bg-white transition-all">
+                                <div class="mt-0.5 text-slate-300 radio-icon material-symbols-outlined text-[20px]" style="font-variation-settings: 'FILL' 1;">radio_button_unchecked</div>
+                                <div class="flex-1">
+                                    <p class="text-sm font-medium text-slate-700 leading-snug">${c.text}</p>
+                                    <p class="text-xs font-bold text-amber-500 mt-1">คะแนน: ${c.score}</p>
+                                </div>
+                            </div>
+                        </label>
                     `;
                 });
+                html += `</div><p class="text-xs text-red-500 font-bold mt-2 hidden" id="err-${qIndex}">กรุณาเลือกคำตอบข้อนี้</p></div>`;
+            });
+            container.innerHTML = html;
 
-                container.innerHTML += `
-                    <div class="bg-white p-4 rounded-2xl shadow-sm border border-gray-100">
-                        <h3 class="font-bold text-[#111c2d] mb-3 text-sm">${q.text}</h3>
-                        <div class="grid grid-cols-2 gap-2">
-                            ${optionsHtml}
-                        </div>
-                    </div>
-                `;
+            document.addEventListener('change', function(e) {
+                if (e.target && e.target.matches('input[type="radio"]')) {
+                    const name = e.target.name;
+                    document.querySelectorAll(`input[name="${name}"]`).forEach(radio => {
+                        const icon = radio.nextElementSibling.querySelector('.radio-icon');
+                        if(radio.checked) {
+                            icon.innerText = 'radio_button_checked';
+                        } else {
+                            icon.innerText = 'radio_button_unchecked';
+                        }
+                    });
+                }
             });
         }
 
+        function clearError(index) {
+            document.getElementById(`err-${index}`).classList.add('hidden');
+            document.getElementById(`q-block-${index}`).classList.remove('border-red-300', 'bg-red-50');
+        }
+
+        let currentScore = 0;
+        let currentGroup = '';
+        let currentAnswers = [];
+
         function calculateScore() {
-            let total = 0;
-            let answered = 0;
-            
-            questionsADL.forEach(q => {
-                const selected = document.querySelector(`input[name="${q.id}"]:checked`);
+            let allAnswered = true;
+            currentScore = 0;
+            currentAnswers = [];
+
+            questions.forEach((q, index) => {
+                const selected = document.querySelector(`input[name="q${index}"]:checked`);
                 if (selected) {
-                    total += parseInt(selected.value);
-                    answered++;
+                    const score = parseInt(selected.value);
+                    currentScore += score;
+                    
+                    // เก็บข้อความคำตอบสำหรับประวัติรายข้อ
+                    const selectedText = q.choices.find(c => c.score === score).text;
+                    currentAnswers.push({ q: q.q, score: score, a: selectedText });
+                } else {
+                    allAnswered = false;
+                    document.getElementById(`err-${index}`).classList.remove('hidden');
+                    document.getElementById(`q-block-${index}`).classList.add('border-red-300', 'bg-red-50');
                 }
             });
 
-            document.getElementById('total-score').innerText = total;
-            const badge = document.getElementById('result-status');
-            
-            if (answered < 10) {
-                badge.innerText = `ตอบแล้ว ${answered}/10`;
-                badge.className = 'bg-gray-200 text-gray-700 px-2 py-0.5 rounded-md text-[10px] font-bold shadow-sm ml-2';
+            if (!allAnswered) {
+                const firstError = document.querySelector('.border-red-300');
+                if(firstError) firstError.scrollIntoView({ behavior: 'smooth', block: 'center' });
                 return;
             }
 
-            // 🌟 แก้ไข: ตัดคำว่า "กลุ่ม" ออก เพื่อให้ยอดใน Dashboard นับรวมกันได้ถูกต้อง
-            if (total >= 12) {
-                badge.innerText = 'ติดสังคม';
-                badge.className = 'bg-[#00694a] text-white px-2 py-0.5 rounded-md text-[10px] font-bold shadow-sm ml-2';
-            } else if (total >= 5) {
-                badge.innerText = 'ติดบ้าน';
-                badge.className = 'bg-[#F59E0B] text-white px-2 py-0.5 rounded-md text-[10px] font-bold shadow-sm ml-2';
+            let badgeHtml = '';
+            if (currentScore >= 12) {
+                currentGroup = 'ติดสังคม';
+                badgeHtml = '<span class="bg-emerald-100 text-emerald-700 px-4 py-1.5 rounded-full text-sm font-bold shadow-sm inline-block">กลุ่มติดสังคม</span>';
+            } else if (currentScore >= 5) {
+                currentGroup = 'ติดบ้าน';
+                badgeHtml = '<span class="bg-amber-100 text-amber-700 px-4 py-1.5 rounded-full text-sm font-bold shadow-sm inline-block">กลุ่มติดบ้าน</span>';
             } else {
-                badge.innerText = 'ติดเตียง';
-                badge.className = 'bg-[#ba1a1a] text-white px-2 py-0.5 rounded-md text-[10px] font-bold shadow-sm ml-2';
+                currentGroup = 'ติดเตียง';
+                badgeHtml = '<span class="bg-red-100 text-red-700 px-4 py-1.5 rounded-full text-sm font-bold shadow-sm inline-block">กลุ่มติดเตียง (วิกฤต)</span>';
             }
+
+            document.getElementById('result-score').innerText = currentScore;
+            document.getElementById('result-badge').outerHTML = badgeHtml;
+
+            const m = document.getElementById('result-modal');
+            const c = document.getElementById('result-content');
+            m.classList.remove('hidden');
+            setTimeout(() => { m.classList.remove('opacity-0'); c.classList.remove('scale-95'); }, 10);
+        }
+
+        function closeResultModal() {
+            const m = document.getElementById('result-modal');
+            const c = document.getElementById('result-content');
+            m.classList.add('opacity-0'); c.classList.add('scale-95');
+            setTimeout(() => { m.classList.add('hidden'); }, 300);
         }
 
         async function saveADL() {
-            if (!patientId) return alert("ไม่พบข้อมูลผู้ป่วย กรุณากลับไปหน้ารายชื่อ");
-
-            let answered = 0;
-            let answersDetail = []; 
-            let totalScore = 0; 
-
-            questionsADL.forEach(q => { 
-                const selected = document.querySelector(`input[name="${q.id}"]:checked`);
-                if(selected) {
-                    answered++;
-                    const scoreVal = parseInt(selected.value);
-                    totalScore += scoreVal;
-                    const optObj = q.choices.find(o => o.score === scoreVal);
-                    answersDetail.push({ q: q.text, a: optObj ? optObj.text : String(scoreVal), score: scoreVal });
-                }
-            });
-
-            if (answered < 10) return alert(`กรุณาตอบคำถามให้ครบทุกข้อ (ตอบแล้ว ${answered}/10 ข้อ)`);
-
-            const status = document.getElementById('result-status').innerText;
-            
             const btn = document.getElementById('btn-save');
-            btn.innerHTML = '<div class="loader-small mr-2"></div> กำลังบันทึก...';
             btn.disabled = true;
+            btn.innerHTML = '<div class="loader-small" style="border-width:2px; width:20px; height:20px; border-bottom-color:transparent;"></div> กำลังบันทึก...';
+
+            const assessDate = document.getElementById('assess-date').value;
+            const dateParts = assessDate.split('-');
+            const thaiYear = parseInt(dateParts[0]) + 543;
+            const formattedDate = `${dateParts[2]}/${dateParts[1]}/${thaiYear}`;
+
+            // 🌟 1. สร้างก้อนข้อมูลสำหรับเก็บใน Collection Assessments 🌟
+            const assessmentData = {
+                patient_id: patientId,
+                type: 'ADL',
+                date: formattedDate,
+                score1: currentScore,
+                result: currentGroup,
+                answers: currentAnswers,
+                assessor_uid: currentUserUid,      // เก็บ UID คนประเมิน
+                assessor_name: currentUserName,    // เก็บชื่อคนประเมิน
+                timestamp: firebase.firestore.FieldValue.serverTimestamp()
+            };
 
             try {
-                const now = new Date();
-                const dd = String(now.getDate()).padStart(2, '0');
-                const mm = String(now.getMonth() + 1).padStart(2, '0');
-                const yyyy = now.getFullYear() + 543;
-                const formattedDate = `${dd}/${mm}/${yyyy}`;
-
-                // 1. อัปเดตโปรไฟล์คนไข้
-                await db.collection('Patients').doc(String(patientId)).update({
-                    adl: String(totalScore),
-                    group: status,
+                const batch = db.batch();
+                
+                // เก็บลง Assessments
+                const newAssessRef = db.collection('Assessments').doc();
+                batch.set(newAssessRef, assessmentData);
+                
+                // อัปเดตลง Patients
+                const patientRef = db.collection('Patients').doc(String(patientId));
+                batch.update(patientRef, {
+                    adl: String(currentScore),
+                    group: currentGroup,
                     last_assess: formattedDate
                 });
 
-                // 2. บันทึกประวัติพร้อมคำตอบละเอียด
-                await db.collection('Assessments').add({
-                    patient_id: String(patientId),
-                    type: 'ADL',
-                    score1: totalScore, 
-                    result: status,
-                    answers: answersDetail,
-                    assessor_uid: currentUserUid, 
-                    assessor_name: currentAssessorName, 
-                    date: formattedDate,
-                    timestamp: firebase.firestore.FieldValue.serverTimestamp()
-                });
+                await batch.commit();
 
-                alert('บันทึกผลประเมิน ADL สำเร็จ!');
+                // ปิดท้าย: ส่งกลับไปหน้าข้อมูลผู้ป่วย
                 window.location.href = `patient_profile.html?id=${patientId}`;
 
-            } catch (err) {
-                console.error(err);
-                alert('การเชื่อมต่อฐานข้อมูลล้มเหลว กรุณาลองอีกครั้ง');
-                btn.innerHTML = 'บันทึกผล <span class="material-symbols-outlined text-sm">save</span>'; 
+            } catch (error) {
+                console.error(error);
+                alert("เกิดข้อผิดพลาดในการบันทึกข้อมูล กรุณาลองใหม่");
                 btn.disabled = false;
+                btn.innerHTML = '<span class="material-symbols-outlined">save</span> บันทึกข้อมูล';
             }
         }
 
-        renderADL();
+        function goBack() {
+            if(patientId) window.location.href = `patient_profile.html?id=${patientId}`;
+            else window.location.href = 'assessments.html';
+        }
     </script>
 </body>
 </html>
