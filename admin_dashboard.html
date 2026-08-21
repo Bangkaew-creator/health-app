@@ -23,7 +23,6 @@
         .notification-dropdown { display: none; }
         .notification-dropdown.show { display: block; animation: slideDown 0.2s ease-out forwards; }
         @keyframes slideDown { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
-        /* สไตล์ Scrollbar เล็กๆ สำหรับแจ้งเตือน */
         .custom-scrollbar::-webkit-scrollbar { width: 4px; }
         .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
         .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
@@ -96,14 +95,14 @@
                     </button>
                     
                     <!-- Notification Dropdown -->
-                    <div id="notif-dropdown" class="notification-dropdown absolute right-0 mt-2 w-80 bg-white rounded-2xl shadow-xl border border-slate-100 overflow-hidden z-50">
+                    <div id="notif-dropdown" class="notification-dropdown absolute right-0 mt-2 w-80 max-w-[90vw] bg-white rounded-2xl shadow-xl border border-slate-100 overflow-hidden z-50">
                         <div class="p-4 border-b border-slate-100 bg-slate-50/50 flex justify-between items-center">
                             <h3 class="text-sm font-bold text-slate-800">การแจ้งเตือน</h3>
-                            <button onclick="clearNotifications()" class="text-[11px] text-slate-400 hover:text-slate-600 font-medium">ล้างทั้งหมด</button>
+                            <button onclick="clearNotifications()" class="text-[11px] text-slate-400 hover:text-slate-600 font-medium">รับทราบทั้งหมด</button>
                         </div>
                         <div id="notif-list" class="max-h-[350px] overflow-y-auto custom-scrollbar divide-y divide-slate-50">
                             <!-- Items will be injected here -->
-                            <div class="p-8 text-center text-slate-400 text-xs">กำลังตรวจสอบ...</div>
+                            <div class="p-8 text-center text-slate-400 text-xs">กำลังโหลดการแจ้งเตือน...</div>
                         </div>
                         <div class="p-2 border-t border-slate-100 bg-slate-50 text-center">
                             <button onclick="toggleNotification()" class="text-xs text-slate-500 font-medium w-full py-1 hover:text-slate-700">ปิดหน้าต่าง</button>
@@ -181,7 +180,7 @@
                 </div>
 
                 <div class="mt-6 space-y-4">
-                    <!-- แก้ไขลิงก์ไปที่ admin_resources.html -->
+                    <!-- 🌟 แก้ไขลิงก์ไปหน้า admin_resources.html 🌟 -->
                     <div class="bg-white rounded-[24px] p-5 shadow-sm border border-slate-200 cursor-pointer hover:bg-slate-50 transition-colors" onclick="window.location.href='admin_resources.html'">
                         <div class="flex justify-between items-center">
                             <div class="flex items-center gap-3">
@@ -235,6 +234,14 @@
         let allVHVsList = []; // เก็บชื่ออสม.เอาไว้ใช้กับ Notification
 
         function toggleSidebar() { document.getElementById('sidebar').classList.toggle('-translate-x-full'); }
+
+        function cleanJSON(rawStr) {
+            if (!rawStr || String(rawStr).trim() === '') return null;
+            let cleanStr = String(rawStr).trim();
+            if (cleanStr.includes('""')) cleanStr = cleanStr.replace(/""/g, '"');
+            if (cleanStr.startsWith('"') && cleanStr.endsWith('"')) cleanStr = cleanStr.substring(1, cleanStr.length - 1);
+            try { return JSON.parse(cleanStr); } catch(e) { return null; }
+        }
 
         function calculateDaysSince(dateStr) {
             if (!dateStr || dateStr.trim() === '' || dateStr === '-') return 999;
@@ -306,7 +313,7 @@
                         if (navInventory) navInventory.style.display = 'none';
                     }
                     
-                    await loadVHVs(); // โหลดอสม.ก่อนเอาไปจับคู่กับผู้ป่วย
+                    await loadVHVs(); // โหลดอสม.เตรียมไว้สำหรับ Notification
                     loadDashboardData(); 
                 } else window.location.href = 'dashboard.html'; 
             } catch (error) { bounceToLogin(); }
@@ -347,94 +354,64 @@
 
         function generateNotifications() {
             notifications = [];
+            let pendingDiapersCount = 0;
             
             // 1. ตรวจสอบ อสม. สมัครใหม่ (Pending)
             const pendingVHVs = allVHVsList.filter(v => v.status === 'Pending');
             pendingVHVs.forEach(v => {
-                // ถ้าเป็น SUB_ADMIN ต้องอยู่หมู่เดียวกัน
                 if(currentUserRole === 'SUB_ADMIN' && !assignedVillages.includes(String(v.village))) return;
                 
                 notifications.push({
-                    type: 'vhv_pending',
-                    icon: 'person_add',
-                    color: 'blue',
+                    type: 'vhv_pending', icon: 'person_add', color: 'blue',
                     title: 'คำขอสมัครใช้งานใหม่',
                     message: `อสม. ${v.name} (หมู่ ${v.village}) รอการอนุมัติสิทธิ์เข้าใช้งาน`,
-                    time: 'ตรวจสอบด่วน',
-                    link: 'admin_delegation.html',
-                    sortOrder: 1
+                    time: 'ตรวจสอบด่วน', link: 'admin_delegation.html', sortOrder: 1
                 });
             });
 
-            // 2. ตรวจสอบข้อมูลผู้ป่วย (ผู้ป่วยใหม่, ปิดงานแล้ว, ขอเบิกของ)
+            // 2. ตรวจสอบข้อมูลผู้ป่วย 
             dashboardPatients.forEach(p => {
                 const isNew = (!p.last_assess || p.last_assess === '-');
                 
-                // แจ้งผู้ป่วยใหม่ (ไม่มีประวัติ + ไม่ได้มอบหมายงานให้ อสม. หรือเพิ่งมอบหมาย)
-                if (isNew && p.assigned_vhv_id) {
+                // แจ้งผู้ป่วยใหม่ (เพิ่งถูกเพิ่มเข้ามา)
+                if (isNew) {
+                    const creatorName = p.created_by || 'อสม.';
                     notifications.push({
-                        type: 'patient_new',
-                        icon: 'fiber_new',
-                        color: 'emerald',
+                        type: 'patient_new', icon: 'fiber_new', color: 'emerald',
                         title: 'เพิ่มผู้ป่วยรายใหม่',
-                        message: `มีข้อมูลผู้ป่วยใหม่ "${p.prefix||''}${p.name}" (หมู่ ${p.village_no}) รับผิดชอบโดย ${getVhvName(p.assigned_vhv_id)}`,
-                        time: 'เพิ่มเมื่อเร็วๆ นี้',
-                        link: `patient_profile.html?id=${p.id}`,
-                        sortOrder: 3
-                    });
-                } else if (isNew && !p.assigned_vhv_id) {
-                    notifications.push({
-                        type: 'patient_new_unassigned',
-                        icon: 'assignment_ind',
-                        color: 'amber',
-                        title: 'ผู้ป่วยใหม่ (รอจ่ายงาน)',
-                        message: `มีผู้ป่วยใหม่ "${p.prefix||''}${p.name}" (หมู่ ${p.village_no}) ยังไม่ได้มอบหมายให้ อสม. ดูแล`,
-                        time: 'เพิ่มเมื่อเร็วๆ นี้',
-                        link: `admin_delegation.html`,
-                        sortOrder: 2
+                        message: `คุณ ${creatorName} ได้เพิ่มข้อมูลผู้ป่วยใหม่ "${p.prefix||''}${p.name}" (หมู่ ${p.village_no})`,
+                        time: 'เข้าใหม่', link: `patient_profile.html?id=${p.id}`, sortOrder: 3
                     });
                 }
 
-                // แจ้งเตือน อสม. ลงพื้นที่ทำงานเสร็จแล้ว (มีประวัติ + ไม่ค้างประเมิน)
+                // แจ้งเตือน อสม. ลงพื้นที่ประเมินเสร็จแล้ว
                 if (!isNew && p.assigned_vhv_id && p.needs_assessment === false) {
-                    // จำกัดเวลาแสดงผลแค่คนที่ลงพื้นที่ภายใน 3 วันที่ผ่านมา
                     const daysSinceAssess = calculateDaysSince(p.last_assess);
                     if (daysSinceAssess <= 3) {
                         notifications.push({
-                            type: 'task_completed',
-                            icon: 'task_alt',
-                            color: 'teal',
+                            type: 'task_completed', icon: 'task_alt', color: 'teal',
                             title: 'อสม. ลงพื้นที่สำเร็จ',
                             message: `คุณ ${getVhvName(p.assigned_vhv_id)} ได้ประเมินผู้ป่วย "${p.prefix||''}${p.name}" เรียบร้อยแล้ว`,
                             time: `${daysSinceAssess === 0 ? 'วันนี้' : daysSinceAssess + ' วันที่ผ่านมา'}`,
-                            link: `patient_profile.html?id=${p.id}`,
-                            sortOrder: 4
+                            link: `patient_profile.html?id=${p.id}`, sortOrder: 4
                         });
                     }
                 }
+
+                // ตรวจสอบเคสผ้าอ้อมรออนุมัติ
+                const d = cleanJSON(p.diaper);
+                if (d && d.approve_status === 'รออนุมัติ') {
+                    pendingDiapersCount++;
+                }
             });
 
-            // 3. ตรวจสอบผ้าอ้อมรออนุมัติ (แยกจากยอด Dashboard)
-            let pendingDiapersCount = dashboardPatients.filter(p => {
-                if(!p.diaper) return false;
-                try {
-                    let dpStr = typeof p.diaper === 'string' ? p.diaper.replace(/""/g, '"') : JSON.stringify(p.diaper);
-                    if (dpStr.startsWith('"') && dpStr.endsWith('"')) dpStr = dpStr.substring(1, dpStr.length - 1);
-                    const dp = JSON.parse(dpStr);
-                    return dp.approve_status === 'รออนุมัติ';
-                } catch(e) { return false; }
-            }).length;
-
+            // 3. รวมแจ้งเตือนผ้าอ้อม
             if (pendingDiapersCount > 0) {
                 notifications.push({
-                    type: 'diaper_pending',
-                    icon: 'inventory_2',
-                    color: 'amber',
-                    title: 'มีรายการเบิกพัสดุ',
-                    message: `มี ${pendingDiapersCount} รายการประเมินสิทธิ์ผ้าอ้อมที่รอการตรวจสอบและอนุมัติ`,
-                    time: 'ตรวจสอบด่วน',
-                    link: 'admin_resources.html',
-                    sortOrder: 0 // ด่วนสุดให้อยู่บน
+                    type: 'diaper_pending', icon: 'inventory_2', color: 'amber',
+                    title: 'มีรายการเบิกพัสดุรออนุมัติ',
+                    message: `มี ${pendingDiapersCount} รายการประเมินสิทธิ์ผ้าอ้อมที่รอการตรวจสอบ`,
+                    time: 'ตรวจสอบด่วน', link: 'admin_resources.html', sortOrder: 0
                 });
             }
 
@@ -447,7 +424,6 @@
             const list = document.getElementById('notif-list');
             const badge = document.getElementById('notif-badge');
             
-            // จำกัดจำนวนการแจ้งเตือนไม่เกิน 15 รายการ
             const displayNotifs = notifications.slice(0, 15);
             
             if (displayNotifs.length === 0) {
@@ -471,7 +447,7 @@
                             <div class="flex-1 min-w-0">
                                 <div class="flex justify-between items-start mb-0.5">
                                     <h4 class="text-xs font-bold text-slate-800 truncate pr-2">${n.title}</h4>
-                                    <span class="text-[9px] font-bold text-slate-400 whitespace-nowrap bg-white px-1.5 py-0.5 rounded shadow-sm">${n.time}</span>
+                                    <span class="text-[9px] font-bold text-slate-400 whitespace-nowrap bg-white border border-slate-200 px-1.5 py-0.5 rounded shadow-sm">${n.time}</span>
                                 </div>
                                 <p class="text-[11px] text-slate-600 leading-snug pr-1">${n.message}</p>
                             </div>
@@ -486,7 +462,7 @@
             document.getElementById('notif-list').innerHTML = `
                 <div class="p-8 flex flex-col items-center justify-center text-slate-400">
                     <span class="material-symbols-outlined text-[40px] mb-2 text-slate-200">notifications_paused</span>
-                    <p class="text-xs font-bold text-slate-500">ไม่มีการแจ้งเตือนใหม่</p>
+                    <p class="text-xs font-bold text-slate-500">รับทราบและเคลียร์แจ้งเตือนแล้ว</p>
                 </div>`;
             document.getElementById('notif-badge').classList.add('hidden');
             notifications = [];
@@ -519,7 +495,7 @@
                             try {
                                 let dpStr = typeof p.diaper === 'string' ? p.diaper.replace(/""/g, '"') : JSON.stringify(p.diaper);
                                 if (dpStr.startsWith('"') && dpStr.endsWith('"')) dpStr = dpStr.substring(1, dpStr.length - 1);
-                                const dp = typeof p.diaper === 'object' ? p.diaper : JSON.parse(dpStr);
+                                const dp = JSON.parse(dpStr);
                                 if (dp.approve_status === 'รออนุมัติ') cPending++;
                             } catch(e) {}
                         }
@@ -540,7 +516,7 @@
                 document.getElementById('loading-state').classList.add('hidden');
                 document.getElementById('dashboard-content').classList.remove('hidden');
 
-                generateNotifications(); // เรียกสร้างการแจ้งเตือนหลังจากโหลดผู้ป่วยเสร็จแล้ว
+                generateNotifications(); // สร้างการแจ้งเตือน
 
                 const urlParams = new URLSearchParams(window.location.search);
                 const openGroup = urlParams.get('openGroup');
@@ -577,7 +553,6 @@
                     groupedByVillage[v].push(p);
                 });
 
-                // เรียงลำดับหมู่ให้ถูกต้อง
                 const sortedVillages = Object.keys(groupedByVillage).sort((a,b) => {
                     const numA = parseInt(String(a).replace(/\D/g, '')) || 999;
                     const numB = parseInt(String(b).replace(/\D/g, '')) || 999;
