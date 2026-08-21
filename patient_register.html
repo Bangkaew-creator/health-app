@@ -124,29 +124,39 @@
 <script>
     firebase.initializeApp(firebaseConfig);
     const db = firebase.firestore();
+    
     let currentUserRole = 'VHV';
+    let currentUserName = 'อสม.'; // ตัวแปรเก็บชื่อสำหรับบันทึก
+    let currentUserUid = '';     // ตัวแปรเก็บ UID
 
     document.addEventListener("DOMContentLoaded", () => {
         liff.init({ liffId: LIFF_ID }).then(() => {
-            if (liff.isLoggedIn()) {
+            const mockUid = localStorage.getItem('dev_mock_uid');
+            if (mockUid) {
+                checkUserRole(mockUid);
+            } else if (liff.isLoggedIn()) {
                 liff.getProfile().then(profile => {
                     checkUserRole(profile.userId);
                 }).catch(err => console.error(err));
-            } else { window.location.href = 'index.html'; }
+            } else { 
+                window.location.href = 'index.html'; 
+            }
         }).catch(() => { });
     });
 
     async function checkUserRole(uid) {
+        currentUserUid = uid;
         try {
             const userDoc = await db.collection('VHVs').doc(String(uid)).get();
             if (userDoc.exists) {
                 currentUserRole = String(userDoc.data().role || 'VHV').toUpperCase();
+                currentUserName = userDoc.data().name || 'อสม.';
             }
         } catch(e) { console.error(e); }
     }
 
     function goBack() {
-        if (currentUserRole === 'ADMIN') {
+        if (currentUserRole === 'ADMIN' || currentUserRole === 'SUB_ADMIN') {
             window.location.href = 'admin_datacenter.html';
         } else {
             window.location.href = 'dashboard.html';
@@ -219,7 +229,10 @@
             disease: '-',
             medication: '-',
             diaper: '',
-            equipment: '-'
+            equipment: '-',
+            created_by: currentUserName,    // 🌟 แสตมป์ชื่อคนเพิ่ม
+            creator_uid: currentUserUid,    // 🌟 แสตมป์ UID คนเพิ่ม
+            created_at: firebase.firestore.FieldValue.serverTimestamp() // 🌟 แสตมป์เวลา
         };
 
         try {
