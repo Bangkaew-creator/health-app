@@ -180,7 +180,6 @@
                 </div>
 
                 <div class="mt-6 space-y-4">
-                    <!-- 🌟 แก้ไขลิงก์ไปหน้า admin_resources.html 🌟 -->
                     <div class="bg-white rounded-[24px] p-5 shadow-sm border border-slate-200 cursor-pointer hover:bg-slate-50 transition-colors" onclick="window.location.href='admin_resources.html'">
                         <div class="flex justify-between items-center">
                             <div class="flex items-center gap-3">
@@ -231,7 +230,8 @@
         let currentUserRole = "ADMIN";
         let assignedVillages = [];
         let dashboardPatients = []; 
-        let allVHVsList = []; // เก็บชื่ออสม.เอาไว้ใช้กับ Notification
+        let allVHVsList = []; 
+        let currentUserUid = ""; // เก็บ UID แอดมินสำหรับ LocalStorage
 
         function toggleSidebar() { document.getElementById('sidebar').classList.toggle('-translate-x-full'); }
 
@@ -262,9 +262,11 @@
             liff.init({ liffId: LIFF_ID }).then(() => {
                 const mockUid = localStorage.getItem('dev_mock_uid');
                 if (mockUid) { 
+                    currentUserUid = mockUid;
                     verifyAdminAccess(mockUid); 
                 } else if (liff.isLoggedIn()) { 
                     liff.getProfile().then(p => {
+                        currentUserUid = p.userId;
                         document.getElementById('header-user-name').innerText = p.displayName;
                         if(p.pictureUrl) {
                             document.getElementById('header-profile-pic').src = p.pictureUrl;
@@ -313,7 +315,7 @@
                         if (navInventory) navInventory.style.display = 'none';
                     }
                     
-                    await loadVHVs(); // โหลดอสม.เตรียมไว้สำหรับ Notification
+                    await loadVHVs();
                     loadDashboardData(); 
                 } else window.location.href = 'dashboard.html'; 
             } catch (error) { bounceToLogin(); }
@@ -332,7 +334,7 @@
             } catch(e) { console.error("Error loading VHVs"); }
         }
 
-        // --- 🌟 ระบบการแจ้งเตือน (Notifications) 🌟 ---
+        // --- 🌟 ระบบการแจ้งเตือนอัจฉริยะ (Notifications) 🌟 ---
         let notifications = [];
 
         function toggleNotification() {
@@ -356,17 +358,23 @@
             notifications = [];
             let pendingDiapersCount = 0;
             
+            // 🌟 ดึง ID แจ้งเตือนที่เคยกดรับทราบไปแล้ว (อ้างอิงรายบุคคล)
+            let dismissedNotifs = JSON.parse(localStorage.getItem(`dismissed_notifs_${currentUserUid}`) || '[]');
+            
             // 1. ตรวจสอบ อสม. สมัครใหม่ (Pending)
             const pendingVHVs = allVHVsList.filter(v => v.status === 'Pending');
             pendingVHVs.forEach(v => {
                 if(currentUserRole === 'SUB_ADMIN' && !assignedVillages.includes(String(v.village))) return;
                 
-                notifications.push({
-                    type: 'vhv_pending', icon: 'person_add', color: 'blue',
-                    title: 'คำขอสมัครใช้งานใหม่',
-                    message: `อสม. ${v.name} (หมู่ ${v.village}) รอการอนุมัติสิทธิ์เข้าใช้งาน`,
-                    time: 'ตรวจสอบด่วน', link: 'admin_delegation.html', sortOrder: 1
-                });
+                let nid = `vhv_pending_${v.id}`;
+                if (!dismissedNotifs.includes(nid)) {
+                    notifications.push({
+                        nid: nid, type: 'vhv_pending', icon: 'person_add', color: 'blue',
+                        title: 'คำขอสมัครใช้งานใหม่',
+                        message: `อสม. ${v.name} (หมู่ ${v.village}) รอการอนุมัติสิทธิ์เข้าใช้งาน`,
+                        time: 'ตรวจสอบด่วน', link: 'admin_delegation.html', sortOrder: 1
+                    });
+                }
             });
 
             // 2. ตรวจสอบข้อมูลผู้ป่วย 
@@ -375,26 +383,32 @@
                 
                 // แจ้งผู้ป่วยใหม่ (เพิ่งถูกเพิ่มเข้ามา)
                 if (isNew) {
-                    const creatorName = p.created_by || 'อสม.';
-                    notifications.push({
-                        type: 'patient_new', icon: 'fiber_new', color: 'emerald',
-                        title: 'เพิ่มผู้ป่วยรายใหม่',
-                        message: `คุณ ${creatorName} ได้เพิ่มข้อมูลผู้ป่วยใหม่ "${p.prefix||''}${p.name}" (หมู่ ${p.village_no})`,
-                        time: 'เข้าใหม่', link: `patient_profile.html?id=${p.id}`, sortOrder: 3
-                    });
+                    let nid = `patient_new_${p.id}`;
+                    if (!dismissedNotifs.includes(nid)) {
+                        const creatorName = p.created_by || 'อสม.';
+                        notifications.push({
+                            nid: nid, type: 'patient_new', icon: 'fiber_new', color: 'emerald',
+                            title: 'เพิ่มผู้ป่วยรายใหม่',
+                            message: `คุณ ${creatorName} ได้เพิ่มข้อมูลผู้ป่วยใหม่ "${p.prefix||''}${p.name}" (หมู่ ${p.village_no})`,
+                            time: 'เข้าใหม่', link: `patient_profile.html?id=${p.id}`, sortOrder: 3
+                        });
+                    }
                 }
 
                 // แจ้งเตือน อสม. ลงพื้นที่ประเมินเสร็จแล้ว
                 if (!isNew && p.assigned_vhv_id && p.needs_assessment === false) {
                     const daysSinceAssess = calculateDaysSince(p.last_assess);
                     if (daysSinceAssess <= 3) {
-                        notifications.push({
-                            type: 'task_completed', icon: 'task_alt', color: 'teal',
-                            title: 'อสม. ลงพื้นที่สำเร็จ',
-                            message: `คุณ ${getVhvName(p.assigned_vhv_id)} ได้ประเมินผู้ป่วย "${p.prefix||''}${p.name}" เรียบร้อยแล้ว`,
-                            time: `${daysSinceAssess === 0 ? 'วันนี้' : daysSinceAssess + ' วันที่ผ่านมา'}`,
-                            link: `patient_profile.html?id=${p.id}`, sortOrder: 4
-                        });
+                        let nid = `task_completed_${p.id}_${p.last_assess}`;
+                        if (!dismissedNotifs.includes(nid)) {
+                            notifications.push({
+                                nid: nid, type: 'task_completed', icon: 'task_alt', color: 'teal',
+                                title: 'อสม. ลงพื้นที่สำเร็จ',
+                                message: `คุณ ${getVhvName(p.assigned_vhv_id)} ได้ประเมินผู้ป่วย "${p.prefix||''}${p.name}" เรียบร้อยแล้ว`,
+                                time: `${daysSinceAssess === 0 ? 'วันนี้' : daysSinceAssess + ' วันที่ผ่านมา'}`,
+                                link: `patient_profile.html?id=${p.id}`, sortOrder: 4
+                            });
+                        }
                     }
                 }
 
@@ -405,14 +419,17 @@
                 }
             });
 
-            // 3. รวมแจ้งเตือนผ้าอ้อม
+            // 3. รวมแจ้งเตือนผ้าอ้อม (ใช้จำนวนมาเป็น ID เพื่อให้เตือนใหม่เวลายอดเปลี่ยน)
             if (pendingDiapersCount > 0) {
-                notifications.push({
-                    type: 'diaper_pending', icon: 'inventory_2', color: 'amber',
-                    title: 'มีรายการเบิกพัสดุรออนุมัติ',
-                    message: `มี ${pendingDiapersCount} รายการประเมินสิทธิ์ผ้าอ้อมที่รอการตรวจสอบ`,
-                    time: 'ตรวจสอบด่วน', link: 'admin_resources.html', sortOrder: 0
-                });
+                let nid = `diaper_pending_${pendingDiapersCount}`;
+                if (!dismissedNotifs.includes(nid)) {
+                    notifications.push({
+                        nid: nid, type: 'diaper_pending', icon: 'inventory_2', color: 'amber',
+                        title: 'มีรายการเบิกพัสดุรออนุมัติ',
+                        message: `มี ${pendingDiapersCount} รายการประเมินสิทธิ์ผ้าอ้อมที่รอการตรวจสอบ`,
+                        time: 'ตรวจสอบด่วน', link: 'admin_resources.html', sortOrder: 0
+                    });
+                }
             }
 
             // เรียงลำดับความสำคัญ
@@ -459,6 +476,23 @@
         }
 
         function clearNotifications() {
+            // 🌟 1. ดึงข้อมูลเดิมจาก LocalStorage
+            let dismissedNotifs = JSON.parse(localStorage.getItem(`dismissed_notifs_${currentUserUid}`) || '[]');
+            
+            // 🌟 2. เอา ID แจ้งเตือนที่กำลังโชว์อยู่ ใส่เพิ่มเข้าไป
+            notifications.forEach(n => {
+                if (!dismissedNotifs.includes(n.nid)) {
+                    dismissedNotifs.push(n.nid);
+                }
+            });
+
+            // 🌟 3. เคลียร์ข้อมูลเก่าทิ้งบ้าง เพื่อไม่ให้รกเครื่อง (เก็บแค่ 300 อันล่าสุด)
+            if (dismissedNotifs.length > 300) dismissedNotifs = dismissedNotifs.slice(-300);
+            
+            // 🌟 4. เซฟกลับลง LocalStorage
+            localStorage.setItem(`dismissed_notifs_${currentUserUid}`, JSON.stringify(dismissedNotifs));
+
+            // เคลียร์หน้าจอ
             document.getElementById('notif-list').innerHTML = `
                 <div class="p-8 flex flex-col items-center justify-center text-slate-400">
                     <span class="material-symbols-outlined text-[40px] mb-2 text-slate-200">notifications_paused</span>
