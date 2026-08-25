@@ -212,7 +212,7 @@
                     <div class="flex flex-col gap-1 border-b border-gray-50 pb-3">
                         <span class="text-xs text-[#526069] font-bold">ผลการประเมินผ้าอ้อม (สปสช.)</span>
                         <span class="text-sm font-semibold text-[#111c2d]" id="profile-diaper-status">-</span>
-                        <div id="profile-diaper-items" class="text-xs mt-1 empty:hidden"></div>
+                        <div id="profile-diaper-items" class="text-xs mt-1 empty:hidden flex items-center flex-wrap gap-2"></div>
                     </div>
                     <div class="flex flex-col gap-1 pt-1">
                         <span class="text-xs text-[#526069] font-bold mb-1">ความต้องการอุปกรณ์การแพทย์</span>
@@ -725,7 +725,6 @@
                     </tr>
                 </table>`;
 
-                // 🌟 เพิ่มรูปใบรับรองแพทย์ในหน้าปริ้นท์ 🌟
                 if (d.medical_cert) {
                     htmlContent += `
                     <div style="page-break-before: always; text-align: center; padding-top: 20px;">
@@ -1054,7 +1053,6 @@
             setTimeout(() => modal.classList.add('hidden'), 300);
         }
 
-        // 🌟 ฟังก์ชันปุ่มดูรูปใบรับรองแพทย์ 🌟
         function setupCertButton() {
             if(currentPatientData && currentPatientData.diaper) {
                 const dpStr = typeof currentPatientData.diaper === 'string' ? currentPatientData.diaper.replace(/""/g, '"') : JSON.stringify(currentPatientData.diaper);
