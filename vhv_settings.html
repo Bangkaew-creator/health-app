@@ -70,11 +70,15 @@
                     <input type="tel" id="vhv_phone" class="input-field" placeholder="เช่น 0812345678">
                 </div>
 
-                <div class="space-y-1.5">
+                <!-- 🌟 แก้ไข: ล็อก Select และเพิ่มข้อความแจ้งเตือน 🌟 -->
+                <div class="space-y-1.5 pt-2">
                     <label class="text-xs font-bold text-[#526069]">พื้นที่รับผิดชอบ (หมู่ที่)</label>
-                    <select id="vhv_village" class="input-field bg-white" required>
+                    <select id="vhv_village" class="input-field bg-slate-100 text-slate-500 cursor-not-allowed border-slate-200" disabled required>
                         <option value="" disabled selected>โหลดข้อมูล...</option>
                     </select>
+                    <p class="text-[11px] text-amber-600 font-medium mt-1 flex items-center gap-1">
+                        <span class="material-symbols-outlined text-[14px]">info</span> หากต้องการเปลี่ยนพื้นที่รับผิดชอบ กรุณาติดต่อเจ้าหน้าที่ รพ.สต. หรือแอดมินส่วนกลาง
+                    </p>
                 </div>
             </div>
 
@@ -114,7 +118,11 @@
 
         document.addEventListener("DOMContentLoaded", () => {
             liff.init({ liffId: LIFF_ID }).then(() => {
-                if (liff.isLoggedIn()) {
+                const mockUid = localStorage.getItem('dev_mock_uid');
+                if (mockUid) {
+                    document.getElementById('vhv_uid').value = mockUid;
+                    fetchVHVData(mockUid);
+                } else if (liff.isLoggedIn()) {
                     liff.getProfile().then(profile => {
                         document.getElementById('vhv_uid').value = profile.userId;
                         fetchVHVData(profile.userId); 
@@ -126,12 +134,12 @@
         async function fetchVHVData(uid) {
             try {
                 let vCount = DEFAULT_CONFIGS.VILLAGE_COUNT;
-try {
-    const sysSnap = await db.collection('SystemConfig').doc('VILLAGE_COUNT').get();
-    if(sysSnap.exists) vCount = parseInt(sysSnap.data().value) || DEFAULT_CONFIGS.VILLAGE_COUNT;
-} catch(e) {}
+                try {
+                    const sysSnap = await db.collection('SystemConfig').doc('VILLAGE_COUNT').get();
+                    if(sysSnap.exists) vCount = parseInt(sysSnap.data().value) || DEFAULT_CONFIGS.VILLAGE_COUNT;
+                } catch(e) {}
 
-                // ดึงข้อมูลส่วนตัวของ อสม. จาก Firebase ล้วนๆ
+                // ดึงข้อมูลส่วนตัวของ อสม. จาก Firebase
                 const docSnap = await db.collection('VHVs').doc(String(uid)).get();
 
                 if (docSnap.exists) {
@@ -199,20 +207,17 @@ try {
             const uid = document.getElementById('vhv_uid').value;
             const name = document.getElementById('vhv_name').value.trim();
             const phone = document.getElementById('vhv_phone').value.trim();
-            const village = document.getElementById('vhv_village').value;
             const picUrl = document.getElementById('pic_url').value;
 
             try {
-                // บันทึกเข้า Firebase อย่างเดียว
+                // 🌟 แก้ไข: ลบการส่งค่า village_no ออก ป้องกันการอัปเดตทับ 🌟
                 await db.collection('VHVs').doc(String(uid)).update({
                     name: name,
                     phone: phone,
-                    village_no: village,
                     profile_pic: picUrl
                 });
 
                 document.getElementById('display-name').innerText = name;
-                document.getElementById('display-village').innerText = 'พื้นที่: หมู่ ' + village;
                 
                 btn.innerHTML = `<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">check_circle</span> บันทึกสำเร็จ`;
                 btn.classList.replace('bg-[#00694a]', 'bg-[#22c55e]');
