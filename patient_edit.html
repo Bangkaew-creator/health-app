@@ -3,20 +3,22 @@
 <head>
     <meta charset="utf-8"/>
     <meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" name="viewport"/>
-    <title>แก้ไขประวัติและประเมินสิทธิ์ - อสม.สามารถ</title>
+    <title>แก้ไขประวัติและประเมินสิทธิ์</title>
     <script src="https://cdn.tailwindcss.com?plugins=forms"></script>
     <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700&display=swap" rel="stylesheet"/>
     <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
-    <script charset="utf-8" src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
     
     <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore-compat.js"></script>
     <script src="config.js"></script>
+    <script charset="utf-8" src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
     
     <style>
         body { font-family: 'Sarabun', sans-serif; background-color: #f9f9ff; padding-bottom: 100px; -webkit-tap-highlight-color: transparent;}
         .material-symbols-outlined { font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24; }
-        .input-field { w-full border border-slate-200 rounded-xl px-4 py-2.5 text-sm outline-none transition-all focus:ring-2 focus:ring-[#00694a] bg-slate-50 }
+        .input-field { width: 100%; border: 1px solid #e2e8f0; border-radius: 12px; padding: 10px 16px; font-size: 14px; outline: none; transition: all 0.2s; background-color: #f8fafc; }
+        .input-field:focus { border-color: #00694a; box-shadow: 0 0 0 2px rgba(0,105,74,0.1); background-color: #ffffff;}
+        
         .eq-cb:checked + label { background-color: #fff7ed; border-color: #ea580c; color: #ea580c; font-weight: bold; }
         .disease-cb:checked + label { background-color: #ffe4e6; border-color: #e11d48; color: #e11d48; font-weight: bold; }
         .loader-small { border: 2px solid #d8e3fb; border-bottom-color: #00694a; border-radius: 50%; width: 20px; height: 20px; animation: spin 1s linear infinite; }
@@ -51,46 +53,52 @@
             <p class="text-slate-500 text-sm animate-pulse">กำลังโหลดข้อมูลผู้ป่วย...</p>
         </div>
 
-        <form id="editForm" onsubmit="saveData(event)" class="hidden space-y-6">
+        <form id="editForm" onsubmit="saveData(event)" class="hidden space-y-5">
             
             <!-- SECTION 1: ข้อมูลส่วนตัว -->
             <section id="sec-personal" class="bg-white rounded-[20px] p-5 shadow-sm border border-gray-100">
-                <h3 class="font-bold text-[#00694a] flex items-center gap-2 border-b pb-2 mb-4"><span class="material-symbols-outlined">person</span> ข้อมูลส่วนตัว</h3>
+                <h3 class="font-bold text-[#00694a] flex items-center gap-2 border-b border-gray-100 pb-2 mb-4"><span class="material-symbols-outlined">person</span> ข้อมูลส่วนตัว</h3>
                 
                 <div class="grid grid-cols-3 gap-3 mb-4">
                     <div class="col-span-1">
                         <span class="text-xs font-bold text-gray-500 mb-1 block">คำนำหน้า</span>
-                        <select id="inp-prefix" class="w-full border border-slate-200 rounded-xl px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-[#00694a] bg-slate-50" required>
+                        <select id="inp-prefix" class="input-field" required>
                             <option value="นาย">นาย</option><option value="นาง">นาง</option><option value="นางสาว">นางสาว</option>
                             <option value="ด.ช.">ด.ช.</option><option value="ด.ญ.">ด.ญ.</option>
                         </select>
                     </div>
                     <div class="col-span-2">
                         <span class="text-xs font-bold text-gray-500 mb-1 block">ชื่อ-นามสกุล <span class="text-red-500">*</span></span>
-                        <input type="text" id="inp-name" class="w-full border border-slate-200 rounded-xl px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-[#00694a] bg-slate-50" required>
+                        <input type="text" id="inp-name" class="input-field bg-white" required>
                     </div>
                 </div>
 
                 <div class="grid grid-cols-2 gap-3 mb-4">
                     <div>
                         <span class="text-xs font-bold text-gray-500 mb-1 block">เลขบัตรประชาชน <span class="text-red-500">*</span></span>
-                        <input type="tel" id="inp-idcard" class="w-full border border-slate-200 rounded-xl px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-[#00694a] bg-slate-50" maxlength="13" placeholder="13 หลัก">
+                        <input type="tel" id="inp-idcard" class="input-field bg-white" maxlength="13" placeholder="13 หลัก">
                     </div>
                     <div>
                         <span class="text-xs font-bold text-gray-500 mb-1 block">วันเดือนปีเกิด</span>
-                        <input type="date" id="inp-dob" class="w-full border border-slate-200 rounded-xl px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-[#00694a] bg-slate-50">
+                        <input type="date" id="inp-dob" class="input-field bg-white">
                     </div>
                 </div>
 
                 <div class="grid grid-cols-2 gap-3 mb-4 border-t border-gray-50 pt-4">
-                    <div><span class="text-xs font-bold text-gray-500 mb-1 block">บ้านเลขที่ <span class="text-red-500">*</span></span><input type="text" id="inp-house" class="w-full border border-slate-200 rounded-xl px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-[#00694a] bg-slate-50" required></div>
-                    <div><span class="text-xs font-bold text-gray-500 mb-1 block">หมู่ที่ <span class="text-red-500">*</span></span><input type="number" id="inp-village" class="w-full border border-slate-200 rounded-xl px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-[#00694a] bg-slate-50" required></div>
+                    <div>
+                        <span class="text-xs font-bold text-gray-500 mb-1 block">บ้านเลขที่ <span class="text-red-500">*</span></span>
+                        <input type="text" id="inp-house" class="input-field bg-white" required>
+                    </div>
+                    <div>
+                        <span class="text-xs font-bold text-gray-500 mb-1 block">หมู่ที่ <span class="text-red-500">*</span></span>
+                        <input type="number" id="inp-village" class="input-field bg-white" required>
+                    </div>
                 </div>
                 
                 <div class="mb-4">
                     <span class="text-xs font-bold text-gray-500 mb-1 block">พิกัด GPS บ้านผู้ป่วย</span>
                     <div class="flex gap-2">
-                        <input type="text" id="inp-gps" class="w-full border border-slate-200 rounded-xl px-4 py-2.5 text-xs outline-none bg-slate-50 text-gray-500" readonly placeholder="กดปุ่มเพื่อดึงพิกัด">
+                        <input type="text" id="inp-gps" class="input-field flex-1 text-xs text-gray-500" readonly placeholder="กดปุ่มเพื่อดึงพิกัด">
                         <button type="button" onclick="getLocation()" class="bg-[#0284c7] text-white px-4 rounded-xl flex justify-center items-center hover:bg-sky-700 transition-colors"><span class="material-symbols-outlined text-[18px]">my_location</span></button>
                     </div>
                 </div>
@@ -98,14 +106,14 @@
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-3 border-t border-gray-50 pt-4">
                     <div>
                         <span class="text-xs font-bold text-gray-500 mb-1 block">ชื่อญาติ / ผู้ดูแล</span>
-                        <input type="text" id="inp-caregiver-name" class="w-full border border-slate-200 rounded-xl px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-[#00694a] bg-slate-50">
+                        <input type="text" id="inp-caregiver-name" class="input-field bg-white">
                     </div>
                     <div>
                         <span class="text-xs font-bold text-gray-500 mb-1 block">เบอร์โทรศัพท์</span>
-                        <input type="tel" id="inp-caregiver-phone" class="w-full border border-slate-200 rounded-xl px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-[#00694a] bg-slate-50">
+                        <input type="tel" id="inp-caregiver-phone" class="input-field bg-white">
                     </div>
                 </div>
-            </div>
+            </section>
 
             <!-- SECTION 2: สิทธิ์ผ้าอ้อม / อุปกรณ์ -->
             <section id="sec-diaper" class="bg-white rounded-[20px] p-5 shadow-sm border border-blue-100">
@@ -166,14 +174,14 @@
                 <div class="pt-4 border-t border-blue-100">
                     <span class="text-sm font-bold text-gray-700 block mb-2">4. ประวัติได้รับจัดสรร (รอบ/ปีงบประมาณ)</span>
                     <div class="flex gap-2 mb-3">
-                        <input type="text" id="new_alloc" class="w-full border border-slate-200 rounded-xl px-4 py-2 text-sm outline-none focus:ring-2 focus:ring-blue-500 bg-slate-50" placeholder="เช่น 1/2569">
+                        <input type="text" id="new_alloc" class="input-field bg-white py-2" placeholder="เช่น 1/2569">
                         <button type="button" onclick="addAllocation()" class="bg-blue-600 hover:bg-blue-700 text-white px-5 rounded-xl text-sm font-bold shadow-sm transition-colors whitespace-nowrap">เพิ่มรอบ</button>
                     </div>
                     <div id="alloc-list" class="flex flex-wrap gap-2 empty:hidden"></div>
                 </div>
             </section>
 
-            <!-- SECTION 2.2: อุปกรณ์ -->
+            <!-- SECTION 3: อุปกรณ์ -->
             <section id="sec-equipment" class="bg-white rounded-[20px] p-5 shadow-sm border border-orange-100">
                 <h3 class="font-bold text-[#ea580c] flex items-center gap-2 border-b border-orange-50 pb-2 mb-4">
                     <span class="material-symbols-outlined">medical_services</span> ความต้องการอุปกรณ์การแพทย์อื่นๆ
@@ -181,21 +189,21 @@
                 <div class="grid grid-cols-2 gap-2 mb-4" id="equipment-list"></div>
                 <div>
                     <span class="text-xs font-bold text-gray-500 mb-1 block">อุปกรณ์อื่นๆ (ระบุ)</span>
-                    <input type="text" id="equip_other" class="w-full border border-slate-200 rounded-xl px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-orange-500 bg-slate-50" placeholder="เช่น เครื่องพ่นยา, เตียง 3 ไกร์...">
+                    <input type="text" id="equip_other" class="input-field bg-white" placeholder="เช่น เครื่องพ่นยา, เตียง 3 ไกร์...">
                 </div>
             </section>
 
-            <!-- SECTION 3: สุขภาพ โรคประจำตัว -->
+            <!-- SECTION 4: สุขภาพ โรคประจำตัว -->
             <section id="sec-health" class="bg-white rounded-[20px] p-5 shadow-sm border border-red-100">
                 <h3 class="font-bold text-[#ba1a1a] flex items-center gap-2 border-b border-red-50 pb-2 mb-4"><span class="material-symbols-outlined">monitor_heart</span> โรคประจำตัว</h3>
                 <div class="grid grid-cols-2 gap-2 mb-4" id="disease-checkboxes"></div>
                 <div>
                     <span class="text-xs font-bold text-gray-500 mb-1 block">โรคอื่นๆ (ระบุ)</span>
-                    <input type="text" id="disease_other" class="w-full border border-slate-200 rounded-xl px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-red-500 bg-slate-50" placeholder="พิมพ์ชื่อโรคอื่นๆ (ถ้ามี)...">
+                    <input type="text" id="disease_other" class="input-field bg-white" placeholder="พิมพ์ชื่อโรคอื่นๆ (ถ้ามี)...">
                 </div>
             </section>
 
-            <!-- SECTION 4: หมวดยา (รูปภาพ) -->
+            <!-- SECTION 5: หมวดยา (รูปภาพ) -->
             <section id="sec-medication" class="bg-white rounded-[20px] p-5 shadow-sm border border-sky-100">
                 <div class="flex justify-between items-center border-b border-sky-50 pb-2 mb-4">
                     <h3 class="font-bold text-[#0284c7] flex items-center gap-2"><span class="material-symbols-outlined">medication</span> รายการยา</h3>
@@ -235,8 +243,6 @@
         
         let currentPatientData = null;
         let currentAllocations = []; 
-        
-        // 🌟 ตัวแปรเก็บข้อมูลผู้บันทึก 🌟
         let currentUserUid = "";
         let currentUserName = "ไม่ระบุชื่อ";
 
@@ -266,7 +272,6 @@
             loadPatientData();
         });
 
-        // 🌟 ดึงชื่อเจ้าหน้าที่ 🌟
         async function verifyUserAccess(uid) {
             currentUserUid = uid;
             try {
@@ -413,10 +418,10 @@
                     </div>
 
                     <div class="flex-1 flex flex-col gap-2 justify-center">
-                        <input type="text" id="name_${rowId}" class="med-name w-full border border-slate-200 rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-sky-500 bg-white" placeholder="ชื่อยา (เว้นว่างถ้ามีรูป)">
+                        <input type="text" id="name_${rowId}" class="med-name input-field px-3 py-2 text-sm bg-white" placeholder="ชื่อยา (เว้นว่างถ้ามีรูป)">
                         <div class="grid grid-cols-2 gap-2">
-                            <input type="text" id="dose_${rowId}" class="med-dose w-full border border-slate-200 rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-sky-500 bg-white" placeholder="ขนาด">
-                            <input type="text" id="usage_${rowId}" class="med-usage w-full border border-slate-200 rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-sky-500 bg-white" placeholder="วิธีใช้">
+                            <input type="text" id="dose_${rowId}" class="med-dose input-field px-3 py-2 text-sm bg-white" placeholder="ขนาด">
+                            <input type="text" id="usage_${rowId}" class="med-usage input-field px-3 py-2 text-sm bg-white" placeholder="วิธีใช้">
                         </div>
                     </div>
                 </div>`;
