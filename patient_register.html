@@ -237,6 +237,10 @@
 
         try {
             await docRef.set(patientData);
+            // ยิง Web Push หาแอดมิน
+const pName = document.getElementById('fullname').value.trim();
+const pVil = document.getElementById('village_no').value.trim();
+await window.sendWebPushByRole(pVil, 'พบผู้ป่วยรายใหม่', `คุณ ${currentUserName} ได้ลงทะเบียนผู้ป่วยใหม่: ${pName} (หมู่ที่ ${pVil})`, 'ADMIN_ONLY');
 
             alert(`ลงทะเบียนผู้ป่วยใหม่เรียบร้อยแล้ว!\nรหัสผู้ป่วย: ${docRef.id}`);
             goBack(); 
