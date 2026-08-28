@@ -48,6 +48,21 @@
     </header>
 
     <main class="max-w-2xl mx-auto pt-2 pb-8">
+        <!-- 🌟 แบนเนอร์ขออนุญาตแจ้งเตือน (สำหรับ iOS) 🌟 -->
+        <div id="push-permission-banner" class="px-4 mb-4 hidden">
+            <div class="bg-blue-50 border border-blue-200 rounded-[20px] p-4 flex items-center justify-between shadow-sm">
+                <div class="flex items-center gap-3">
+                    <span class="material-symbols-outlined text-blue-500 text-[28px]">notifications_active</span>
+                    <div>
+                        <p class="text-sm font-bold text-blue-800">เปิดรับการแจ้งเตือน</p>
+                        <p class="text-[10px] text-blue-600">รับแจ้งเตือนทันทีเมื่อมีงานใหม่</p>
+                    </div>
+                </div>
+                <button onclick="requestPushPermission()" class="bg-blue-600 text-white text-xs font-bold px-4 py-2.5 rounded-xl hover:bg-blue-700 active:scale-95 transition-transform shadow-sm">
+                    เปิดใช้งาน
+                </button>
+            </div>
+        </div>
         <h2 class="text-[18px] font-bold text-[#111c2d] px-4 mb-5">สรุปข้อมูลผู้ป่วย</h2>
 
         <div class="grid grid-cols-2 gap-4 px-4">
@@ -201,32 +216,39 @@
             });
         });
 
-        // 🌟 4. ฟังก์ชันขออนุญาตแจ้งเตือน 🌟
-        async function setupPushNotifications(uid) {
-            try {
-                // ขออนุญาตผู้ใช้ให้ส่งแจ้งเตือนได้ (ถ้ายังไม่เคยขอ)
-                const permission = await Notification.requestPermission();
-                if (permission === 'granted') {
-                    // หากผู้ใช้อนุญาต ให้ดึง Token ประจำเครื่อง
-                    const token = await messaging.getToken({ vapidKey: FCM_VAPID_KEY });
-                    if (token) {
-                        // เซฟ Token ลงไปในข้อมูลส่วนตัวของ อสม. ท่านนี้ (เพื่อเอาไว้ยิงเจาะจงรายคน)
-                        await db.collection('VHVs').doc(String(uid)).update({ fcmToken: token });
-                        console.log("ระบบแจ้งเตือน PWA พร้อมทำงาน");
-                    }
-                }
-            } catch (error) { console.error('การตั้งค่าแจ้งเตือนขัดข้อง:', error); }
+        // 🌟 เช็คว่าเคยอนุญาตไปหรือยัง ถ้ายังให้โชว์แบนเนอร์ 🌟
+        function checkNotificationStatus() {
+            const banner = document.getElementById('push-permission-banner');
+            if (Notification.permission === 'default') {
+                banner.classList.remove('hidden'); // โชว์แบนเนอร์ให้กด
+            } else {
+                banner.classList.add('hidden'); // ซ่อนแบนเนอร์
+            }
         }
 
-        // 🌟 5. ดักจับข้อความตอนเปิดแอป (Foreground) 🌟
-        messaging.onMessage((payload) => {
-            const title = payload.notification?.title || payload.data?.title || 'แจ้งเตือนใหม่';
-            const body = payload.notification?.body || payload.data?.body || '';
-            if(typeof showToast === 'function') {
-                showToast(`${title}: ${body}`, 'info');
-            } else {
-                alert(`${title}\n${body}`);
+        // 🌟 ฟังก์ชันขออนุญาตแจ้งเตือน (ทำงานเมื่อถูกคลิกจากปุ่มเท่านั้น แก้บั๊ก iOS) 🌟
+        async function requestPushPermission() {
+            try {
+                const permission = await Notification.requestPermission();
+                if (permission === 'granted') {
+                    const token = await messaging.getToken({ vapidKey: FCM_VAPID_KEY });
+                    if (token) {
+                        await db.collection('VHVs').doc(String(vhvCurrentUid)).update({ fcmToken: token });
+                        document.getElementById('push-permission-banner').classList.add('hidden');
+                        alert("เปิดรับการแจ้งเตือนสำเร็จ! ระบบจะส่งข้อความเข้าเครื่องนี้เวลามีงานใหม่ครับ");
+                    }
+                } else {
+                    alert("คุณปฏิเสธการรับแจ้งเตือน หากต้องการเปลี่ยนใจต้องไปแก้ในการตั้งค่า Safari ครับ");
+                }
+            } catch (error) { 
+                console.error('Push Permission Error:', error); 
+                alert("ระบบมือถือของคุณยังไม่รองรับการแจ้งเตือนแบบ Web Push ครับ");
             }
+        }
+
+        // เรียกใช้ฟังก์ชันเช็คแบนเนอร์ตอนเปิดแอป
+        document.addEventListener("DOMContentLoaded", () => {
+            checkNotificationStatus();
         });
 
         async function fetchVHVProfile(uid) {
