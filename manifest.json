@@ -1,0 +1,15 @@
+{
+  "name": "อสม.สามารถ (Orsomo Smart)",
+  "short_name": "Orsomo",
+  "start_url": "/index.html?openExternalBrowser=1",
+  "display": "standalone",
+  "background_color": "#f8fafc",
+  "theme_color": "#00694a",
+  "icons": [
+    {
+      "src": "https://cdn-icons-png.flaticon.com/512/3063/3063116.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}
