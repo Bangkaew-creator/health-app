@@ -9,6 +9,11 @@
     <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
     <script charset="utf-8" src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
     
+    <!-- 🌟 เพิ่ม Manifest และ Theme Color สำหรับ PWA 🌟 -->
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#00694a">
+    <link rel="apple-touch-icon" href="https://cdn-icons-png.flaticon.com/512/3063/3063116.png">
+
     <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore-compat.js"></script>
     <script src="config.js"></script>
@@ -41,7 +46,6 @@
 
     <!-- หน้าจอลงทะเบียน อสม. -->
     <div id="registration-screen" class="hidden w-full max-w-md bg-white rounded-3xl p-8 shadow-xl">
-        <!-- ทางลับเข้า Developer Tools: กดย้ำ 5 ครั้งที่ไอคอนรูปคน -->
         <div class="text-center mb-6 cursor-pointer select-none" onclick="secretTap()">
             <div class="w-16 h-16 bg-[#00694a]/10 text-[#00694a] rounded-2xl flex items-center justify-center mx-auto mb-3 transition-transform active:scale-95">
                 <span class="material-symbols-outlined text-4xl">how_to_reg</span>
@@ -69,14 +73,13 @@
         </div>
     </div>
     
-    <!-- ปุ่มสลับไปหน้าลงทะเบียนเจ้าหน้าที่ -->
     <div id="admin-trigger" class="hidden absolute bottom-6 text-center w-full max-w-md mx-auto">
         <button onclick="showAdminRegistration()" class="text-[11px] text-slate-400 hover:text-slate-600 font-medium transition-colors flex items-center justify-center mx-auto gap-1">
             <span class="material-symbols-outlined text-[14px]">lock</span> สำหรับเจ้าหน้าที่ รพ.สต. / ส่วนกลาง
         </button>
     </div>
 
-    <!-- หน้าจอลงทะเบียนเจ้าหน้าที่ (Admin / Sub-Admin) -->
+    <!-- หน้าจอลงทะเบียนเจ้าหน้าที่ -->
     <div id="admin-registration-screen" class="hidden w-full max-w-md bg-white rounded-3xl p-8 shadow-2xl border-t-4 border-amber-500 relative z-10">
         <div class="text-center mb-6">
             <div class="w-16 h-16 bg-amber-100 text-amber-600 rounded-2xl flex items-center justify-center mx-auto mb-3">
@@ -116,7 +119,6 @@
         
         let globalVillageCount = DEFAULT_CONFIGS.VILLAGE_COUNT;
         
-        // --- 🤫 ระบบทางลับ (Easter Egg) สำหรับโหมดนักพัฒนา ---
         let tapCount = 0;
         function secretTap() {
             tapCount++;
@@ -131,9 +133,17 @@
         }
 
         document.addEventListener("DOMContentLoaded", () => {
+            // 🌟 ปลุก Service Worker เพื่อให้แอปทำงานเบื้องหลังได้ 🌟
+            if ('serviceWorker' in navigator) {
+                navigator.serviceWorker.register('/firebase-messaging-sw.js')
+                .then(function(registration) {
+                    console.log('Service Worker Registered successfully');
+                }).catch(function(err) {
+                    console.log('Service Worker Registration failed: ', err);
+                });
+            }
+
             liff.init({ liffId: LIFF_ID }).then(() => {
-                
-                // ตรวจสอบโหมดนักพัฒนา (สับขาหลอกบัญชี)
                 const mockUid = localStorage.getItem('dev_mock_uid');
                 if (mockUid) {
                     processLoginRouting(mockUid);
@@ -142,7 +152,6 @@
                 } else { 
                     liff.login(); 
                 }
-                
             });
         });
 
@@ -170,12 +179,10 @@
             }
         }
 
-        // ฟังก์ชันจัดการเส้นทางล็อกอิน (แยกระหว่างโหมดจริง กับ โหมดทดสอบ)
         async function processLoginRouting(uid) {
             try {
                 const userDoc = await db.collection('VHVs').doc(String(uid)).get();
 
-                // ดึง Config จำนวนหมู่บ้าน เผื่อมีการอัปเดตใหม่
                 try {
                     const sysSnap = await db.collection('SystemConfig').doc('VILLAGE_COUNT').get();
                     if(sysSnap.exists) globalVillageCount = parseInt(sysSnap.data().value) || globalVillageCount;
@@ -189,9 +196,8 @@
                     const role = String(userData.role || '').toUpperCase();
 
                     if (status === 'active') {
-                        // ไม่ว่าจะเป็น ADMIN หรือ SUB_ADMIN ก็ให้พาไปหน้าแอดมินทั้งหมด
                         if (role === 'ADMIN' || role === 'SUB_ADMIN') window.location.href = 'admin_dashboard.html';
-                        else window.location.href = 'dashboard.html'; // ถ้าเป็น VHV
+                        else window.location.href = 'dashboard.html'; 
                     } else if (status === 'pending') {
                         document.getElementById('pending-screen').classList.remove('hidden');
                     } else {
@@ -228,9 +234,6 @@
             document.getElementById('admin-trigger').style.display = 'block'; 
         }
 
-        // ===============================================
-        // ระบบลงทะเบียนเจ้าหน้าที่ (รองรับทั้ง Admin และ Sub-Admin)
-        // ===============================================
         async function registerStaff() {
             const name = document.getElementById('admin-reg-name').value;
             const phone = document.getElementById('admin-reg-phone').value;
@@ -245,18 +248,15 @@
                 let currentUid = localStorage.getItem('dev_mock_uid');
                 let picUrl = "https://via.placeholder.com/150";
 
-                // ถ้าไม่ได้อยู่ในโหมดทดสอบ ให้ดึงโปรไฟล์จาก LINE จริง
                 if(!currentUid) {
                     const profile = await liff.getProfile();
                     currentUid = profile.userId;
                     picUrl = profile.pictureUrl || picUrl;
                 }
                 
-                // 1. ดึงรหัสแอดมินหลัก
                 const adminCodeSnap = await db.collection('SystemConfig').doc('ADMIN_SECRET_CODE').get();
                 const adminSecret = adminCodeSnap.exists ? String(adminCodeSnap.data().value).trim() : null;
 
-                // 2. ดึงข้อมูล รพ.สต. ย่อยทั้งหมด
                 const subCentersSnap = await db.collection('SystemConfig').doc('SUB_CENTERS').get();
                 let subCenters = [];
                 if(subCentersSnap.exists) {
@@ -267,14 +267,12 @@
                 let assignedVillages = [];
                 let specificHospitalName = null;
 
-                // คัดกรองรหัสผ่านอัจฉริยะ
                 if (adminSecret && secretCode === adminSecret) {
-                    assignedRole = 'ADMIN'; // ได้สิทธิ์สูงสุด
+                    assignedRole = 'ADMIN'; 
                 } else {
-                    // ค้นหาว่ารหัสลับตรงกับ รพ.สต. แห่งไหนหรือไม่
                     const matchedSub = subCenters.find(sc => String(sc.secret_code).trim() === secretCode);
                     if (matchedSub) {
-                        assignedRole = 'SUB_ADMIN'; // ได้สิทธิ์ย่อย
+                        assignedRole = 'SUB_ADMIN'; 
                         assignedVillages = matchedSub.villages;
                         specificHospitalName = matchedSub.name;
                     }
@@ -286,7 +284,6 @@
                     return;
                 }
 
-                // เช็คว่าเคยลงทะเบียนไว้หรือยัง
                 const existingDoc = await db.collection('VHVs').doc(String(currentUid)).get();
                 if (existingDoc.exists) {
                     alert("บัญชีนี้เคยลงทะเบียนในระบบไว้แล้ว");
@@ -294,22 +291,20 @@
                     return;
                 }
                 
-                // หาชื่อหน่วยงานที่จะนำไปบันทึก
                 let finalHospitalName = specificHospitalName;
                 if (!finalHospitalName) {
                     const hSnap = await db.collection('SystemConfig').doc('HOSPITAL_NAME').get();
                     finalHospitalName = hSnap.exists ? hSnap.data().value : DEFAULT_CONFIGS.HOSPITAL_NAME;
                 }
 
-                // สร้าง Profile เจ้าหน้าที่ใน Firebase
                 await db.collection('VHVs').doc(String(currentUid)).set({
                     uid: currentUid,
                     name: name,
                     phone: phone,
                     role: assignedRole,
-                    status: 'Active', // แอดมินและรพ.สต. สมัครปุ๊บ ใช้งานได้ปั๊บ
+                    status: 'Active', 
                     hospital_name: finalHospitalName,
-                    assigned_villages: assignedVillages, // มีผลเฉพาะ SUB_ADMIN
+                    assigned_villages: assignedVillages, 
                     profile_pic: picUrl,
                     timestamp: firebase.firestore.FieldValue.serverTimestamp()
                 });
@@ -324,9 +319,6 @@
             }
         }
 
-        // ===============================================
-        // ระบบลงทะเบียน อสม. 
-        // ===============================================
         async function registerUser() {
             const name = document.getElementById('reg-name').value;
             const phone = document.getElementById('reg-phone').value;
@@ -354,13 +346,12 @@
                     return;
                 }
 
-                // สร้าง Profile อสม. ใน Firebase 
                 await db.collection('VHVs').doc(String(currentUid)).set({
                     uid: currentUid,
                     name: name,
                     phone: phone,
                     role: 'VHV',
-                    status: 'Pending', // อสม. ต้องรอ รพ.สต. หรือแอดมินอนุมัติก่อน
+                    status: 'Pending', 
                     village_no: village,
                     profile_pic: picUrl,
                     timestamp: firebase.firestore.FieldValue.serverTimestamp()
