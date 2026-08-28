@@ -4,17 +4,11 @@
     <meta charset="utf-8"/>
     <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
     <title>เข้าสู่ระบบ - อสม.สามารถ (Orsomo Smart)</title>
-   
-    <!-- 🌟 โค้ด 3 บรรทัดนี้สำหรับบังคับหน้าตา PWA (ไอคอน) 🌟 -->
-    <link rel="manifest" href="manifest.json">
-    <meta name="theme-color" content="#00694a">
-    <link rel="apple-touch-icon" href="Logo COLOR-01.png">
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700&display=swap" rel="stylesheet"/>
     <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
     <script charset="utf-8" src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
     
-    <!-- 🌟 เพิ่ม Manifest และ Theme Color สำหรับ PWA 🌟 -->
     <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="#00694a">
     <link rel="apple-touch-icon" href="https://cdn-icons-png.flaticon.com/512/3063/3063116.png">
@@ -111,17 +105,10 @@
             <button onclick="hideAdminRegistration()" class="w-full text-slate-400 font-bold py-2 mt-2 hover:text-slate-600 text-sm">กลับไปหน้าลงทะเบียน อสม.</button>
         </div>
     </div>
-    
-    <div class="fixed bottom-3 w-full text-center z-0 pointer-events-none">
-        <p class="text-[10px] text-slate-400 font-medium tracking-wide">
-            Powered by Firebase & LINE LIFF
-        </p>
-    </div>
 
     <script>
         firebase.initializeApp(firebaseConfig);
         const db = firebase.firestore();
-        
         let globalVillageCount = DEFAULT_CONFIGS.VILLAGE_COUNT;
         
         let tapCount = 0;
@@ -130,32 +117,48 @@
             if(tapCount >= 5) {
                 tapCount = 0;
                 let pwd = prompt("Developer Mode: Enter Password");
-                if(pwd === "1234") {
-                    window.location.href = "dev_tools.html";
-                }
+                if(pwd === "1234") { window.location.href = "dev_tools.html"; }
             }
             setTimeout(() => { tapCount = 0; }, 3000); 
         }
 
         document.addEventListener("DOMContentLoaded", () => {
-            // 🌟 ปลุก Service Worker เพื่อให้แอปทำงานเบื้องหลังได้ 🌟
             if ('serviceWorker' in navigator) {
-                navigator.serviceWorker.register('/firebase-messaging-sw.js')
-                .then(function(registration) {
-                    console.log('Service Worker Registered successfully');
-                }).catch(function(err) {
-                    console.log('Service Worker Registration failed: ', err);
-                });
+                navigator.serviceWorker.register('/firebase-messaging-sw.js').catch(err => console.log('SW failed', err));
             }
 
             liff.init({ liffId: LIFF_ID }).then(() => {
                 const mockUid = localStorage.getItem('dev_mock_uid');
+                const savedUid = localStorage.getItem('orsomo_uid'); // 🌟 1. ดึงความจำ
+
                 if (mockUid) {
                     processLoginRouting(mockUid);
                 } else if (liff.isLoggedIn()) { 
-                    checkRegistration(); 
-                } else { 
-                    liff.login(); 
+                    // 🌟 2. ถ้าล็อกอินในเบราว์เซอร์ปกติ ให้จำ UID ใส่เครื่องไว้เลย
+                    liff.getProfile().then(profile => {
+                        localStorage.setItem('orsomo_uid', profile.userId);
+                        processLoginRouting(profile.userId);
+                    }).catch(() => showRegistrationUI());
+                } else if (savedUid) {
+                    // 🌟 3. ถ้าเปิดแอป PWA แล้วจำ UID ได้ ให้พุ่งเข้า Dashboard เลย ไม่ต้องล็อกอิน LINE!
+                    processLoginRouting(savedUid);
+                } else {
+                    // 🌟 4. ดักจับบั๊ก iOS: ถ้าเปิด PWA ครั้งแรกแล้วเครื่องจำไม่ได้ ให้แสดงวิธีแก้
+                    const isPWA = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
+                    if (isPWA) {
+                        document.getElementById('loading-screen').innerHTML = `
+                            <div class="text-center p-6 bg-red-50 rounded-2xl border border-red-200 max-w-sm shadow-sm">
+                                <span class="material-symbols-outlined text-[50px] text-red-500 mb-3">gpp_maybe</span>
+                                <h2 class="font-bold text-lg text-slate-800 mb-2">ไม่สามารถยืนยันตัวตนได้</h2>
+                                <p class="text-xs text-slate-600 leading-relaxed mb-4">
+                                    เนื่องจากข้อจำกัดด้านความปลอดภัยของ iOS (Apple)<br><br>
+                                    <b>วิธีแก้ไข:</b> กรุณากลับไปที่แอป LINE กดลิงก์เข้าสู่ระบบอีก 1 ครั้ง (เพื่อให้ระบบจดจำเครื่องนี้) หลังจากนั้นแอปบนหน้าจอจะใช้งานได้ปกติครับ
+                                </p>
+                            </div>
+                        `;
+                    } else {
+                        liff.login({ redirectUri: window.location.href }); 
+                    }
                 }
             });
         });
@@ -165,22 +168,6 @@
             vSelect.innerHTML = '<option value="" disabled selected>-- เลือกหมู่ที่รับผิดชอบ --</option>';
             for(let i=1; i<=vCount; i++) {
                 vSelect.insertAdjacentHTML('beforeend', `<option value="${i}">หมู่ที่ ${i}</option>`);
-            }
-        }
-
-        async function checkRegistration() {
-            document.getElementById('registration-screen').classList.add('hidden');
-            document.getElementById('admin-registration-screen').classList.add('hidden');
-            document.getElementById('admin-trigger').classList.add('hidden');
-            document.getElementById('pending-screen').classList.add('hidden');
-            document.getElementById('loading-screen').classList.remove('hidden');
-
-            try {
-                const profile = await liff.getProfile();
-                await processLoginRouting(profile.userId);
-            } catch (error) { 
-                alert("เกิดข้อผิดพลาดในการเชื่อมต่อเครือข่าย LINE"); 
-                showRegistrationUI();
             }
         }
 
@@ -243,20 +230,20 @@
             const name = document.getElementById('admin-reg-name').value;
             const phone = document.getElementById('admin-reg-phone').value;
             const secretCode = document.getElementById('admin-reg-secret').value.trim();
-            
             if (!name || !phone || !secretCode) return alert("กรุณากรอกข้อมูลให้ครบถ้วน");
 
             const btn = document.getElementById('btn-register-admin');
             btn.disabled = true; btn.innerText = "กำลังตรวจสอบรหัส...";
 
             try {
-                let currentUid = localStorage.getItem('dev_mock_uid');
+                let currentUid = localStorage.getItem('dev_mock_uid') || localStorage.getItem('orsomo_uid');
                 let picUrl = "https://via.placeholder.com/150";
 
-                if(!currentUid) {
+                if(!currentUid && liff.isLoggedIn()) {
                     const profile = await liff.getProfile();
                     currentUid = profile.userId;
                     picUrl = profile.pictureUrl || picUrl;
+                    localStorage.setItem('orsomo_uid', currentUid);
                 }
                 
                 const adminCodeSnap = await db.collection('SystemConfig').doc('ADMIN_SECRET_CODE').get();
@@ -314,8 +301,7 @@
                     timestamp: firebase.firestore.FieldValue.serverTimestamp()
                 });
 
-                const roleMsg = assignedRole === 'ADMIN' ? 'แอดมินส่วนกลาง' : `เจ้าหน้าที่ ${finalHospitalName}`;
-                alert(`ยินดีต้อนรับ! ลงทะเบียนในสิทธิ์ "${roleMsg}" สำเร็จ`);
+                alert(`ยินดีต้อนรับ! ลงทะเบียนในสิทธิ์แอดมินสำเร็จ`);
                 window.location.href = 'admin_dashboard.html'; 
                 
             } catch (error) { 
@@ -335,13 +321,14 @@
             btn.disabled = true; btn.innerText = "กำลังบันทึกข้อมูล...";
 
             try {
-                let currentUid = localStorage.getItem('dev_mock_uid');
+                let currentUid = localStorage.getItem('dev_mock_uid') || localStorage.getItem('orsomo_uid');
                 let picUrl = "https://via.placeholder.com/150";
 
-                if(!currentUid) {
+                if(!currentUid && liff.isLoggedIn()) {
                     const profile = await liff.getProfile();
                     currentUid = profile.userId;
                     picUrl = profile.pictureUrl || picUrl;
+                    localStorage.setItem('orsomo_uid', currentUid);
                 }
                 
                 const existingDoc = await db.collection('VHVs').doc(String(currentUid)).get();
@@ -362,8 +349,9 @@
                     timestamp: firebase.firestore.FieldValue.serverTimestamp()
                 });
 
-                // ยิง Web Push หาแอดมิน
-await window.sendWebPushByRole(village, 'คำขอสมัคร อสม. ใหม่', `อสม. ${name} (หมู่ที่ ${village}) รอการตรวจสอบและอนุมัติสิทธิ์`, 'ADMIN_ONLY');
+                if (typeof window.sendWebPushByRole === 'function') {
+                    await window.sendWebPushByRole(village, 'คำขอสมัคร อสม. ใหม่', `อสม. ${name} (หมู่ที่ ${village}) รอการตรวจสอบและอนุมัติสิทธิ์`, 'ADMIN_ONLY');
+                }
 
                 document.getElementById('registration-screen').classList.add('hidden');
                 document.getElementById('admin-trigger').classList.add('hidden');
