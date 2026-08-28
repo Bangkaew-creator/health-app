@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+    <!DOCTYPE html>
 <html lang="th">
 <head>
     <meta charset="utf-8"/>
@@ -107,7 +107,8 @@
                                 <h3 class="text-sm font-bold text-slate-800">การแจ้งเตือน</h3>
                                 <button onclick="clearNotifications()" class="text-[11px] text-slate-400 hover:text-slate-600 font-medium">รับทราบทั้งหมด</button>
                             </div>
-                            <button onclick="requestPushPermission()" id="btn-enable-push" class="text-[11px] bg-blue-50 text-blue-600 border border-blue-100 rounded-lg py-1.5 font-bold hover:bg-blue-100 transition-colors w-full flex justify-center items-center gap-1">
+                            <!-- 🌟 ปุ่มสำหรับ iOS ให้กดขออนุญาต 🌟 -->
+                            <button onclick="requestPushPermission()" id="btn-enable-push" class="text-[11px] bg-blue-50 text-blue-600 border border-blue-100 rounded-lg py-1.5 font-bold hover:bg-blue-100 transition-colors w-full flex justify-center items-center gap-1 hidden">
                                 <span class="material-symbols-outlined text-[14px]">notifications_active</span> เปิดรับการแจ้งเตือน
                             </button>
                         </div>
@@ -270,13 +271,18 @@
 
         document.addEventListener("DOMContentLoaded", () => {
             document.getElementById('sidebar-hospital-name').innerText = DEFAULT_CONFIGS.HOSPITAL_NAME;
-            
-            // ซ่อนปุ่มถ้าเคยขอไปแล้ว
-            if (Notification.permission === 'granted' || Notification.permission === 'denied') {
-                const btnPush = document.getElementById('btn-enable-push');
-                if(btnPush) btnPush.style.display = 'none';
-            }
 
+            // เช็คว่าเคยอนุญาตไปหรือยัง ถ้ายังให้โชว์ปุ่มในกระดิ่งแจ้งเตือน
+            function checkNotificationStatus() {
+                const btnPush = document.getElementById('btn-enable-push');
+                if (Notification.permission === 'default') {
+                    if (btnPush) btnPush.classList.remove('hidden');
+                } else {
+                    if (btnPush) btnPush.classList.add('hidden');
+                }
+            }
+            checkNotificationStatus();
+            
             // 🌟 ปลุก Service Worker 🌟
             if ('serviceWorker' in navigator) {
                 navigator.serviceWorker.register('/firebase-messaging-sw.js').catch(err => console.log('SW failed', err));
