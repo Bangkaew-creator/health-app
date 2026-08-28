@@ -524,6 +524,8 @@
 
             try {
                 await db.collection('Patients').doc(String(patientId)).update({ remark: newRemark });
+                // ยิง Web Push หาแอดมิน
+await window.sendWebPushByRole(currentPatientData.village_no, 'อสม. ลงพื้นที่สำเร็จ', `คุณ ${currentUserName} ประเมินผู้ป่วย "${currentPatientData.name}" (หมู่ที่ ${currentPatientData.village_no}) เรียบร้อยแล้ว`, 'ADMIN_ONLY');
                 currentPatientData.remark = newRemark;
                 document.getElementById('profile-remark').innerText = newRemark || '-';
                 closeRemarkModal();
