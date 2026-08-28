@@ -1,15 +1,16 @@
 {
-  "name": "อสม.สามารถ (Orsomo Smart)",
-  "short_name": "Orsomo",
-  "start_url": "/index.html?openExternalBrowser=1",
+  "name": "ระบบจัดการสุขภาพ อสม.สามารถ", 
+  "short_name": "อสม.สามารถ", 
+  "start_url": "/health-app/index.html?openExternalBrowser=1",
   "display": "standalone",
   "background_color": "#f8fafc",
   "theme_color": "#00694a",
   "icons": [
     {
-      "src": "https://cdn-icons-png.flaticon.com/512/3063/3063116.png",
+      "src": "Logo COLOR-01.png", 
       "sizes": "512x512",
-      "type": "image/png"
+      "type": "image/png",
+      "purpose": "any maskable"
     }
   ]
 }
