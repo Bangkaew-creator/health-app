@@ -4,19 +4,18 @@
     <meta charset="utf-8"/>
     <meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" name="viewport"/>
     <title>หน้าหลัก - อสม.สามารถ (Orsomo Smart)</title>
-    
-    <!-- 🌟 โค้ด 3 บรรทัดนี้สำหรับบังคับหน้าตา PWA (ไอคอน) 🌟 -->
-    <link rel="manifest" href="manifest.json">
-    <meta name="theme-color" content="#00694a">
-    <link rel="apple-touch-icon" href="Logo COLOR-01.png">
     <script src="https://cdn.tailwindcss.com?plugins=forms"></script>
     <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700&display=swap" rel="stylesheet"/>
     <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
     <script charset="utf-8" src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
     
+    <!-- 🌟 เพิ่ม Manifest และ Theme Color สำหรับ PWA 🌟 -->
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#00694a">
+    <link rel="apple-touch-icon" href="https://cdn-icons-png.flaticon.com/512/3063/3063116.png">
+
     <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore-compat.js"></script>
-    <!-- 🌟 เพิ่มสคริปต์ Firebase Messaging สำหรับระบบแจ้งเตือน PWA 🌟 -->
     <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-messaging-compat.js"></script>
     <script src="config.js"></script>
 
@@ -173,12 +172,14 @@
         document.addEventListener("DOMContentLoaded", () => {
             liff.init({ liffId: LIFF_ID }).then(() => {
                 const mockUid = localStorage.getItem('dev_mock_uid');
-                
+                const savedUid = localStorage.getItem('orsomo_uid'); // 🌟 1. ดึงความจำ UID
+
                 if (mockUid) {
                     vhvCurrentUid = mockUid;
                     fetchVHVProfile(mockUid).then(() => fetchPatients());
                 } else if (liff.isLoggedIn()) {
                     liff.getProfile().then(async profile => {
+                        localStorage.setItem('orsomo_uid', profile.userId); // 🌟 2. จำรหัสตอนเข้าผ่าน LINE
                         vhvCurrentUid = profile.userId;
                         await fetchVHVProfile(profile.userId); 
                         fetchPatients(); 
@@ -186,6 +187,10 @@
                         setDefaultVHVProfile();
                         fetchPatients();
                     });
+                } else if (savedUid) {
+                    // 🌟 3. ข้าม Login เมื่อใช้ผ่าน PWA (แอปหน้าจอโฮม) 🌟
+                    vhvCurrentUid = savedUid;
+                    fetchVHVProfile(savedUid).then(() => fetchPatients());
                 } else {
                     setDefaultVHVProfile();
                     fetchPatients();
@@ -196,10 +201,10 @@
             });
         });
 
-        // 🌟 1. ฟังก์ชันขออนุญาตแจ้งเตือน 🌟
+        // 🌟 4. ฟังก์ชันขออนุญาตแจ้งเตือน 🌟
         async function setupPushNotifications(uid) {
             try {
-                // ขออนุญาตผู้ใช้ให้ส่งแจ้งเตือนได้
+                // ขออนุญาตผู้ใช้ให้ส่งแจ้งเตือนได้ (ถ้ายังไม่เคยขอ)
                 const permission = await Notification.requestPermission();
                 if (permission === 'granted') {
                     // หากผู้ใช้อนุญาต ให้ดึง Token ประจำเครื่อง
@@ -207,17 +212,16 @@
                     if (token) {
                         // เซฟ Token ลงไปในข้อมูลส่วนตัวของ อสม. ท่านนี้ (เพื่อเอาไว้ยิงเจาะจงรายคน)
                         await db.collection('VHVs').doc(String(uid)).update({ fcmToken: token });
-                        console.log("ระบบแจ้งเตือนพร้อมทำงาน");
+                        console.log("ระบบแจ้งเตือน PWA พร้อมทำงาน");
                     }
                 }
             } catch (error) { console.error('การตั้งค่าแจ้งเตือนขัดข้อง:', error); }
         }
 
-        // 🌟 2. ดักจับข้อความตอนเปิดแอป (Foreground) 🌟
+        // 🌟 5. ดักจับข้อความตอนเปิดแอป (Foreground) 🌟
         messaging.onMessage((payload) => {
             const title = payload.notification?.title || payload.data?.title || 'แจ้งเตือนใหม่';
             const body = payload.notification?.body || payload.data?.body || '';
-            // โชว์ Toast แจ้งเตือนเด้งลงมาจากด้านบน
             if(typeof showToast === 'function') {
                 showToast(`${title}: ${body}`, 'info');
             } else {
@@ -253,7 +257,7 @@
                         picContainer.innerHTML = data.name.substring(0, 1);
                     }
 
-                    // 🌟 3. เรียกฟังก์ชันขออนุญาตแจ้งเตือนเมื่อดึงข้อมูลเสร็จ 🌟
+                    // 🌟 6. เรียกฟังก์ชันขออนุญาตแจ้งเตือนเมื่อดึงข้อมูลเสร็จ 🌟
                     setupPushNotifications(uid);
                     updateVillageTotal();
                 } else {
