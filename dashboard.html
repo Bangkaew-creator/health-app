@@ -11,6 +11,8 @@
     
     <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore-compat.js"></script>
+    <!-- 🌟 เพิ่มสคริปต์ Firebase Messaging สำหรับระบบแจ้งเตือน PWA 🌟 -->
+    <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-messaging-compat.js"></script>
     <script src="config.js"></script>
 
     <style>
@@ -156,6 +158,7 @@
     <script>
         firebase.initializeApp(firebaseConfig);
         const db = firebase.firestore();
+        const messaging = firebase.messaging(); // 🌟 ประกาศตัวแปรรับ Messaging
 
         let allPatients = []; 
         let currentFilter = 'all'; 
@@ -188,10 +191,37 @@
             });
         });
 
-        // 🌟 แก้ไข: ดึง SystemConfig เข้ามาตรวจสอบร่วมกับ Profile อสม.
+        // 🌟 1. ฟังก์ชันขออนุญาตแจ้งเตือน 🌟
+        async function setupPushNotifications(uid) {
+            try {
+                // ขออนุญาตผู้ใช้ให้ส่งแจ้งเตือนได้
+                const permission = await Notification.requestPermission();
+                if (permission === 'granted') {
+                    // หากผู้ใช้อนุญาต ให้ดึง Token ประจำเครื่อง
+                    const token = await messaging.getToken({ vapidKey: FCM_VAPID_KEY });
+                    if (token) {
+                        // เซฟ Token ลงไปในข้อมูลส่วนตัวของ อสม. ท่านนี้ (เพื่อเอาไว้ยิงเจาะจงรายคน)
+                        await db.collection('VHVs').doc(String(uid)).update({ fcmToken: token });
+                        console.log("ระบบแจ้งเตือนพร้อมทำงาน");
+                    }
+                }
+            } catch (error) { console.error('การตั้งค่าแจ้งเตือนขัดข้อง:', error); }
+        }
+
+        // 🌟 2. ดักจับข้อความตอนเปิดแอป (Foreground) 🌟
+        messaging.onMessage((payload) => {
+            const title = payload.notification?.title || payload.data?.title || 'แจ้งเตือนใหม่';
+            const body = payload.notification?.body || payload.data?.body || '';
+            // โชว์ Toast แจ้งเตือนเด้งลงมาจากด้านบน
+            if(typeof showToast === 'function') {
+                showToast(`${title}: ${body}`, 'info');
+            } else {
+                alert(`${title}\n${body}`);
+            }
+        });
+
         async function fetchVHVProfile(uid) {
             try {
-                // 1. ดึงชื่อหน่วยงานจาก SystemConfig ก่อน เพื่อเป็นค่าเริ่มต้นให้ระบบ
                 let dynamicHospital = DEFAULT_CONFIGS.HOSPITAL_NAME;
                 try {
                     const sysSnap = await db.collection('SystemConfig').doc('HOSPITAL_NAME').get();
@@ -207,7 +237,6 @@
                     
                     if (data.village_no) {
                         vhvCurrentVillage = data.village_no;
-                        // 2. ใช้ dynamicHospital ที่ดึงมาจากฐานข้อมูล (หรือถ้า อสม. มีระบุไว้ส่วนตัวก็ให้ใช้ของส่วนตัว)
                         document.getElementById('header-vhv-village').innerText = 'หมู่ที่ ' + data.village_no + ' | ' + (data.hospital_name || dynamicHospital);
                         document.getElementById('my-village-number').innerText = data.village_no;
                     }
@@ -219,6 +248,8 @@
                         picContainer.innerHTML = data.name.substring(0, 1);
                     }
 
+                    // 🌟 3. เรียกฟังก์ชันขออนุญาตแจ้งเตือนเมื่อดึงข้อมูลเสร็จ 🌟
+                    setupPushNotifications(uid);
                     updateVillageTotal();
                 } else {
                     setDefaultVHVProfile();
