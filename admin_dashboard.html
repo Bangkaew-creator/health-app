@@ -9,6 +9,11 @@
     <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
     <script charset="utf-8" src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
     
+    <!-- 🌟 เพิ่ม Manifest และ Theme Color สำหรับ PWA 🌟 -->
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#00694a">
+    <link rel="apple-touch-icon" href="https://cdn-icons-png.flaticon.com/512/3063/3063116.png">
+    
     <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-messaging-compat.js"></script>
@@ -20,6 +25,7 @@
         .bg-navy { background-color: #0f172a; } .text-navy { color: #0f172a; }
         .loader-small { border: 2px solid #f3f3f3; border-bottom-color: #00694a; border-radius: 50%; width: 24px; height: 24px; animation: spin 1s linear infinite; }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        /* สไตล์สำหรับ Notification */
         .notification-dropdown { display: none; }
         .notification-dropdown.show { display: block; animation: slideDown 0.2s ease-out forwards; }
         @keyframes slideDown { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
@@ -87,12 +93,14 @@
             
             <div class="flex items-center gap-4">
                 
+                <!-- 🌟 Notification Bell 🌟 -->
                 <div class="relative">
                     <button onclick="toggleNotification()" class="relative p-2 text-slate-400 hover:text-amber-500 hover:bg-amber-50 rounded-full transition-colors focus:outline-none">
                         <span class="material-symbols-outlined text-[26px]">notifications</span>
                         <span id="notif-badge" class="absolute top-1.5 right-1.5 w-4 h-4 bg-red-500 text-white text-[9px] font-bold rounded-full flex items-center justify-center border-2 border-white hidden">0</span>
                     </button>
                     
+                    <!-- Notification Dropdown -->
                     <div id="notif-dropdown" class="notification-dropdown absolute right-0 mt-2 w-80 max-w-[90vw] bg-white rounded-2xl shadow-xl border border-slate-100 overflow-hidden z-50">
                         <div class="p-4 border-b border-slate-100 bg-slate-50/50 flex flex-col gap-2">
                             <div class="flex justify-between items-center">
@@ -104,6 +112,7 @@
                             </button>
                         </div>
                         <div id="notif-list" class="max-h-[350px] overflow-y-auto custom-scrollbar divide-y divide-slate-50">
+                            <!-- Items will be injected here -->
                             <div class="p-8 text-center text-slate-400 text-xs">กำลังโหลดการแจ้งเตือน...</div>
                         </div>
                         <div class="p-2 border-t border-slate-100 bg-slate-50 text-center">
@@ -112,6 +121,7 @@
                     </div>
                 </div>
 
+                <!-- Profile -->
                 <div class="flex items-center gap-3 cursor-pointer pl-3 border-l border-slate-200" onclick="window.location.href='admin_settings.html'">
                     <div class="hidden md:block text-right">
                         <p class="text-sm font-bold text-slate-700 leading-tight" id="header-user-name">กำลังโหลด...</p>
@@ -261,14 +271,20 @@
         document.addEventListener("DOMContentLoaded", () => {
             document.getElementById('sidebar-hospital-name').innerText = DEFAULT_CONFIGS.HOSPITAL_NAME;
             
+            // ซ่อนปุ่มถ้าเคยขอไปแล้ว
             if (Notification.permission === 'granted' || Notification.permission === 'denied') {
                 const btnPush = document.getElementById('btn-enable-push');
                 if(btnPush) btnPush.style.display = 'none';
             }
 
+            // 🌟 ปลุก Service Worker 🌟
+            if ('serviceWorker' in navigator) {
+                navigator.serviceWorker.register('/firebase-messaging-sw.js').catch(err => console.log('SW failed', err));
+            }
+
             liff.init({ liffId: LIFF_ID }).then(() => {
                 const mockUid = localStorage.getItem('dev_mock_uid');
-                const savedUid = localStorage.getItem('orsomo_uid'); // 🌟 1. ดึงความจำ UID
+                const savedUid = localStorage.getItem('orsomo_uid'); // 🌟 1. ดึงความจำ UID สำหรับ PWA
 
                 if (mockUid) { 
                     currentUserUid = mockUid;
@@ -286,7 +302,7 @@
                         verifyAdminAccess(p.userId);
                     }).catch(() => bounceToLogin()); 
                 } else if (savedUid) {
-                    // 🌟 3. ข้าม Login เมื่อใช้ผ่าน PWA 🌟
+                    // 🌟 3. ข้าม Login เมื่อใช้ผ่าน PWA (แอปหน้าจอโฮม) 🌟
                     currentUserUid = savedUid;
                     verifyAdminAccess(savedUid);
                 } else { 
@@ -297,6 +313,7 @@
 
         function bounceToLogin() { window.location.href = 'index.html'; }
 
+        // 🌟 4. ฟังก์ชันขออนุญาตแจ้งเตือน (เรียกเมื่อผู้ใช้กดปุ่ม) 🌟
         async function requestPushPermission() {
             try {
                 const permission = await Notification.requestPermission();
@@ -312,10 +329,11 @@
                 }
             } catch (error) { 
                 console.error('Push Permission Error:', error); 
-                alert("ระบบมือถือของคุณยังไม่รองรับการแจ้งเตือนแบบ Web Push ครับ");
+                alert("ระบบมือถือของคุณยังไม่รองรับการแจ้งเตือนแบบ Web Push ครับ (สำหรับ iPhone ต้องกด 'เพิ่มลงหน้าจอโฮม' เป็นแอปก่อนครับ)");
             }
         }
 
+        // 🌟 5. ดักจับข้อความตอนเปิดแอป (Foreground) 🌟
         messaging.onMessage((payload) => {
             const title = payload.notification?.title || payload.data?.title || 'แจ้งเตือนใหม่';
             const body = payload.notification?.body || payload.data?.body || '';
@@ -360,20 +378,10 @@
                         if (navInventory) navInventory.style.display = 'none';
                     }
                     
-                    setupPushNotifications(uid);
                     await loadVHVs();
                     loadDashboardData(); 
                 } else window.location.href = 'dashboard.html'; 
             } catch (error) { bounceToLogin(); }
-        }
-
-        async function setupPushNotifications(uid) {
-            try {
-                if (Notification.permission === 'granted') {
-                    const token = await messaging.getToken({ vapidKey: FCM_VAPID_KEY });
-                    if (token) await db.collection('VHVs').doc(String(uid)).update({ fcmToken: token });
-                }
-            } catch(e) {}
         }
 
         async function loadVHVs() {
@@ -683,9 +691,3 @@
     </script>
 </body>
 </html>
-"""
-    
-with open('/mnt/data/admin_dashboard.html', 'w', encoding='utf-8') as f:
-    f.write(get_file_content())
-print("File written successfully.")
-}ฉันเป็นเพียง AI ที่สามารถโต้ตอบผ่านข้อความได้เท่านั้น และไม่สามารถให้ความช่วยเหลือเกี่ยวกับเรื่องนี้ได้
