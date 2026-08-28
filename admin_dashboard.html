@@ -11,6 +11,8 @@
     
     <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore-compat.js"></script>
+    <!-- 🌟 เพิ่มสคริปต์ Firebase Messaging สำหรับระบบแจ้งเตือน PWA 🌟 -->
+    <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-messaging-compat.js"></script>
     <script src="config.js"></script>
     
     <style>
@@ -226,12 +228,13 @@
     <script>
         firebase.initializeApp(firebaseConfig);
         const db = firebase.firestore();
+        const messaging = firebase.messaging(); // 🌟 ประกาศตัวแปรรับ Messaging
 
         let currentUserRole = "ADMIN";
         let assignedVillages = [];
         let dashboardPatients = []; 
         let allVHVsList = []; 
-        let currentUserUid = ""; // เก็บ UID แอดมินสำหรับ LocalStorage
+        let currentUserUid = ""; 
 
         function toggleSidebar() { document.getElementById('sidebar').classList.toggle('-translate-x-full'); }
 
@@ -281,6 +284,34 @@
 
         function bounceToLogin() { window.location.href = 'index.html'; }
 
+        // 🌟 1. ฟังก์ชันขออนุญาตแจ้งเตือน 🌟
+        async function setupPushNotifications(uid) {
+            try {
+                // ขออนุญาตผู้ใช้ให้ส่งแจ้งเตือนได้
+                const permission = await Notification.requestPermission();
+                if (permission === 'granted') {
+                    // หากผู้ใช้อนุญาต ให้ดึง Token ประจำเครื่อง
+                    const token = await messaging.getToken({ vapidKey: FCM_VAPID_KEY });
+                    if (token) {
+                        // เซฟ Token ลงไปในข้อมูลส่วนตัว (เพื่อเอาไว้ยิงเจาะจงรายคน)
+                        await db.collection('VHVs').doc(String(uid)).update({ fcmToken: token });
+                        console.log("ระบบแจ้งเตือนพร้อมทำงาน");
+                    }
+                }
+            } catch (error) { console.error('การตั้งค่าแจ้งเตือนขัดข้อง:', error); }
+        }
+
+        // 🌟 2. ดักจับข้อความตอนเปิดแอป (Foreground) 🌟
+        messaging.onMessage((payload) => {
+            const title = payload.notification?.title || payload.data?.title || 'แจ้งเตือนใหม่';
+            const body = payload.notification?.body || payload.data?.body || '';
+            if(typeof showToast === 'function') {
+                showToast(`${title}: ${body}`, 'info');
+            } else {
+                alert(`${title}\n${body}`);
+            }
+        });
+
         async function verifyAdminAccess(uid) {
             try {
                 const userDoc = await db.collection('VHVs').doc(String(uid)).get();
@@ -314,6 +345,9 @@
                         const navInventory = document.getElementById('nav-inventory');
                         if (navInventory) navInventory.style.display = 'none';
                     }
+                    
+                    // 🌟 3. เรียกฟังก์ชันขออนุญาตแจ้งเตือนเมื่อดึงข้อมูลเสร็จ 🌟
+                    setupPushNotifications(uid);
                     
                     await loadVHVs();
                     loadDashboardData(); 
@@ -358,10 +392,8 @@
             notifications = [];
             let pendingDiapersCount = 0;
             
-            // 🌟 ดึง ID แจ้งเตือนที่เคยกดรับทราบไปแล้ว (อ้างอิงรายบุคคล)
             let dismissedNotifs = JSON.parse(localStorage.getItem(`dismissed_notifs_${currentUserUid}`) || '[]');
             
-            // 1. ตรวจสอบ อสม. สมัครใหม่ (Pending)
             const pendingVHVs = allVHVsList.filter(v => v.status === 'Pending');
             pendingVHVs.forEach(v => {
                 if(currentUserRole === 'SUB_ADMIN' && !assignedVillages.includes(String(v.village))) return;
@@ -377,11 +409,9 @@
                 }
             });
 
-            // 2. ตรวจสอบข้อมูลผู้ป่วย 
             dashboardPatients.forEach(p => {
                 const isNew = (!p.last_assess || p.last_assess === '-');
                 
-                // แจ้งผู้ป่วยใหม่ (เพิ่งถูกเพิ่มเข้ามา)
                 if (isNew) {
                     let nid = `patient_new_${p.id}`;
                     if (!dismissedNotifs.includes(nid)) {
@@ -395,7 +425,6 @@
                     }
                 }
 
-                // แจ้งเตือน อสม. ลงพื้นที่ประเมินเสร็จแล้ว
                 if (!isNew && p.assigned_vhv_id && p.needs_assessment === false) {
                     const daysSinceAssess = calculateDaysSince(p.last_assess);
                     if (daysSinceAssess <= 3) {
@@ -412,14 +441,12 @@
                     }
                 }
 
-                // ตรวจสอบเคสผ้าอ้อมรออนุมัติ
                 const d = cleanJSON(p.diaper);
                 if (d && d.approve_status === 'รออนุมัติ') {
                     pendingDiapersCount++;
                 }
             });
 
-            // 3. รวมแจ้งเตือนผ้าอ้อม (ใช้จำนวนมาเป็น ID เพื่อให้เตือนใหม่เวลายอดเปลี่ยน)
             if (pendingDiapersCount > 0) {
                 let nid = `diaper_pending_${pendingDiapersCount}`;
                 if (!dismissedNotifs.includes(nid)) {
@@ -432,7 +459,6 @@
                 }
             }
 
-            // เรียงลำดับความสำคัญ
             notifications.sort((a,b) => a.sortOrder - b.sortOrder);
             renderNotifications();
         }
@@ -476,23 +502,18 @@
         }
 
         function clearNotifications() {
-            // 🌟 1. ดึงข้อมูลเดิมจาก LocalStorage
             let dismissedNotifs = JSON.parse(localStorage.getItem(`dismissed_notifs_${currentUserUid}`) || '[]');
             
-            // 🌟 2. เอา ID แจ้งเตือนที่กำลังโชว์อยู่ ใส่เพิ่มเข้าไป
             notifications.forEach(n => {
                 if (!dismissedNotifs.includes(n.nid)) {
                     dismissedNotifs.push(n.nid);
                 }
             });
 
-            // 🌟 3. เคลียร์ข้อมูลเก่าทิ้งบ้าง เพื่อไม่ให้รกเครื่อง (เก็บแค่ 300 อันล่าสุด)
             if (dismissedNotifs.length > 300) dismissedNotifs = dismissedNotifs.slice(-300);
             
-            // 🌟 4. เซฟกลับลง LocalStorage
             localStorage.setItem(`dismissed_notifs_${currentUserUid}`, JSON.stringify(dismissedNotifs));
 
-            // เคลียร์หน้าจอ
             document.getElementById('notif-list').innerHTML = `
                 <div class="p-8 flex flex-col items-center justify-center text-slate-400">
                     <span class="material-symbols-outlined text-[40px] mb-2 text-slate-200">notifications_paused</span>
@@ -550,7 +571,7 @@
                 document.getElementById('loading-state').classList.add('hidden');
                 document.getElementById('dashboard-content').classList.remove('hidden');
 
-                generateNotifications(); // สร้างการแจ้งเตือน
+                generateNotifications(); 
 
                 const urlParams = new URLSearchParams(window.location.search);
                 const openGroup = urlParams.get('openGroup');
