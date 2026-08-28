@@ -362,6 +362,9 @@
                     timestamp: firebase.firestore.FieldValue.serverTimestamp()
                 });
 
+                // ยิง Web Push หาแอดมิน
+await window.sendWebPushByRole(village, 'คำขอสมัคร อสม. ใหม่', `อสม. ${name} (หมู่ที่ ${village}) รอการตรวจสอบและอนุมัติสิทธิ์`, 'ADMIN_ONLY');
+
                 document.getElementById('registration-screen').classList.add('hidden');
                 document.getElementById('admin-trigger').classList.add('hidden');
                 document.getElementById('pending-screen').classList.remove('hidden');
