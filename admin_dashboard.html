@@ -1,4 +1,4 @@
-    <!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="th">
 <head>
     <meta charset="utf-8"/>
@@ -299,12 +299,7 @@
                     liff.getProfile().then(p => {
                         localStorage.setItem('orsomo_uid', p.userId); // 🌟 2. จำรหัสตอนเข้าผ่าน LINE
                         currentUserUid = p.userId;
-                        document.getElementById('header-user-name').innerText = p.displayName;
-                        if(p.pictureUrl) {
-                            document.getElementById('header-profile-pic').src = p.pictureUrl;
-                            document.getElementById('header-profile-pic').classList.remove('hidden');
-                            document.getElementById('header-profile-icon').classList.add('hidden');
-                        }
+                        
                         verifyAdminAccess(p.userId);
                     }).catch(() => bounceToLogin()); 
                 } else if (savedUid) {
@@ -350,6 +345,7 @@
             }
         });
 
+        // 🌟 ดึงข้อมูลและอัปเดต UI หน้าแอดมิน (ฉบับแก้บั๊กไม่แสดงรูป) 🌟
         async function verifyAdminAccess(uid) {
             try {
                 const userDoc = await db.collection('VHVs').doc(String(uid)).get();
@@ -363,6 +359,15 @@
 
                 if (userDoc.exists) {
                     const userData = userDoc.data();
+                    
+                    // 🌟 นำชื่อและรูปภาพจากฐานข้อมูลมาแสดงบนหัวเว็บ (Bypass LINE)
+                    document.getElementById('header-user-name').innerText = userData.name || 'แอดมิน';
+                    if(userData.profile_pic) {
+                        document.getElementById('header-profile-pic').src = userData.profile_pic;
+                        document.getElementById('header-profile-pic').classList.remove('hidden');
+                        document.getElementById('header-profile-icon').classList.add('hidden');
+                    }
+                    
                     const role = String(userData.role || '').toUpperCase();
                     if (role === 'ADMIN') {
                         hasAccess = true; currentUserRole = 'ADMIN'; hospital = userData.hospital_name || hospital;
