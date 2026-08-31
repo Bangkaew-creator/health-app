@@ -8,6 +8,11 @@
     <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700&display=swap" rel="stylesheet"/>
     <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
     
+    <!-- 🌟 เพิ่ม Manifest และ Theme Color สำหรับ PWA 🌟 -->
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#00694a">
+    <link rel="apple-touch-icon" href="https://cdn-icons-png.flaticon.com/512/3063/3063116.png">
+
     <script charset="utf-8" src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore-compat.js"></script>
@@ -116,18 +121,30 @@
         firebase.initializeApp(firebaseConfig);
         const db = firebase.firestore();
 
+        // 🌟 แก้ไขระบบ Bypass Login ให้รองรับ PWA 🌟
         document.addEventListener("DOMContentLoaded", () => {
             liff.init({ liffId: LIFF_ID }).then(() => {
                 const mockUid = localStorage.getItem('dev_mock_uid');
+                const savedUid = localStorage.getItem('orsomo_uid'); // 🌟 ดึงความจำ UID ของเครื่อง
+
                 if (mockUid) {
                     document.getElementById('vhv_uid').value = mockUid;
                     fetchVHVData(mockUid);
                 } else if (liff.isLoggedIn()) {
                     liff.getProfile().then(profile => {
+                        localStorage.setItem('orsomo_uid', profile.userId); // 🌟 จำรหัสเข้าเครื่อง
                         document.getElementById('vhv_uid').value = profile.userId;
                         fetchVHVData(profile.userId); 
                     });
-                } else { liff.login(); }
+                } else if (savedUid) {
+                    // 🌟 ข้ามการ Login เมื่อใช้ PWA
+                    document.getElementById('vhv_uid').value = savedUid;
+                    fetchVHVData(savedUid);
+                } else {
+                    window.location.href = 'index.html'; // ถ้าไม่มีอะไรเลย กลับไปล็อกอิน
+                }
+            }).catch(err => {
+                window.location.href = 'index.html';
             });
         });
 
@@ -188,6 +205,10 @@
 
         async function syncLineProfile() {
             try {
+                if (!liff.isLoggedIn()) {
+                    alert('กรุณาเปิดแอปนี้ผ่านแอป LINE เพื่อดึงรูปโปรไฟล์ครับ');
+                    return;
+                }
                 const profile = await liff.getProfile();
                 const picUrl = profile.pictureUrl;
                 if(picUrl) {
@@ -195,7 +216,7 @@
                     document.getElementById('profile-preview').innerHTML = `<img src="${picUrl}" class="w-full h-full object-cover">`;
                     alert('ดึงรูปโปรไฟล์จากแอป LINE เรียบร้อยแล้ว (อย่าลืมกดปุ่มบันทึกด้านล่างนะครับ)');
                 } else alert('บัญชี LINE ของคุณไม่มีรูปโปรไฟล์ครับ');
-            } catch (error) { alert('ไม่สามารถดึงรูปจาก LINE ได้'); }
+            } catch (error) { alert('ไม่สามารถดึงรูปจาก LINE ได้ (ต้องเปิดผ่าน LINE เท่านั้นครับ)'); }
         }
 
         document.getElementById('profile-form').addEventListener('submit', async function(e) {
