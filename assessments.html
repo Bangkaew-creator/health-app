@@ -8,6 +8,11 @@
     <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700&display=swap" rel="stylesheet"/>
     <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
     
+    <!-- 🌟 เพิ่ม Manifest และ Theme Color สำหรับ PWA 🌟 -->
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#00694a">
+    <link rel="apple-touch-icon" href="https://cdn-icons-png.flaticon.com/512/3063/3063116.png">
+    
     <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore-compat.js"></script>
     <script charset="utf-8" src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
@@ -83,16 +88,32 @@
         let currentUserUid = ""; 
         let vhvCurrentVillage = ""; 
 
+        // 🌟 แก้ไขระบบ Bypass Login ให้รองรับ PWA 🌟
         document.addEventListener("DOMContentLoaded", () => {
             liff.init({ liffId: LIFF_ID }).then(() => {
-                if (liff.isLoggedIn()) {
+                const mockUid = localStorage.getItem('dev_mock_uid');
+                const savedUid = localStorage.getItem('orsomo_uid'); // 🌟 ดึงความจำ UID ของเครื่อง
+
+                if (mockUid) {
+                    currentUserUid = mockUid;
+                    fetchVHVProfile(mockUid).then(() => fetchAssignments());
+                } else if (liff.isLoggedIn()) {
                     liff.getProfile().then(async p => {
-                        currentUserUid = String(p.userId).trim();
-                        await fetchVHVProfile(currentUserUid);
-                        fetchAssignments();
+                        localStorage.setItem('orsomo_uid', p.userId); // 🌟 จำรหัสเข้าเครื่อง
+                        currentUserUid = p.userId;
+                        await fetchVHVProfile(p.userId); 
+                        fetchAssignments(); 
                     });
-                } else { liff.login(); }
-            }).catch(err => { fetchAssignments(); });
+                } else if (savedUid) {
+                    // 🌟 ข้ามการ Login เมื่อใช้ PWA
+                    currentUserUid = savedUid;
+                    fetchVHVProfile(savedUid).then(() => fetchAssignments());
+                } else {
+                    window.location.href = 'index.html'; // ถ้าไม่มีอะไรเลย กลับไปล็อกอิน
+                }
+            }).catch(err => {
+                window.location.href = 'index.html';
+            });
         });
 
         // ดึงข้อมูลเขตพื้นที่รับผิดชอบของ อสม. จาก Firebase
