@@ -177,7 +177,7 @@
     <script>
         firebase.initializeApp(firebaseConfig);
         const db = firebase.firestore();
-        const messaging = firebase.messaging(); // 🌟 ประกาศตัวแปรรับ Messaging
+        const messaging = firebase.messaging(); 
 
         let allPatients = []; 
         let currentFilter = 'all'; 
@@ -251,20 +251,26 @@
             checkNotificationStatus();
         });
 
+        // 🌟 แก้ไข: ตรวจสอบและดึง Profile ให้ปลอดภัยขึ้น
         async function fetchVHVProfile(uid) {
             try {
                 let dynamicHospital = DEFAULT_CONFIGS.HOSPITAL_NAME;
                 try {
                     const sysSnap = await db.collection('SystemConfig').doc('HOSPITAL_NAME').get();
                     if (sysSnap.exists) dynamicHospital = sysSnap.data().value || dynamicHospital;
-                } catch (e) {}
+                } catch (e) {
+                    console.warn("Could not fetch hospital name", e);
+                }
 
                 const docSnap = await db.collection('VHVs').doc(String(uid)).get();
                 if (docSnap.exists) {
                     const data = docSnap.data();
-                    if(data.status === 'Rejected') return window.location.href = 'index.html';
+                    
+                    if(data.status === 'Rejected' || data.status === 'Pending') {
+                        return window.location.href = 'index.html';
+                    }
 
-                    document.getElementById('header-vhv-name').innerText = data.name;
+                    document.getElementById('header-vhv-name').innerText = data.name || 'อสม.';
                     
                     if (data.village_no) {
                         vhvCurrentVillage = data.village_no;
@@ -276,16 +282,16 @@
                     if (data.profile_pic) {
                         picContainer.innerHTML = `<img src="${data.profile_pic}" class="w-full h-full object-cover">`;
                     } else {
-                        picContainer.innerHTML = data.name.substring(0, 1);
+                        picContainer.innerHTML = (data.name ? data.name.substring(0, 1) : 'อ');
                     }
 
-                    // 🌟 6. เรียกฟังก์ชันขออนุญาตแจ้งเตือนเมื่อดึงข้อมูลเสร็จ 🌟
-                    // setupPushNotifications(uid);
-                    updateVillageTotal();
                 } else {
                     setDefaultVHVProfile();
                 }
-            } catch (error) { setDefaultVHVProfile(); }
+            } catch (error) { 
+                console.error("Profile fetch error:", error);
+                setDefaultVHVProfile(); 
+            }
         }
 
         function setDefaultVHVProfile() {
