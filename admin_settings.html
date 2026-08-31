@@ -9,6 +9,11 @@
     <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
     <script charset="utf-8" src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
     
+    <!-- 🌟 เพิ่ม Manifest สำหรับ PWA 🌟 -->
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#00694a">
+    <link rel="apple-touch-icon" href="https://cdn-icons-png.flaticon.com/512/3063/3063116.png">
+    
     <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore-compat.js"></script>
     <script src="config.js"></script>
@@ -45,6 +50,9 @@
             </a>
             <a href="admin_resources.html" class="flex items-center gap-3 px-4 py-3.5 text-slate-400 hover:bg-white/5 hover:text-white rounded-xl font-medium transition-all">
                 <span class="material-symbols-outlined">inventory_2</span> บริหารทรัพยากร
+            </a>
+            <a href="admin_inventory.html" id="nav-inventory" class="flex items-center gap-3 px-4 py-3.5 text-slate-400 hover:bg-white/5 hover:text-white rounded-xl font-medium transition-all">
+                <span class="material-symbols-outlined">warehouse</span> ระบบคลังพัสดุ กปท.
             </a>
             <a href="admin_datacenter.html" class="flex items-center gap-3 px-4 py-3.5 text-slate-400 hover:bg-white/5 hover:text-white rounded-xl font-medium transition-all">
                 <span class="material-symbols-outlined">folder_shared</span> ศูนย์ข้อมูลผู้ป่วย
@@ -100,7 +108,7 @@
                         </div>
                         <div>
                             <h3 class="text-lg font-bold text-slate-800">ข้อมูลส่วนตัว (Profile)</h3>
-                            <p class="text-[11px] text-slate-500">ดึงรูปภาพอัตโนมัติจาก LINE</p>
+                            <p class="text-[11px] text-slate-500">จัดการข้อมูลแอดมิน</p>
                         </div>
                     </div>
                     
@@ -125,6 +133,7 @@
                     </div>
                 </div>
 
+                <!-- (ส่วนตั้งค่า System Config ซ่อนไว้ก่อนเพื่อความกระชับ) -->
                 <div id="system-config-card" class="hidden bg-white rounded-[24px] p-6 shadow-sm border border-slate-200 relative overflow-hidden">
                     <div class="absolute top-0 right-0 w-32 h-32 bg-amber-50 rounded-bl-full -z-10"></div>
                     <div class="flex items-center gap-2 mb-6">
@@ -166,9 +175,6 @@
                         <span class="material-symbols-outlined text-emerald-500 text-[28px]">domain_add</span>
                         <h3 class="text-lg font-bold text-slate-800">จัดการหน่วยงานย่อย (Sub-Admin)</h3>
                     </div>
-                    <p class="text-xs text-slate-500 mb-4 bg-slate-50 p-3 rounded-lg border border-slate-100">
-                        สร้างรหัสผ่านลับ (Secret Code) เพื่อให้เจ้าหน้าที่ รพ.สต. นำไปกรอกตอนลงทะเบียนเข้าใช้งาน โดยระบบจะล็อกสิทธิ์ให้ดูแลได้เฉพาะหมู่ที่กำหนดไว้เท่านั้น
-                    </p>
 
                     <div class="bg-emerald-50 p-4 rounded-xl border border-emerald-100 mb-6">
                         <h4 class="text-sm font-bold text-emerald-800 mb-3 flex items-center gap-1"><span class="material-symbols-outlined text-[18px]">add_circle</span> เพิ่มหน่วยงานย่อยใหม่</h4>
@@ -217,24 +223,24 @@
 
             liff.init({ liffId: LIFF_ID }).then(() => {
                 const mockUid = localStorage.getItem('dev_mock_uid');
+                const savedUid = localStorage.getItem('orsomo_uid'); // 🌟 1. ดึงความจำเหมือนหน้าหลัก
+
                 if (mockUid) { 
                     currentUserUid = mockUid;
                     verifyAdminAccess(mockUid); 
                 } else if (liff.isLoggedIn()) { 
                     liff.getProfile().then(p => {
+                        localStorage.setItem('orsomo_uid', p.userId); // 🌟 2. จำรหัสตอนล็อกอินไลน์
                         currentUserUid = p.userId;
-                        if(p.pictureUrl) {
-                            document.getElementById('header-profile-pic').src = p.pictureUrl;
-                            document.getElementById('header-profile-pic').classList.remove('hidden');
-                            document.getElementById('header-profile-icon').classList.add('hidden');
-                            
-                            document.getElementById('main-profile-pic').src = p.pictureUrl;
-                            document.getElementById('main-profile-pic').classList.remove('hidden');
-                            document.getElementById('main-profile-icon').classList.add('hidden');
-                        }
                         verifyAdminAccess(p.userId);
                     }).catch(() => bounceToLogin()); 
-                } else { bounceToLogin(); }
+                } else if (savedUid) {
+                    // 🌟 3. ถ้าเปิดผ่าน PWA ให้ข้ามการเช็คไลน์ แล้ววิ่งเข้าฟังก์ชันตรวจสอบสิทธิ์เลย
+                    currentUserUid = savedUid;
+                    verifyAdminAccess(savedUid);
+                } else { 
+                    bounceToLogin(); 
+                }
             }).catch(() => bounceToLogin());
         });
 
@@ -255,6 +261,17 @@
                     const userData = userDoc.data();
                     const role = String(userData.role || '').toUpperCase();
                     
+                    // 🌟 อัปเดตรูปภาพจากฐานข้อมูลแทนการดึงจาก liff
+                    if(userData.profile_pic) {
+                        document.getElementById('header-profile-pic').src = userData.profile_pic;
+                        document.getElementById('header-profile-pic').classList.remove('hidden');
+                        document.getElementById('header-profile-icon').classList.add('hidden');
+                        
+                        document.getElementById('main-profile-pic').src = userData.profile_pic;
+                        document.getElementById('main-profile-pic').classList.remove('hidden');
+                        document.getElementById('main-profile-icon').classList.add('hidden');
+                    }
+
                     if (role === 'ADMIN') {
                         hasAccess = true; currentUserRole = 'ADMIN';
                         hospital = userData.hospital_name || hospital;
@@ -280,7 +297,6 @@
 
                 if (hasAccess) {
                     document.getElementById('sidebar-hospital-name').innerText = hospital;
-                    document.getElementById('header-hospital-name').innerText = `หน่วยงาน: ${hospital}`;
                     
                     if (currentUserRole === 'ADMIN') {
                         document.getElementById('sys-hospital').value = hospital;
@@ -306,6 +322,7 @@
             } catch (error) { bounceToLogin(); }
         }
 
+        // --- โค้ดฟังก์ชันเซฟการตั้งค่าต่างๆ คงเดิมไว้ ---
         async function saveProfile() {
             const newName = document.getElementById('profile-name').value.trim();
             const newPhone = document.getElementById('profile-phone').value.trim();
@@ -317,7 +334,7 @@
 
             try {
                 await db.collection('VHVs').doc(currentUserUid).update({ name: newName, phone: newPhone });
-                showToast('อัปเดตข้อมูลส่วนตัวเรียบร้อยแล้ว!'); // 🌟 โชว์ Toast แทน Alert
+                showToast('อัปเดตข้อมูลส่วนตัวเรียบร้อยแล้ว!'); 
             } catch(e) { showToast('เกิดข้อผิดพลาดในการบันทึกข้อมูล', 'error'); }
 
             btn.innerHTML = 'บันทึกโปรไฟล์';
@@ -342,7 +359,6 @@
                 await db.collection('SystemConfig').doc('DIAPER_PRICE').set({ value: parseFloat(dpPrice) });
                 await db.collection('SystemConfig').doc('UNDERPAD_PRICE').set({ value: parseFloat(upPrice) });
                 
-                // 🌟 โชว์ Toast แล้วรีเฟรชหน้าเว็บอัตโนมัติ
                 showToast('บันทึกการตั้งค่าระบบเรียบร้อยแล้ว!', 'success', 'reload');
             } catch(e) {
                 showToast('เกิดข้อผิดพลาดในการบันทึกข้อมูล', 'error');
@@ -433,7 +449,7 @@
 
                 await docRef.set({ value: JSON.stringify(centers) }, {merge: true});
                 
-                showToast('สร้างรหัสสำหรับหน่วยงานย่อยสำเร็จ!'); // 🌟 โชว์ Toast
+                showToast('สร้างรหัสสำหรับหน่วยงานย่อยสำเร็จ!'); 
                 document.getElementById('sub-name').value = '';
                 document.getElementById('sub-villages').value = '';
                 document.getElementById('sub-token').value = '';
@@ -448,7 +464,6 @@
         }
 
         async function deleteSubAgency(code) {
-            // ยังคงใช้ Confirm ดักไว้ก่อนลบข้อมูลสำคัญ
             if (!confirm(`คุณต้องการลบรหัสผ่าน "${code}" ใช่หรือไม่?\n(จะทำให้ไม่สามารถใช้รหัสนี้สมัครใหม่ได้อีก แต่ไม่มีผลกับบัญชีที่สมัครไปแล้ว)`)) return;
             
             try {
@@ -467,7 +482,7 @@
                     centers = centers.filter(c => String(c.secret_code) !== String(code));
                     
                     await docRef.set({ value: JSON.stringify(centers) }, {merge: true});
-                    showToast('ลบหน่วยงานย่อยเรียบร้อยแล้ว'); // 🌟 โชว์ Toast หลังลบสำเร็จ
+                    showToast('ลบหน่วยงานย่อยเรียบร้อยแล้ว'); 
                     loadSubAgencies();
                 }
             } catch(e) { showToast('ลบข้อมูลไม่สำเร็จ', 'error'); }
