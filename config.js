@@ -20,7 +20,7 @@ const firebaseConfig = {
 
 // 🌟 4. ตั้งค่า Web Push Notification (FCM VAPID Key) 🌟
 // นำ Public Key ที่ได้จาก Firebase Console (ในขั้นตอนที่ 1) มาวางตรงนี้ครับ
-const FCM_VAPID_KEY = "เอาคีย์สาธารณะที่ก๊อปปี้มา วางแทนที่ข้อความนี้เลยครับ";
+const FCM_VAPID_KEY = "BF5a8DkIAe7RFCtQncWmot8vhfljefq1Qt18oIZOvgJedAaFn0msZ6HmJlEjpG2v8mJT9ZkpL5KYtlX4DJGB0lM";
 
 // ==========================================
 // ค่าเริ่มต้นของระบบ (Default Fallback)
