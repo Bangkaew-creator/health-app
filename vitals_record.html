@@ -145,14 +145,18 @@
 
             liff.init({ liffId: LIFF_ID }).then(() => {
                 const mockUid = localStorage.getItem('dev_mock_uid');
+                const savedUid = localStorage.getItem('orsomo_uid');
                 if (mockUid) {
                     verifyUserAccess(mockUid);
                 } else if (liff.isLoggedIn()) {
                     liff.getProfile().then(profile => {
+                        localStorage.setItem('orsomo_uid', profile.userId);
                         verifyUserAccess(profile.userId);
                     }).catch(err => console.error(err));
-                }
-            });
+                } else if (savedUid) {
+                    verifyUserAccess(savedUid);
+                } else { window.location.href = 'index.html'; }
+            }).catch(() => { window.location.href = 'index.html'; });
 
             loadPatientData();
         });

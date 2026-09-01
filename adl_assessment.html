@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+    <!DOCTYPE html>
 <html lang="th">
 <head>
     <meta charset="utf-8"/>
@@ -8,11 +8,6 @@
     <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700&display=swap" rel="stylesheet"/>
     <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
     <script charset="utf-8" src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
-
-    <!-- 🌟 เพิ่ม Manifest และ Theme Color สำหรับ PWA 🌟 -->
-    <link rel="manifest" href="manifest.json">
-    <meta name="theme-color" content="#00694a">
-    <link rel="apple-touch-icon" href="https://cdn-icons-png.flaticon.com/512/3063/3063116.png">
 
     <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore-compat.js"></script>
@@ -105,6 +100,7 @@
         const patientId = urlParams.get('id');
         let currentPatientData = null;
         
+        // 🌟 ตัวแปรเก็บข้อมูลผู้ประเมิน 🌟
         let currentUserUid = "";
         let currentUserName = "เจ้าหน้าที่";
 
@@ -191,33 +187,29 @@
             }
         ];
 
-        // 🌟 แก้ไขระบบ Bypass Login ให้รองรับ PWA 🌟
         document.addEventListener("DOMContentLoaded", () => {
             document.getElementById('assess-date').valueAsDate = new Date();
             renderQuestions();
 
             liff.init({ liffId: LIFF_ID }).then(() => {
                 const mockUid = localStorage.getItem('dev_mock_uid');
-                const savedUid = localStorage.getItem('orsomo_uid'); // 🌟 ดึงความจำ UID ของเครื่อง
-
+                const savedUid = localStorage.getItem('orsomo_uid');
                 if (mockUid) {
                     verifyUserAccess(mockUid);
                 } else if (liff.isLoggedIn()) {
                     liff.getProfile().then(profile => {
-                        localStorage.setItem('orsomo_uid', profile.userId); // 🌟 จำรหัสเข้าเครื่อง
+                        localStorage.setItem('orsomo_uid', profile.userId);
                         verifyUserAccess(profile.userId);
                     }).catch(err => console.error(err));
                 } else if (savedUid) {
-                    // 🌟 ข้ามการ Login เมื่อใช้ PWA
                     verifyUserAccess(savedUid);
-                } else {
-                    window.location.href = 'index.html'; // ถ้าไม่มีอะไรเลย กลับไปล็อกอิน
-                }
-            });
+                } else { window.location.href = 'index.html'; }
+            }).catch(() => { window.location.href = 'index.html'; });
 
             loadPatientData();
         });
 
+        // 🌟 ดึงข้อมูลผู้ประเมินจาก Firebase VHVs 🌟
         async function verifyUserAccess(uid) {
             currentUserUid = uid;
             try {
@@ -308,6 +300,7 @@
                     const score = parseInt(selected.value);
                     currentScore += score;
                     
+                    // เก็บข้อความคำตอบสำหรับประวัติรายข้อ
                     const selectedText = q.choices.find(c => c.score === score).text;
                     currentAnswers.push({ q: q.q, score: score, a: selectedText });
                 } else {
@@ -361,6 +354,7 @@
             const thaiYear = parseInt(dateParts[0]) + 543;
             const formattedDate = `${dateParts[2]}/${dateParts[1]}/${thaiYear}`;
 
+            // 🌟 1. สร้างก้อนข้อมูลสำหรับเก็บใน Collection Assessments 🌟
             const assessmentData = {
                 patient_id: patientId,
                 type: 'ADL',
@@ -368,17 +362,19 @@
                 score1: currentScore,
                 result: currentGroup,
                 answers: currentAnswers,
-                assessor_uid: currentUserUid,      
-                assessor_name: currentUserName,    
+                assessor_uid: currentUserUid,      // เก็บ UID คนประเมิน
+                assessor_name: currentUserName,    // เก็บชื่อคนประเมิน
                 timestamp: firebase.firestore.FieldValue.serverTimestamp()
             };
 
             try {
                 const batch = db.batch();
                 
+                // เก็บลง Assessments
                 const newAssessRef = db.collection('Assessments').doc();
                 batch.set(newAssessRef, assessmentData);
                 
+                // อัปเดตลง Patients
                 const patientRef = db.collection('Patients').doc(String(patientId));
                 batch.update(patientRef, {
                     adl: String(currentScore),

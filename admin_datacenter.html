@@ -186,8 +186,10 @@
 
             liff.init({ liffId: LIFF_ID }).then(() => {
                 const mockUid = localStorage.getItem('dev_mock_uid');
+                const savedUid = localStorage.getItem('orsomo_uid');
                 if (mockUid) { verifyAdminAccess(mockUid); } 
-                else if (liff.isLoggedIn()) { liff.getProfile().then(p => verifyAdminAccess(p.userId)).catch(() => bounceToLogin()); } 
+                else if (liff.isLoggedIn()) { liff.getProfile().then(p => { localStorage.setItem('orsomo_uid', p.userId); verifyAdminAccess(p.userId); }).catch(() => bounceToLogin()); } 
+                else if (savedUid) { verifyAdminAccess(savedUid); }
                 else { bounceToLogin(); }
             }).catch(() => bounceToLogin());
         });

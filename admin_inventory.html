@@ -291,10 +291,12 @@
             document.getElementById('sidebar-hospital-name').innerText = DEFAULT_CONFIGS.HOSPITAL_NAME;
             liff.init({ liffId: LIFF_ID }).then(() => {
                 const mockUid = localStorage.getItem('dev_mock_uid');
+                const savedUid = localStorage.getItem('orsomo_uid');
                 if (mockUid) verifyAdminAccess(mockUid);
-                else if (liff.isLoggedIn()) liff.getProfile().then(p => { currentUserName = p.displayName; verifyAdminAccess(p.userId); }).catch(() => window.location.href='index.html');
+                else if (liff.isLoggedIn()) liff.getProfile().then(p => { localStorage.setItem('orsomo_uid', p.userId); currentUserName = p.displayName; verifyAdminAccess(p.userId); }).catch(() => window.location.href='index.html');
+                else if (savedUid) verifyAdminAccess(savedUid);
                 else window.location.href='index.html';
-            });
+            }).catch(() => window.location.href='index.html');
         });
 
         async function verifyAdminAccess(uid) {
