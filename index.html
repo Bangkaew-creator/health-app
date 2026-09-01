@@ -350,7 +350,7 @@
                 });
 
                 if (typeof window.sendWebPushByRole === 'function') {
-                    await window.sendWebPushByRole(village, 'คำขอสมัคร อสม. ใหม่', `อสม. ${name} (หมู่ที่ ${village}) รอการตรวจสอบและอนุมัติสิทธิ์`, 'ADMIN_ONLY');
+                    await window.sendWebPushByRole(village, '🔐 อสม. สมัครใหม่รอการตรวจสอบ', `อสม. ${name} (หมู่ที่ ${village}) รอการตรวจสอบและอนุมัติสิทธิ์`, 'ADMIN_ONLY');
                 }
 
                 document.getElementById('registration-screen').classList.add('hidden');

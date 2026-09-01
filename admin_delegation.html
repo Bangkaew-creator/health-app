@@ -601,7 +601,7 @@ const pNameForPush = targetPatient ? targetPatient.name : 'ผู้ป่วย
 const pVilForPush = targetPatient ? targetPatient.village_no : '-';
 
 // ยิง Web Push หา อสม. ท่านนั้นโดยเฉพาะ
-await window.sendWebPushByRole(pVilForPush, 'มีการมอบหมายงานใหม่', `แอดมินได้มอบหมายให้คุณลงพื้นที่ประเมิน ${pNameForPush} (หมู่ ${pVilForPush})`, 'VHV_SPECIFIC', vhvId);
+await window.sendWebPushByRole(pVilForPush, '📋 มอบหมายงาน อสม.', `แอดมินได้มอบหมายให้คุณลงพื้นที่ประเมิน ${pNameForPush} (หมู่ ${pVilForPush})`, 'VHV_SPECIFIC', vhvId);
                 
                 let lineToken = "";
                 try {
