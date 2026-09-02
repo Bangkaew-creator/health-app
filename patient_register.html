@@ -241,7 +241,7 @@
         };
 
         try {
-            docRef.set(patientData).catch(e => console.error("Sync error", e));
+            await docRef.set(patientData);
             
             alert(`ลงทะเบียนผู้ป่วยใหม่เรียบร้อยแล้ว!\n(หากใช้งานออฟไลน์ ข้อมูลจะถูกอัปเดตอัตโนมัติเมื่อมีสัญญาณเน็ต)`);
             goBack(); 

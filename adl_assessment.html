@@ -383,7 +383,7 @@
                     last_assess: formattedDate
                 });
 
-                batch.commit().catch(e => console.error(e));
+                await batch.commit();
 
                 // ปิดท้าย: ส่งกลับไปหน้าข้อมูลผู้ป่วย
                 window.location.href = `patient_profile.html?id=${patientId}`;

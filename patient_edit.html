@@ -764,10 +764,10 @@
             };
 
             try {
-                db.collection('Patients').doc(String(patientId)).update(updateData).catch(e => console.error(e));
+                await db.collection('Patients').doc(String(patientId)).update(updateData);
                 // ตรวจสอบว่ามีสถานะ "รออนุมัติ" หรือไม่ ก่อนยิงแจ้งเตือน
-if (diaperObj.approve_status === "รออนุมัติ") {
-}
+                if (diaperObj.approve_status === "รออนุมัติ") {
+                }
                 alert('อัปเดตข้อมูลเรียบร้อยแล้ว!');
                 goBack();
             } catch (err) { 
