@@ -240,7 +240,51 @@
         </div>
     </main>
 
-    <!-- Modal หมายเหตุ -->
+    
+<!-- Modal มอบหมายงาน อสม. -->
+<div id="assign-modal" class="fixed inset-0 bg-black/50 z-[100] hidden flex items-center justify-center opacity-0 transition-opacity duration-300">
+    <div id="assign-modal-content" class="bg-white rounded-[24px] w-[90%] max-w-sm p-6 transform scale-95 transition-transform duration-300 shadow-2xl max-h-[90vh] overflow-y-auto">
+        <h3 class="text-lg font-bold text-purple-700 mb-4 flex items-center gap-2">
+            <span class="material-symbols-outlined">assignment_ind</span> มอบหมายงาน
+        </h3>
+        
+        <div class="mb-4">
+            <label class="block text-xs font-bold text-gray-500 mb-1">เลือก อสม. ผู้รับผิดชอบ (เฉพาะหมู่ <span id="assign-village-label">-</span>)</label>
+            <select id="assign-vhv-select" class="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm font-bold text-gray-700 focus:ring-2 focus:ring-purple-500 shadow-sm outline-none">
+                <option value="">กำลังโหลด...</option>
+            </select>
+        </div>
+
+        <div class="mb-4">
+            <label class="block text-xs font-bold text-gray-500 mb-2">งานที่ต้องทำ (เลือกได้หลายข้อ)</label>
+            <div class="space-y-2 bg-gray-50 p-3 rounded-xl border border-gray-100">
+                <label class="flex items-center gap-2 text-sm font-medium text-gray-700 cursor-pointer">
+                    <input type="checkbox" name="assign-tasks" value="คัดกรอง ADL" class="rounded text-purple-600 focus:ring-purple-500 w-4 h-4">
+                    คัดกรอง ADL
+                </label>
+                <label class="flex items-center gap-2 text-sm font-medium text-gray-700 cursor-pointer">
+                    <input type="checkbox" name="assign-tasks" value="คัดกรอง 2Q/9Q" class="rounded text-purple-600 focus:ring-purple-500 w-4 h-4">
+                    คัดกรอง 2Q/9Q
+                </label>
+                <label class="flex items-center gap-2 text-sm font-medium text-gray-700 cursor-pointer">
+                    <input type="checkbox" name="assign-tasks" value="บันทึก Vital Signs" class="rounded text-purple-600 focus:ring-purple-500 w-4 h-4">
+                    บันทึก Vital Signs
+                </label>
+                <label class="flex items-center gap-2 text-sm font-medium text-gray-700 cursor-pointer">
+                    <input type="checkbox" name="assign-tasks" value="ติดตามเยี่ยมบ้านทั่วไป" class="rounded text-purple-600 focus:ring-purple-500 w-4 h-4" checked>
+                    ติดตามเยี่ยมบ้านทั่วไป
+                </label>
+            </div>
+        </div>
+
+        <div class="flex gap-2 mt-6">
+            <button onclick="closeAssignModal()" class="flex-1 py-3 bg-gray-100 text-gray-600 rounded-xl font-bold hover:bg-gray-200 transition-colors">ยกเลิก</button>
+            <button id="btn-save-assign" onclick="saveDelegation()" class="flex-1 py-3 bg-purple-600 text-white rounded-xl font-bold hover:bg-purple-700 transition-colors shadow-md">มอบหมาย</button>
+        </div>
+    </div>
+</div>
+
+<!-- Modal หมายเหตุ -->
     <div id="remark-modal" class="fixed inset-0 bg-black/50 z-[100] hidden flex items-center justify-center opacity-0 transition-opacity duration-300">
         <div id="remark-modal-content" class="bg-white rounded-[24px] w-[90%] max-w-sm p-6 transform scale-95 transition-transform duration-300 shadow-2xl">
             <h3 class="text-lg font-bold text-amber-600 mb-2 flex items-center gap-2">
@@ -253,6 +297,11 @@
             <div class="flex gap-3 mt-6">
                 <button onclick="closeRemarkModal()" class="flex-1 py-3 bg-gray-100 text-gray-700 rounded-xl font-bold hover:bg-gray-200 transition-colors">ยกเลิก</button>
                 <button onclick="saveRemark()" id="btn-save-remark" class="flex-1 py-3 bg-amber-500 text-white rounded-xl font-bold hover:bg-amber-600 transition-colors flex justify-center items-center gap-2">บันทึก</button>
+                <button id="btn-assign-vhv" onclick="openAssignModal()" class="col-span-3 hidden bg-purple-600 text-white py-2 rounded-xl text-[12px] font-bold shadow-sm hover:bg-purple-700 active:scale-95 transition-all flex flex-col items-center justify-center gap-1 mt-1">
+                    <div class="flex items-center gap-1">
+                        <span class="material-symbols-outlined text-[18px]">assignment_ind</span> มอบหมายงาน อสม.
+                    </div>
+                </button>
             </div>
         </div>
     </div>
@@ -456,6 +505,10 @@
                     const data = userDoc.data();
                     currentUserRole = String(data.role || 'VHV').toUpperCase();
                     currentUserName = data.name || "เจ้าหน้าที่";
+                }
+                if (currentUserRole === 'ADMIN' || currentUserRole === 'SUB_ADMIN') {
+                    const btn = document.getElementById('btn-assign-vhv');
+                    if (btn) btn.classList.remove('hidden');
                 }
             } catch(e) { console.error(e); }
         }
@@ -1380,7 +1433,132 @@
             }
         }
 
-        function openStatusModal() {
+        
+// ==================== มอบหมายงาน ====================
+let cachedVHVs = null;
+
+async function openAssignModal() {
+    if (!currentPatientData) return;
+    
+    document.getElementById('assign-village-label').innerText = currentPatientData.village_no || '-';
+    const select = document.getElementById('assign-vhv-select');
+    
+    const modal = document.getElementById('assign-modal');
+    const content = document.getElementById('assign-modal-content');
+    modal.classList.remove('hidden');
+    setTimeout(() => {
+        modal.classList.remove('opacity-0');
+        content.classList.remove('scale-95');
+    }, 10);
+
+    // Fetch VHVs if not cached
+    if (!cachedVHVs) {
+        select.innerHTML = '<option value="">กำลังโหลด...</option>';
+        try {
+            const vSnap = await db.collection('VHVs').get();
+            cachedVHVs = [];
+            vSnap.forEach(doc => cachedVHVs.push(doc.data()));
+        } catch(e) {
+            console.error(e);
+            select.innerHTML = '<option value="">เกิดข้อผิดพลาดในการโหลด อสม.</option>';
+            return;
+        }
+    }
+
+    // Filter VHVs by patient's village
+    const pVil = String(currentPatientData.village_no).trim();
+    const villageVHVs = cachedVHVs.filter(v => String(v.village_no).trim() === pVil && String(v.status) === 'Active' && (v.role === 'VHV' || !v.role));
+    
+    if (villageVHVs.length === 0) {
+        select.innerHTML = '<option value="">ไม่มี อสม. ประจำหมู่บ้านนี้ในระบบ</option>';
+    } else {
+        let options = '<option value="">-- เลือก อสม. --</option>';
+        villageVHVs.forEach(v => {
+            const isSelected = String(v.uid) === String(currentPatientData.assigned_vhv_id) ? 'selected' : '';
+            options += `<option value="${v.uid}" ${isSelected}>${v.name}</option>`;
+        });
+        select.innerHTML = options;
+    }
+}
+
+function closeAssignModal() {
+    const modal = document.getElementById('assign-modal');
+    const content = document.getElementById('assign-modal-content');
+    modal.classList.add('opacity-0');
+    content.classList.add('scale-95');
+    setTimeout(() => modal.classList.add('hidden'), 300);
+}
+
+async function saveDelegation() {
+    const vhvId = document.getElementById('assign-vhv-select').value;
+    if (!vhvId) { alert("กรุณาเลือก อสม."); return; }
+
+    const checkboxes = document.querySelectorAll('input[name="assign-tasks"]:checked');
+    const checkedTasks = Array.from(checkboxes).map(c => c.value);
+    
+    if (checkedTasks.length === 0) { alert("กรุณาเลือกงานอย่างน้อย 1 งาน"); return; }
+
+    const btn = document.getElementById('btn-save-assign');
+    const oldText = btn.innerHTML;
+    btn.innerHTML = '<div class="loader-small" style="width:16px; height:16px; border-width:2px; border-bottom-color:white; display:inline-block; vertical-align:middle; margin-right:5px;"></div> กำลังบันทึก...';
+    btn.disabled = true;
+
+    try {
+        const taskDesc = checkedTasks.join(', ');
+        
+        // 1. Update Patient Doc
+        await db.collection('Patients').doc(String(patientId)).update({
+            assigned_vhv_id: String(vhvId),
+            needs_assessment: true,
+            task_desc: taskDesc,
+            tasks_required: checkedTasks,
+            task_date: (() => { const d = new Date(); return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); })()
+        });
+
+        currentPatientData.assigned_vhv_id = String(vhvId);
+
+        // 2. Send LINE Notification via GAS
+        let lineToken = "";
+        try {
+            const sysSnap = await db.collection('SystemConfig').doc('LINE_CHANNEL_ACCESS_TOKEN').get();
+            if(sysSnap.exists) lineToken = sysSnap.data().value || "";
+        } catch(err) {}
+
+        if (lineToken && API_URL) {
+            const pName = currentPatientData.name || 'ไม่ระบุชื่อ';
+            const pHouse = currentPatientData.house_no || '-';
+            const pVillage = currentPatientData.village_no || '-';
+
+            await fetch(API_URL, {
+                method: 'POST',
+                headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+                body: JSON.stringify({
+                    action: 'updatePatientVHV',
+                    patientId: patientId,
+                    vhvId: vhvId,
+                    taskDesc: taskDesc,
+                    lineToken: lineToken,
+                    pName: pName,
+                    pHouse: pHouse,
+                    pVillage: pVillage
+                })
+            });
+        }
+
+        alert("มอบหมายงานสำเร็จ!");
+        closeAssignModal();
+        location.reload(); // Reload to update UI completely
+
+    } catch(e) {
+        console.error(e);
+        alert("เกิดข้อผิดพลาดในการมอบหมายงาน");
+    } finally {
+        btn.innerHTML = oldText;
+        btn.disabled = false;
+    }
+}
+
+function openStatusModal() {
             const modal = document.getElementById('status-modal');
             const content = document.getElementById('status-modal-content');
             modal.classList.remove('hidden');
