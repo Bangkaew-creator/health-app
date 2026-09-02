@@ -1116,7 +1116,7 @@
         function cleanAndParseJSON(rawStr) {
             if (!rawStr || String(rawStr).trim() === '') return null;
             let cleanStr = String(rawStr).trim();
-            if (cleanStr.includes('""')) { cleanStr = cleanStr.replace(/""/g, '"'); }
+            // Removed dangerous replace that breaks empty JSON strings
             if (cleanStr.startsWith('"') && cleanStr.endsWith('"')) { cleanStr = cleanStr.substring(1, cleanStr.length - 1); }
             try { return JSON.parse(cleanStr); } catch(e) { return null; }
         }
@@ -1235,9 +1235,7 @@
                 const diaperItems = document.getElementById('profile-diaper-items');
                 if (data.diaper) {
                     try {
-                        let cleanDiaperStr = typeof data.diaper === 'string' ? data.diaper.replace(/""/g, '"') : JSON.stringify(data.diaper);
-                        if (cleanDiaperStr.startsWith('"') && cleanDiaperStr.endsWith('"')) { cleanDiaperStr = cleanDiaperStr.substring(1, cleanDiaperStr.length - 1); }
-                        const dp = typeof data.diaper === 'object' ? data.diaper : JSON.parse(cleanDiaperStr);
+                        const dp = (typeof data.diaper === 'object') ? data.diaper : (cleanAndParseJSON(data.diaper) || {});
                         
                         diaperStatus.innerText = dp.result || 'ยังไม่มีผลประเมิน';
                         let reqHtml = [];
