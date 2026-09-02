@@ -4,7 +4,61 @@
     <meta charset="utf-8"/>
     <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
     <title>ศูนย์ข้อมูลผู้ป่วย - จัดการระบบ</title>
-    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.tailwindcss.com">
+// ==================== ส่งออก CSV ====================
+function exportToCSV() {
+    if (!allPatients || allPatients.length === 0) {
+        alert("ไม่มีข้อมูลสำหรับส่งออก");
+        return;
+    }
+
+    const currentFilterStatus = document.getElementById('status-filter').value;
+    const filteredPatients = allPatients.filter(p => {
+        const pStatus = p.status || 'Active';
+        return currentFilterStatus === 'all' || pStatus === currentFilterStatus;
+    });
+
+    if (filteredPatients.length === 0) {
+        alert("ไม่มีข้อมูลในสถานะที่เลือก");
+        return;
+    }
+
+    // Define CSV Headers
+    let csvContent = "\uFEFF"; // BOM for UTF-8 Excel compatibility
+    csvContent += "เลขบัตรประชาชน,คำนำหน้า,ชื่อ,นามสกุล,วันเกิด,ที่อยู่,หมู่,รหัสไปรษณีย์,พิกัด,กลุ่มผู้ป่วย,ประเมิน ADL,สิทธิ์ผ้าอ้อม,โรคประจำตัว,ยาที่ใช้,สถานะ,รหัสอสม.ที่ดูแล\n";
+
+    filteredPatients.forEach(p => {
+        const idcard = `"${p.id || ''}"`;
+        const prefix = `"${p.prefix || ''}"`;
+        const fname = `"${p.fname || p.name || ''}"`;
+        const lname = `"${p.lname || ''}"`;
+        const dob = `"${p.dob || ''}"`;
+        const house = `"${p.house_no || ''}"`;
+        const moo = `"${p.village_no || ''}"`;
+        const zip = `"${p.zipcode || ''}"`;
+        const coords = `"${p.lat ? p.lat + ',' + p.lng : ''}"`;
+        const group = `"${p.group || ''}"`;
+        const adl = `"${p.adl || ''}"`;
+        const diaper = `"${p.diaper_status || ''}"`;
+        const disease = `"${p.congenital_disease || ''}"`;
+        const meds = `"${p.medicines || ''}"`;
+        const status = `"${p.status || 'Active'}"`;
+        const vhv = `"${p.assigned_vhv_id || ''}"`;
+
+        csvContent += `${idcard},${prefix},${fname},${lname},${dob},${house},${moo},${zip},${coords},${group},${adl},${diaper},${disease},${meds},${status},${vhv}\n`;
+    });
+
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.setAttribute("href", url);
+    link.setAttribute("download", `patient_data_${new Date().toISOString().split('T')[0]}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+}
+
+</script>
     <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700&display=swap" rel="stylesheet"/>
     <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
     <script charset="utf-8" src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
@@ -90,7 +144,10 @@
                 </div>
                 
                 <div class="flex gap-2">
-                    <button onclick="openImportModal()" class="bg-blue-50 text-blue-700 hover:bg-blue-100 px-4 py-3 rounded-xl text-sm font-bold shadow-sm transition-all border border-blue-200 flex justify-center items-center gap-1.5 active:scale-95 whitespace-nowrap">
+                    <button onclick="exportToCSV()" class="bg-emerald-50 text-emerald-700 hover:bg-emerald-100 px-4 py-3 rounded-xl text-sm font-bold shadow-sm transition-all border border-emerald-200 flex justify-center items-center gap-1.5 active:scale-95 whitespace-nowrap">
+                            <span class="material-symbols-outlined text-[18px]">download</span> ส่งออก CSV
+                        </button>
+                        <button onclick="openImportModal()" class="bg-blue-50 text-blue-700 hover:bg-blue-100 px-4 py-3 rounded-xl text-sm font-bold shadow-sm transition-all border border-blue-200 flex justify-center items-center gap-1.5 active:scale-95 whitespace-nowrap">
                         <span class="material-symbols-outlined text-[18px]">upload_file</span> นำเข้าข้อมูล
                     </button>
                     <button onclick="addNewPatient()" class="bg-[#00694a] hover:bg-[#005239] text-white px-4 py-3 rounded-xl text-sm font-bold shadow-sm transition-all flex justify-center items-center gap-1.5 active:scale-95 whitespace-nowrap">
@@ -171,6 +228,7 @@
 
     <script>
         firebase.initializeApp(firebaseConfig);
+        firebase.firestore().enablePersistence({ synchronizeTabs: true }).catch(err => console.warn('Offline persistence error:', err.code));
         const db = firebase.firestore();
 
         let allPatients = []; 
@@ -567,5 +625,5 @@
             reader.readAsArrayBuffer(selectedExcelFile);
         }
     </script>
-</body>
+<script>\n\n</script>\n</body>
 </html>

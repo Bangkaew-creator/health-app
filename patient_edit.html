@@ -251,6 +251,7 @@
 
     <script>
         firebase.initializeApp(firebaseConfig);
+        firebase.firestore().enablePersistence({ synchronizeTabs: true }).catch(err => console.warn('Offline persistence error:', err.code));
         const db = firebase.firestore();
 
         const urlParams = new URLSearchParams(window.location.search);
@@ -763,7 +764,7 @@
             };
 
             try {
-                await db.collection('Patients').doc(String(patientId)).update(updateData);
+                db.collection('Patients').doc(String(patientId)).update(updateData).catch(e => console.error(e));
                 // ตรวจสอบว่ามีสถานะ "รออนุมัติ" หรือไม่ ก่อนยิงแจ้งเตือน
 if (diaperObj.approve_status === "รออนุมัติ") {
 }

@@ -26,6 +26,7 @@
     <script>
         // 1. เชื่อมต่อ Firebase
         firebase.initializeApp(firebaseConfig);
+        firebase.firestore().enablePersistence({ synchronizeTabs: true }).catch(err => console.warn('Offline persistence error:', err.code));
         const db = firebase.firestore();
 
         function logMessage(msg) {

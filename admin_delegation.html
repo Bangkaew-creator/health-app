@@ -184,6 +184,7 @@
 
     <script>
         firebase.initializeApp(firebaseConfig);
+        firebase.firestore().enablePersistence({ synchronizeTabs: true }).catch(err => console.warn('Offline persistence error:', err.code));
         const db = firebase.firestore();
 
         let allPatients = []; let allVHVs = []; let newCases = []; let reassessCases = []; let currentTab = 'new';

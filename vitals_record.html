@@ -130,6 +130,7 @@
 
     <script>
         firebase.initializeApp(firebaseConfig);
+        firebase.firestore().enablePersistence({ synchronizeTabs: true }).catch(err => console.warn('Offline persistence error:', err.code));
         const db = firebase.firestore();
 
         const urlParams = new URLSearchParams(window.location.search);
@@ -242,7 +243,7 @@
                     last_assess: formattedDate
                 });
 
-                await batch.commit();
+                batch.commit().catch(e => console.error(e));
                 
                 alert("บันทึกข้อมูลสุขภาพสำเร็จ!");
                 window.location.href = `patient_profile.html?id=${patientId}`;
