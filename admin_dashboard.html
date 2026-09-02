@@ -249,7 +249,7 @@
         function cleanJSON(rawStr) {
             if (!rawStr || String(rawStr).trim() === '') return null;
             let cleanStr = String(rawStr).trim();
-            if (cleanStr.includes('""')) cleanStr = cleanStr.replace(/""/g, '"');
+            // Removed dangerous replace
             if (cleanStr.startsWith('"') && cleanStr.endsWith('"')) cleanStr = cleanStr.substring(1, cleanStr.length - 1);
             try { return JSON.parse(cleanStr); } catch(e) { return null; }
         }
@@ -556,9 +556,14 @@
 
                         if (p.diaper) {
                             try {
-                                let dpStr = typeof p.diaper === 'string' ? p.diaper.replace(/""/g, '"') : JSON.stringify(p.diaper);
-                                if (dpStr.startsWith('"') && dpStr.endsWith('"')) dpStr = dpStr.substring(1, dpStr.length - 1);
-                                const dp = JSON.parse(dpStr);
+                                let dp = {};
+                                if (typeof p.diaper === 'object') {
+                                    dp = p.diaper;
+                                } else {
+                                    let dpStr = String(p.diaper).trim();
+                                    if (dpStr.startsWith('"') && dpStr.endsWith('"')) { dpStr = dpStr.substring(1, dpStr.length - 1); }
+                                    dp = JSON.parse(dpStr);
+                                }
                                 if (dp.approve_status === 'รออนุมัติ') cPending++;
                             } catch(e) {}
                         }

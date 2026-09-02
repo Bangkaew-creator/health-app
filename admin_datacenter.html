@@ -338,7 +338,7 @@ function exportToCSV() {
         function cleanJSON(rawStr) {
             if (!rawStr || String(rawStr).trim() === '') return null;
             let cleanStr = String(rawStr).trim();
-            if (cleanStr.includes('""')) cleanStr = cleanStr.replace(/""/g, '"');
+            // Removed dangerous replace
             if (cleanStr.startsWith('"') && cleanStr.endsWith('"')) cleanStr = cleanStr.substring(1, cleanStr.length - 1);
             try { return JSON.parse(cleanStr); } catch(e) { return null; }
         }
