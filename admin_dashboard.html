@@ -273,7 +273,7 @@
             // เช็คว่าเคยอนุญาตไปหรือยัง ถ้ายังให้โชว์ปุ่มในกระดิ่งแจ้งเตือน
             function checkNotificationStatus() {
                 const btnPush = document.getElementById('btn-enable-push');
-                if (Notification.permission === 'default') {
+                if (window.Notification && Notification.permission === 'default') {
                     if (btnPush) btnPush.classList.remove('hidden');
                 } else {
                     if (btnPush) btnPush.classList.add('hidden');

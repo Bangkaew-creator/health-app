@@ -171,12 +171,10 @@
             <span class="text-[10px] font-medium">ตั้งค่า</span>
         </button>
     </nav>
-
     <script>
         firebase.initializeApp(firebaseConfig);
         firebase.firestore().enablePersistence({ synchronizeTabs: true }).catch(err => console.warn('Offline persistence error:', err.code));
         const db = firebase.firestore();
-         
 
         let allPatients = []; 
         let currentFilter = 'all'; 
@@ -186,14 +184,17 @@
         document.addEventListener("DOMContentLoaded", () => {
             liff.init({ liffId: LIFF_ID }).then(() => {
                 const mockUid = localStorage.getItem('dev_mock_uid');
-                const savedUid = localStorage.getItem('orsomo_uid'); // 🌟 1. ดึงความจำ UID
+                const savedUid = localStorage.getItem('orsomo_uid');
 
                 if (mockUid) {
                     vhvCurrentUid = mockUid;
                     fetchVHVProfile(mockUid).then(() => fetchPatients());
+                } else if (savedUid) {
+                    vhvCurrentUid = savedUid;
+                    fetchVHVProfile(savedUid).then(() => fetchPatients());
                 } else if (liff.isLoggedIn()) {
                     liff.getProfile().then(async profile => {
-                        localStorage.setItem('orsomo_uid', profile.userId); // 🌟 2. จำรหัสตอนเข้าผ่าน LINE
+                        localStorage.setItem('orsomo_uid', profile.userId);
                         vhvCurrentUid = profile.userId;
                         await fetchVHVProfile(profile.userId); 
                         fetchPatients(); 
@@ -201,10 +202,6 @@
                         setDefaultVHVProfile();
                         fetchPatients();
                     });
-                } else if (savedUid) {
-                    // 🌟 3. ข้าม Login เมื่อใช้ผ่าน PWA (แอปหน้าจอโฮม) 🌟
-                    vhvCurrentUid = savedUid;
-                    fetchVHVProfile(savedUid).then(() => fetchPatients());
                 } else {
                     setDefaultVHVProfile();
                     fetchPatients();
@@ -215,18 +212,16 @@
             });
         });
 
-        // 🌟 เช็คว่าเคยอนุญาตไปหรือยัง ถ้ายังให้โชว์แบนเนอร์ 🌟
         function checkNotificationStatus() {
             const banner = document.getElementById('push-permission-banner');
-            if (Notification.permission === 'default') {
-                banner.classList.remove('hidden'); // โชว์แบนเนอร์ให้กด
+            if (window.Notification && Notification.permission === 'default') {
+                banner.classList.remove('hidden'); 
             } else {
-                banner.classList.add('hidden'); // ซ่อนแบนเนอร์
+                banner.classList.add('hidden'); 
             }
         }
 
-        // 🌟 ฟังก์ชันขออนุญาตแจ้งเตือน (ทำงานเมื่อถูกคลิกจากปุ่มเท่านั้น แก้บั๊ก iOS) 🌟
-        function fetchVHVProfile(uid) {
+        async function fetchVHVProfile(uid) {
             try {
                 let dynamicHospital = DEFAULT_CONFIGS.HOSPITAL_NAME;
                 try {

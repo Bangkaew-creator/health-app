@@ -139,7 +139,10 @@
                     liff.getProfile().then(profile => {
                         localStorage.setItem('orsomo_uid', profile.userId);
                         processLoginRouting(profile.userId);
-                    }).catch(() => showRegistrationUI());
+                    }).catch(() => {
+                        if (savedUid) processLoginRouting(savedUid);
+                        else showRegistrationUI();
+                    });
                 } else if (savedUid) {
                     // 🌟 3. ถ้าเปิดแอป PWA แล้วจำ UID ได้ ให้พุ่งเข้า Dashboard เลย ไม่ต้องล็อกอิน LINE!
                     processLoginRouting(savedUid);
