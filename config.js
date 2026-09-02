@@ -20,7 +20,7 @@ const firebaseConfig = {
 
 // 🌟 4. ตั้งค่า Web Push Notification (FCM VAPID Key) 🌟
 // นำ Public Key ที่ได้จาก Firebase Console (ในขั้นตอนที่ 1) มาวางตรงนี้ครับ
-const FCM_VAPID_KEY = "BF5a8DkIAe7RFCtQncWmot8vhfljefq1Qt18oIZOvgJedAaFn0msZ6HmJlEjpG2v8mJT9ZkpL5KYtlX4DJGB0lM";
+const FCM_VAPID_KEY = "เอาคีย์สาธารณะที่ก๊อปปี้มา วางแทนที่ข้อความนี้เลยครับ";
 
 // ==========================================
 // ค่าเริ่มต้นของระบบ (Default Fallback)
@@ -107,59 +107,3 @@ document.addEventListener("DOMContentLoaded", function() {
 // ==========================================
 // 🚀 ระบบส่ง Web Push Notification ส่วนกลาง (FCM)
 // ==========================================
-window.sendWebPushByRole = async function(villageNo, title, body, targetRole = 'ADMIN_ONLY', specificVhvUid = null) {
-    try {
-        // 1. ดึง FCM Server Key จากฐานข้อมูล
-        const keySnap = await firebase.firestore().collection('SystemConfig').doc('FCM_SERVER_KEY').get();
-        if (!keySnap.exists) return;
-        const serverKey = keySnap.data().value;
-        if (!serverKey) return;
-
-        // 2. ค้นหา fcmToken ของผู้รับเป้าหมาย
-        const vhvSnap = await firebase.firestore().collection('VHVs').get();
-        let targetTokens = [];
-
-        vhvSnap.forEach(doc => {
-            const v = doc.data();
-            const token = v.fcmToken;
-            if (!token) return; // ถ้าไม่เคยอนุญาตแจ้งเตือน ข้ามไป
-
-            const role = String(v.role || '').toUpperCase();
-
-            // ส่งหา แอดมินส่วนกลาง หรือ แอดมิน รพ.สต. ที่รับผิดชอบหมู่บ้านนี้
-            if (targetRole === 'ADMIN_ONLY') {
-                if (role === 'ADMIN') {
-                    targetTokens.push(token);
-                } else if (role === 'SUB_ADMIN') {
-                    const assigned = v.assigned_villages || [];
-                    if (assigned.includes(String(villageNo))) {
-                        targetTokens.push(token);
-                    }
-                }
-            }
-            // ส่งหา อสม. เจาะจงตัวบุคคล (ตอนมอบหมายงาน)
-            else if (targetRole === 'VHV_SPECIFIC' && doc.id === String(specificVhvUid)) {
-                targetTokens.push(token);
-            }
-        });
-
-        // 3. ถ้าไม่มีคนรับเลย ไม่ต้องส่ง
-        if (targetTokens.length === 0) return;
-
-        // 4. สั่ง Google Apps Script ยิงข้อความเข้ามือถือ
-        await fetch(API_URL, {
-            method: 'POST',
-            headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-            body: JSON.stringify({
-                action: 'sendWebPush',
-                fcmServerKey: serverKey,
-                targetTokens: targetTokens,
-                title: title,
-                body: body,
-                clickUrl: targetRole === 'ADMIN_ONLY' ? '/admin_dashboard.html' : '/assessments.html'
-            })
-        });
-    } catch (e) {
-        console.error("Web Push Error:", e);
-    }
-};

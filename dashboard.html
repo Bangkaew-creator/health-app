@@ -58,9 +58,7 @@
                         <p class="text-[10px] text-blue-600">รับแจ้งเตือนทันทีเมื่อมีงานใหม่</p>
                     </div>
                 </div>
-                <button onclick="requestPushPermission()" class="bg-blue-600 text-white text-xs font-bold px-4 py-2.5 rounded-xl hover:bg-blue-700 active:scale-95 transition-transform shadow-sm">
-                    เปิดใช้งาน
-                </button>
+                
             </div>
         </div>
         <h2 class="text-[18px] font-bold text-[#111c2d] px-4 mb-5">สรุปข้อมูลผู้ป่วย</h2>
@@ -177,7 +175,7 @@
     <script>
         firebase.initializeApp(firebaseConfig);
         const db = firebase.firestore();
-        const messaging = firebase.messaging(); 
+         
 
         let allPatients = []; 
         let currentFilter = 'all'; 
@@ -227,32 +225,7 @@
         }
 
         // 🌟 ฟังก์ชันขออนุญาตแจ้งเตือน (ทำงานเมื่อถูกคลิกจากปุ่มเท่านั้น แก้บั๊ก iOS) 🌟
-        async function requestPushPermission() {
-            try {
-                const permission = await Notification.requestPermission();
-                if (permission === 'granted') {
-                    const token = await messaging.getToken({ vapidKey: FCM_VAPID_KEY });
-                    if (token) {
-                        await db.collection('VHVs').doc(String(vhvCurrentUid)).update({ fcmToken: token });
-                        document.getElementById('push-permission-banner').classList.add('hidden');
-                        alert("เปิดรับการแจ้งเตือนสำเร็จ! ระบบจะส่งข้อความเข้าเครื่องนี้เวลามีงานใหม่ครับ");
-                    }
-                } else {
-                    alert("คุณปฏิเสธการรับแจ้งเตือน หากต้องการเปลี่ยนใจต้องไปแก้ในการตั้งค่า Safari ครับ");
-                }
-            } catch (error) { 
-                console.error('Push Permission Error:', error); 
-                alert("ระบบมือถือของคุณยังไม่รองรับการแจ้งเตือนแบบ Web Push ครับ");
-            }
-        }
-
-        // เรียกใช้ฟังก์ชันเช็คแบนเนอร์ตอนเปิดแอป
-        document.addEventListener("DOMContentLoaded", () => {
-            checkNotificationStatus();
-        });
-
-        // 🌟 แก้ไข: ตรวจสอบและดึง Profile ให้ปลอดภัยขึ้น
-        async function fetchVHVProfile(uid) {
+        function fetchVHVProfile(uid) {
             try {
                 let dynamicHospital = DEFAULT_CONFIGS.HOSPITAL_NAME;
                 try {

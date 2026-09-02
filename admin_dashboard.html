@@ -108,10 +108,7 @@
                                 <button onclick="clearNotifications()" class="text-[11px] text-slate-400 hover:text-slate-600 font-medium">รับทราบทั้งหมด</button>
                             </div>
                             <!-- 🌟 ปุ่มสำหรับ iOS ให้กดขออนุญาต 🌟 -->
-                            <button onclick="requestPushPermission()" id="btn-enable-push" class="text-[11px] bg-blue-50 text-blue-600 border border-blue-100 rounded-lg py-1.5 font-bold hover:bg-blue-100 transition-colors w-full flex justify-center items-center gap-1 hidden">
-                                <span class="material-symbols-outlined text-[14px]">notifications_active</span> เปิดรับการแจ้งเตือน
-                            </button>
-                        </div>
+                                                    </div>
                         <div id="notif-list" class="max-h-[350px] overflow-y-auto custom-scrollbar divide-y divide-slate-50">
                             <!-- Items will be injected here -->
                             <div class="p-8 text-center text-slate-400 text-xs">กำลังโหลดการแจ้งเตือน...</div>
@@ -238,7 +235,7 @@
     <script>
         firebase.initializeApp(firebaseConfig);
         const db = firebase.firestore();
-        const messaging = firebase.messaging(); 
+         
 
         let currentUserRole = "ADMIN";
         let assignedVillages = [];
@@ -314,37 +311,7 @@
 
         function bounceToLogin() { window.location.href = 'index.html'; }
 
-        // 🌟 4. ฟังก์ชันขออนุญาตแจ้งเตือน (เรียกเมื่อผู้ใช้กดปุ่ม) 🌟
-        async function requestPushPermission() {
-            try {
-                const permission = await Notification.requestPermission();
-                if (permission === 'granted') {
-                    const token = await messaging.getToken({ vapidKey: FCM_VAPID_KEY });
-                    if (token) {
-                        await db.collection('VHVs').doc(String(currentUserUid)).update({ fcmToken: token });
-                        document.getElementById('btn-enable-push').style.display = 'none';
-                        alert("เปิดรับการแจ้งเตือนสำเร็จ! ระบบจะสามารถส่งข้อความเข้าเครื่องนี้ได้");
-                    }
-                } else {
-                    alert("คุณได้ปฏิเสธการรับการแจ้งเตือน หากต้องการเปลี่ยนใจ กรุณาแก้ไขในการตั้งค่าของเบราว์เซอร์ครับ");
-                }
-            } catch (error) { 
-                console.error('Push Permission Error:', error); 
-                alert("ระบบมือถือของคุณยังไม่รองรับการแจ้งเตือนแบบ Web Push ครับ (สำหรับ iPhone ต้องกด 'เพิ่มลงหน้าจอโฮม' เป็นแอปก่อนครับ)");
-            }
-        }
-
-        // 🌟 5. ดักจับข้อความตอนเปิดแอป (Foreground) 🌟
-        messaging.onMessage((payload) => {
-            const title = payload.notification?.title || payload.data?.title || 'แจ้งเตือนใหม่';
-            const body = payload.notification?.body || payload.data?.body || '';
-            if(typeof showToast === 'function') {
-                showToast(`${title}: ${body}`, 'info');
-            } else {
-                alert(`${title}\n${body}`);
-            }
-        });
-
+        
         // 🌟 ดึงข้อมูลและอัปเดต UI หน้าแอดมิน (ฉบับแก้บั๊กไม่แสดงรูป) 🌟
         async function verifyAdminAccess(uid) {
             try {

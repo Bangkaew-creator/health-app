@@ -766,7 +766,6 @@
                 await db.collection('Patients').doc(String(patientId)).update(updateData);
                 // ตรวจสอบว่ามีสถานะ "รออนุมัติ" หรือไม่ ก่อนยิงแจ้งเตือน
 if (diaperObj.approve_status === "รออนุมัติ") {
-    await window.sendWebPushByRole(village, '📦 คำขอเบิกผ้าอ้อมรออนุมัติ', `มีการประเมินสิทธิ์ผ้าอ้อมของ "${name}" (หมู่ที่ ${village}) รอการตรวจสอบจากแอดมิน`, 'ADMIN_ONLY');
 }
                 alert('อัปเดตข้อมูลเรียบร้อยแล้ว!');
                 goBack();

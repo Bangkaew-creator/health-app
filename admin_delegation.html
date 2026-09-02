@@ -595,13 +595,6 @@
                     tasks_required: checkedTasks,
                     task_date: todayStr
                 });
-                // ดึงชื่อผู้ป่วยจากข้อมูลในหน้าจอ
-const targetPatient = allPatients.find(x => String(x.id) === String(patientId));
-const pNameForPush = targetPatient ? targetPatient.name : 'ผู้ป่วย';
-const pVilForPush = targetPatient ? targetPatient.village_no : '-';
-
-// ยิง Web Push หา อสม. ท่านนั้นโดยเฉพาะ
-await window.sendWebPushByRole(pVilForPush, '📋 มอบหมายงาน อสม.', `แอดมินได้มอบหมายให้คุณลงพื้นที่ประเมิน ${pNameForPush} (หมู่ ${pVilForPush})`, 'VHV_SPECIFIC', vhvId);
                 
                 let lineToken = "";
                 try {

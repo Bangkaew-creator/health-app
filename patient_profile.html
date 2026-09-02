@@ -1372,9 +1372,7 @@
                     tasks_required: []
                 });
                 
-                // ยิง Web Push หาแอดมิน
-                await window.sendWebPushByRole(currentPatientData.village_no, '✅ อสม. ลงพื้นที่ทำงานเสร็จสิ้น', `คุณ ${currentUserName} ประเมินและปิดงานผู้ป่วย "${currentPatientData.name}" (หมู่ที่ ${currentPatientData.village_no}) เรียบร้อยแล้ว`, 'ADMIN_ONLY');
-                
+                                
                 alert("บันทึกจบงานเรียบร้อยแล้ว!");
                 window.location.href = 'assessments.html'; 
             } catch(e) {
