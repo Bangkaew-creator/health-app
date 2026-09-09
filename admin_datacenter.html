@@ -393,7 +393,19 @@ function exportToCSV() {
             allPatients.forEach(p => {
                 const pStatus = String(p.status || 'Active').trim().toLowerCase();
                 const targetStatus = statusFilter.toLowerCase();
-                if (pStatus !== targetStatus) return;
+                
+                let isMatchStatus = false;
+                if (targetStatus === 'inactive') {
+                    if (pStatus === 'inactive' || pStatus === 'เสียชีวิต' || pStatus === 'ย้ายที่อยู่') isMatchStatus = true;
+                } else if (pStatus === targetStatus) {
+                    isMatchStatus = true;
+                }
+                
+                if (searchKeyword !== '') {
+                    isMatchStatus = true;
+                }
+                
+                if (!isMatchStatus) return;
                 
                 if (villageFilter !== '' && String(p.village_no) !== villageFilter) return;
                 
@@ -466,7 +478,7 @@ function exportToCSV() {
                         </div>
                         <div class="flex gap-2">
                             <button onclick="window.open('patient_profile.html?id=${p.id}', '_blank')" class="flex-1 py-2.5 bg-slate-100 text-slate-600 text-xs font-bold rounded-xl hover:bg-slate-200 transition-colors flex items-center justify-center gap-1.5"><span class="material-symbols-outlined text-[16px]">folder_open</span> ดูแฟ้ม</button>
-                            ${pStatus === 'active' ? `<button onclick="updatePatientStatus('${p.id}', 'Inactive')" class="px-4 py-2.5 bg-white border border-red-200 text-red-500 text-xs font-bold rounded-xl hover:bg-red-50 transition-colors flex items-center justify-center gap-1.5" title="ยุติการดูแล"><span class="material-symbols-outlined text-[16px]">cancel</span></button>` : `<button onclick="updatePatientStatus('${p.id}', 'Active')" class="px-4 py-2.5 bg-white border border-emerald-200 text-emerald-600 text-xs font-bold rounded-xl hover:bg-emerald-50 transition-colors flex items-center justify-center gap-1.5" title="นำกลับมาดูแล (Active)"><span class="material-symbols-outlined text-[16px]">replay</span></button>`}
+                            ${pStatus === 'active' ? `<button onclick="openStatusModal('${p.id}')" class="px-4 py-2.5 bg-white border border-red-200 text-red-500 text-xs font-bold rounded-xl hover:bg-red-50 transition-colors flex items-center justify-center gap-1.5" title="ยุติการดูแล"><span class="material-symbols-outlined text-[16px]">cancel</span></button>` : `<button onclick="updatePatientStatus('${p.id}', 'Active')" class="px-4 py-2.5 bg-white border border-emerald-200 text-emerald-600 text-xs font-bold rounded-xl hover:bg-emerald-50 transition-colors flex items-center justify-center gap-1.5" title="นำกลับมาดูแล (Active)"><span class="material-symbols-outlined text-[16px]">replay</span></button>`}
                         </div>
                     </div>
                 `);
@@ -625,5 +637,32 @@ function exportToCSV() {
             reader.readAsArrayBuffer(selectedExcelFile);
         }
     </script>
-<script>\n\n</script>\n</body>
+<script>\n\n</script>\n
+    <!-- Modal เปลี่ยนสถานะ -->
+    <div id="status-modal" class="fixed inset-0 bg-black/60 z-[100] hidden flex-col items-center justify-center opacity-0 transition-opacity duration-300 p-4">
+        <div id="status-modal-content" class="bg-white rounded-[24px] w-[90%] max-w-sm p-6 transform scale-95 transition-transform duration-300">
+            <h3 class="text-lg font-bold text-[#ba1a1a] mb-2 flex items-center gap-2">
+                <span class="material-symbols-outlined">warning</span> ยุติการดูแลผู้ป่วย
+            </h3>
+            <p class="text-sm text-gray-600 mb-4">กรุณาระบุสาเหตุของการยุติการดูแลผู้ป่วยรายนี้</p>
+            
+            <div class="space-y-3 mb-6">
+                <label class="flex items-center gap-3 p-3 border border-gray-200 rounded-xl cursor-pointer hover:bg-red-50">
+                    <input type="radio" name="patient_status" value="เสียชีวิต" class="w-4 h-4 text-red-600 focus:ring-red-500">
+                    <span class="text-sm font-semibold text-gray-800">เสียชีวิต</span>
+                </label>
+                <label class="flex items-center gap-3 p-3 border border-gray-200 rounded-xl cursor-pointer hover:bg-orange-50">
+                    <input type="radio" name="patient_status" value="ย้ายที่อยู่" class="w-4 h-4 text-orange-500 focus:ring-orange-500">
+                    <span class="text-sm font-semibold text-gray-800">ย้ายที่อยู่ / ออกจากพื้นที่</span>
+                </label>
+            </div>
+
+            <div class="flex gap-3">
+                <button onclick="closeStatusModal()" class="flex-1 py-3 bg-gray-100 text-gray-700 rounded-xl font-bold hover:bg-gray-200">ยกเลิก</button>
+                <button onclick="confirmStatusChange()" id="btn-save-status" class="flex-1 py-3 bg-[#ba1a1a] text-white rounded-xl font-bold hover:bg-red-700">ยืนยัน</button>
+            </div>
+        </div>
+    </div>
+
+</body>
 </html>
