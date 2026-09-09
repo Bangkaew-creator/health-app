@@ -98,7 +98,13 @@
             </div>
             
             <div class="flex items-center gap-3">
-                <select id="village-filter" onchange="filterMap()" class="px-4 py-2.5 bg-slate-100 border border-slate-200 rounded-xl text-sm font-bold text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500 shadow-sm hidden sm:block">
+                <select id="alloc-filter" onchange="const m = document.getElementById('alloc-filter-mobile'); if(m) m.value=this.value; filterMap();" class="px-4 py-2.5 bg-slate-100 border border-slate-200 rounded-xl text-sm font-bold text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500 shadow-sm hidden sm:block">
+                    <option value="all">ทุกรอบการจัดสรร</option>
+                    <option value="never">ยังไม่เคยได้รับ</option>
+                    <option value="ever">เคยได้รับแล้ว</option>
+                    <optgroup label="ดูเฉพาะรอบ" id="alloc-options"></optgroup>
+                </select>
+                <select id="village-filter" onchange="const m = document.getElementById('village-filter-mobile'); if(m) m.value=this.value; filterMap();" class="px-4 py-2.5 bg-slate-100 border border-slate-200 rounded-xl text-sm font-bold text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500 shadow-sm hidden sm:block">
                     <option value="">ดูทุกหมู่ (ทั้งหมด)</option>
                 </select>
                 <button onclick="window.location.href='admin_settings.html'" class="hidden md:flex items-center gap-2 bg-slate-100 hover:bg-slate-200 text-slate-700 px-4 py-2 rounded-xl text-sm font-bold transition-colors">
@@ -108,8 +114,14 @@
         </header>
 
         <!-- มือถือ โชว์ตัวกรองตรงนี้ -->
-        <div class="p-3 bg-white border-b border-slate-200 sm:hidden z-20 shadow-sm">
-            <select id="village-filter-mobile" onchange="document.getElementById('village-filter').value=this.value; filterMap();" class="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500 shadow-sm">
+        <div class="p-3 bg-white border-b border-slate-200 sm:hidden z-20 shadow-sm flex flex-col gap-2">
+            <select id="alloc-filter-mobile" onchange="const d = document.getElementById('alloc-filter'); if(d) d.value=this.value; filterMap();" class="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500 shadow-sm">
+                <option value="all">ทุกรอบการจัดสรร</option>
+                <option value="never">ยังไม่เคยได้รับ</option>
+                <option value="ever">เคยได้รับแล้ว</option>
+                <optgroup label="ดูเฉพาะรอบ" id="alloc-options-mobile"></optgroup>
+            </select>
+            <select id="village-filter-mobile" onchange="const d = document.getElementById('village-filter'); if(d) d.value=this.value; filterMap();" class="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500 shadow-sm">
                 <option value="">ดูทุกหมู่ (ทั้งหมด)</option>
             </select>
         </div>
@@ -144,6 +156,13 @@
         let allPatients = []; 
         let map; // ตัวแปรเก็บแผนที่ Leaflet
         let markersGroup; // ตัวแปรเก็บกลุ่มหมุด (เพื่อง่ายต่อการล้างค่า)
+
+        function cleanJSON(rawStr) {
+            if (!rawStr || String(rawStr).trim() === '') return null;
+            let cleanStr = String(rawStr).trim();
+            if (cleanStr.startsWith('"') && cleanStr.endsWith('"')) { cleanStr = cleanStr.substring(1, cleanStr.length - 1); }
+            try { return JSON.parse(cleanStr); } catch(e) { return null; }
+        }
 
         function toggleSidebar() { document.getElementById('sidebar').classList.toggle('-translate-x-full'); }
 
@@ -234,6 +253,7 @@
             try {
                 const snapshot = await db.collection('Patients').get();
                 allPatients = [];
+                let uniqueAllocations = new Set(); 
 
                 snapshot.forEach(doc => {
                     const p = doc.data();
@@ -243,8 +263,24 @@
                     // เอาเฉพาะคนที่ Active และมีพิกัด lat_long บันทึกไว้แล้ว
                     if (hasPermissionToView && String(p.status).toLowerCase() === 'active' && p.lat_long && p.lat_long.includes(',')) {
                         allPatients.push(p);
+                        
+                        const d = cleanJSON(p.diaper);
+                        if(d && Array.isArray(d.allocations)) {
+                            d.allocations.forEach(alloc => uniqueAllocations.add(alloc));
+                        }
                     }
                 });
+
+                const allocGroup = document.getElementById('alloc-options');
+                const allocGroupMobile = document.getElementById('alloc-options-mobile');
+                if (allocGroup && allocGroupMobile) {
+                    allocGroup.innerHTML = '';
+                    allocGroupMobile.innerHTML = '';
+                    Array.from(uniqueAllocations).sort().reverse().forEach(alloc => {
+                        allocGroup.innerHTML += `<option value="${alloc}">รอบ ${alloc}</option>`;
+                        allocGroupMobile.innerHTML += `<option value="${alloc}">รอบ ${alloc}</option>`;
+                    });
+                }
 
                 document.getElementById('loading-state').classList.add('hidden');
                 filterMap();
@@ -254,6 +290,7 @@
 
         function filterMap() {
             const villageFilter = document.getElementById('village-filter').value;
+            const allocFilter = document.getElementById('alloc-filter') ? document.getElementById('alloc-filter').value : '';
             
             // ล้างหมุดเก่าออกให้หมดก่อน
             markersGroup.clearLayers();
@@ -262,6 +299,14 @@
 
             allPatients.forEach(p => {
                 if (villageFilter !== '' && String(p.village_no) !== villageFilter) return;
+
+                const d = cleanJSON(p.diaper);
+                const hasAllocations = (d && Array.isArray(d.allocations) && d.allocations.length > 0);
+                if (allocFilter === 'never' && hasAllocations) return;
+                if (allocFilter === 'ever' && !hasAllocations) return;
+                if (allocFilter !== 'all' && allocFilter !== 'never' && allocFilter !== 'ever' && allocFilter !== '') {
+                    if (!hasAllocations || !d.allocations.includes(allocFilter)) return;
+                }
 
                 // แปลงพิกัดข้อความให้เป็นตัวเลข Latitude / Longitude
                 const coords = p.lat_long.split(',');
