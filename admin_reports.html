@@ -267,25 +267,13 @@
                 if (hasAccess) {
                     document.getElementById('sidebar-hospital-name').innerText = hospital;
                     
-                    const vhvFilter = document.getElementById('vhv-village-filter');
-                    vhvFilter.innerHTML = '<option value="">ดูทุกหมู่ (ทั้งหมด)</option>';
-                    
                     if (currentUserRole === 'SUB_ADMIN') {
-                        const navSettings = document.getElementById('nav-settings');
-                        if (navSettings) navSettings.style.display = 'none';
-                        const navInventory = document.getElementById('nav-inventory');
-                        if (navInventory) navInventory.style.display = 'none';
-                        const navReports = document.getElementById('nav-reports');
-                        if (navReports) navReports.style.display = 'none';
-                        
-                        assignedVillages.forEach(v => { vhvFilter.insertAdjacentHTML('beforeend', `<option value="${v}">หมู่ที่ ${v}</option>`); });
-                    } else {
-                        for(let i=1; i<=vCount; i++){ vhvFilter.insertAdjacentHTML('beforeend', `<option value="${i}">หมู่ที่ ${i}</option>`); }
+                        window.location.href = 'admin_dashboard.html'; // SUB_ADMIN cannot access reports!
                     }
 
                     loadReportData();
                 } else { window.location.href = 'dashboard.html'; }
-            } catch (error) { window.location.href = 'index.html'; }
+            } catch (error) { console.error(error); window.location.href = 'index.html'; }
         }
 
         async function loadReportData() {

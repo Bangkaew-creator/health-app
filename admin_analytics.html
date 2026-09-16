@@ -54,21 +54,13 @@
 
         <nav class="flex-1 px-4 py-6 space-y-2 overflow-y-auto">
             <a href="admin_dashboard.html" class="flex items-center gap-3 px-4 py-3.5 text-slate-400 hover:bg-white/5 hover:text-white rounded-xl font-medium transition-all"><span class="material-symbols-outlined">dashboard</span> ภาพรวมระบบ</a>
-            
             <a href="admin_resources.html" class="flex items-center gap-3 px-4 py-3.5 text-slate-400 hover:bg-white/5 hover:text-white rounded-xl font-medium transition-all"><span class="material-symbols-outlined">inventory_2</span> บริหารทรัพยากร</a>
-            
             <a href="admin_inventory.html" id="nav-inventory" class="flex items-center gap-3 px-4 py-3.5 text-slate-400 hover:bg-white/5 hover:text-white rounded-xl font-medium transition-all"><span class="material-symbols-outlined">warehouse</span> ระบบคลังพัสดุ กปท.</a>
-            
             <a href="admin_datacenter.html" class="flex items-center gap-3 px-4 py-3.5 text-slate-400 hover:bg-white/5 hover:text-white rounded-xl font-medium transition-all"><span class="material-symbols-outlined">folder_shared</span> ศูนย์ข้อมูลผู้ป่วย</a>
-            
             <a href="admin_map.html" class="flex items-center gap-3 px-4 py-3.5 text-slate-400 hover:bg-white/5 hover:text-white rounded-xl font-medium transition-all"><span class="material-symbols-outlined">map</span> แผนที่พิกัดผู้ป่วย</a>
-            
             <a href="admin_delegation.html" class="flex items-center gap-3 px-4 py-3.5 text-slate-400 hover:bg-white/5 hover:text-white rounded-xl font-medium transition-all"><span class="material-symbols-outlined">assignment_ind</span> มอบหมายงาน อสม.</a>
-            
             <a href="admin_analytics.html" class="flex items-center justify-between px-4 py-3.5 bg-white/10 text-amber-400 rounded-xl font-bold transition-all"><span class="flex items-center gap-3"><span class="material-symbols-outlined">analytics</span> ศูนย์รายงาน (Export)</span><span class="w-1.5 h-1.5 rounded-full bg-amber-400"></span></a>
-            
             <a href="admin_reports.html" id="nav-reports" class="flex items-center gap-3 px-4 py-3.5 text-slate-400 hover:bg-white/5 hover:text-white rounded-xl font-medium transition-all"><span class="material-symbols-outlined">gavel</span> บันทึกมติผ้าอ้อม</a>
-            
             <a href="admin_settings.html" id="nav-settings" class="flex items-center gap-3 px-4 py-3.5 text-slate-400 hover:bg-white/5 hover:text-white rounded-xl font-medium transition-all"><span class="material-symbols-outlined">settings</span> ตั้งค่าระบบ</a>
         </nav>
     </aside>
@@ -124,10 +116,10 @@
                 </div>
             </div>
         </header>
-        <div class="flex-1 pb-20 overflow-y-auto custom-scrollbar relative">
+        <div class="flex-1 pb-20 overflow-y-auto custom-scrollbar relative w-full overflow-x-hidden">
             
             <!-- Tabs Navigation -->
-            <div class="bg-white border-b border-slate-200 grid grid-cols-5 shadow-sm z-10 sticky top-0 flex-shrink-0">
+            <div class="bg-white border-b border-slate-200 grid grid-cols-5 shadow-sm z-10 sticky top-0 flex-shrink-0 w-full">
                 <button class="tab-btn active border-r border-slate-100 flex flex-col items-center justify-center py-3 px-1 leading-tight transition-colors hover:bg-slate-50" id="tab-adl-assess" onclick="switchTab('adl-assess')">
                     <span class="material-symbols-outlined text-[20px] mb-1">fact_check</span>
                     <span class="text-[11px] sm:text-[13px] text-center font-bold">ประเมิน ADL</span>
@@ -160,7 +152,23 @@
             </div>
 
             <!-- TAB 1: ADL Assess -->
-            <div id="content-adl-assess" class="tab-content px-6 lg:px-8 mt-6 pb-20 lg:pb-8 hidden">
+            <div id="content-adl-assess" class="tab-content px-6 lg:px-8 mt-6 pb-20 lg:pb-8 hidden w-full">
+                <!-- Summary Cards -->
+                <div class="grid grid-cols-3 gap-3 mb-5">
+                    <div class="bg-emerald-50 border border-emerald-100 p-4 rounded-xl shadow-sm text-center">
+                        <p class="text-[11px] text-emerald-600 font-bold uppercase tracking-wider mb-1">ติดสังคม</p>
+                        <h3 class="text-2xl font-black text-emerald-700" id="sum-social">0</h3>
+                    </div>
+                    <div class="bg-amber-50 border border-amber-100 p-4 rounded-xl shadow-sm text-center">
+                        <p class="text-[11px] text-amber-600 font-bold uppercase tracking-wider mb-1">ติดบ้าน</p>
+                        <h3 class="text-2xl font-black text-amber-700" id="sum-home">0</h3>
+                    </div>
+                    <div class="bg-red-50 border border-red-100 p-4 rounded-xl shadow-sm text-center">
+                        <p class="text-[11px] text-red-600 font-bold uppercase tracking-wider mb-1">ติดเตียง</p>
+                        <h3 class="text-2xl font-black text-red-700" id="sum-bed">0</h3>
+                    </div>
+                </div>
+
                 <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200 mb-5">
                     <h3 class="text-sm font-bold text-navy mb-4">ตัวกรองรายงานการประเมิน ADL</h3>
                     <div class="flex flex-wrap gap-4 items-end">
@@ -170,18 +178,36 @@
                         <button onclick="exportADLReport()" class="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-xl text-sm font-bold shadow-sm flex items-center gap-1 active:scale-95 transition-all"><span class="material-symbols-outlined text-[16px]">download</span> โหลด Excel</button>
                     </div>
                 </div>
-                <div class="bg-white border border-slate-200 rounded-[20px] shadow-sm overflow-hidden overflow-x-auto">
-                    <table class="w-full text-left border-collapse min-w-[800px]">
-                        <thead><tr class="bg-slate-50 text-slate-500 text-[11px] uppercase tracking-wider border-b border-slate-200">
-                            <th class="p-4 font-bold">วันที่ประเมิน</th><th class="p-4 font-bold">ชื่อ-สกุล</th><th class="p-4 font-bold">เลขบัตร</th><th class="p-4 font-bold">ที่อยู่/หมู่</th><th class="p-4 font-bold">เบอร์โทร</th><th class="p-4 font-bold text-center">คะแนน ADL</th><th class="p-4 font-bold text-center">ผลการประเมิน</th>
-                        </tr></thead>
-                        <tbody id="tbody-adl-assess" class="text-sm text-slate-700 divide-y divide-slate-100"></tbody>
-                    </table>
+                <div class="bg-white border border-slate-200 rounded-[20px] shadow-sm w-full">
+                    <div class="w-full overflow-x-auto rounded-[20px]">
+                        <table class="w-full text-left border-collapse min-w-[800px]">
+                            <thead><tr class="bg-slate-50 text-slate-500 text-[11px] uppercase tracking-wider border-b border-slate-200">
+                                <th class="p-4 font-bold">วันที่ประเมิน</th><th class="p-4 font-bold">ชื่อ-สกุล</th><th class="p-4 font-bold">เลขบัตร</th><th class="p-4 font-bold">ที่อยู่/หมู่</th><th class="p-4 font-bold">เบอร์โทร</th><th class="p-4 font-bold text-center">คะแนน ADL</th><th class="p-4 font-bold text-center">ผลการประเมิน</th>
+                            </tr></thead>
+                            <tbody id="tbody-adl-assess" class="text-sm text-slate-700 divide-y divide-slate-100"></tbody>
+                        </table>
+                    </div>
                 </div>
             </div>
 
             <!-- TAB 2: ADL Dev -->
-            <div id="content-adl-dev" class="tab-content px-6 lg:px-8 mt-6 pb-20 lg:pb-8 hidden">
+            <div id="content-adl-dev" class="tab-content px-6 lg:px-8 mt-6 pb-20 lg:pb-8 hidden w-full">
+                <!-- Summary Cards -->
+                <div class="grid grid-cols-3 gap-3 mb-5">
+                    <div class="bg-emerald-50 border border-emerald-100 p-4 rounded-xl shadow-sm text-center">
+                        <p class="text-[11px] text-emerald-600 font-bold uppercase tracking-wider mb-1">พัฒนาการ ดีขึ้น</p>
+                        <h3 class="text-2xl font-black text-emerald-700" id="sum-dev-up">0</h3>
+                    </div>
+                    <div class="bg-slate-50 border border-slate-200 p-4 rounded-xl shadow-sm text-center">
+                        <p class="text-[11px] text-slate-500 font-bold uppercase tracking-wider mb-1">คงที่ / ยังไม่มีเทียบ</p>
+                        <h3 class="text-2xl font-black text-slate-700" id="sum-dev-same">0</h3>
+                    </div>
+                    <div class="bg-red-50 border border-red-100 p-4 rounded-xl shadow-sm text-center">
+                        <p class="text-[11px] text-red-600 font-bold uppercase tracking-wider mb-1">พัฒนาการ แย่ลง</p>
+                        <h3 class="text-2xl font-black text-red-700" id="sum-dev-down">0</h3>
+                    </div>
+                </div>
+
                 <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200 mb-5">
                     <h3 class="text-sm font-bold text-navy mb-4">ตัวกรองรายงานพัฒนาการคะแนน ADL</h3>
                     <div class="flex flex-wrap gap-4 items-end">
@@ -191,18 +217,32 @@
                         <button onclick="exportADLDevReport()" class="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-xl text-sm font-bold shadow-sm flex items-center gap-1 active:scale-95 transition-all"><span class="material-symbols-outlined text-[16px]">download</span> โหลด Excel</button>
                     </div>
                 </div>
-                <div class="bg-white border border-slate-200 rounded-[20px] shadow-sm overflow-hidden overflow-x-auto">
-                    <table class="w-full text-left border-collapse min-w-[800px]">
-                        <thead><tr class="bg-slate-50 text-slate-500 text-[11px] uppercase tracking-wider border-b border-slate-200">
-                            <th class="p-4 font-bold">ชื่อ-สกุล</th><th class="p-4 font-bold">เลขบัตร</th><th class="p-4 font-bold text-center">เก่าสุด(ในรอบ)</th><th class="p-4 font-bold text-center">ล่าสุด(ในรอบ)</th><th class="p-4 font-bold text-center">พัฒนาการ</th>
-                        </tr></thead>
-                        <tbody id="tbody-adl-dev" class="text-sm text-slate-700 divide-y divide-slate-100"></tbody>
-                    </table>
+                <div class="bg-white border border-slate-200 rounded-[20px] shadow-sm w-full">
+                    <div class="w-full overflow-x-auto rounded-[20px]">
+                        <table class="w-full text-left border-collapse min-w-[800px]">
+                            <thead><tr class="bg-slate-50 text-slate-500 text-[11px] uppercase tracking-wider border-b border-slate-200">
+                                <th class="p-4 font-bold">ชื่อ-สกุล</th><th class="p-4 font-bold">เลขบัตร</th><th class="p-4 font-bold text-center">เก่าสุด(ในรอบ)</th><th class="p-4 font-bold text-center">ล่าสุด(ในรอบ)</th><th class="p-4 font-bold text-center">พัฒนาการ</th>
+                            </tr></thead>
+                            <tbody id="tbody-adl-dev" class="text-sm text-slate-700 divide-y divide-slate-100"></tbody>
+                        </table>
+                    </div>
                 </div>
             </div>
 
             <!-- TAB 3: Inactive -->
-            <div id="content-inactive" class="tab-content px-6 lg:px-8 mt-6 pb-20 lg:pb-8 hidden">
+            <div id="content-inactive" class="tab-content px-6 lg:px-8 mt-6 pb-20 lg:pb-8 hidden w-full">
+                <!-- Summary Cards -->
+                <div class="grid grid-cols-2 gap-3 mb-5">
+                    <div class="bg-red-50 border border-red-100 p-4 rounded-xl shadow-sm text-center">
+                        <p class="text-[11px] text-red-600 font-bold uppercase tracking-wider mb-1">เสียชีวิต (ราย)</p>
+                        <h3 class="text-2xl font-black text-red-700" id="sum-dead">0</h3>
+                    </div>
+                    <div class="bg-orange-50 border border-orange-100 p-4 rounded-xl shadow-sm text-center">
+                        <p class="text-[11px] text-orange-600 font-bold uppercase tracking-wider mb-1">ย้ายที่อยู่ (ราย)</p>
+                        <h3 class="text-2xl font-black text-orange-700" id="sum-moved">0</h3>
+                    </div>
+                </div>
+
                 <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200 mb-5">
                     <h3 class="text-sm font-bold text-navy mb-4">ตัวกรองรายงานผู้ป่วยเสียชีวิต/ย้ายที่อยู่</h3>
                     <div class="flex flex-wrap gap-4 items-end">
@@ -212,18 +252,20 @@
                         <button onclick="exportInactiveReport()" class="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-xl text-sm font-bold shadow-sm flex items-center gap-1 active:scale-95 transition-all"><span class="material-symbols-outlined text-[16px]">download</span> โหลด Excel</button>
                     </div>
                 </div>
-                <div class="bg-white border border-slate-200 rounded-[20px] shadow-sm overflow-hidden overflow-x-auto">
-                    <table class="w-full text-left border-collapse min-w-[800px]">
-                        <thead><tr class="bg-slate-50 text-slate-500 text-[11px] uppercase tracking-wider border-b border-slate-200">
-                            <th class="p-4 font-bold">วันที่ยุติ</th><th class="p-4 font-bold">ชื่อ-สกุล</th><th class="p-4 font-bold">เลขบัตร</th><th class="p-4 font-bold text-center">สถานะ</th><th class="p-4 font-bold">ที่อยู่/หมู่</th><th class="p-4 font-bold">เบอร์โทร</th>
-                        </tr></thead>
-                        <tbody id="tbody-inactive" class="text-sm text-slate-700 divide-y divide-slate-100"></tbody>
-                    </table>
+                <div class="bg-white border border-slate-200 rounded-[20px] shadow-sm w-full">
+                    <div class="w-full overflow-x-auto rounded-[20px]">
+                        <table class="w-full text-left border-collapse min-w-[800px]">
+                            <thead><tr class="bg-slate-50 text-slate-500 text-[11px] uppercase tracking-wider border-b border-slate-200">
+                                <th class="p-4 font-bold">วันที่ยุติ</th><th class="p-4 font-bold">ชื่อ-สกุล</th><th class="p-4 font-bold">เลขบัตร</th><th class="p-4 font-bold text-center">สถานะ</th><th class="p-4 font-bold">ที่อยู่/หมู่</th><th class="p-4 font-bold">เบอร์โทร</th>
+                            </tr></thead>
+                            <tbody id="tbody-inactive" class="text-sm text-slate-700 divide-y divide-slate-100"></tbody>
+                        </table>
+                    </div>
                 </div>
             </div>
 
             <!-- TAB 4: ทะเบียนสุขภาพ -->
-            <div id="content-registry" class="tab-content px-6 lg:px-8 mt-6 pb-20 lg:pb-8 hidden">
+            <div id="content-registry" class="tab-content px-6 lg:px-8 mt-6 pb-20 lg:pb-8 hidden w-full">
                 <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200 mb-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                     <div>
                         <h3 class="text-sm font-bold text-navy">ทะเบียนข้อมูลสุขภาพผู้ป่วยทั้งหมด</h3>
@@ -234,34 +276,35 @@
                     </button>
                 </div>
 
-                <div class="bg-white border border-slate-200 rounded-[20px] shadow-sm overflow-hidden overflow-x-auto">
-                    <table class="w-full text-left border-collapse min-w-[1200px]">
-                        <thead>
-                            <tr class="bg-slate-50 text-slate-500 text-[11px] uppercase tracking-wider border-b border-slate-200">
-                                <th class="p-4 font-bold w-12 text-center">ลำดับ</th>
-                                <th class="p-4 font-bold">ชื่อ-สกุล</th>
-                                <th class="p-4 font-bold">เลขบัตร ปชช.</th>
-                                <th class="p-4 font-bold text-center">หมู่ที่</th>
-                                <th class="p-4 font-bold">บ้านเลขที่</th>
-                                <th class="p-4 font-bold">เบอร์โทรญาติ</th>
-                                <th class="p-4 font-bold text-center">คะแนน ADL (ล่าสุด)</th>
-                                <th class="p-4 font-bold text-center">วันที่ประเมิน</th>
-                                <th class="p-4 font-bold text-center">การประเมิน 2Q/9Q</th>
-                                <th class="p-4 font-bold">โรคประจำตัว</th>
-                                <th class="p-4 font-bold">ยาที่ใช้ปัจจุบัน</th>
-                                <th class="p-4 font-bold">ประวัติแพ้ยา</th>
-                                <th class="p-4 font-bold text-center">สิทธิ์ผ้าอ้อม</th>
-                            </tr>
-                        </thead>
-                        <tbody id="tbody-registry" class="text-sm text-slate-700 divide-y divide-slate-100">
-                            <!-- JS จะดึงข้อมูลมาใส่ตรงนี้ -->
-                        </tbody>
-                    </table>
+                <div class="bg-white border border-slate-200 rounded-[20px] shadow-sm w-full">
+                    <div class="w-full overflow-x-auto rounded-[20px]">
+                        <table class="w-full text-left border-collapse min-w-[1200px]">
+                            <thead>
+                                <tr class="bg-slate-50 text-slate-500 text-[11px] uppercase tracking-wider border-b border-slate-200">
+                                    <th class="p-4 font-bold w-12 text-center">ลำดับ</th>
+                                    <th class="p-4 font-bold">ชื่อ-สกุล</th>
+                                    <th class="p-4 font-bold">เลขบัตร ปชช.</th>
+                                    <th class="p-4 font-bold text-center">หมู่ที่</th>
+                                    <th class="p-4 font-bold">บ้านเลขที่</th>
+                                    <th class="p-4 font-bold">เบอร์โทรญาติ</th>
+                                    <th class="p-4 font-bold text-center">คะแนน ADL (ล่าสุด)</th>
+                                    <th class="p-4 font-bold text-center">วันที่ประเมิน</th>
+                                    <th class="p-4 font-bold text-center">การประเมิน 2Q/9Q</th>
+                                    <th class="p-4 font-bold">โรคประจำตัว</th>
+                                    <th class="p-4 font-bold">ยาที่ใช้ปัจจุบัน</th>
+                                    <th class="p-4 font-bold">ประวัติแพ้ยา</th>
+                                    <th class="p-4 font-bold text-center">สิทธิ์ผ้าอ้อม</th>
+                                </tr>
+                            </thead>
+                            <tbody id="tbody-registry" class="text-sm text-slate-700 divide-y divide-slate-100">
+                            </tbody>
+                        </table>
+                    </div>
                 </div>
             </div>
 
             <!-- TAB 5: สถิติ อสม. -->
-            <div id="content-vhv" class="tab-content px-6 lg:px-8 mt-6 pb-20 lg:pb-8 hidden">
+            <div id="content-vhv" class="tab-content px-6 lg:px-8 mt-6 pb-20 lg:pb-8 hidden w-full">
                 <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200 mb-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                     <div>
                         <h3 class="text-sm font-bold text-navy">สถิติการปฏิบัติงาน อสม.</h3>
@@ -277,23 +320,24 @@
                     </div>
                 </div>
 
-                <div class="bg-white border border-slate-200 rounded-[20px] shadow-sm overflow-hidden overflow-x-auto">
-                    <table class="w-full text-left border-collapse min-w-[800px]">
-                        <thead>
-                            <tr class="bg-slate-50 text-slate-500 text-[11px] uppercase tracking-wider border-b border-slate-200">
-                                <th class="p-4 font-bold w-12 text-center">ลำดับ</th>
-                                <th class="p-4 font-bold">ชื่อ อสม.</th>
-                                <th class="p-4 font-bold text-center">หมู่ที่รับผิดชอบ</th>
-                                <th class="p-4 font-bold text-center text-blue-600">ผู้ป่วยในการดูแล</th>
-                                <th class="p-4 font-bold text-center text-emerald-600">ประเมิน ADL แล้ว</th>
-                                <th class="p-4 font-bold text-center text-amber-600">ประเมิน 2Q/9Q แล้ว</th>
-                                <th class="p-4 font-bold text-center text-rose-600">ลงข้อมูลสุขภาพแล้ว</th>
-                            </tr>
-                        </thead>
-                        <tbody id="tbody-vhv" class="text-sm text-slate-700 divide-y divide-slate-100">
-                            <!-- JS จะดึงข้อมูลมาใส่ตรงนี้ -->
-                        </tbody>
-                    </table>
+                <div class="bg-white border border-slate-200 rounded-[20px] shadow-sm w-full">
+                    <div class="w-full overflow-x-auto rounded-[20px]">
+                        <table class="w-full text-left border-collapse min-w-[800px]">
+                            <thead>
+                                <tr class="bg-slate-50 text-slate-500 text-[11px] uppercase tracking-wider border-b border-slate-200">
+                                    <th class="p-4 font-bold w-12 text-center">ลำดับ</th>
+                                    <th class="p-4 font-bold">ชื่อ อสม.</th>
+                                    <th class="p-4 font-bold text-center">หมู่ที่รับผิดชอบ</th>
+                                    <th class="p-4 font-bold text-center text-blue-600">ผู้ป่วยในการดูแล</th>
+                                    <th class="p-4 font-bold text-center text-emerald-600">ประเมิน ADL แล้ว</th>
+                                    <th class="p-4 font-bold text-center text-amber-600">ประเมิน 2Q/9Q แล้ว</th>
+                                    <th class="p-4 font-bold text-center text-rose-600">ลงข้อมูลสุขภาพแล้ว</th>
+                                </tr>
+                            </thead>
+                            <tbody id="tbody-vhv" class="text-sm text-slate-700 divide-y divide-slate-100">
+                            </tbody>
+                        </table>
+                    </div>
                 </div>
             </div>
 
@@ -301,14 +345,18 @@
 </main>
 
     
-<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
-<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
-<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
-<script src="config.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore-compat.js"></script>
+    <script src="config.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <script charset="utf-8" src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
 
 <script>
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.firestore();
+
     function toggleSidebar() { document.getElementById('sidebar').classList.toggle('-translate-x-full'); }
+    function bounceToLogin() { window.location.href = 'index.html'; }
 
     let allPatients = [];
     let allAssessments = [];
@@ -319,21 +367,49 @@
     let assignedVillages = [];
     let vCount = 15;
 
-    firebase.auth().onAuthStateChanged(user => {
-        if (user) { checkAdminAuth(user.uid); }
-        else { window.location.href = 'index.html'; }
+    document.addEventListener("DOMContentLoaded", () => {
+        document.getElementById('sidebar-hospital-name').innerText = DEFAULT_CONFIGS.HOSPITAL_NAME;
+        liff.init({ liffId: LIFF_ID }).then(() => {
+            const mockUid = localStorage.getItem('dev_mock_uid');
+            const savedUid = localStorage.getItem('orsomo_uid');
+            if (mockUid) {
+                verifyAdminAccess(mockUid);
+            } else if (liff.isLoggedIn()) { 
+                liff.getProfile().then(p => { localStorage.setItem('orsomo_uid', p.userId); verifyAdminAccess(p.userId); }).catch(() => bounceToLogin());
+            } else if (savedUid) {
+                verifyAdminAccess(savedUid);
+            } else { bounceToLogin(); }
+        }).catch(err => {
+            const savedUid = localStorage.getItem('orsomo_uid');
+            if (savedUid) verifyAdminAccess(savedUid);
+            else bounceToLogin();
+        });
     });
 
-    async function checkAdminAuth(uid) {
+    async function verifyAdminAccess(uid) {
         try {
-            const doc = await db.collection('Admins').doc(uid).get();
-            if (doc.exists) {
-                const userData = doc.data();
-                const role = userData.role;
-                vCount = parseInt(userData.village_count) || 15;
-                if (role === 'ADMIN') { currentUserRole = 'ADMIN'; hospital = userData.hospital_name || hospital; }
-                else if (role === 'SUB_ADMIN') { currentUserRole = 'SUB_ADMIN'; hospital = userData.hospital_name || hospital; assignedVillages = userData.assigned_villages || []; }
-                
+            const userDoc = await db.collection('VHVs').doc(String(uid)).get();
+            let hasAccess = false; 
+
+            try {
+                const sysSnap = await db.collection('SystemConfig').doc('HOSPITAL_NAME').get();
+                if(sysSnap.exists) hospital = sysSnap.data().value || hospital;
+                const sysCountSnap = await db.collection('SystemConfig').doc('VILLAGE_COUNT').get();
+                if(sysCountSnap.exists) vCount = parseInt(sysCountSnap.data().value) || vCount;
+            } catch(e) {}
+
+            if (userDoc.exists) {
+                const userData = userDoc.data();
+                const role = String(userData.role || '').toUpperCase();
+                if (role === 'ADMIN') {
+                    hasAccess = true; currentUserRole = 'ADMIN'; hospital = userData.hospital_name || hospital;
+                } else if (role === 'SUB_ADMIN') {
+                    hasAccess = true; currentUserRole = 'SUB_ADMIN'; hospital = userData.hospital_name || hospital;
+                    assignedVillages = userData.assigned_villages || [];
+                }
+            }
+
+            if (hasAccess) {
                 document.getElementById('sidebar-hospital-name').innerText = hospital;
                 
                 if (currentUserRole === 'SUB_ADMIN') {
@@ -452,17 +528,26 @@
         tbody.innerHTML = '';
         const filtered = allAssessments.filter(a => isBetween(a.parsedDate, startStr, endStr));
         filtered.sort((a,b) => b.parsedDate - a.parsedDate);
-        if(filtered.length === 0) { tbody.innerHTML = '<tr><td colspan="7" class="p-8 text-center text-slate-400 font-medium">ไม่พบข้อมูลในช่วงเวลาที่เลือก</td></tr>'; return; }
-        filtered.forEach(a => {
-            const p = a.pData;
-            let gc = 'bg-slate-100 text-slate-600';
-            if(a.result === 'ติดสังคม') gc = 'bg-emerald-50 text-emerald-600 border border-emerald-100';
-            if(a.result === 'ติดบ้าน') gc = 'bg-amber-50 text-amber-600 border border-amber-100';
-            if(a.result === 'ติดเตียง') gc = 'bg-red-50 text-red-600 border border-red-100';
-            const tr = document.createElement('tr');
-            tr.innerHTML = `<td class="p-4 whitespace-nowrap">${a.date}</td><td class="p-4 whitespace-nowrap font-medium text-navy">${p.prefix||""}${p.name||""}</td><td class="p-4 whitespace-nowrap">${p.id_card||'-'}</td><td class="p-4 whitespace-nowrap">บ้านเลขที่ ${p.house_no||'-'} หมู่ ${p.village_no||'-'}</td><td class="p-4 whitespace-nowrap">${p.caregiver_phone||'-'}</td><td class="p-4 whitespace-nowrap text-center font-bold">${a.score1||'-'}</td><td class="p-4 whitespace-nowrap text-center"><span class="${gc} px-2 py-1 rounded-lg text-[11px] font-bold inline-block">${a.result||'-'}</span></td>`;
-            tbody.appendChild(tr);
-        });
+        
+        let cSocial = 0; let cHome = 0; let cBed = 0;
+
+        if(filtered.length === 0) { 
+            tbody.innerHTML = '<tr><td colspan="7" class="p-8 text-center text-slate-400 font-medium">ไม่พบข้อมูลในช่วงเวลาที่เลือก</td></tr>'; 
+        } else {
+            filtered.forEach(a => {
+                const p = a.pData;
+                let gc = 'bg-slate-100 text-slate-600';
+                if(a.result === 'ติดสังคม') { gc = 'bg-emerald-50 text-emerald-600 border border-emerald-100'; cSocial++; }
+                if(a.result === 'ติดบ้าน') { gc = 'bg-amber-50 text-amber-600 border border-amber-100'; cHome++; }
+                if(a.result === 'ติดเตียง') { gc = 'bg-red-50 text-red-600 border border-red-100'; cBed++; }
+                const tr = document.createElement('tr');
+                tr.innerHTML = `<td class="p-4 whitespace-nowrap">${a.date}</td><td class="p-4 whitespace-nowrap font-medium text-navy">${p.prefix||""}${p.name||""}</td><td class="p-4 whitespace-nowrap">${p.id_card||'-'}</td><td class="p-4 whitespace-nowrap">บ้านเลขที่ ${p.house_no||'-'} หมู่ ${p.village_no||'-'}</td><td class="p-4 whitespace-nowrap">${p.caregiver_phone||'-'}</td><td class="p-4 whitespace-nowrap text-center font-bold">${a.score1||'-'}</td><td class="p-4 whitespace-nowrap text-center"><span class="${gc} px-2 py-1 rounded-lg text-[11px] font-bold inline-block">${a.result||'-'}</span></td>`;
+                tbody.appendChild(tr);
+            });
+        }
+        document.getElementById('sum-social').innerText = cSocial;
+        document.getElementById('sum-home').innerText = cHome;
+        document.getElementById('sum-bed').innerText = cBed;
     }
 
     function renderADLDevReport() {
@@ -477,19 +562,28 @@
             arr.sort((a,b) => a.parsedDate - b.parsedDate);
             return { oldest: arr[0], newest: arr[arr.length - 1], p: arr[0].pData, assessCount: arr.length };
         });
-        if(rows.length === 0) { tbody.innerHTML = '<tr><td colspan="5" class="p-8 text-center text-slate-400 font-medium">ไม่พบข้อมูลในช่วงเวลาที่เลือก</td></tr>'; return; }
-        rows.forEach(r => {
-            const diff = parseInt(r.newest.score1) - parseInt(r.oldest.score1);
-            let devHtml = '<span class="bg-slate-100 text-slate-500 px-2 py-1 rounded font-bold text-xs">คงที่ (ไม่มีประวัติเทียบ)</span>';
-            if (r.assessCount > 1) {
-                if (diff > 0) devHtml = `<span class="bg-emerald-50 text-emerald-600 border border-emerald-100 px-2 py-1 rounded font-bold text-xs flex items-center justify-center gap-1 w-max mx-auto"><span class="material-symbols-outlined text-[14px]">trending_up</span> ดีขึ้น (+${diff})</span>`;
-                else if (diff < 0) devHtml = `<span class="bg-red-50 text-red-600 border border-red-100 px-2 py-1 rounded font-bold text-xs flex items-center justify-center gap-1 w-max mx-auto"><span class="material-symbols-outlined text-[14px]">trending_down</span> แย่ลง (${diff})</span>`;
-                else devHtml = '<span class="bg-amber-50 text-amber-600 border border-amber-100 px-2 py-1 rounded font-bold text-xs flex items-center justify-center gap-1 w-max mx-auto"><span class="material-symbols-outlined text-[14px]">horizontal_rule</span> คงที่ (0)</span>';
-            }
-            const tr = document.createElement('tr');
-            tr.innerHTML = `<td class="p-4 whitespace-nowrap font-medium text-navy">${r.p.prefix||""}${r.p.name||""}</td><td class="p-4 whitespace-nowrap">${r.p.id_card||'-'}</td><td class="p-4 whitespace-nowrap text-center">${r.oldest.score1||'-'} <span class="text-[10px] text-slate-400 block">${r.oldest.date}</span></td><td class="p-4 whitespace-nowrap text-center font-bold text-blue-600">${r.newest.score1||'-'} <span class="text-[10px] text-blue-400 block">${r.newest.date}</span></td><td class="p-4 whitespace-nowrap text-center">${devHtml}</td>`;
-            tbody.appendChild(tr);
-        });
+        
+        let cUp = 0; let cSame = 0; let cDown = 0;
+
+        if(rows.length === 0) { 
+            tbody.innerHTML = '<tr><td colspan="5" class="p-8 text-center text-slate-400 font-medium">ไม่พบข้อมูลในช่วงเวลาที่เลือก</td></tr>'; 
+        } else {
+            rows.forEach(r => {
+                const diff = parseInt(r.newest.score1) - parseInt(r.oldest.score1);
+                let devHtml = '<span class="bg-slate-100 text-slate-500 px-2 py-1 rounded font-bold text-xs">คงที่ (ไม่มีประวัติเทียบ)</span>';
+                if (r.assessCount > 1) {
+                    if (diff > 0) { devHtml = `<span class="bg-emerald-50 text-emerald-600 border border-emerald-100 px-2 py-1 rounded font-bold text-xs flex items-center justify-center gap-1 w-max mx-auto"><span class="material-symbols-outlined text-[14px]">trending_up</span> ดีขึ้น (+${diff})</span>`; cUp++; }
+                    else if (diff < 0) { devHtml = `<span class="bg-red-50 text-red-600 border border-red-100 px-2 py-1 rounded font-bold text-xs flex items-center justify-center gap-1 w-max mx-auto"><span class="material-symbols-outlined text-[14px]">trending_down</span> แย่ลง (${diff})</span>`; cDown++; }
+                    else { devHtml = '<span class="bg-amber-50 text-amber-600 border border-amber-100 px-2 py-1 rounded font-bold text-xs flex items-center justify-center gap-1 w-max mx-auto"><span class="material-symbols-outlined text-[14px]">horizontal_rule</span> คงที่ (0)</span>'; cSame++; }
+                } else { cSame++; }
+                const tr = document.createElement('tr');
+                tr.innerHTML = `<td class="p-4 whitespace-nowrap font-medium text-navy">${r.p.prefix||""}${r.p.name||""}</td><td class="p-4 whitespace-nowrap">${r.p.id_card||'-'}</td><td class="p-4 whitespace-nowrap text-center">${r.oldest.score1||'-'} <span class="text-[10px] text-slate-400 block">${r.oldest.date}</span></td><td class="p-4 whitespace-nowrap text-center font-bold text-blue-600">${r.newest.score1||'-'} <span class="text-[10px] text-blue-400 block">${r.newest.date}</span></td><td class="p-4 whitespace-nowrap text-center">${devHtml}</td>`;
+                tbody.appendChild(tr);
+            });
+        }
+        document.getElementById('sum-dev-up').innerText = cUp;
+        document.getElementById('sum-dev-same').innerText = cSame;
+        document.getElementById('sum-dev-down').innerText = cDown;
     }
 
     function renderInactiveReport() {
@@ -501,14 +595,24 @@
             let pDate = p.updated_at && p.updated_at.toDate ? p.updated_at.toDate() : new Date();
             return isBetween(pDate, startStr, endStr);
         });
-        if(filtered.length === 0) { tbody.innerHTML = '<tr><td colspan="6" class="p-8 text-center text-slate-400 font-medium">ไม่พบข้อมูลในช่วงเวลาที่เลือก</td></tr>'; return; }
-        filtered.forEach(p => {
-            let pDateStr = p.updated_at && p.updated_at.toDate ? formatThaiDate(p.updated_at.toDate()) : '-';
-            let stHtml = p.status === 'ย้ายที่อยู่' ? `<span class="bg-orange-50 text-orange-600 border border-orange-100 px-2 py-1 rounded font-bold text-xs">ย้ายที่อยู่</span>` : `<span class="bg-red-50 text-red-600 border border-red-100 px-2 py-1 rounded font-bold text-xs">เสียชีวิต</span>`;
-            const tr = document.createElement('tr');
-            tr.innerHTML = `<td class="p-4 whitespace-nowrap">${pDateStr}</td><td class="p-4 whitespace-nowrap font-medium text-navy">${p.prefix||""}${p.name||""}</td><td class="p-4 whitespace-nowrap">${p.id_card||'-'}</td><td class="p-4 whitespace-nowrap text-center">${stHtml}</td><td class="p-4 whitespace-nowrap">บ้านเลขที่ ${p.house_no||'-'} หมู่ ${p.village_no||'-'}</td><td class="p-4 whitespace-nowrap">${p.caregiver_phone||'-'}</td>`;
-            tbody.appendChild(tr);
-        });
+        
+        let cDead = 0; let cMove = 0;
+
+        if(filtered.length === 0) { 
+            tbody.innerHTML = '<tr><td colspan="6" class="p-8 text-center text-slate-400 font-medium">ไม่พบข้อมูลในช่วงเวลาที่เลือก</td></tr>'; 
+        } else {
+            filtered.forEach(p => {
+                let pDateStr = p.updated_at && p.updated_at.toDate ? formatThaiDate(p.updated_at.toDate()) : '-';
+                let stHtml = ``;
+                if(p.status === 'ย้ายที่อยู่') { stHtml = `<span class="bg-orange-50 text-orange-600 border border-orange-100 px-2 py-1 rounded font-bold text-xs">ย้ายที่อยู่</span>`; cMove++; }
+                else { stHtml = `<span class="bg-red-50 text-red-600 border border-red-100 px-2 py-1 rounded font-bold text-xs">เสียชีวิต</span>`; cDead++; }
+                const tr = document.createElement('tr');
+                tr.innerHTML = `<td class="p-4 whitespace-nowrap">${pDateStr}</td><td class="p-4 whitespace-nowrap font-medium text-navy">${p.prefix||""}${p.name||""}</td><td class="p-4 whitespace-nowrap">${p.id_card||'-'}</td><td class="p-4 whitespace-nowrap text-center">${stHtml}</td><td class="p-4 whitespace-nowrap">บ้านเลขที่ ${p.house_no||'-'} หมู่ ${p.village_no||'-'}</td><td class="p-4 whitespace-nowrap">${p.caregiver_phone||'-'}</td>`;
+                tbody.appendChild(tr);
+            });
+        }
+        document.getElementById('sum-dead').innerText = cDead;
+        document.getElementById('sum-moved').innerText = cMove;
     }
 
     function renderRegistryTable() {
