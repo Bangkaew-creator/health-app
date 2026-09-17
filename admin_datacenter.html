@@ -175,7 +175,29 @@ function exportToCSV() {
                 <div class="loader-small mb-3"></div><p class="text-sm text-slate-400 animate-pulse">กำลังโหลดข้อมูลผู้ป่วยจากฐานข้อมูล...</p>
             </div>
             
-            <div id="patient-list" class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5 hidden"></div>
+            
+            <div class="bg-white border border-slate-200 rounded-[20px] shadow-sm w-full mt-6">
+                <div class="w-full overflow-x-auto rounded-[20px]">
+                    <table class="w-full text-left border-collapse min-w-[1200px]">
+                        <thead>
+                            <tr class="bg-slate-50 text-slate-500 text-[11px] uppercase tracking-wider border-b border-slate-200">
+                                <th class="p-4 font-bold w-12 text-center">รูป</th>
+                                <th class="p-4 font-bold">ชื่อ-สกุล</th>
+                                <th class="p-4 font-bold">CID / HN</th>
+                                <th class="p-4 font-bold text-center">กลุ่ม</th>
+                                <th class="p-4 font-bold text-center">หมู่ที่</th>
+                                <th class="p-4 font-bold">บ้านเลขที่</th>
+                                <th class="p-4 font-bold">เบอร์ญาติ</th>
+                                <th class="p-4 font-bold text-center">สิทธิ์ / รอบล่าสุด</th>
+                                <th class="p-4 font-bold">หมายเหตุ</th>
+                            </tr>
+                        </thead>
+                        <tbody id="patient-list" class="text-sm text-slate-700 divide-y divide-slate-100">
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
             
             <div id="empty-state" class="hidden text-center py-20 flex flex-col items-center justify-center">
                 <span class="material-symbols-outlined text-[60px] text-slate-300 mb-4">search_off</span>
@@ -419,62 +441,42 @@ function exportToCSV() {
 
                 if (searchKeyword && !matchHN && !matchID && !matchName && !matchHouse) return;
 
+                
                 displayCount++;
                 let badgeColor = 'bg-slate-100 text-slate-600';
                 if (groupDisplay === 'ติดสังคม') badgeColor = 'bg-emerald-50 text-emerald-700 border-emerald-200';
                 else if (groupDisplay === 'ติดบ้าน') badgeColor = 'bg-amber-50 text-amber-700 border-amber-200';
                 else if (groupDisplay === 'ติดเตียง') badgeColor = 'bg-red-50 text-red-700 border-red-200';
                 
-                let avatarHtml = `<div class="w-14 h-14 rounded-full bg-slate-100 text-slate-400 font-bold text-xl flex items-center justify-center flex-shrink-0 border-2 border-white shadow-sm">${p.name ? p.name.substring(0,1) : '?'}</div>`;
+                let avatarHtml = `<div class="w-10 h-10 rounded-full bg-slate-100 text-slate-400 font-bold text-sm flex items-center justify-center flex-shrink-0 border border-slate-200 shadow-sm mx-auto">${p.name ? p.name.substring(0,1) : '?'}</div>`;
                 if(p.profile_pic && (p.profile_pic.startsWith('data:image') || p.profile_pic.startsWith('http'))) {
-                    avatarHtml = `<img src="${p.profile_pic}" class="w-14 h-14 rounded-full object-cover flex-shrink-0 border-2 border-white shadow-sm">`;
+                    avatarHtml = `<img src="${p.profile_pic}" class="w-10 h-10 rounded-full object-cover flex-shrink-0 border border-slate-200 shadow-sm mx-auto">`;
                 }
 
-                let allocBadge = '';
+                let allocBadge = '-';
                 if(hasAllocations) {
                     const latestAlloc = d.allocations[d.allocations.length - 1];
-                    allocBadge = `<span class="bg-blue-50 text-blue-600 border border-blue-200 text-[9px] font-bold px-2 py-0.5 rounded shadow-sm flex items-center gap-0.5 mt-1"><span class="material-symbols-outlined text-[10px]">inventory_2</span> ได้รับรอบ ${latestAlloc}</span>`;
+                    allocBadge = `<span class="bg-blue-50 text-blue-600 border border-blue-200 text-[10px] font-bold px-2 py-1 rounded shadow-sm inline-flex items-center justify-center gap-1"><span class="material-symbols-outlined text-[12px]">inventory_2</span> รอบ ${latestAlloc}</span>`;
+                } else if (p.diaper) {
+                     if (d.status === 'approved') allocBadge = `<span class="bg-emerald-50 text-emerald-600 border border-emerald-100 px-2 py-1 rounded font-bold text-[10px] inline-flex items-center justify-center">อนุมัติ</span>`;
                 }
 
-                // ป้ายหมายเหตุ
-                let remarkBadge = '';
-                if (p.remark && p.remark !== '-' && p.remark.trim() !== '') {
-                    remarkBadge = `<div class="flex items-center gap-1 text-amber-600 bg-amber-50 border border-amber-200 text-[9px] font-bold px-2 py-0.5 rounded shadow-sm mt-1" title="${p.remark}">
-                        <span class="material-symbols-outlined text-[12px]">push_pin</span> มีหมายเหตุ
-                    </div>`;
-                }
+                let remarkText = p.remark && p.remark !== '-' && p.remark.trim() !== '' ? p.remark : '-';
 
                 container.insertAdjacentHTML('beforeend', `
-                    <div class="bg-white rounded-[24px] p-5 shadow-sm border border-slate-200 relative hover:shadow-md transition-shadow group">
-                        <div class="flex items-start gap-4 border-b border-slate-100 pb-4 mb-4">
-                            ${avatarHtml}
-                            <div class="flex-1 min-w-0">
-                                <h3 class="font-bold text-slate-800 text-[15px] truncate">${p.prefix || ''}${p.name || 'ไม่ระบุชื่อ'}</h3>
-                                <p class="text-[11px] text-slate-500 truncate mt-0.5"><span class="font-bold text-blue-500">CID:</span> ${p.id_card || p.id || '-'}</p>
-                                ${allocBadge}
-                            </div>
-                            <div class="flex flex-col items-end flex-shrink-0 gap-1">
-                                <span class="${badgeColor} text-[10px] font-bold px-3 py-1 rounded-full border shadow-sm">${groupDisplay}</span>
-                                ${remarkBadge}
-                            </div>
-                        </div>
-                        <div class="space-y-2 mb-5">
-                            <div class="flex items-start gap-2 text-xs">
-                                <span class="material-symbols-outlined text-[16px] text-slate-400">home</span>
-                                <span class="text-slate-600">บ้านเลขที่ <strong class="text-slate-800">${p.house_no || '-'}</strong> หมู่ที่ <strong class="text-slate-800">${p.village_no || '-'}</strong></span>
-                            </div>
-                            <div class="flex items-start gap-2 text-xs">
-                                <span class="material-symbols-outlined text-[16px] text-slate-400">call</span>
-                                <span class="text-slate-600">เบอร์ญาติ: <strong class="text-slate-800">${p.caregiver_phone || '-'}</strong></span>
-                            </div>
-                        </div>
-                        <div class="flex gap-2">
-                            <button onclick="window.open('patient_profile.html?id=${p.id}', '_blank')" class="flex-1 py-2.5 bg-slate-100 text-slate-600 text-xs font-bold rounded-xl hover:bg-slate-200 transition-colors flex items-center justify-center gap-1.5"><span class="material-symbols-outlined text-[16px]">folder_open</span> ดูแฟ้ม</button>
-                            ${pStatus === 'active' ? `<button onclick="openStatusModal('${p.id}')" class="px-4 py-2.5 bg-white border border-red-200 text-red-500 text-xs font-bold rounded-xl hover:bg-red-50 transition-colors flex items-center justify-center gap-1.5" title="ยุติการดูแล"><span class="material-symbols-outlined text-[16px]">cancel</span></button>` : `<button onclick="updatePatientStatus('${p.id}', 'Active')" class="px-4 py-2.5 bg-white border border-emerald-200 text-emerald-600 text-xs font-bold rounded-xl hover:bg-emerald-50 transition-colors flex items-center justify-center gap-1.5" title="นำกลับมาดูแล (Active)"><span class="material-symbols-outlined text-[16px]">replay</span></button>`}
-                        </div>
-                    </div>
+                    <tr class="hover:bg-slate-50 transition-colors cursor-pointer group" onclick="window.open('patient_profile.html?id=${p.id}', '_blank')">
+                        <td class="p-3 whitespace-nowrap text-center">${avatarHtml}</td>
+                        <td class="p-3 whitespace-nowrap font-bold text-navy group-hover:text-blue-600 transition-colors">${p.prefix || ''}${p.name || 'ไม่ระบุชื่อ'}</td>
+                        <td class="p-3 whitespace-nowrap"><span class="text-blue-500 font-bold text-[11px] block">CID:</span>${p.id_card || p.id || '-'}</td>
+                        <td class="p-3 whitespace-nowrap text-center"><span class="${badgeColor} text-[10px] font-bold px-3 py-1 rounded-full border shadow-sm">${groupDisplay}</span></td>
+                        <td class="p-3 whitespace-nowrap text-center font-bold text-blue-600">${p.village_no || '-'}</td>
+                        <td class="p-3 whitespace-nowrap">${p.house_no || '-'}</td>
+                        <td class="p-3 whitespace-nowrap">${p.caregiver_phone || '-'}</td>
+                        <td class="p-3 whitespace-nowrap text-center">${allocBadge}</td>
+                        <td class="p-3 whitespace-nowrap text-[12px] text-slate-500 max-w-[200px] truncate" title="${remarkText}">${remarkText}</td>
+                    </tr>
                 `);
-            });
+});
 
             if (displayCount === 0) emptyState.classList.remove('hidden');
             else emptyState.classList.add('hidden');

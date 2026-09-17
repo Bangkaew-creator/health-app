@@ -318,6 +318,7 @@
                 
                 renderKPTTable();
                 document.getElementById('loading-state').classList.add('hidden');
+                document.getElementById('content-kpt').classList.remove('hidden');
                  
             } catch (error) { showToast("ดึงข้อมูลล้มเหลว กรุณารีเฟรชหน้าเว็บ", "error"); }
         }
