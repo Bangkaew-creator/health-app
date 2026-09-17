@@ -172,7 +172,17 @@
                 <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200 mb-5">
                     <h3 class="text-sm font-bold text-navy mb-4">ตัวกรองรายงานการประเมิน ADL</h3>
                     <div class="flex flex-wrap gap-4 items-end">
-                        <div><label class="text-xs text-slate-500 font-bold block mb-1">ตั้งแต่วันที่</label><input type="date" id="adl-start-date" class="px-3 py-2 border border-slate-300 rounded-xl text-sm outline-none focus:ring-2 focus:ring-blue-500"></div>
+                        
+    <div><label class="text-xs text-slate-500 font-bold block mb-1">หมู่ที่</label>
+    <select id="adl-village" class="global-village-filter px-3 py-2 border border-slate-300 rounded-xl text-sm outline-none focus:ring-2 focus:ring-blue-500 min-w-[120px]">
+        <option value="">ดูทุกหมู่ (ทั้งหมด)</option>
+    </select></div>
+
+    <div><label class="text-xs text-slate-500 font-bold block mb-1">หมู่ที่</label>
+    <select id="dev-village" class="global-village-filter px-3 py-2 border border-slate-300 rounded-xl text-sm outline-none focus:ring-2 focus:ring-blue-500 min-w-[120px]">
+        <option value="">ดูทุกหมู่ (ทั้งหมด)</option>
+    </select></div>
+<div><label class="text-xs text-slate-500 font-bold block mb-1">ตั้งแต่วันที่</label><input type="date" id="adl-start-date" class="px-3 py-2 border border-slate-300 rounded-xl text-sm outline-none focus:ring-2 focus:ring-blue-500"></div>
                         <div><label class="text-xs text-slate-500 font-bold block mb-1">ถึงวันที่</label><input type="date" id="adl-end-date" class="px-3 py-2 border border-slate-300 rounded-xl text-sm outline-none focus:ring-2 focus:ring-blue-500"></div>
                         <button onclick="renderADLReport()" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-xl text-sm font-bold shadow-sm active:scale-95 transition-all">ดูรายงาน</button>
                         <button onclick="exportADLReport()" class="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-xl text-sm font-bold shadow-sm flex items-center gap-1 active:scale-95 transition-all"><span class="material-symbols-outlined text-[16px]">download</span> โหลด Excel</button>
@@ -246,7 +256,12 @@
                 <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200 mb-5">
                     <h3 class="text-sm font-bold text-navy mb-4">ตัวกรองรายงานผู้ป่วยเสียชีวิต/ย้ายที่อยู่</h3>
                     <div class="flex flex-wrap gap-4 items-end">
-                        <div><label class="text-xs text-slate-500 font-bold block mb-1">ตั้งแต่วันที่ (อิงวันบันทึกสถานะ)</label><input type="date" id="in-start-date" class="px-3 py-2 border border-slate-300 rounded-xl text-sm outline-none focus:ring-2 focus:ring-blue-500"></div>
+                        
+    <div><label class="text-xs text-slate-500 font-bold block mb-1">หมู่ที่</label>
+    <select id="in-village" class="global-village-filter px-3 py-2 border border-slate-300 rounded-xl text-sm outline-none focus:ring-2 focus:ring-blue-500 min-w-[120px]">
+        <option value="">ดูทุกหมู่ (ทั้งหมด)</option>
+    </select></div>
+<div><label class="text-xs text-slate-500 font-bold block mb-1">ตั้งแต่วันที่ (อิงวันบันทึกสถานะ)</label><input type="date" id="in-start-date" class="px-3 py-2 border border-slate-300 rounded-xl text-sm outline-none focus:ring-2 focus:ring-blue-500"></div>
                         <div><label class="text-xs text-slate-500 font-bold block mb-1">ถึงวันที่</label><input type="date" id="in-end-date" class="px-3 py-2 border border-slate-300 rounded-xl text-sm outline-none focus:ring-2 focus:ring-blue-500"></div>
                         <button onclick="renderInactiveReport()" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-xl text-sm font-bold shadow-sm active:scale-95 transition-all">ดูรายงาน</button>
                         <button onclick="exportInactiveReport()" class="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-xl text-sm font-bold shadow-sm flex items-center gap-1 active:scale-95 transition-all"><span class="material-symbols-outlined text-[16px]">download</span> โหลด Excel</button>
@@ -271,10 +286,15 @@
                         <h3 class="text-sm font-bold text-navy">ทะเบียนข้อมูลสุขภาพผู้ป่วยทั้งหมด</h3>
                         <p class="text-[11px] text-slate-500 mt-1">สรุปข้อมูลผู้ป่วยแต่ละราย พร้อมโรคประจำตัวและประวัติการประเมิน</p>
                     </div>
-                    <button onclick="exportRegistry()" class="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-xl text-sm font-bold shadow-sm flex items-center gap-1.5 transition-all active:scale-95">
-                        <span class="material-symbols-outlined text-[18px]">download</span> โหลดตาราง Excel
-                    </button>
-                </div>
+                    <div class="flex flex-wrap items-center gap-3">
+                        <select id="reg-village" onchange="renderRegistryTable()" class="global-village-filter px-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold text-slate-600 focus:ring-2 focus:ring-blue-500 outline-none">
+                            <option value="">ดูทุกหมู่ (ทั้งหมด)</option>
+                        </select>
+                        <button onclick="exportRegistry()" class="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-xl text-sm font-bold shadow-sm flex items-center gap-1.5 transition-all active:scale-95">
+                            <span class="material-symbols-outlined text-[18px]">download</span> โหลดตาราง Excel
+                        </button>
+                    </div>
+</div>
 
                 <div class="bg-white border border-slate-200 rounded-[20px] shadow-sm w-full">
                     <div class="w-full overflow-x-auto rounded-[20px]">
@@ -305,20 +325,21 @@
 
             <!-- TAB 5: สถิติ อสม. -->
             <div id="content-vhv" class="tab-content px-6 lg:px-8 mt-6 pb-20 lg:pb-8 hidden w-full">
-                <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200 mb-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                    <div>
-                        <h3 class="text-sm font-bold text-navy">สถิติการปฏิบัติงาน อสม.</h3>
-                        <p class="text-[11px] text-slate-500 mt-1">จำนวนผู้ป่วยที่ดูแล และประวัติการประเมินต่างๆ โดย อสม. แต่ละท่าน</p>
-                    </div>
-                    <div class="flex items-center gap-3">
-                        <select id="vhv-village-filter" onchange="renderVHVTable()" class="px-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold text-slate-600 focus:ring-2 focus:ring-blue-500 outline-none">
+                
+                <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200 mb-5">
+                    <h3 class="text-sm font-bold text-navy mb-4">ตัวกรองสถิติการปฏิบัติงาน อสม.</h3>
+                    <div class="flex flex-wrap gap-4 items-end">
+                        <div><label class="text-xs text-slate-500 font-bold block mb-1">ตั้งแต่วันที่</label><input type="date" id="vhv-start-date" class="px-3 py-2 border border-slate-300 rounded-xl text-sm outline-none focus:ring-2 focus:ring-blue-500"></div>
+                        <div><label class="text-xs text-slate-500 font-bold block mb-1">ถึงวันที่</label><input type="date" id="vhv-end-date" class="px-3 py-2 border border-slate-300 rounded-xl text-sm outline-none focus:ring-2 focus:ring-blue-500"></div>
+                        <div><label class="text-xs text-slate-500 font-bold block mb-1">หมู่ที่</label>
+                        <select id="vhv-village-filter" class="global-village-filter px-3 py-2 border border-slate-300 rounded-xl text-sm outline-none focus:ring-2 focus:ring-blue-500 min-w-[120px]">
                             <option value="">ดูทุกหมู่ (ทั้งหมด)</option>
-                        </select>
-                        <button onclick="exportVHVStats()" class="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-xl text-sm font-bold shadow-sm flex items-center gap-1.5 transition-all active:scale-95">
-                            <span class="material-symbols-outlined text-[18px]">download</span> โหลด Excel
-                        </button>
+                        </select></div>
+                        <button onclick="renderVHVTable()" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-xl text-sm font-bold shadow-sm active:scale-95 transition-all">ดูสถิติ</button>
+                        <button onclick="exportVHVStats()" class="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-xl text-sm font-bold shadow-sm flex items-center gap-1 active:scale-95 transition-all"><span class="material-symbols-outlined text-[16px]">download</span> โหลด Excel</button>
                     </div>
                 </div>
+
 
                 <div class="bg-white border border-slate-200 rounded-[20px] shadow-sm w-full">
                     <div class="w-full overflow-x-auto rounded-[20px]">
@@ -400,6 +421,15 @@
 
             if (userDoc.exists) {
                 const userData = userDoc.data();
+                const hName = document.getElementById('header-user-name');
+                if (hName) hName.innerText = userData.name || 'ผู้ดูแลระบบ';
+                const hPic = document.getElementById('header-profile-pic');
+                const hIcon = document.getElementById('header-profile-icon');
+                if (hPic && hIcon && userData.photoURL) {
+                    hPic.src = userData.photoURL;
+                    hPic.classList.remove('hidden');
+                    hIcon.classList.add('hidden');
+                }
                 const role = String(userData.role || '').toUpperCase();
                 if (role === 'ADMIN') {
                     hasAccess = true; currentUserRole = 'ADMIN'; hospital = userData.hospital_name || hospital;
@@ -421,12 +451,14 @@
                     if (navReports) navReports.style.display = 'none';
                 }
 
-                const vhvFilter = document.getElementById('vhv-village-filter');
-                if (currentUserRole === 'SUB_ADMIN') {
-                    assignedVillages.forEach(v => { vhvFilter.insertAdjacentHTML('beforeend', `<option value="${v}">หมู่ที่ ${v}</option>`); });
-                } else {
-                    for(let i=1; i<=vCount; i++){ vhvFilter.insertAdjacentHTML('beforeend', `<option value="${i}">หมู่ที่ ${i}</option>`); }
-                }
+                const villageFilters = document.querySelectorAll('.global-village-filter');
+                villageFilters.forEach(select => {
+                    if (currentUserRole === 'SUB_ADMIN') {
+                        assignedVillages.forEach(v => { select.insertAdjacentHTML('beforeend', `<option value="${v}">หมู่ที่ ${v}</option>`); });
+                    } else {
+                        for(let i=1; i<=vCount; i++){ select.insertAdjacentHTML('beforeend', `<option value="${i}">หมู่ที่ ${i}</option>`); }
+                    }
+                });
 
                 await loadVHVs();
                 loadReportData();
@@ -436,7 +468,7 @@
 
     async function loadVHVs() {
         try {
-            const snapshot = await db.collection('Users').get();
+            const snapshot = await db.collection('VHVs').get();
             allVHVs = [];
             snapshot.forEach(doc => { allVHVs.push({ uid: doc.id, ...doc.data() }); });
         } catch (error) { console.error("Error loading VHVs:", error); }
@@ -495,6 +527,8 @@
             document.getElementById('dev-end-date').value = fmtDate(lastDay);
             document.getElementById('in-start-date').value = fmtDate(firstDay);
             document.getElementById('in-end-date').value = fmtDate(lastDay);
+            document.getElementById('vhv-start-date').value = fmtDate(firstDay);
+            document.getElementById('vhv-end-date').value = fmtDate(lastDay);
 
             renderADLReport();
             renderADLDevReport();
@@ -526,7 +560,8 @@
         const endStr = document.getElementById('adl-end-date').value;
         const tbody = document.getElementById('tbody-adl-assess');
         tbody.innerHTML = '';
-        const filtered = allAssessments.filter(a => isBetween(a.parsedDate, startStr, endStr));
+        const vil = document.getElementById('adl-village').value;
+        const filtered = allAssessments.filter(a => isBetween(a.parsedDate, startStr, endStr) && (!vil || String(a.pData?.village_no) === String(vil)));
         filtered.sort((a,b) => b.parsedDate - a.parsedDate);
         
         let cSocial = 0; let cHome = 0; let cBed = 0;
@@ -555,7 +590,8 @@
         const endStr = document.getElementById('dev-end-date').value;
         const tbody = document.getElementById('tbody-adl-dev');
         tbody.innerHTML = '';
-        const filtered = allAssessments.filter(a => isBetween(a.parsedDate, startStr, endStr));
+        const vil = document.getElementById('dev-village').value;
+        const filtered = allAssessments.filter(a => isBetween(a.parsedDate, startStr, endStr) && (!vil || String(a.pData?.village_no) === String(vil)));
         const grouped = {};
         filtered.forEach(a => { if(!grouped[a.patient_id]) grouped[a.patient_id] = []; grouped[a.patient_id].push(a); });
         const rows = Object.values(grouped).map(arr => {
@@ -591,7 +627,9 @@
         const endStr = document.getElementById('in-end-date').value;
         const tbody = document.getElementById('tbody-inactive');
         tbody.innerHTML = '';
+        const vil = document.getElementById('in-village').value;
         const filtered = allInactive.filter(p => {
+            if(vil && String(p.village_no) !== String(vil)) return false;
             let pDate = p.updated_at && p.updated_at.toDate ? p.updated_at.toDate() : new Date();
             return isBetween(pDate, startStr, endStr);
         });
@@ -620,7 +658,8 @@
         tbody.innerHTML = '';
         let index = 1;
         
-        const activePatients = allPatients.filter(p => p.status === 'Active');
+        const vil = document.getElementById('reg-village').value;
+        const activePatients = allPatients.filter(p => p.status === 'Active' && (!vil || String(p.village_no) === String(vil)));
 
         activePatients.forEach(p => {
             const tr = document.createElement('tr');
@@ -668,6 +707,8 @@
         const tbody = document.getElementById('tbody-vhv');
         tbody.innerHTML = '';
         const filterVillage = document.getElementById('vhv-village-filter').value;
+        const startStr = document.getElementById('vhv-start-date').value;
+        const endStr = document.getElementById('vhv-end-date').value;
         let index = 1;
 
         let displayVHVs = allVHVs;
@@ -678,7 +719,7 @@
             let adlCount = 0;
 
             vhvPatients.forEach(p => {
-                if(allAssessments.some(a => String(a.patient_id) === String(p.id))) adlCount++;
+                if(allAssessments.some(a => String(a.patient_id) === String(p.id) && isBetween(a.parsedDate, startStr, endStr))) adlCount++;
             });
 
             const tr = document.createElement('tr');
@@ -687,7 +728,7 @@
                 <td class="p-4 text-center text-slate-400 font-medium">${index++}</td>
                 <td class="p-4 whitespace-nowrap font-bold text-navy flex items-center gap-3">
                     <img src="${vhv.photoURL || 'https://ui-avatars.com/api/?name=' + encodeURIComponent(vhv.name||'VHV') + '&background=0f172a&color=fff'}" class="w-8 h-8 rounded-full object-cover border border-slate-200">
-                    ${vhv.name||'ไม่ระบุชื่อ'}
+                    ${vhv.name||'ไม่ระบุชื่อ'} ${vhv.nickname ? `<span class="text-slate-500 font-medium text-[11px]">(${vhv.nickname})</span>` : ""}
                 </td>
                 <td class="p-4 whitespace-nowrap text-center font-bold">${vhv.village_no||'-'}</td>
                 <td class="p-4 whitespace-nowrap text-center font-bold text-blue-600">${vhvPatients.length}</td>

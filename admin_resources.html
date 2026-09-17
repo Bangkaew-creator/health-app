@@ -184,7 +184,16 @@
                 } catch(e) {}
 
                 if (userDoc.exists) {
-                    const userData = userDoc.data();
+                const userData = userDoc.data();
+                const hName = document.getElementById('header-user-name');
+                if (hName) hName.innerText = userData.name || 'ผู้ดูแลระบบ';
+                const hPic = document.getElementById('header-profile-pic');
+                const hIcon = document.getElementById('header-profile-icon');
+                if (hPic && hIcon && userData.photoURL) {
+                    hPic.src = userData.photoURL;
+                    hPic.classList.remove('hidden');
+                    hIcon.classList.add('hidden');
+                }
                     const role = String(userData.role || '').toUpperCase();
                     if (role === 'ADMIN') {
                         hasAccess = true;

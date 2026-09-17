@@ -296,6 +296,7 @@
                 await db.collection('VHVs').doc(String(currentUid)).set({
                     uid: currentUid,
                     name: name,
+                    nickname: nickname,
                     phone: phone,
                     role: assignedRole,
                     status: 'Active', 
@@ -316,6 +317,7 @@
 
         async function registerUser() {
             const name = document.getElementById('reg-name').value;
+            const nickname = document.getElementById('reg-nickname') ? document.getElementById('reg-nickname').value : '';
             const phone = document.getElementById('reg-phone').value;
             const village = document.getElementById('reg-village').value;
             

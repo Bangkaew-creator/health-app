@@ -229,7 +229,16 @@
                 } catch(e) {}
 
                 if (userDoc.exists) {
-                    const userData = userDoc.data();
+                const userData = userDoc.data();
+                const hName = document.getElementById('header-user-name');
+                if (hName) hName.innerText = userData.name || 'ผู้ดูแลระบบ';
+                const hPic = document.getElementById('header-profile-pic');
+                const hIcon = document.getElementById('header-profile-icon');
+                if (hPic && hIcon && userData.photoURL) {
+                    hPic.src = userData.photoURL;
+                    hPic.classList.remove('hidden');
+                    hIcon.classList.add('hidden');
+                }
                     const role = String(userData.role || '').toUpperCase();
                     if (role === 'ADMIN') {
                         hasAccess = true; currentUserRole = 'ADMIN'; hospital = userData.hospital_name || hospital;
@@ -367,7 +376,7 @@
                 container.insertAdjacentHTML('beforeend', `
                     <div class="bg-white rounded-[20px] p-5 shadow-lg border border-amber-300 relative overflow-hidden">
                         <div class="absolute top-0 right-0 bg-amber-500 text-white text-[10px] font-bold px-3 py-1 rounded-bl-xl rounded-tr-[20px]">รอตรวจสอบ</div>
-                        <h3 class="font-bold text-slate-800 text-sm mt-2">${v.name}</h3>
+                        <h3 class="font-bold text-slate-800 text-sm mt-2">${v.name} ${v.nickname ? `<span class="text-slate-500 font-medium">(${v.nickname})</span>` : ""}</h3>
                         <p class="text-[11px] text-amber-700 bg-amber-50 font-bold px-2 py-0.5 rounded inline-block mt-1">ขอรับสิทธิ์ หมู่ที่ ${v.village_no}</p>
                         <p class="text-[11px] text-slate-500 mt-2 flex items-center gap-1"><span class="material-symbols-outlined text-[14px]">call</span> ${v.phone}</p>
                         
