@@ -178,10 +178,7 @@
         <option value="">ดูทุกหมู่ (ทั้งหมด)</option>
     </select></div>
 
-    <div><label class="text-xs text-slate-500 font-bold block mb-1">หมู่ที่</label>
-    <select id="dev-village" class="global-village-filter px-3 py-2 border border-slate-300 rounded-xl text-sm outline-none focus:ring-2 focus:ring-blue-500 min-w-[120px]">
-        <option value="">ดูทุกหมู่ (ทั้งหมด)</option>
-    </select></div>
+
 <div><label class="text-xs text-slate-500 font-bold block mb-1">ตั้งแต่วันที่</label><input type="date" id="adl-start-date" class="px-3 py-2 border border-slate-300 rounded-xl text-sm outline-none focus:ring-2 focus:ring-blue-500"></div>
                         <div><label class="text-xs text-slate-500 font-bold block mb-1">ถึงวันที่</label><input type="date" id="adl-end-date" class="px-3 py-2 border border-slate-300 rounded-xl text-sm outline-none focus:ring-2 focus:ring-blue-500"></div>
                         <button onclick="renderADLReport()" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-xl text-sm font-bold shadow-sm active:scale-95 transition-all">ดูรายงาน</button>
@@ -221,6 +218,10 @@
                 <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200 mb-5">
                     <h3 class="text-sm font-bold text-navy mb-4">ตัวกรองรายงานพัฒนาการคะแนน ADL</h3>
                     <div class="flex flex-wrap gap-4 items-end">
+                        <div><label class="text-xs text-slate-500 font-bold block mb-1">หมู่ที่</label>
+                        <select id="dev-village" class="global-village-filter px-3 py-2 border border-slate-300 rounded-xl text-sm outline-none focus:ring-2 focus:ring-blue-500 min-w-[120px]">
+                            <option value="">ดูทุกหมู่ (ทั้งหมด)</option>
+                        </select></div>
                         <div><label class="text-xs text-slate-500 font-bold block mb-1">ตั้งแต่วันที่</label><input type="date" id="dev-start-date" class="px-3 py-2 border border-slate-300 rounded-xl text-sm outline-none focus:ring-2 focus:ring-blue-500"></div>
                         <div><label class="text-xs text-slate-500 font-bold block mb-1">ถึงวันที่</label><input type="date" id="dev-end-date" class="px-3 py-2 border border-slate-300 rounded-xl text-sm outline-none focus:ring-2 focus:ring-blue-500"></div>
                         <button onclick="renderADLDevReport()" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-xl text-sm font-bold shadow-sm active:scale-95 transition-all">ดูรายงาน</button>
