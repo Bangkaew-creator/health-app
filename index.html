@@ -233,6 +233,7 @@
         async function registerStaff() {
             const name = document.getElementById('admin-reg-name').value;
             const phone = document.getElementById('admin-reg-phone').value;
+            const nickname = document.getElementById('admin-reg-nickname') ? document.getElementById('admin-reg-nickname').value : '';
             const secretCode = document.getElementById('admin-reg-secret').value.trim();
             if (!name || !phone || !secretCode) return alert("กรุณากรอกข้อมูลให้ครบถ้วน");
 
@@ -352,6 +353,7 @@
                 await db.collection('VHVs').doc(String(currentUid)).set({
                     uid: currentUid,
                     name: name,
+                    nickname: nickname,
                     phone: phone,
                     role: 'VHV',
                     status: 'Pending', 
