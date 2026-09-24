@@ -256,7 +256,12 @@
                 const subCentersSnap = await db.collection('SystemConfig').doc('SUB_CENTERS').get();
                 let subCenters = [];
                 if(subCentersSnap.exists) {
-                    try { subCenters = JSON.parse(subCentersSnap.data().value); } catch(e){}
+                    const val = subCentersSnap.data().value;
+                    if (val && typeof val === 'string') {
+                        try { subCenters = JSON.parse(val); } catch(e){}
+                    } else if (val && Array.isArray(val)) {
+                        subCenters = val;
+                    }
                 }
 
                 let assignedRole = null;
