@@ -680,6 +680,84 @@
             calculateMatrix(false); 
         }
 
+
+        // --- Draft Logic ---
+        function saveFinanceDraft() {
+            const draft = {
+                incomes: {
+                    nhso: document.getElementById('income-nhso').value,
+                    lao: document.getElementById('income-lao').value,
+                    other: document.getElementById('income-other').value,
+                    carry: document.getElementById('income-carry').value
+                },
+                mgtFeePct: document.getElementById('mgt-fee-pct').value,
+                section2Overrides: {},
+                projects: requestedProjects
+            };
+            
+            categories.forEach(c => {
+                const amtInput = document.getElementById('actual-amt-' + c.id);
+                if (amtInput && !amtInput.readOnly) {
+                    draft.section2Overrides[c.id] = amtInput.value;
+                }
+            });
+            
+            localStorage.setItem('finance_board_draft', JSON.stringify(draft));
+            showToast('บันทึกร่างข้อมูลเรียบร้อยแล้ว (จะดึงข้อมูลเดิมเมื่อเปิดหน้าต่างใหม่)');
+        }
+
+        function loadFinanceDraft() {
+            const saved = localStorage.getItem('finance_board_draft');
+            if (!saved) return;
+            
+            try {
+                const draft = JSON.parse(saved);
+                
+                if (draft.incomes) {
+                    document.getElementById('income-nhso').value = draft.incomes.nhso || '';
+                    document.getElementById('income-lao').value = draft.incomes.lao || '';
+                    document.getElementById('income-other').value = draft.incomes.other || '';
+                    document.getElementById('income-carry').value = draft.incomes.carry || '';
+                }
+                
+                if (draft.mgtFeePct) {
+                    document.getElementById('mgt-fee-pct').value = draft.mgtFeePct;
+                }
+                
+                if (draft.projects && Array.isArray(draft.projects)) {
+                    requestedProjects = draft.projects;
+                    let maxId = 0;
+                    requestedProjects.forEach(p => { if (p.id > maxId) maxId = p.id; });
+                    projectIdCounter = maxId + 1;
+                }
+                
+                renderProjects();
+                syncProjectsToMatrix(); 
+                
+                if (draft.section2Overrides) {
+                    categories.forEach(c => {
+                        const amtInput = document.getElementById('actual-amt-' + c.id);
+                        if (amtInput && !amtInput.readOnly && draft.section2Overrides[c.id]) {
+                            amtInput.value = draft.section2Overrides[c.id];
+                            if (c.id !== 4) handleActualAmtChange(c.id);
+                        }
+                    });
+                }
+                
+                calculateMatrix(false); 
+                
+            } catch(e) {
+                console.error("Error loading draft", e);
+            }
+        }
+
+        function clearFinanceDraft() {
+            if(confirm('คุณต้องการล้างข้อมูลทั้งหมดในกระดานนี้และเริ่มใหม่ใช่หรือไม่?')) {
+                localStorage.removeItem('finance_board_draft');
+                location.reload();
+            }
+        }
+
 </script>
 </body>
 </html>
