@@ -349,7 +349,7 @@
 
             renderMatrix();
             setupInputListeners();
-            setTimeout(() => calculateMatrix(), 200);
+            setTimeout(() => { calculateMatrix(); loadFinanceDraft(); }, 200);
         }
 
         function renderMatrix() {
