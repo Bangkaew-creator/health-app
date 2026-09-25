@@ -685,6 +685,7 @@
         }
 
 
+        
         // --- Draft Logic ---
         function saveFinanceDraft() {
             const draft = {
@@ -696,6 +697,7 @@
                 },
                 mgtFeePct: document.getElementById('mgt-rate').value,
                 section2Overrides: {},
+                section2Targets: {},
                 projects: requestedProjects
             };
             
@@ -703,6 +705,11 @@
                 const amtInput = document.getElementById('actual-amt-' + c.id);
                 if (amtInput && !amtInput.readOnly) {
                     draft.section2Overrides[c.id] = amtInput.value;
+                }
+                
+                const targetPctInput = document.getElementById('target-pct-' + c.id);
+                if (targetPctInput) {
+                    draft.section2Targets[c.id] = targetPctInput.value;
                 }
             });
             
@@ -725,7 +732,17 @@
                 }
                 
                 if (draft.mgtFeePct) {
-                    document.getElementById('mgt-rate').value = draft.mgtFeePct;
+                    const mgtSelect = document.getElementById('mgt-rate');
+                    if(mgtSelect) mgtSelect.value = draft.mgtFeePct;
+                }
+                
+                if (draft.section2Targets) {
+                    categories.forEach(c => {
+                        const targetPctInput = document.getElementById('target-pct-' + c.id);
+                        if (targetPctInput && draft.section2Targets[c.id]) {
+                            targetPctInput.value = draft.section2Targets[c.id];
+                        }
+                    });
                 }
                 
                 if (draft.projects && Array.isArray(draft.projects)) {
