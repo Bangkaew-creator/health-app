@@ -179,6 +179,43 @@
                 </div>
             </div>
         </div>
+    
+        <!-- Modal บันทึกมติคณะกรรมการ -->
+        <div id="committee-modal" class="fixed inset-0 bg-[#111c2d]/40 backdrop-blur-sm z-[100] hidden flex items-center justify-center p-4 transition-all duration-300 opacity-0">
+            <div id="committee-modal-content" class="bg-white rounded-3xl w-full max-w-md shadow-2xl overflow-hidden flex flex-col transform scale-95 transition-all duration-300">
+                <div class="px-6 py-5 border-b border-slate-100 flex justify-between items-center bg-slate-50">
+                    <h3 class="text-lg font-black text-navy flex items-center gap-2"><span class="material-symbols-outlined text-amber-500">gavel</span> บันทึกมติคณะกรรมการ</h3>
+                    <button onclick="closeCommitteeModal()" class="text-slate-400 hover:text-slate-600 bg-white hover:bg-slate-100 w-8 h-8 rounded-full flex items-center justify-center transition-colors shadow-sm"><span class="material-symbols-outlined text-[20px]">close</span></button>
+                </div>
+                <div class="p-6 overflow-y-auto max-h-[70vh]">
+                    <div class="bg-amber-50 rounded-xl p-4 mb-5 border border-amber-100 flex gap-3">
+                        <span class="material-symbols-outlined text-amber-500">info</span>
+                        <div class="text-sm text-amber-800">
+                            คุณกำลังจะบันทึกมติคณะกรรมการให้กับผู้ป่วย <strong id="modal-selected-count">0</strong> รายการ <br>เมื่อบันทึกแล้ว รายชื่อเหล่านี้จะถูกย้ายไปยังแท็บ "ประวัติ (อนุมัติแล้ว)"
+                        </div>
+                    </div>
+
+                    <div class="space-y-4">
+                        <div>
+                            <label class="block text-sm font-bold text-slate-700 mb-1">รอบที่ <span class="text-red-500">*</span></label>
+                            <input type="number" id="input-round" placeholder="เช่น 1, 2, 3" class="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 font-medium">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-bold text-slate-700 mb-1">ปีงบประมาณ <span class="text-red-500">*</span></label>
+                            <input type="number" id="input-fy" placeholder="เช่น 2568" value="2568" class="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 font-medium">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-bold text-slate-700 mb-1">จำนวนวัน (สำหรับคำนวณ) <span class="text-red-500">*</span></label>
+                            <input type="number" id="input-days" value="90" placeholder="เช่น 90 หรือ 30" class="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 font-medium">
+                        </div>
+                    </div>
+                </div>
+                <div class="p-4 border-t border-slate-100 bg-slate-50 flex gap-3 justify-end rounded-b-3xl">
+                    <button onclick="closeCommitteeModal()" class="px-5 py-2.5 text-sm font-bold text-slate-600 bg-white border border-slate-200 hover:bg-slate-50 rounded-xl transition-colors">ยกเลิก</button>
+                    <button id="btn-save-committee" onclick="saveCommitteeDecision()" class="px-5 py-2.5 text-sm font-bold text-white bg-amber-500 hover:bg-amber-600 rounded-xl transition-colors shadow-sm flex items-center gap-2"><span class="material-symbols-outlined text-[18px]">save</span> บันทึกมติ</button>
+                </div>
+            </div>
+        </div>
     </main>
 
     <script>
