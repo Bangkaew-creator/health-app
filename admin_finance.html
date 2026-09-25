@@ -3,55 +3,39 @@
 <head>
     <meta charset="utf-8"/>
     <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-    <title>ภาพรวมระบบ - จัดการระบบ</title>
+    <title>แผนการเงิน (Budget Plan) - อสม.สามารถ</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700&display=swap" rel="stylesheet"/>
     <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+    <script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
     <script charset="utf-8" src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
-    
-    <!-- 🌟 เพิ่ม Manifest และ Theme Color สำหรับ PWA 🌟 -->
-    <link rel="manifest" href="manifest.json">
-    <meta name="theme-color" content="#00694a">
-    <link rel="apple-touch-icon" href="https://cdn-icons-png.flaticon.com/512/3063/3063116.png">
     
     <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-messaging-compat.js"></script>
     <script src="config.js"></script>
     
     <style>
-        body { font-family: 'Sarabun', sans-serif; background-color: #f8fafc; }
+        body { font-family: 'Sarabun', sans-serif; background-color: #f4f7fa; }
         .material-symbols-outlined { font-variation-settings: 'FILL' 1, 'wght' 400, 'GRAD' 0, 'opsz' 24; }
         .bg-navy { background-color: #0f172a; } .text-navy { color: #0f172a; }
-        .loader-small { border: 2px solid #f3f3f3; border-bottom-color: #00694a; border-radius: 50%; width: 24px; height: 24px; animation: spin 1s linear infinite; }
+        .loader-small { border: 2px solid #f3f3f3; border-bottom-color: #00694a; border-radius: 50%; width: 30px; height: 30px; animation: spin 1s linear infinite; }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
-        /* สไตล์สำหรับ Notification */
-        .notification-dropdown { display: none; }
-        .notification-dropdown.show { display: block; animation: slideDown 0.2s ease-out forwards; }
-        @keyframes slideDown { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
-        .custom-scrollbar::-webkit-scrollbar { width: 4px; }
-        .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
-        .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+        .check-row { accent-color: #00694a; width: 20px; height: 20px; cursor: pointer; }
+        .tab-btn { padding: 14px 10px; font-weight: bold; font-size: 14px; border-bottom: 3px solid transparent; color: #64748b; transition: all 0.2s; cursor: pointer; }
+        .tab-btn.active { color: #00694a; border-bottom-color: #00694a; }
     </style>
 </head>
 <body class="flex h-[100dvh] overflow-hidden text-slate-800 relative">
 
     <div id="sidebar-overlay" class="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-40 hidden lg:hidden" onclick="toggleSidebar()"></div>
-
     <aside id="sidebar" class="fixed inset-y-0 left-0 w-72 bg-navy text-white flex flex-col z-50 transform -translate-x-full lg:translate-x-0 lg:static transition-transform duration-300 ease-in-out">
         <div class="p-6 flex items-center justify-between border-b border-slate-700/40">
             <div class="flex items-center gap-3">
-                <div class="w-11 h-11 rounded-xl bg-white/10 flex items-center justify-center border border-amber-400/30">
-                    <span class="material-symbols-outlined text-amber-400 text-[26px]">local_hospital</span>
-                </div>
-                <div>
-                    <h1 id="sidebar-hospital-name" class="font-bold text-[15px] tracking-wide text-white">กำลังโหลด...</h1>
-                    <p id="sidebar-system-name" class="text-[10px] text-amber-400 font-medium">ระบบบริหารจัดการ</p>
-                </div>
+                <div class="w-11 h-11 rounded-xl bg-white/10 flex items-center justify-center border border-amber-400/30"><span class="material-symbols-outlined text-amber-400 text-[26px]">local_hospital</span></div>
+                <div><h1 id="sidebar-hospital-name" class="font-bold text-[15px] tracking-wide text-white">กำลังโหลด...</h1><p id="sidebar-system-name" class="text-[10px] text-amber-400 font-medium">ระบบบริหารจัดการ</p></div>
             </div>
             <button onclick="toggleSidebar()" class="lg:hidden text-slate-400 p-1"><span class="material-symbols-outlined">close</span></button>
         </div>
-
         <nav class="flex-1 px-4 py-6 space-y-2 overflow-y-auto">
     <a href="admin_dashboard.html" class="flex items-center gap-3 px-4 py-3.5 text-slate-400 hover:bg-white/5 hover:text-white rounded-xl font-medium transition-all"><span class="material-symbols-outlined">dashboard</span> ภาพรวมระบบ</a>
     <a href="admin_resources.html" class="flex items-center gap-3 px-4 py-3.5 text-slate-400 hover:bg-white/5 hover:text-white rounded-xl font-medium transition-all"><span class="material-symbols-outlined">inventory_2</span> บริหารทรัพยากร</a>
@@ -66,289 +50,133 @@
 </nav>
     </aside>
 
-    <main class="flex-1 flex flex-col min-h-0 bg-slate-50">
-        <header class="h-20 min-h-[80px] bg-white shadow-sm flex items-center justify-between px-6 lg:px-8 z-20 flex-shrink-0 border-b border-slate-100 relative">
+    <main class="flex-1 flex flex-col min-h-0 bg-slate-50 overflow-y-auto">
+        <header class="h-20 min-h-[80px] bg-white shadow-sm flex items-center justify-between px-6 lg:px-8 z-10 flex-shrink-0 border-b border-slate-100">
             <div class="flex items-center">
                 <button onclick="toggleSidebar()" class="lg:hidden p-2.5 -ml-2 mr-3 text-slate-600 hover:bg-slate-100 rounded-xl transition-colors"><span class="material-symbols-outlined text-[26px]">menu</span></button>
                 <div>
                     <h2 class="text-base lg:text-lg font-bold text-slate-900 leading-tight">แผนการเงิน (Budget Plan)</h2>
-                    <p id="header-hospital-name" class="text-[11px] lg:text-xs text-slate-400 font-medium mt-0.5">เครื่องมือคำนวณและสร้างแผนงบประมาณ</p>
-                </div>
-            </div>
-            
-            <div class="flex items-center gap-4">
-                
-                <!-- 🌟 Notification Bell 🌟 -->
-                <div class="relative">
-                    <button onclick="toggleNotification()" class="relative p-2 text-slate-400 hover:text-amber-500 hover:bg-amber-50 rounded-full transition-colors focus:outline-none">
-                        <span class="material-symbols-outlined text-[26px]">notifications</span>
-                        <span id="notif-badge" class="absolute top-1.5 right-1.5 w-4 h-4 bg-red-500 text-white text-[9px] font-bold rounded-full flex items-center justify-center border-2 border-white hidden">0</span>
-                    </button>
-                    
-                    <!-- Notification Dropdown -->
-                    <div id="notif-dropdown" class="notification-dropdown absolute right-0 mt-2 w-80 max-w-[90vw] bg-white rounded-2xl shadow-xl border border-slate-100 overflow-hidden z-50">
-                        <div class="p-4 border-b border-slate-100 bg-slate-50/50 flex flex-col gap-2">
-                            <div class="flex justify-between items-center">
-                                <h3 class="text-sm font-bold text-slate-800">การแจ้งเตือน</h3>
-                                <button onclick="clearNotifications()" class="text-[11px] text-slate-400 hover:text-slate-600 font-medium">รับทราบทั้งหมด</button>
-                            </div>
-                            <!-- 🌟 ปุ่มสำหรับ iOS ให้กดขออนุญาต 🌟 -->
-                                                    </div>
-                        <div id="notif-list" class="max-h-[350px] overflow-y-auto custom-scrollbar divide-y divide-slate-50">
-                            <!-- Items will be injected here -->
-                            <div class="p-8 text-center text-slate-400 text-xs">กำลังโหลดการแจ้งเตือน...</div>
-                        </div>
-                        <div class="p-2 border-t border-slate-100 bg-slate-50 text-center">
-                            <button onclick="toggleNotification()" class="text-xs text-slate-500 font-medium w-full py-1 hover:text-slate-700">ปิดหน้าต่าง</button>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Profile -->
-                <div class="flex items-center gap-3 cursor-pointer pl-3 border-l border-slate-200" onclick="window.location.href='admin_settings.html'">
-                    <div class="hidden md:block text-right">
-                        <p class="text-sm font-bold text-slate-700 leading-tight" id="header-user-name">กำลังโหลด...</p>
-                        <p class="text-[10px] text-slate-400">ไปที่ตั้งค่าข้อมูลส่วนตัว</p>
-                    </div>
-                    <div class="w-10 h-10 rounded-full bg-slate-200 border-2 border-white shadow-sm overflow-hidden flex items-center justify-center">
-                        <img id="header-profile-pic" src="" class="w-full h-full object-cover hidden">
-                        <span id="header-profile-icon" class="material-symbols-outlined text-slate-400">person</span>
-                    </div>
+                    <p id="header-hospital-name" class="text-[11px] lg:text-xs text-slate-400 font-medium mt-0.5">ศูนย์บันทึกมติผ้าอ้อมและจัดสรรงบประมาณ</p>
                 </div>
             </div>
         </header>
 
-        <div class="flex-1 overflow-y-auto p-4 lg:p-6 relative z-10" onclick="closeNotificationIfOpen(event)">
+        <div class="flex-1 pb-20 relative z-10" onclick="closeNotificationIfOpen(event)">
             
-            <div class="max-w-4xl mx-auto">
-                <div class="bg-white p-6 md:p-8 rounded-3xl shadow-sm border border-slate-200">
+            <div class="max-w-[1400px] mx-auto p-4 lg:p-8">
+                <div class="bg-white p-4 lg:p-8 rounded-3xl shadow-sm border border-slate-200">
                     <div class="flex justify-between items-center border-b border-slate-100 pb-4 mb-6">
                         <div>
-                            <h2 class="text-2xl font-bold text-navy">บันทึกข้อมูลแผนการเงิน</h2>
-                            <p class="text-base text-slate-500 mt-1">คำนวณและประมาณการรายรับ-รายจ่ายของกองทุนฯ</p>
+                            <h2 class="text-2xl font-black text-navy">กระดานคำนวณแผนการเงิน (Budget Board)</h2>
+                            <p class="text-sm text-slate-500 mt-1">ปรับตัวเลขและสัดส่วนได้แบบ Real-time เพื่อนำเสนอคณะกรรมการ</p>
                         </div>
-                        <button onclick="savePlan()" class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2.5 rounded-xl font-bold shadow-sm transition-all flex items-center gap-2 text-lg">
-                            <span class="material-symbols-outlined text-[20px]">save</span> บันทึก
-                        </button>
                     </div>
 
-                    <div id="finance-builder-container" class="space-y-8">
+                    <div id="finance-builder-container" class="space-y-6">
+                        
+                        <!-- 🌟 SUMMARY DASHBOARD 🌟 -->
+                        <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+                            <div class="bg-blue-50 p-4 rounded-2xl border border-blue-100">
+                                <p class="text-xs font-bold text-blue-600 mb-1">รวมรายรับปีนี้ (สปสช.+อปท.+อื่นๆ)</p>
+                                <h3 id="dash-revenue" class="text-xl lg:text-2xl font-black text-blue-900 leading-none">0.00</h3>
+                            </div>
+                            <div class="bg-indigo-50 p-4 rounded-2xl border border-indigo-100">
+                                <p class="text-xs font-bold text-indigo-600 mb-1">รวมเงินทั้งสิ้น (รวมยอดยกมา)</p>
+                                <h3 id="dash-total-money" class="text-xl lg:text-2xl font-black text-indigo-900 leading-none">0.00</h3>
+                            </div>
+                            <div class="bg-amber-50 p-4 rounded-2xl border border-amber-100 relative group">
+                                <p class="text-xs font-bold text-amber-600 mb-1 flex items-center gap-1">
+                                    หักงบบริหาร 
+                                    <select id="mgt-rate" class="bg-amber-100 text-amber-800 rounded px-1 text-xs border-none outline-none font-bold cursor-pointer" onchange="calculateMatrix()">
+                                        <option value="15" selected>15%</option>
+                                        <option value="20">20%</option>
+                                    </select>
+                                    (เพดานสูดสุด)
+                                </p>
+                                <h3 id="dash-mgt-max" class="text-xl lg:text-2xl font-black text-amber-900 leading-none">0.00</h3>
+                            </div>
+                            <div class="bg-emerald-50 p-4 rounded-2xl border border-emerald-200 shadow-sm relative overflow-hidden">
+                                <div class="absolute -right-4 -bottom-4 opacity-20">
+                                    <span class="material-symbols-outlined text-[80px] text-emerald-600">account_balance_wallet</span>
+                                </div>
+                                <p class="text-xs font-bold text-emerald-700 mb-1 relative z-10">ยอดเงินที่ใช้จัดสรรโครงการได้</p>
+                                <h3 id="dash-usable" class="text-xl lg:text-2xl font-black text-emerald-700 leading-none relative z-10">0.00</h3>
+                            </div>
+                        </div>
                         
                         <!-- Section 1: รายรับ (Income) -->
-                        <div class="bg-slate-50/50 p-6 rounded-2xl border border-slate-200">
-                            <h3 class="text-xl font-bold text-slate-800 mb-6 flex items-center gap-2">
-                                <span class="material-symbols-outlined text-blue-500">payments</span> ส่วนที่ 1: ประมาณการรายรับ
+                        <div class="bg-slate-50 p-4 rounded-2xl border border-slate-200">
+                            <h3 class="text-sm font-bold text-slate-800 mb-3 flex items-center gap-2">
+                                <span class="material-symbols-outlined text-blue-500 text-[18px]">payments</span> ส่วนที่ 1: ตั้งต้นรายรับ
                             </h3>
                             
-                            <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                            <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
                                 <div>
-                                    <label class="block text-sm font-bold text-slate-700 mb-2">วันที่ <span class="text-red-500">*</span></label>
-                                    <input type="date" id="plan-date" class="w-full px-4 py-3 bg-white rounded-xl border border-slate-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 outline-none text-lg font-medium">
+                                    <label class="block text-xs font-bold text-slate-500 mb-1">สปสช.จัดสรร</label>
+                                    <input type="text" id="income-nhso" value="1,553,409.50" class="w-full px-3 py-2 bg-white rounded-lg border border-slate-200 focus:border-blue-500 outline-none text-right font-bold text-blue-700 num-input">
                                 </div>
                                 <div>
-                                    <label class="block text-sm font-bold text-slate-700 mb-2">ปีงบประมาณ <span class="text-red-500">*</span></label>
-                                    <select id="plan-year" class="w-full px-4 py-3 bg-white rounded-xl border border-slate-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 outline-none text-lg font-medium">
-                                        <option value="2567">2567</option>
-                                        <option value="2568" selected>2568</option>
-                                        <option value="2569">2569</option>
-                                        <option value="2570">2570</option>
-                                    </select>
+                                    <label class="block text-xs font-bold text-slate-500 mb-1">อปท.สมทบ</label>
+                                    <input type="text" id="income-lao" value="1,500,000.00" class="w-full px-3 py-2 bg-white rounded-lg border border-slate-200 focus:border-blue-500 outline-none text-right font-bold text-blue-700 num-input">
                                 </div>
-                            </div>
-
-                            <div class="space-y-4">
-                                <div class="flex flex-col md:flex-row md:items-center gap-4 pb-4 border-b border-slate-200/60">
-                                    <label class="md:w-1/3 text-base font-bold text-slate-700">ยกยอดมา <span class="text-red-500">*</span></label>
-                                    <div class="md:w-2/3 flex items-center gap-3">
-                                        <input type="text" id="income-carry" value="0.00" class="w-full px-4 py-3 bg-white rounded-xl border border-slate-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 outline-none text-right text-lg font-semibold num-input text-slate-800" onkeyup="calculateFinance()">
-                                        <span class="text-slate-500 font-medium w-12 text-center">บาท</span>
-                                    </div>
+                                <div>
+                                    <label class="block text-xs font-bold text-slate-500 mb-1">รายได้อื่นๆ</label>
+                                    <input type="text" id="income-other" value="0.00" class="w-full px-3 py-2 bg-white rounded-lg border border-slate-200 focus:border-blue-500 outline-none text-right font-bold text-blue-700 num-input">
                                 </div>
-
-                                <div class="flex flex-col md:flex-row gap-4 pt-2">
-                                    <div class="md:w-1/3"></div>
-                                    <div class="md:w-2/3 flex gap-6">
-                                        <label class="flex items-center gap-2 cursor-pointer">
-                                            <input type="radio" name="nhso_type" value="allocated" checked class="w-5 h-5 text-blue-600 focus:ring-blue-500" onchange="calculateFinance()">
-                                            <span class="text-base font-medium text-slate-700">สปสช.จัดสรร</span>
-                                        </label>
-                                        <label class="flex items-center gap-2 cursor-pointer">
-                                            <input type="radio" name="nhso_type" value="not_allocated" class="w-5 h-5 text-blue-600 focus:ring-blue-500" onchange="calculateFinance()">
-                                            <span class="text-base font-medium text-slate-700">สปสช.ไม่จัดสรร</span>
-                                        </label>
-                                    </div>
-                                </div>
-
-                                <div class="flex flex-col md:flex-row md:items-center gap-4">
-                                    <label class="md:w-1/3 text-base font-bold text-slate-700">สปสช.จัดสรร <span class="text-red-500">*</span></label>
-                                    <div class="md:w-2/3 flex items-center gap-3">
-                                        <input type="text" id="income-nhso" value="0.00" class="w-full px-4 py-3 bg-white rounded-xl border border-slate-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 outline-none text-right text-lg font-semibold num-input text-slate-800" onkeyup="calculateFinance()">
-                                        <span class="text-slate-500 font-medium w-12 text-center">บาท</span>
-                                    </div>
-                                </div>
-
-                                <div class="flex flex-col md:flex-row gap-4 py-2">
-                                    <label class="md:w-1/3 text-base font-bold text-slate-700 mt-2">สัดส่วนการสมทบ <span class="text-red-500">*</span></label>
-                                    <div class="md:w-2/3 space-y-3">
-                                        <label class="flex items-start gap-3 cursor-pointer">
-                                            <input type="radio" name="contribution_rate" value="30" checked class="w-5 h-5 mt-0.5 text-blue-600 focus:ring-blue-500" onchange="calculateFinance()">
-                                            <div class="text-base">
-                                                <span class="text-slate-700">ไม่น้อยกว่าร้อยละ 30 (กรณีรายได้ อปท. ต่ำกว่า 6 ล้านบาท)</span>
-                                                <div id="min-req-30" class="text-red-500 font-semibold mt-1">ไม่น้อยกว่า 0.00 บาท</div>
-                                            </div>
-                                        </label>
-                                        <label class="flex items-start gap-3 cursor-pointer">
-                                            <input type="radio" name="contribution_rate" value="40" class="w-5 h-5 mt-0.5 text-blue-600 focus:ring-blue-500" onchange="calculateFinance()">
-                                            <div class="text-base">
-                                                <span class="text-slate-700">ไม่น้อยกว่าร้อยละ 40 (กรณีรายได้ อปท. 6 ถึง 20 ล้านบาท)</span>
-                                                <div id="min-req-40" class="text-slate-400 mt-1">ไม่น้อยกว่า 0.00 บาท</div>
-                                            </div>
-                                        </label>
-                                        <label class="flex items-start gap-3 cursor-pointer">
-                                            <input type="radio" name="contribution_rate" value="50" class="w-5 h-5 mt-0.5 text-blue-600 focus:ring-blue-500" onchange="calculateFinance()">
-                                            <div class="text-base">
-                                                <span class="text-slate-700">ไม่น้อยกว่าร้อยละ 50 (กรณีรายได้ อปท. สูงกว่า 20 ล้านบาท)</span>
-                                                <div id="min-req-50" class="text-slate-400 mt-1">ไม่น้อยกว่า 0.00 บาท</div>
-                                            </div>
-                                        </label>
-                                    </div>
-                                </div>
-
-                                <div class="flex flex-col md:flex-row md:items-center gap-4">
-                                    <label class="md:w-1/3 text-base font-bold text-slate-700">อปท.สมทบ <span class="text-red-500">*</span></label>
-                                    <div class="md:w-2/3 flex items-center gap-3">
-                                        <input type="text" id="income-lao" value="0.00" class="w-full px-4 py-3 bg-white rounded-xl border border-slate-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 outline-none text-right text-lg font-semibold num-input text-slate-800" onkeyup="calculateFinance()">
-                                        <span class="text-slate-500 font-medium w-12 text-center">บาท</span>
-                                    </div>
-                                </div>
-
-                                <div class="flex flex-col md:flex-row md:items-center gap-4">
-                                    <label class="md:w-1/3 text-base font-bold text-slate-700">รายได้อื่นๆ <span class="text-red-500">*</span></label>
-                                    <div class="md:w-2/3 flex items-center gap-3">
-                                        <input type="text" id="income-other" value="0.00" class="w-full px-4 py-3 bg-white rounded-xl border border-slate-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 outline-none text-right text-lg font-semibold num-input text-slate-800" onkeyup="calculateFinance()">
-                                        <span class="text-slate-500 font-medium w-12 text-center">บาท</span>
-                                    </div>
-                                </div>
-
-                                <div class="flex flex-col md:flex-row md:items-center gap-4 mt-6 bg-slate-100 p-4 rounded-xl border border-slate-200">
-                                    <label class="md:w-1/3 text-lg font-bold text-slate-800">ประมาณการรายรับ</label>
-                                    <div class="md:w-2/3 flex items-center gap-3">
-                                        <input type="text" id="total-revenue" value="0.00" readonly class="w-full px-4 py-3 bg-transparent border-none text-slate-800 outline-none text-right text-xl font-bold p-0 text-slate-800">
-                                        <span class="text-slate-700 font-bold w-12 text-center">บาท</span>
-                                    </div>
-                                </div>
-
-                                <div class="flex flex-col md:flex-row md:items-center gap-4 mt-2 bg-blue-50 p-4 rounded-xl border border-blue-200">
-                                    <label class="md:w-1/3 text-xl font-bold text-blue-900">รวมเงินทั้งสิ้น</label>
-                                    <div class="md:w-2/3 flex items-center gap-3">
-                                        <input type="text" id="total-money" value="0.00" readonly class="w-full px-4 py-3 bg-transparent border-none text-blue-900 outline-none text-right text-2xl font-black p-0">
-                                        <span class="text-blue-900 font-bold w-12 text-center">บาท</span>
-                                    </div>
+                                <div>
+                                    <label class="block text-xs font-bold text-slate-500 mb-1">ยอดยกมา</label>
+                                    <input type="text" id="income-carry" value="884,109.30" class="w-full px-3 py-2 bg-white rounded-lg border border-slate-200 focus:border-indigo-500 outline-none text-right font-bold text-indigo-700 num-input">
                                 </div>
                             </div>
                         </div>
 
-                        <!-- Section 2: รายจ่าย (Expenses) -->
-                        <div class="bg-slate-50/50 p-6 rounded-2xl border border-slate-200">
-                            <h3 class="text-xl font-bold text-slate-800 mb-6 flex items-center gap-2">
-                                <span class="material-symbols-outlined text-rose-500">account_balance</span> ส่วนที่ 2: ประมาณการรายจ่าย
+                        <!-- Section 2: รายจ่าย (Expenses Allocation Matrix) -->
+                        <div class="mt-6">
+                            <h3 class="text-lg font-bold text-slate-800 flex items-center gap-2 mb-4">
+                                <span class="material-symbols-outlined text-rose-500">account_balance</span> ส่วนที่ 2: ตารางคำนวณและแจกแจงรายจ่าย
                             </h3>
 
-                            <div class="space-y-5">
-                                <div class="flex flex-col md:flex-row md:items-center gap-4">
-                                    <label class="md:w-2/3 text-base font-bold text-slate-700">1. สนับสนุนหน่วยบริการ สถานบริการ หรือหน่วยงานสาธารณสุข <span class="text-red-500">*</span></label>
-                                    <div class="md:w-1/3 flex items-center gap-3">
-                                        <input type="text" id="exp-1" value="0.00" class="w-full px-4 py-3 bg-white rounded-xl border border-slate-200 focus:border-rose-500 focus:ring-2 focus:ring-rose-500/20 outline-none text-right text-lg font-semibold num-input text-slate-800" onkeyup="calculateFinance()">
-                                        <span class="text-slate-500 font-medium w-12 text-center">บาท</span>
-                                    </div>
+                            <div class="overflow-x-auto rounded-xl border border-slate-200 shadow-sm">
+                                <table class="w-full text-sm text-left whitespace-nowrap min-w-[900px]">
+                                    <thead class="bg-slate-100 text-slate-600 font-bold">
+                                        <tr>
+                                            <th class="px-4 py-3 border-b border-slate-200 w-1/4">ประเภทรายจ่าย</th>
+                                            <th class="px-4 py-3 border-b border-slate-200 text-center w-24 bg-blue-50/50" title="ปรับเป้าหมายเปอร์เซ็นต์">เป้าหมาย %</th>
+                                            <th class="px-4 py-3 border-b border-slate-200 text-right bg-blue-50/50">ยอดเป้าหมาย (Target)</th>
+                                            <th class="px-4 py-3 border-b border-slate-200 text-center bg-rose-50/50" title="กรอกเปอร์เซ็นต์ที่ขอจริง">ขอรับจริง %</th>
+                                            <th class="px-4 py-3 border-b border-slate-200 text-right bg-rose-50/50" title="กรอกยอดเงินที่ขอจริง">ขอรับจริง (บาท)</th>
+                                            <th class="px-4 py-3 border-b border-slate-200 text-right">สถานะ (ขาด/เกิน)</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody class="divide-y divide-slate-100 bg-white" id="matrix-body">
+                                        <!-- Injected by JS -->
+                                    </tbody>
+                                    <tfoot class="bg-slate-800 text-white font-bold text-base">
+                                        <tr>
+                                            <td class="px-4 py-4 text-right">รวมทั้งหมด</td>
+                                            <td class="px-4 py-4 text-center text-slate-300" id="sum-target-pct">0.0%</td>
+                                            <td class="px-4 py-4 text-right text-slate-300" id="sum-target-amt">0.00</td>
+                                            <td class="px-4 py-4 text-center text-rose-200" id="sum-actual-pct">0.0%</td>
+                                            <td class="px-4 py-4 text-right text-rose-300 text-lg" id="sum-actual-amt">0.00</td>
+                                            <td class="px-4 py-4 text-right" id="sum-diff">0.00</td>
+                                        </tr>
+                                    </tfoot>
+                                </table>
+                            </div>
+                            
+                            <!-- Overall Balance -->
+                            <div class="mt-6 flex flex-col md:flex-row justify-between items-center gap-4">
+                                <div id="overall-alert" class="hidden p-3 rounded-xl border border-red-200 bg-red-50 flex items-center gap-2">
+                                    <span class="material-symbols-outlined text-red-500 text-[20px]">warning</span>
+                                    <span class="font-bold text-red-700 text-sm" id="overall-alert-msg">แจ้งเตือน: ยอดรวมที่ขอรับจัดสรร เกินกว่ายอดเงินรวมทั้งสิ้น!</span>
                                 </div>
-
-                                <div class="flex flex-col md:flex-row md:items-center gap-4">
-                                    <label class="md:w-2/3 text-base font-bold text-slate-700">2. สนับสนุนองค์กร หรือกลุ่มประชาชน <span class="text-red-500">*</span></label>
-                                    <div class="md:w-1/3 flex items-center gap-3">
-                                        <input type="text" id="exp-2" value="0.00" class="w-full px-4 py-3 bg-white rounded-xl border border-slate-200 focus:border-rose-500 focus:ring-2 focus:ring-rose-500/20 outline-none text-right text-lg font-semibold num-input text-slate-800" onkeyup="calculateFinance()">
-                                        <span class="text-slate-500 font-medium w-12 text-center">บาท</span>
-                                    </div>
-                                </div>
-
-                                <div class="flex flex-col md:flex-row md:items-center gap-4">
-                                    <label class="md:w-2/3 text-base font-bold text-slate-700">3. สนับสนุนศูนย์ฯเด็ก/ผู้สูงอายุ/คนพิการ/หน่วยงานที่รับผิดชอบศูนย์ <span class="text-red-500">*</span></label>
-                                    <div class="md:w-1/3 flex items-center gap-3">
-                                        <input type="text" id="exp-3" value="0.00" class="w-full px-4 py-3 bg-white rounded-xl border border-slate-200 focus:border-rose-500 focus:ring-2 focus:ring-rose-500/20 outline-none text-right text-lg font-semibold num-input text-slate-800" onkeyup="calculateFinance()">
-                                        <span class="text-slate-500 font-medium w-12 text-center">บาท</span>
-                                    </div>
-                                </div>
-
-                                <div class="flex flex-col gap-3 py-3 border-y border-slate-200/60">
-                                    <label class="text-base font-bold text-slate-700">4. สนับสนุนค่าใช้จ่ายในการบริหารหรือพัฒนากองทุน <span class="text-red-500">*</span></label>
-                                    
-                                    <div class="flex flex-col md:flex-row gap-4 items-start md:items-center pl-4 border-l-4 border-slate-200 ml-2">
-                                        <div class="md:w-2/3 space-y-3">
-                                            <label class="flex items-center gap-3 cursor-pointer">
-                                                <input type="radio" name="management_rate" value="15" checked class="w-5 h-5 text-rose-600 focus:ring-rose-500" onchange="calculateFinance()">
-                                                <span class="text-base text-slate-700">15% ไม่เข้าร่วม long term care <span id="max-req-15" class="text-red-500 font-semibold ml-1">ไม่เกิน 0.00 บาท</span></span>
-                                            </label>
-                                            <label class="flex items-center gap-3 cursor-pointer">
-                                                <input type="radio" name="management_rate" value="20" class="w-5 h-5 text-rose-600 focus:ring-rose-500" onchange="calculateFinance()">
-                                                <span class="text-base text-slate-700">20% เข้าร่วม long term care <span id="max-req-20" class="text-slate-400 ml-1">ไม่เกิน 0.00 บาท</span></span>
-                                            </label>
-                                        </div>
-                                        <div class="md:w-1/3 flex items-center gap-3 w-full">
-                                            <input type="text" id="exp-4" value="0.00" class="w-full px-4 py-3 bg-white rounded-xl border border-slate-200 focus:border-rose-500 focus:ring-2 focus:ring-rose-500/20 outline-none text-right text-lg font-semibold num-input text-slate-800" onkeyup="calculateFinance()">
-                                            <span class="text-slate-500 font-medium w-12 text-center">บาท</span>
-                                        </div>
-                                    </div>
-                                </div>
-
-                                <div class="flex flex-col md:flex-row md:items-center gap-4">
-                                    <label class="md:w-2/3 text-base font-bold text-slate-700">5. สนับสนุนกรณีเกิดโรคระบาด หรือภัยพิบัติในพื้นที่ <span class="text-red-500">*</span></label>
-                                    <div class="md:w-1/3 flex items-center gap-3">
-                                        <input type="text" id="exp-5" value="0.00" class="w-full px-4 py-3 bg-white rounded-xl border border-slate-200 focus:border-rose-500 focus:ring-2 focus:ring-rose-500/20 outline-none text-right text-lg font-semibold num-input text-slate-800" onkeyup="calculateFinance()">
-                                        <span class="text-slate-500 font-medium w-12 text-center">บาท</span>
-                                    </div>
-                                </div>
-
-                                <div class="flex flex-col md:flex-row md:items-center gap-4">
-                                    <label class="md:w-2/3 text-base font-bold text-slate-700">6. สนับสนุนค่าจ้าง ค่าตอบแทน หรือค่าป่วยการของ CG <span class="text-red-500">*</span></label>
-                                    <div class="md:w-1/3 flex items-center gap-3">
-                                        <input type="text" id="exp-6" value="0.00" class="w-full px-4 py-3 bg-white rounded-xl border border-slate-200 focus:border-rose-500 focus:ring-2 focus:ring-rose-500/20 outline-none text-right text-lg font-semibold num-input text-slate-800" onkeyup="calculateFinance()">
-                                        <span class="text-slate-500 font-medium w-12 text-center">บาท</span>
-                                    </div>
-                                </div>
-
-                                <div class="flex flex-col md:flex-row md:items-center gap-4">
-                                    <label class="md:w-2/3 text-base font-bold text-slate-700">7. สนับสนุนฯ ตามมติคณะกรรมการหลักประกันสุขภาพแห่งชาติ <span class="text-red-500">*</span></label>
-                                    <div class="md:w-1/3 flex items-center gap-3">
-                                        <input type="text" id="exp-7" value="0.00" class="w-full px-4 py-3 bg-white rounded-xl border border-slate-200 focus:border-rose-500 focus:ring-2 focus:ring-rose-500/20 outline-none text-right text-lg font-semibold num-input text-slate-800" onkeyup="calculateFinance()">
-                                        <span class="text-slate-500 font-medium w-12 text-center">บาท</span>
-                                    </div>
-                                </div>
-
-                                <div class="flex flex-col md:flex-row md:items-center gap-4">
-                                    <label class="md:w-2/3 text-base font-bold text-slate-700">8. สนับสนุนฯ การจัดบริการพาหนะรับส่งผู้ทุพพลภาพ <span class="text-red-500">*</span></label>
-                                    <div class="md:w-1/3 flex items-center gap-3">
-                                        <input type="text" id="exp-8" value="0.00" class="w-full px-4 py-3 bg-white rounded-xl border border-slate-200 focus:border-rose-500 focus:ring-2 focus:ring-rose-500/20 outline-none text-right text-lg font-semibold num-input text-slate-800" onkeyup="calculateFinance()">
-                                        <span class="text-slate-500 font-medium w-12 text-center">บาท</span>
-                                    </div>
-                                </div>
-
-                                <div class="flex flex-col md:flex-row md:items-center gap-4 mt-6 p-4 bg-slate-100 rounded-xl border border-slate-200">
-                                    <label class="md:w-2/3 text-xl font-bold text-slate-800 text-right pr-4">รวมเป็นเงินทั้งสิ้น</label>
-                                    <div class="md:w-1/3 flex items-center gap-3">
-                                        <input type="text" id="total-expense" value="0.00" readonly class="w-full px-4 py-3 bg-transparent border-none text-slate-800 outline-none text-right text-xl font-bold p-0">
-                                        <span class="text-slate-700 font-bold w-12 text-center">บาท</span>
-                                    </div>
-                                </div>
-                                
-                                <div id="balance-alert" class="hidden mt-4 p-4 rounded-xl border border-red-200 bg-red-50 flex items-start gap-3">
-                                    <span class="material-symbols-outlined text-red-500">warning</span>
-                                    <div>
-                                        <h4 class="font-bold text-red-700 text-base">ยอดเงินไม่สมดุล</h4>
-                                        <p class="text-red-600 text-sm mt-1">ยอดรวมรายจ่าย (<span id="alert-exp">0.00</span>) สูงกว่ายอดรวมรายรับ (<span id="alert-inc">0.00</span>)</p>
-                                    </div>
+                                <div class="bg-slate-50 px-6 py-4 rounded-2xl flex flex-col items-end border border-slate-200 w-full md:w-auto ml-auto">
+                                    <span class="text-sm font-bold text-slate-500 mb-1">เงินสดคงเหลือสุทธิ (ยอดรวมทั้งสิ้น - ยอดขอรับจริงทั้งหมด)</span>
+                                    <span id="final-balance" class="text-3xl font-black text-emerald-600">0.00</span>
                                 </div>
                             </div>
                         </div>
+
                     </div>
                 </div>
             </div>
@@ -359,428 +187,160 @@
         firebase.initializeApp(firebaseConfig);
         firebase.firestore().enablePersistence({ synchronizeTabs: true }).catch(err => console.warn('Offline persistence error:', err.code));
         const db = firebase.firestore();
-         
-
-        let currentUserRole = "ADMIN";
-        let assignedVillages = [];
-        let dashboardPatients = []; 
-        let allVHVsList = []; 
-        let currentUserUid = ""; 
-
+        
         function toggleSidebar() { document.getElementById('sidebar').classList.toggle('-translate-x-full'); }
-
-        function cleanJSON(rawStr) {
-            if (!rawStr || String(rawStr).trim() === '') return null;
-            let cleanStr = String(rawStr).trim();
-            // Removed dangerous replace
-            if (cleanStr.startsWith('"') && cleanStr.endsWith('"')) cleanStr = cleanStr.substring(1, cleanStr.length - 1);
-            try { return JSON.parse(cleanStr); } catch(e) { return null; }
-        }
-
-        function calculateDaysSince(dateStr) {
-            if (!dateStr || dateStr.trim() === '' || dateStr === '-') return 999;
-            let targetDate;
-            if (dateStr.includes('/')) {
-                const parts = dateStr.split(' ')[0].split('/');
-                let year = parseInt(parts[2]);
-                if (year > 2400) year -= 543;
-                targetDate = new Date(year, parseInt(parts[1]) - 1, parseInt(parts[0]));
-            } else { targetDate = new Date(dateStr); }
-            if (isNaN(targetDate)) return 999;
-            return Math.floor(Math.abs(new Date() - targetDate) / (1000 * 60 * 60 * 24));
-        }
 
         document.addEventListener("DOMContentLoaded", () => {
             document.getElementById('sidebar-hospital-name').innerText = DEFAULT_CONFIGS.HOSPITAL_NAME;
-
-            // เช็คว่าเคยอนุญาตไปหรือยัง ถ้ายังให้โชว์ปุ่มในกระดิ่งแจ้งเตือน
-            function checkNotificationStatus() {
-                const btnPush = document.getElementById('btn-enable-push');
-                if (window.Notification && Notification.permission === 'default') {
-                    if (btnPush) btnPush.classList.remove('hidden');
-                } else {
-                    if (btnPush) btnPush.classList.add('hidden');
-                }
-            }
-            checkNotificationStatus();
+            document.getElementById('sidebar-system-name').innerText = DEFAULT_CONFIGS.SYSTEM_NAME;
             
-            // 🌟 ปลุก Service Worker 🌟
-            if ('serviceWorker' in navigator) {
-                navigator.serviceWorker.register('/firebase-messaging-sw.js').catch(err => console.log('SW failed', err));
-            }
-
             liff.init({ liffId: LIFF_ID }).then(() => {
                 const mockUid = localStorage.getItem('dev_mock_uid');
-                const savedUid = localStorage.getItem('orsomo_uid'); // 🌟 1. ดึงความจำ UID สำหรับ PWA
-
-                if (mockUid) { 
-                    currentUserUid = mockUid;
-                    verifyAdminAccess(mockUid); 
+                const savedUid = localStorage.getItem('orsomo_uid');
+                if (mockUid) {
+                    verifyAdminAccess(mockUid);
                 } else if (liff.isLoggedIn()) { 
-                    liff.getProfile().then(p => {
-                        localStorage.setItem('orsomo_uid', p.userId); // 🌟 2. จำรหัสตอนเข้าผ่าน LINE
-                        currentUserUid = p.userId;
-                        
-                        verifyAdminAccess(p.userId);
-                    }).catch(() => bounceToLogin()); 
+                    liff.getProfile().then(p => { localStorage.setItem('orsomo_uid', p.userId); verifyAdminAccess(p.userId); }).catch(() => bounceToLogin());
                 } else if (savedUid) {
-                    // 🌟 3. ข้าม Login เมื่อใช้ผ่าน PWA (แอปหน้าจอโฮม) 🌟
-                    currentUserUid = savedUid;
                     verifyAdminAccess(savedUid);
-                } else { 
-                    bounceToLogin(); 
-                }
+                } else bounceToLogin();
             }).catch(() => bounceToLogin());
         });
 
         function bounceToLogin() { window.location.href = 'index.html'; }
 
-        
-        // 🌟 ดึงข้อมูลและอัปเดต UI หน้าแอดมิน (ฉบับแก้บั๊กไม่แสดงรูป) 🌟
         async function verifyAdminAccess(uid) {
             try {
                 const userDoc = await db.collection('VHVs').doc(String(uid)).get();
-                let hasAccess = false;
+                let hasAccess = false; 
                 let hospital = DEFAULT_CONFIGS.HOSPITAL_NAME;
-
-                try {
-                    const sysSnapHospital = await db.collection('SystemConfig').doc('HOSPITAL_NAME').get();
-                    if(sysSnapHospital.exists) hospital = sysSnapHospital.data().value || hospital;
-                } catch(e) {}
 
                 if (userDoc.exists) {
                     const userData = userDoc.data();
-                    
-                    // 🌟 นำชื่อและรูปภาพจากฐานข้อมูลมาแสดงบนหัวเว็บ (Bypass LINE)
-                    document.getElementById('header-user-name').innerText = userData.name || 'แอดมิน';
-                    if(userData.profile_pic) {
-                        document.getElementById('header-profile-pic').src = userData.profile_pic;
-                        document.getElementById('header-profile-pic').classList.remove('hidden');
-                        document.getElementById('header-profile-icon').classList.add('hidden');
+                    if (userData.profile_pic) {
+                        const imgEl = document.getElementById('header-profile-img');
+                        if(imgEl) { imgEl.src = userData.profile_pic; imgEl.classList.remove('hidden'); }
+                        const txtEl = document.getElementById('header-profile-text');
+                        if(txtEl) txtEl.classList.add('hidden');
                     }
-                    
                     const role = String(userData.role || '').toUpperCase();
                     if (role === 'ADMIN') {
-                        hasAccess = true; currentUserRole = 'ADMIN'; hospital = userData.hospital_name || hospital;
-                    } else if (role === 'SUB_ADMIN') {
-                        hasAccess = true; currentUserRole = 'SUB_ADMIN'; hospital = userData.hospital_name || hospital;
-                        assignedVillages = userData.assigned_villages || [];
-                    }
+                        hasAccess = true; hospital = userData.hospital_name || hospital;
+                    } 
                 }
 
                 if (hasAccess) {
                     document.getElementById('sidebar-hospital-name').innerText = hospital;
-                    document.getElementById('header-hospital-name').innerText = `ข้อมูลสำหรับ ${hospital}`;
-                    
-                    if (currentUserRole === 'SUB_ADMIN') {
-                        const navSettings = document.getElementById('nav-settings');
-                        if (navSettings) navSettings.style.display = 'none';
-                        const navFinance = document.getElementById('nav-finance');
-                        if (navFinance) navFinance.style.display = 'none'; 
-                        
-                        const navInventory = document.getElementById('nav-inventory');
-                        if (navInventory) navInventory.style.display = 'none';
-                        const navReports = document.getElementById('nav-reports');
-                        if (navReports) navReports.style.display = 'none';
-                    }
-                    
-                    await loadVHVs();
-                    loadDashboardData(); 
-                } else window.location.href = 'dashboard.html'; 
-            } catch (error) { bounceToLogin(); }
+                    initFinance();
+                } else { window.location.href = 'dashboard.html'; }
+            } catch (error) { console.error(error); window.location.href = 'index.html'; }
         }
 
-        async function loadVHVs() {
-            try {
-                const snapshot = await db.collection('VHVs').get();
-                allVHVsList = [];
-                snapshot.forEach(doc => {
-                    const v = doc.data();
-                    if(v.uid && v.name) {
-                        allVHVsList.push({ id: v.uid, name: v.name, village: v.village_no, status: v.status });
-                    }
-                });
-            } catch(e) { console.error("Error loading VHVs"); }
-        }
-
-        // --- 🌟 ระบบการแจ้งเตือนอัจฉริยะ (Notifications) 🌟 ---
-        let notifications = [];
-
+        // Notification Stubs (so header doesn't crash)
         function toggleNotification() {
             const dropdown = document.getElementById('notif-dropdown');
-            dropdown.classList.toggle('show');
+            if (dropdown) dropdown.classList.toggle('hidden');
         }
-
         function closeNotificationIfOpen(e) {
             const dropdown = document.getElementById('notif-dropdown');
-            if (dropdown.classList.contains('show') && !e.target.closest('.relative')) {
-                dropdown.classList.remove('show');
-            }
-        }
-
-        function getVhvName(uid) {
-            const vhv = allVHVsList.find(v => v.id === uid);
-            return vhv ? vhv.name : 'อสม.';
-        }
-
-        function generateNotifications() {
-            notifications = [];
-            let pendingDiapersCount = 0;
-            
-            let dismissedNotifs = JSON.parse(localStorage.getItem(`dismissed_notifs_${currentUserUid}`) || '[]');
-            
-            const pendingVHVs = allVHVsList.filter(v => v.status === 'Pending');
-            pendingVHVs.forEach(v => {
-                if(currentUserRole === 'SUB_ADMIN' && !assignedVillages.includes(String(v.village))) return;
-                
-                let nid = `vhv_pending_${v.id}`;
-                if (!dismissedNotifs.includes(nid)) {
-                    notifications.push({
-                        nid: nid, type: 'vhv_pending', icon: 'person_add', color: 'blue',
-                        title: 'คำขอสมัครใช้งานใหม่',
-                        message: `อสม. ${v.name} (หมู่ ${v.village}) รอการอนุมัติสิทธิ์เข้าใช้งาน`,
-                        time: 'ตรวจสอบด่วน', link: 'admin_delegation.html', sortOrder: 1
-                    });
-                }
-            });
-
-            dashboardPatients.forEach(p => {
-                const isNew = (!p.last_assess || p.last_assess === '-');
-                
-                if (isNew) {
-                    let nid = `patient_new_${p.id}`;
-                    if (!dismissedNotifs.includes(nid)) {
-                        const creatorName = p.created_by || 'อสม.';
-                        notifications.push({
-                            nid: nid, type: 'patient_new', icon: 'fiber_new', color: 'emerald',
-                            title: 'เพิ่มผู้ป่วยรายใหม่',
-                            message: `คุณ ${creatorName} ได้เพิ่มข้อมูลผู้ป่วยใหม่ "${p.prefix||''}${p.name}" (หมู่ ${p.village_no})`,
-                            time: 'เข้าใหม่', link: `patient_profile.html?id=${p.id}`, sortOrder: 3
-                        });
-                    }
-                }
-
-                if (!isNew && p.assigned_vhv_id && p.needs_assessment === false) {
-                    const daysSinceAssess = calculateDaysSince(p.last_assess);
-                    if (daysSinceAssess <= 3) {
-                        let nid = `task_completed_${p.id}_${p.last_assess}`;
-                        if (!dismissedNotifs.includes(nid)) {
-                            notifications.push({
-                                nid: nid, type: 'task_completed', icon: 'task_alt', color: 'teal',
-                                title: 'อสม. ลงพื้นที่สำเร็จ',
-                                message: `คุณ ${getVhvName(p.assigned_vhv_id)} ได้ประเมินผู้ป่วย "${p.prefix||''}${p.name}" เรียบร้อยแล้ว`,
-                                time: `${daysSinceAssess === 0 ? 'วันนี้' : daysSinceAssess + ' วันที่ผ่านมา'}`,
-                                link: `patient_profile.html?id=${p.id}`, sortOrder: 4
-                            });
-                        }
-                    }
-                }
-
-                const d = cleanJSON(p.diaper);
-                if (d && d.approve_status === 'รออนุมัติ') {
-                    pendingDiapersCount++;
-                }
-            });
-
-            if (pendingDiapersCount > 0) {
-                let nid = `diaper_pending_${pendingDiapersCount}`;
-                if (!dismissedNotifs.includes(nid)) {
-                    notifications.push({
-                        nid: nid, type: 'diaper_pending', icon: 'inventory_2', color: 'amber',
-                        title: 'มีรายการเบิกพัสดุรออนุมัติ',
-                        message: `มี ${pendingDiapersCount} รายการประเมินสิทธิ์ผ้าอ้อมที่รอการตรวจสอบ`,
-                        time: 'ตรวจสอบด่วน', link: 'admin_resources.html', sortOrder: 0
-                    });
+            const bell = document.querySelector('button[onclick="toggleNotification()"]');
+            if (dropdown && !dropdown.classList.contains('hidden')) {
+                if (!dropdown.contains(e.target) && (!bell || !bell.contains(e.target))) {
+                    dropdown.classList.add('hidden');
                 }
             }
-
-            notifications.sort((a,b) => a.sortOrder - b.sortOrder);
-            renderNotifications();
         }
+        function clearNotifications() {}
 
-        function renderNotifications() {
-            const list = document.getElementById('notif-list');
-            const badge = document.getElementById('notif-badge');
-            
-            const displayNotifs = notifications.slice(0, 15);
-            
-            if (displayNotifs.length === 0) {
-                list.innerHTML = `
-                    <div class="p-8 flex flex-col items-center justify-center text-slate-400">
-                        <span class="material-symbols-outlined text-[40px] mb-2 text-slate-200">notifications_paused</span>
-                        <p class="text-xs font-bold text-slate-500">ไม่มีการแจ้งเตือนใหม่</p>
-                    </div>`;
-                badge.classList.add('hidden');
-            } else {
-                badge.innerText = notifications.length > 9 ? '9+' : notifications.length;
-                badge.classList.remove('hidden');
-                
-                let html = '';
-                displayNotifs.forEach(n => {
-                    html += `
-                        <div onclick="window.location.href='${n.link}'" class="p-4 hover:bg-slate-50 cursor-pointer transition-colors flex gap-3 group">
-                            <div class="w-10 h-10 rounded-full bg-${n.color}-100 text-${n.color}-600 flex items-center justify-center flex-shrink-0 group-hover:scale-110 transition-transform">
-                                <span class="material-symbols-outlined text-[20px]">${n.icon}</span>
-                            </div>
-                            <div class="flex-1 min-w-0">
-                                <div class="flex justify-between items-start mb-0.5">
-                                    <h4 class="text-xs font-bold text-slate-800 truncate pr-2">${n.title}</h4>
-                                    <span class="text-[9px] font-bold text-slate-400 whitespace-nowrap bg-white border border-slate-200 px-1.5 py-0.5 rounded shadow-sm">${n.time}</span>
-                                </div>
-                                <p class="text-[11px] text-slate-600 leading-snug pr-1">${n.message}</p>
-                            </div>
-                        </div>
-                    `;
-                });
-                list.innerHTML = html;
-            }
-        }
-
-        function clearNotifications() {
-            let dismissedNotifs = JSON.parse(localStorage.getItem(`dismissed_notifs_${currentUserUid}`) || '[]');
-            
-            notifications.forEach(n => {
-                if (!dismissedNotifs.includes(n.nid)) {
-                    dismissedNotifs.push(n.nid);
-                }
-            });
-
-            if (dismissedNotifs.length > 300) dismissedNotifs = dismissedNotifs.slice(-300);
-            
-            localStorage.setItem(`dismissed_notifs_${currentUserUid}`, JSON.stringify(dismissedNotifs));
-
-            document.getElementById('notif-list').innerHTML = `
-                <div class="p-8 flex flex-col items-center justify-center text-slate-400">
-                    <span class="material-symbols-outlined text-[40px] mb-2 text-slate-200">notifications_paused</span>
-                    <p class="text-xs font-bold text-slate-500">รับทราบและเคลียร์แจ้งเตือนแล้ว</p>
-                </div>`;
-            document.getElementById('notif-badge').classList.add('hidden');
-            notifications = [];
-        }
-
-        // ----------------------------------------------------
-
-        async 
-        document.addEventListener('DOMContentLoaded', () => {
-            const today = new Date().toISOString().split('T')[0];
-            const dateInput = document.getElementById('plan-date');
-            if(dateInput) dateInput.value = today;
-            
-            document.querySelectorAll('.num-input').forEach(input => {
-                input.addEventListener('blur', function() {
-                    const val = parseNum(this.value);
-                    this.value = formatNum(val);
-                    calculateFinance();
-                });
-                
-                input.addEventListener('focus', function() {
-                    if(this.value === '0.00') this.value = '';
-                    else this.value = this.value.replace(/,/g, '');
-                });
-            });
-            
-            setTimeout(() => calculateFinance(), 500);
-        });
-
-        function parseNum(str) {
-            if(!str) return 0;
-            const parsed = parseFloat(String(str).replace(/,/g, ''));
-            return isNaN(parsed) ? 0 : parsed;
-        }
-
-        function formatNum(num) {
-            return num.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2});
-        }
-
-        function calculateFinance() {
-            try {
-                // Income
-                const carry = parseNum(document.getElementById('income-carry').value);
-                const nhso = parseNum(document.getElementById('income-nhso').value);
-                const lao = parseNum(document.getElementById('income-lao').value);
-                const other = parseNum(document.getElementById('income-other').value);
-                
-                // Calc Min Contribution
-                const min30 = nhso * 0.30;
-                const min40 = nhso * 0.40;
-                const min50 = nhso * 0.50;
-                
-                document.getElementById('min-req-30').innerText = 'ไม่น้อยกว่า ' + formatNum(min30) + ' บาท';
-                document.getElementById('min-req-40').innerText = 'ไม่น้อยกว่า ' + formatNum(min40) + ' บาท';
-                document.getElementById('min-req-50').innerText = 'ไม่น้อยกว่า ' + formatNum(min50) + ' บาท';
-                
-                const selectedCont = document.querySelector('input[name="contribution_rate"]:checked').value;
-                document.getElementById('min-req-30').className = selectedCont === '30' ? 'text-red-500 font-semibold mt-1' : 'text-slate-400 mt-1';
-                document.getElementById('min-req-40').className = selectedCont === '40' ? 'text-red-500 font-semibold mt-1' : 'text-slate-400 mt-1';
-                document.getElementById('min-req-50').className = selectedCont === '50' ? 'text-red-500 font-semibold mt-1' : 'text-slate-400 mt-1';
-                
-                // Calc Revenue
-                const revenue = nhso + lao + other;
-                document.getElementById('total-revenue').value = formatNum(revenue);
-                
-                const totalMoney = carry + revenue;
-                document.getElementById('total-money').value = formatNum(totalMoney);
-                
-                // Expenses Management limits
-                const max15 = revenue * 0.15;
-                const max20 = revenue * 0.20;
-                
-                document.getElementById('max-req-15').innerText = 'ไม่เกิน ' + formatNum(max15) + ' บาท';
-                document.getElementById('max-req-20').innerText = 'ไม่เกิน ' + formatNum(max20) + ' บาท';
-                
-                const selectedMgt = document.querySelector('input[name="management_rate"]:checked').value;
-                document.getElementById('max-req-15').className = selectedMgt === '15' ? 'text-red-500 font-semibold ml-1' : 'text-slate-400 ml-1';
-                document.getElementById('max-req-20').className = selectedMgt === '20' ? 'text-red-500 font-semibold ml-1' : 'text-slate-400 ml-1';
-                
-                // Calc Expenses
-                let totalExp = 0;
-                for(let i=1; i<=8; i++) {
-                    totalExp += parseNum(document.getElementById('exp-'+i).value);
-                }
-                document.getElementById('total-expense').value = formatNum(totalExp);
-                
-                // Check Balance
-                const alertBox = document.getElementById('balance-alert');
-                if (totalExp > totalMoney) {
-                    alertBox.classList.remove('hidden');
-                    document.getElementById('alert-exp').innerText = formatNum(totalExp);
-                    document.getElementById('alert-inc').innerText = formatNum(totalMoney);
-                } else {
-                    alertBox.classList.add('hidden');
-                }
-            } catch(e) {
-                console.error("Finance calculation error:", e);
-            }
-        }
-
-        function savePlan() {
-            alert('อยู่ระหว่างการพัฒนา: บันทึกข้อมูลแผนการเงิน');
-        }
-
-        // We replace loadDashboardData completely so we don't fetch stats
+        // --- MATRIX FINANCE LOGIC ---
         
-        document.addEventListener('DOMContentLoaded', () => {
-            document.querySelectorAll('.num-input').forEach(input => {
-                input.addEventListener('blur', function() {
-                    const val = parseNum(this.value);
-                    this.value = formatNum(val);
-                    calculateMatrix();
-                });
-                
-                input.addEventListener('focus', function() {
-                    if(this.value === '0.00') this.value = '';
-                    else this.value = this.value.replace(/,/g, '');
-                });
-            });
-            
-            // Format initial values
-            document.querySelectorAll('.num-input').forEach(input => {
-                const val = parseNum(input.value);
-                input.value = formatNum(val);
-            });
-            
+        const categories = [
+            { id: 1, name: "(1) สนับสนุนหน่วยบริการ/สาธารณสุข", defPct: 13.0, defAmt: 400000 },
+            { id: 2, name: "(2) สนับสนุนองค์กร/กลุ่มประชาชน", defPct: 43.0, defAmt: 1854490 },
+            { id: 3, name: "(3) สนับสนุนศูนย์ฯ/ผู้สูงอายุ/คนพิการ", defPct: 0.5, defAmt: 0 },
+            { id: 4, name: "(4) ค่าใช้จ่ายบริหารกองทุน", isMgt: true, defAmt: 458011.43 },
+            { id: 5, name: "(5) สนับสนุนกรณีโรคระบาด/ภัยพิบัติ", defPct: 0.5, defAmt: 0 },
+            { id: 6, name: "(6) สนับสนุนค่าป่วยการ CG", defPct: 0.5, defAmt: 0 },
+            { id: 7, name: "(7) สนับสนุนตามมติคณะกรรมการฯ", defPct: 80.0, defAmt: 2759765 },
+            { id: 8, name: "(8) สนับสนุนพาหนะรับส่งผู้ทุพพลภาพ", defPct: 0.5, defAmt: 0 }
+        ];
+
+        function initFinance() {
+            // Remove loading state if it exists
+            const loader = document.getElementById('loading-state');
+            if(loader) loader.classList.add('hidden');
+
+            renderMatrix();
+            setupInputListeners();
             setTimeout(() => calculateMatrix(), 200);
-        });
+        }
+
+        function renderMatrix() {
+            const tbody = document.getElementById('matrix-body');
+            let htmlStr = '';
+            categories.forEach(c => {
+                if(c.isMgt) {
+                    htmlStr += `
+                        <tr class="bg-amber-50/40 border-y border-amber-100">
+                            <td class="px-4 py-3 text-amber-900 font-bold">${c.name}</td>
+                            <td class="px-4 py-3 text-center text-xs text-amber-600 font-medium">คำนวณจากรายรับ</td>
+                            <td class="px-4 py-3 text-right font-bold text-amber-700" id="target-${c.id}">0.00</td>
+                            <td class="px-4 py-3 text-center text-xs text-amber-600 font-medium">ไม่เกินเพดาน</td>
+                            <td class="px-4 py-3 text-right bg-amber-100/50">
+                                <input type="text" id="actual-amt-${c.id}" value="${formatNum(c.defAmt)}" class="w-full px-2 py-1.5 text-right border border-amber-300 rounded font-bold text-amber-800 bg-white num-input focus:ring-2 focus:ring-amber-500/30 outline-none" onkeyup="handleActualAmtChange(${c.id})">
+                            </td>
+                            <td class="px-4 py-3 text-right font-bold" id="diff-${c.id}">0.00</td>
+                        </tr>
+                    `;
+                } else {
+                    htmlStr += `
+                        <tr class="hover:bg-slate-50 transition-colors">
+                            <td class="px-4 py-3 text-slate-700 font-medium">${c.name}</td>
+                            <td class="px-4 py-3 text-center bg-blue-50/20">
+                                <div class="flex items-center justify-center gap-1">
+                                    <input type="number" id="target-pct-${c.id}" value="${c.defPct}" step="0.1" class="w-16 px-1 py-1 text-center border border-blue-200 rounded text-blue-700 font-bold focus:ring-2 focus:ring-blue-500/30 outline-none" onkeyup="calculateMatrix()" onchange="calculateMatrix()">
+                                    <span class="text-xs text-slate-400">%</span>
+                                </div>
+                            </td>
+                            <td class="px-4 py-3 text-right font-medium text-slate-500 bg-blue-50/10" id="target-amt-${c.id}">0.00</td>
+                            
+                            <td class="px-4 py-3 text-center bg-rose-50/20">
+                                <div class="flex items-center justify-center gap-1">
+                                    <input type="number" id="actual-pct-${c.id}" value="0" step="0.1" class="w-16 px-1 py-1 text-center border border-rose-200 rounded text-rose-700 font-bold focus:ring-2 focus:ring-rose-500/30 outline-none" onkeyup="handleActualPctChange(${c.id})" onchange="handleActualPctChange(${c.id})">
+                                    <span class="text-xs text-slate-400">%</span>
+                                </div>
+                            </td>
+                            <td class="px-4 py-3 text-right bg-rose-50/30">
+                                <input type="text" id="actual-amt-${c.id}" value="${formatNum(c.defAmt)}" class="w-full px-2 py-1.5 text-right border border-rose-300 rounded font-bold text-rose-700 bg-white num-input focus:ring-2 focus:ring-rose-500/30 outline-none" onkeyup="handleActualAmtChange(${c.id})">
+                            </td>
+                            <td class="px-4 py-3 text-right font-bold" id="diff-${c.id}">0.00</td>
+                        </tr>
+                    `;
+                }
+            });
+            if(tbody) tbody.innerHTML = htmlStr;
+        }
+
+        function setupInputListeners() {
+            document.querySelectorAll('.num-input').forEach(input => {
+                input.addEventListener('blur', function() {
+                    const val = parseNum(this.value);
+                    this.value = formatNum(val);
+                });
+                input.addEventListener('focus', function() {
+                    if(this.value === '0.00') this.value = '';
+                    else this.value = this.value.replace(/,/g, '');
+                });
+            });
+            
+            ['income-nhso', 'income-lao', 'income-other', 'income-carry'].forEach(id => {
+                const el = document.getElementById(id);
+                if(el) {
+                    el.addEventListener('keyup', calculateMatrix);
+                    el.addEventListener('change', calculateMatrix);
+                }
+            });
+        }
 
         function parseNum(str) {
             if(!str) return 0;
@@ -792,21 +352,28 @@
             return num.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2});
         }
         
-        function updateDiffColor(elementId, val, isSum = false) {
-            const el = document.getElementById(elementId);
-            el.innerText = formatNum(val);
-            if (val < 0) {
-                el.className = isSum ? "px-4 py-4 text-right text-red-400" : "px-4 py-3 text-right font-bold text-red-500";
-            } else if (val > 0) {
-                el.className = isSum ? "px-4 py-4 text-right text-emerald-400" : "px-4 py-3 text-right font-bold text-emerald-500";
-            } else {
-                el.className = isSum ? "px-4 py-4 text-right text-slate-300" : "px-4 py-3 text-right font-bold text-slate-400";
-            }
+        let currentUsableMoney = 0;
+
+        function handleActualPctChange(id) {
+            if(currentUsableMoney <= 0) return;
+            const pct = parseFloat(document.getElementById('actual-pct-'+id).value) || 0;
+            const amt = currentUsableMoney * (pct / 100);
+            document.getElementById('actual-amt-'+id).value = formatNum(amt);
+            calculateMatrix(false); 
         }
 
-        function calculateMatrix() {
+        function handleActualAmtChange(id) {
+            if(currentUsableMoney <= 0) return;
+            if(id !== 4) { 
+                const amt = parseNum(document.getElementById('actual-amt-'+id).value);
+                const pct = (amt / currentUsableMoney) * 100;
+                document.getElementById('actual-pct-'+id).value = pct.toFixed(2);
+            }
+            calculateMatrix(false);
+        }
+
+        function calculateMatrix(syncReverse = true) {
             try {
-                // 1. Income & Globals
                 const nhso = parseNum(document.getElementById('income-nhso').value);
                 const lao = parseNum(document.getElementById('income-lao').value);
                 const other = parseNum(document.getElementById('income-other').value);
@@ -815,184 +382,90 @@
                 const revenue = nhso + lao + other;
                 const totalMoney = revenue + carry;
                 
-                // 2. Management Fee Ceiling (Cat 4)
                 const mgtRate = parseInt(document.getElementById('mgt-rate').value) / 100;
                 const maxMgtFee = revenue * mgtRate;
                 
-                // 3. Usable Amount (For other categories)
-                const usableMoney = totalMoney - maxMgtFee;
+                currentUsableMoney = totalMoney - maxMgtFee;
                 
-                // Update Dashboard
                 document.getElementById('dash-revenue').innerText = formatNum(revenue);
                 document.getElementById('dash-total-money').innerText = formatNum(totalMoney);
                 document.getElementById('dash-mgt-max').innerText = formatNum(maxMgtFee);
-                document.getElementById('dash-usable').innerText = formatNum(usableMoney);
+                document.getElementById('dash-usable').innerText = formatNum(currentUsableMoney);
                 
-                // 4. Matrix Calculations
-                let sumPct = 0;
-                let sumTarget = 0;
-                let sumActual = 0;
+                let sumTargetPct = 0, sumTargetAmt = 0;
+                let sumActualPct = 0, sumActualAmt = 0;
                 
-                for(let i=1; i<=8; i++) {
-                    const actual = parseNum(document.getElementById('exp-'+i).value);
-                    let target = 0;
+                categories.forEach(c => {
+                    const id = c.id;
+                    let targetAmt = 0;
+                    let actualAmt = parseNum(document.getElementById('actual-amt-'+id).value);
                     
-                    if (i === 4) {
-                        // Category 4 is special (based on revenue * mgtRate)
-                        target = maxMgtFee;
-                        document.getElementById('target-4').innerText = formatNum(target);
+                    if (c.isMgt) {
+                        targetAmt = maxMgtFee;
+                        document.getElementById('target-'+id).innerText = formatNum(targetAmt);
                     } else {
-                        // Other categories based on Usable Money * pct
-                        const pctInput = document.getElementById('pct-'+i);
-                        const pct = parseFloat(pctInput.value) || 0;
-                        sumPct += pct;
+                        const targetPct = parseFloat(document.getElementById('target-pct-'+id).value) || 0;
+                        sumTargetPct += targetPct;
                         
-                        target = usableMoney * (pct / 100);
-                        document.getElementById('target-'+i).innerText = formatNum(target);
+                        targetAmt = currentUsableMoney * (targetPct / 100);
+                        document.getElementById('target-amt-'+id).innerText = formatNum(targetAmt);
+                        
+                        if (syncReverse && currentUsableMoney > 0) {
+                            const actualPct = (actualAmt / currentUsableMoney) * 100;
+                            document.getElementById('actual-pct-'+id).value = actualPct.toFixed(2);
+                            sumActualPct += actualPct;
+                        } else {
+                            sumActualPct += parseFloat(document.getElementById('actual-pct-'+id).value) || 0;
+                        }
                     }
                     
-                    // Diff = Target - Actual (Positive = Surplus/Under budget, Negative = Deficit/Over budget)
-                    const diff = target - actual;
-                    updateDiffColor('diff-'+i, diff);
+                    const diff = targetAmt - actualAmt;
+                    const diffEl = document.getElementById('diff-'+id);
                     
-                    sumTarget += target;
-                    sumActual += actual;
+                    if (diff < 0) {
+                        diffEl.innerHTML = `<span class="text-red-500 bg-red-50 px-2 py-0.5 rounded text-xs mr-1 border border-red-100">เกิน ${formatNum(Math.abs(diff))}</span> <span class="text-red-600">${formatNum(diff)}</span>`;
+                    } else if (diff > 0) {
+                        diffEl.innerHTML = `<span class="text-emerald-500 bg-emerald-50 px-2 py-0.5 rounded text-xs mr-1 border border-emerald-100">เหลือ ${formatNum(Math.abs(diff))}</span> <span class="text-emerald-600">${formatNum(diff)}</span>`;
+                    } else {
+                        diffEl.innerHTML = `<span class="text-slate-400">พอดีเป้า</span>`;
+                    }
+                    
+                    sumTargetAmt += targetAmt;
+                    sumActualAmt += actualAmt;
+                });
+                
+                document.getElementById('sum-target-pct').innerText = sumTargetPct.toFixed(1) + '%';
+                document.getElementById('sum-target-amt').innerText = formatNum(sumTargetAmt);
+                document.getElementById('sum-actual-pct').innerText = sumActualPct.toFixed(1) + '%';
+                document.getElementById('sum-actual-amt').innerText = formatNum(sumActualAmt);
+                
+                const sumDiff = sumTargetAmt - sumActualAmt;
+                const sumDiffEl = document.getElementById('sum-diff');
+                if (sumDiff < 0) {
+                    sumDiffEl.innerHTML = `<span class="text-red-400 text-xs mr-2">ขอเกินเป้า ${formatNum(Math.abs(sumDiff))}</span> <span class="text-red-400">${formatNum(sumDiff)}</span>`;
+                } else {
+                    sumDiffEl.innerHTML = `<span class="text-emerald-400 text-xs mr-2">เหลือ ${formatNum(Math.abs(sumDiff))}</span> <span class="text-emerald-400">${formatNum(sumDiff)}</span>`;
                 }
                 
-                // Update Footers
-                document.getElementById('sum-pct').innerText = sumPct.toFixed(1) + '%';
-                document.getElementById('sum-target').innerText = formatNum(sumTarget);
-                document.getElementById('sum-actual').innerText = formatNum(sumActual);
-                
-                const sumDiff = sumTarget - sumActual;
-                updateDiffColor('sum-diff', sumDiff, true);
-                
-                // Final Account Balance
-                const finalBalance = totalMoney - sumActual;
+                const finalBalance = totalMoney - sumActualAmt;
                 const fbEl = document.getElementById('final-balance');
                 fbEl.innerText = formatNum(finalBalance);
-                fbEl.className = finalBalance < 0 ? "text-3xl font-black text-red-500" : "text-3xl font-black text-emerald-600";
+                
+                const alertEl = document.getElementById('overall-alert');
+                const alertMsg = document.getElementById('overall-alert-msg');
+                if (finalBalance < 0) {
+                    fbEl.className = "text-3xl font-black text-red-600";
+                    alertEl.classList.remove('hidden');
+                    alertMsg.innerHTML = `แจ้งเตือน: ยอดรวมที่ขอรับจัดสรร (${formatNum(sumActualAmt)}) <br>เกินกว่ายอดเงินรวมทั้งสิ้น (${formatNum(totalMoney)}) จำนวน <span class="text-red-900 bg-red-200 px-1 rounded">${formatNum(Math.abs(finalBalance))} บาท</span>`;
+                } else {
+                    fbEl.className = "text-3xl font-black text-emerald-600";
+                    alertEl.classList.add('hidden');
+                }
                 
             } catch(e) {
                 console.error("Matrix calculation error:", e);
             }
         }
-
-        function savePlan() {
-            alert('บันทึกแม่แบบตารางแผนการเงินสำเร็จ!');
-        }
-
-        function loadDashboardData() { }
-                                    dp = JSON.parse(dpStr);
-                                }
-                                if (dp.approve_status === 'รออนุมัติ') cPending++;
-                            } catch(e) {}
-                        }
-
-                        const daysSince = calculateDaysSince(p.last_assess);
-                        if (daysSince > 30) cOverdue++;
-                    }
-                });
-
-                document.getElementById('stat-all').innerText = cAll;
-                document.getElementById('stat-social').innerText = cSocial;
-                document.getElementById('stat-home').innerText = cHome;
-                document.getElementById('stat-bed').innerText = cBed;
-                
-                document.getElementById('stat-pending').innerText = cPending;
-                document.getElementById('stat-overdue').innerText = cOverdue;
-
-                document.getElementById('loading-state').classList.add('hidden');
-                document.getElementById('dashboard-content').classList.remove('hidden');
-
-                generateNotifications(); 
-
-                const urlParams = new URLSearchParams(window.location.search);
-                const openGroup = urlParams.get('openGroup');
-                if (openGroup) {
-                    setTimeout(() => showGroupList(openGroup), 100);
-                    window.history.replaceState(null, '', window.location.pathname);
-                }
-
-            } catch (error) { alert("ดึงฐานข้อมูลล้มเหลว"); }
-        }
-
-        function viewPatient(id, group) {
-            sessionStorage.setItem('return_to', 'dashboard');
-            sessionStorage.setItem('return_group', group);
-            window.location.href = `patient_profile.html?id=${id}`;
-        }
-
-        function showGroupList(targetGroup) {
-            const modal = document.getElementById('group-list-modal');
-            const content = document.getElementById('group-list-content');
-            const container = document.getElementById('group-list-container');
-            
-            document.getElementById('group-modal-title').innerHTML = `รายชื่อผู้ป่วยกลุ่ม: <span class="${targetGroup==='ติดเตียง'?'text-red-600':targetGroup==='ติดบ้าน'?'text-amber-600':targetGroup==='ติดสังคม'?'text-emerald-600':'text-blue-600'}">${targetGroup}</span>`;
-
-            let filtered = dashboardPatients.filter(p => targetGroup === 'ทั้งหมด' ? true : p.group === targetGroup);
-
-            if (filtered.length === 0) {
-                container.innerHTML = '<p class="text-center text-slate-400 py-10">ไม่มีผู้ป่วยในกลุ่มนี้</p>';
-            } else {
-                const groupedByVillage = {};
-                filtered.forEach(p => {
-                    const v = p.village_no || 'ไม่ระบุ';
-                    if(!groupedByVillage[v]) groupedByVillage[v] = [];
-                    groupedByVillage[v].push(p);
-                });
-
-                const sortedVillages = Object.keys(groupedByVillage).sort((a,b) => {
-                    const numA = parseInt(String(a).replace(/\D/g, '')) || 999;
-                    const numB = parseInt(String(b).replace(/\D/g, '')) || 999;
-                    return numA - numB;
-                });
-
-                let html = '';
-                sortedVillages.forEach(v => {
-                    html += `<div class="mb-5">
-                                <h4 class="font-bold text-slate-700 border-b border-slate-200 pb-2 mb-3 text-sm flex items-center gap-2">
-                                    <span class="material-symbols-outlined text-emerald-600 text-[18px]">location_on</span> หมู่ที่ ${v} 
-                                    <span class="text-slate-400 font-normal text-xs bg-slate-100 px-2 py-0.5 rounded-full">${groupedByVillage[v].length} คน</span>
-                                </h4>
-                                <div class="space-y-2 pl-2">`;
-                    
-                    groupedByVillage[v].forEach(p => {
-                        let avatar = `<div class="w-10 h-10 rounded-full bg-slate-100 text-slate-400 font-bold flex items-center justify-center flex-shrink-0 text-sm border-2 border-white shadow-sm">${p.name ? p.name.substring(0,1) : '?'}</div>`;
-                        if (p.profile_pic && (p.profile_pic.startsWith('data:image') || p.profile_pic.startsWith('http'))) {
-                            avatar = `<img src="${p.profile_pic}" class="w-10 h-10 rounded-full object-cover flex-shrink-0 border border-slate-200">`;
-                        }
-
-                        html += `
-                            <div class="flex items-center justify-between bg-white border border-slate-100 p-3 rounded-xl hover:border-blue-300 hover:shadow-md transition-all cursor-pointer group" onclick="viewPatient('${p.id}', '${targetGroup}')">
-                                <div class="flex items-center gap-3">
-                                    ${avatar}
-                                    <div>
-                                        <p class="text-sm font-bold text-slate-700 group-hover:text-blue-600 transition-colors">${p.prefix||''}${p.name||'ไม่ระบุชื่อ'}</p>
-                                        <p class="text-[10px] text-slate-400 font-medium">HN: ${p.id||'-'}</p>
-                                    </div>
-                                </div>
-                                <div class="bg-blue-50 text-blue-600 w-8 h-8 rounded-full group-hover:bg-blue-600 group-hover:text-white transition-colors flex items-center justify-center shadow-sm">
-                                    <span class="material-symbols-outlined text-[16px]">arrow_forward</span>
-                                </div>
-                            </div>
-                        `;
-                    });
-                    html += `</div></div>`;
-                });
-                container.innerHTML = html;
-            }
-
-            modal.classList.remove('hidden');
-            setTimeout(() => { modal.classList.remove('opacity-0'); content.classList.remove('scale-95'); }, 10);
-        }
-
-        function closeGroupList() {
-            const modal = document.getElementById('group-list-modal');
-            const content = document.getElementById('group-list-content');
-            modal.classList.add('opacity-0'); content.classList.add('scale-95');
-            setTimeout(() => { modal.classList.add('hidden'); }, 300);
-        }
-    </script>
+</script>
 </body>
 </html>
