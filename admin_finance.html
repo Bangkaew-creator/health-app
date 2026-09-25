@@ -61,7 +61,7 @@
     <a href="admin_delegation.html" class="flex items-center gap-3 px-4 py-3.5 text-slate-400 hover:bg-white/5 hover:text-white rounded-xl font-medium transition-all"><span class="material-symbols-outlined">assignment_ind</span> มอบหมายงาน อสม.</a>
     <a href="admin_analytics.html" class="flex items-center gap-3 px-4 py-3.5 text-slate-400 hover:bg-white/5 hover:text-white rounded-xl font-medium transition-all"><span class="material-symbols-outlined">analytics</span> ศูนย์รายงาน (Export)</a>
     <a href="admin_reports.html" id="nav-reports" class="flex items-center gap-3 px-4 py-3.5 text-slate-400 hover:bg-white/5 hover:text-white rounded-xl font-medium transition-all"><span class="material-symbols-outlined">gavel</span> บันทึกมติผ้าอ้อม</a>
-    <a href="admin_finance.html" id="nav-finance" class="flex items-center gap-3 px-4 py-3.5 text-slate-400 hover:bg-white/5 hover:text-white rounded-xl font-medium transition-all"><span class="material-symbols-outlined">account_balance_wallet</span> แผนการเงิน</a>
+    <a href="admin_finance.html" id="nav-finance" class="flex items-center justify-between px-4 py-3.5 bg-white/10 text-amber-400 rounded-xl font-bold transition-all"><span class="flex items-center gap-3"><span class="material-symbols-outlined">account_balance_wallet</span> แผนการเงิน</span><span class="w-1.5 h-1.5 rounded-full bg-amber-400"></span></a>
     <a href="admin_settings.html" id="nav-settings" class="flex items-center gap-3 px-4 py-3.5 text-slate-400 hover:bg-white/5 hover:text-white rounded-xl font-medium transition-all"><span class="material-symbols-outlined">settings</span> ตั้งค่าระบบ</a>
 </nav>
     </aside>
@@ -71,8 +71,8 @@
             <div class="flex items-center">
                 <button onclick="toggleSidebar()" class="lg:hidden p-2.5 -ml-2 mr-3 text-slate-600 hover:bg-slate-100 rounded-xl transition-colors"><span class="material-symbols-outlined text-[26px]">menu</span></button>
                 <div>
-                    <h2 class="text-base lg:text-lg font-bold text-slate-900 leading-tight">ภาพรวมระบบ (Dashboard)</h2>
-                    <p id="header-hospital-name" class="text-[11px] lg:text-xs text-slate-400 font-medium mt-0.5">ภาพรวมข้อมูล</p>
+                    <h2 class="text-base lg:text-lg font-bold text-slate-900 leading-tight">แผนการเงิน (Budget Plan)</h2>
+                    <p id="header-hospital-name" class="text-[11px] lg:text-xs text-slate-400 font-medium mt-0.5">เครื่องมือคำนวณและสร้างแผนงบประมาณ</p>
                 </div>
             </div>
             
@@ -119,103 +119,241 @@
         </header>
 
         <div class="flex-1 overflow-y-auto p-4 lg:p-6 relative z-10" onclick="closeNotificationIfOpen(event)">
-            <div id="loading-state" class="absolute inset-0 flex flex-col items-center justify-center bg-slate-50 z-20">
-                <div class="loader-small mb-3"></div><p class="text-sm text-slate-400 animate-pulse">กำลังประมวลผลสถิติ...</p>
-            </div>
             
-            <div id="dashboard-content" class="hidden max-w-2xl mx-auto space-y-4">
-                
-                <div class="bg-white rounded-[24px] p-6 shadow-sm border-l-4 border-blue-500 cursor-pointer hover:bg-blue-50 hover:shadow-md transition-all group" onclick="showGroupList('ทั้งหมด')">
-                    <div class="flex justify-between items-start">
+            <div class="max-w-4xl mx-auto">
+                <div class="bg-white p-6 md:p-8 rounded-3xl shadow-sm border border-slate-200">
+                    <div class="flex justify-between items-center border-b border-slate-100 pb-4 mb-6">
                         <div>
-                            <p class="text-[13px] text-slate-500 font-bold mb-1">ผู้ป่วยในพื้นที่ดูแล</p>
-                            <h3 class="text-[40px] font-black text-slate-800 leading-none" id="stat-all">0</h3>
+                            <h2 class="text-2xl font-bold text-navy">บันทึกข้อมูลแผนการเงิน</h2>
+                            <p class="text-base text-slate-500 mt-1">คำนวณและประมาณการรายรับ-รายจ่ายของกองทุนฯ</p>
                         </div>
-                        <div class="w-12 h-12 rounded-2xl bg-blue-50 text-blue-500 flex items-center justify-center group-hover:scale-110 transition-transform">
-                            <span class="material-symbols-outlined text-[26px]" style="font-variation-settings: 'FILL' 1;">groups</span>
-                        </div>
+                        <button onclick="savePlan()" class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2.5 rounded-xl font-bold shadow-sm transition-all flex items-center gap-2 text-lg">
+                            <span class="material-symbols-outlined text-[20px]">save</span> บันทึก
+                        </button>
                     </div>
-                </div>
 
-                <div class="bg-white rounded-[24px] p-6 shadow-sm border-l-4 border-emerald-500 cursor-pointer hover:bg-emerald-50 hover:shadow-md transition-all group" onclick="showGroupList('ติดสังคม')">
-                    <div class="flex justify-between items-start">
-                        <div>
-                            <p class="text-[13px] text-slate-500 font-bold mb-1">กลุ่มติดสังคม</p>
-                            <h3 class="text-[40px] font-black text-slate-800 leading-none" id="stat-social">0</h3>
-                        </div>
-                        <div class="w-12 h-12 rounded-2xl bg-emerald-50 text-emerald-500 flex items-center justify-center group-hover:scale-110 transition-transform">
-                            <span class="material-symbols-outlined text-[26px]" style="font-variation-settings: 'FILL' 1;">sentiment_satisfied</span>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="bg-white rounded-[24px] p-6 shadow-sm border-l-4 border-amber-500 cursor-pointer hover:bg-amber-50 hover:shadow-md transition-all group" onclick="showGroupList('ติดบ้าน')">
-                    <div class="flex justify-between items-start">
-                        <div>
-                            <p class="text-[13px] text-slate-500 font-bold mb-1">กลุ่มติดบ้าน</p>
-                            <h3 class="text-[40px] font-black text-slate-800 leading-none" id="stat-home">0</h3>
-                        </div>
-                        <div class="w-12 h-12 rounded-2xl bg-amber-50 text-amber-500 flex items-center justify-center group-hover:scale-110 transition-transform">
-                            <span class="material-symbols-outlined text-[26px]" style="font-variation-settings: 'FILL' 1;">home</span>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="bg-white rounded-[24px] p-6 shadow-sm border-l-4 border-red-500 cursor-pointer hover:bg-red-50 hover:shadow-md transition-all group" onclick="showGroupList('ติดเตียง')">
-                    <div class="flex justify-between items-start">
-                        <div>
-                            <p class="text-[13px] text-slate-500 font-bold mb-1">กลุ่มติดเตียง (วิกฤต)</p>
-                            <h3 class="text-[40px] font-black text-slate-800 leading-none" id="stat-bed">0</h3>
-                        </div>
-                        <div class="w-12 h-12 rounded-2xl bg-red-50 text-red-500 flex items-center justify-center group-hover:scale-110 transition-transform">
-                            <span class="material-symbols-outlined text-[26px]" style="font-variation-settings: 'FILL' 1;">bed</span>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="mt-6 space-y-4">
-                    <div class="bg-white rounded-[24px] p-5 shadow-sm border border-slate-200 cursor-pointer hover:bg-slate-50 transition-colors" onclick="window.location.href='admin_resources.html'">
-                        <div class="flex justify-between items-center">
-                            <div class="flex items-center gap-3">
-                                <span class="material-symbols-outlined text-amber-500 text-[24px]">inventory_2</span>
-                                <h4 class="font-bold text-slate-700 text-sm">วัสดุทางการแพทย์รออนุมัติ</h4>
+                    <div id="finance-builder-container" class="space-y-8">
+                        
+                        <!-- Section 1: รายรับ (Income) -->
+                        <div class="bg-slate-50/50 p-6 rounded-2xl border border-slate-200">
+                            <h3 class="text-xl font-bold text-slate-800 mb-6 flex items-center gap-2">
+                                <span class="material-symbols-outlined text-blue-500">payments</span> ส่วนที่ 1: ประมาณการรายรับ
+                            </h3>
+                            
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                                <div>
+                                    <label class="block text-sm font-bold text-slate-700 mb-2">วันที่ <span class="text-red-500">*</span></label>
+                                    <input type="date" id="plan-date" class="w-full px-4 py-3 bg-white rounded-xl border border-slate-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 outline-none text-lg font-medium">
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-bold text-slate-700 mb-2">ปีงบประมาณ <span class="text-red-500">*</span></label>
+                                    <select id="plan-year" class="w-full px-4 py-3 bg-white rounded-xl border border-slate-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 outline-none text-lg font-medium">
+                                        <option value="2567">2567</option>
+                                        <option value="2568" selected>2568</option>
+                                        <option value="2569">2569</option>
+                                        <option value="2570">2570</option>
+                                    </select>
+                                </div>
                             </div>
-                            <div class="flex items-center gap-2">
-                                <span class="font-black text-amber-600 text-lg" id="stat-pending">0</span>
-                                <span class="bg-amber-50 border border-amber-200 text-amber-600 text-[10px] px-2 py-1 rounded-lg font-bold">ตรวจสอบด่วน</span>
+
+                            <div class="space-y-4">
+                                <div class="flex flex-col md:flex-row md:items-center gap-4 pb-4 border-b border-slate-200/60">
+                                    <label class="md:w-1/3 text-base font-bold text-slate-700">ยกยอดมา <span class="text-red-500">*</span></label>
+                                    <div class="md:w-2/3 flex items-center gap-3">
+                                        <input type="text" id="income-carry" value="0.00" class="w-full px-4 py-3 bg-white rounded-xl border border-slate-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 outline-none text-right text-lg font-semibold num-input text-slate-800" onkeyup="calculateFinance()">
+                                        <span class="text-slate-500 font-medium w-12 text-center">บาท</span>
+                                    </div>
+                                </div>
+
+                                <div class="flex flex-col md:flex-row gap-4 pt-2">
+                                    <div class="md:w-1/3"></div>
+                                    <div class="md:w-2/3 flex gap-6">
+                                        <label class="flex items-center gap-2 cursor-pointer">
+                                            <input type="radio" name="nhso_type" value="allocated" checked class="w-5 h-5 text-blue-600 focus:ring-blue-500" onchange="calculateFinance()">
+                                            <span class="text-base font-medium text-slate-700">สปสช.จัดสรร</span>
+                                        </label>
+                                        <label class="flex items-center gap-2 cursor-pointer">
+                                            <input type="radio" name="nhso_type" value="not_allocated" class="w-5 h-5 text-blue-600 focus:ring-blue-500" onchange="calculateFinance()">
+                                            <span class="text-base font-medium text-slate-700">สปสช.ไม่จัดสรร</span>
+                                        </label>
+                                    </div>
+                                </div>
+
+                                <div class="flex flex-col md:flex-row md:items-center gap-4">
+                                    <label class="md:w-1/3 text-base font-bold text-slate-700">สปสช.จัดสรร <span class="text-red-500">*</span></label>
+                                    <div class="md:w-2/3 flex items-center gap-3">
+                                        <input type="text" id="income-nhso" value="0.00" class="w-full px-4 py-3 bg-white rounded-xl border border-slate-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 outline-none text-right text-lg font-semibold num-input text-slate-800" onkeyup="calculateFinance()">
+                                        <span class="text-slate-500 font-medium w-12 text-center">บาท</span>
+                                    </div>
+                                </div>
+
+                                <div class="flex flex-col md:flex-row gap-4 py-2">
+                                    <label class="md:w-1/3 text-base font-bold text-slate-700 mt-2">สัดส่วนการสมทบ <span class="text-red-500">*</span></label>
+                                    <div class="md:w-2/3 space-y-3">
+                                        <label class="flex items-start gap-3 cursor-pointer">
+                                            <input type="radio" name="contribution_rate" value="30" checked class="w-5 h-5 mt-0.5 text-blue-600 focus:ring-blue-500" onchange="calculateFinance()">
+                                            <div class="text-base">
+                                                <span class="text-slate-700">ไม่น้อยกว่าร้อยละ 30 (กรณีรายได้ อปท. ต่ำกว่า 6 ล้านบาท)</span>
+                                                <div id="min-req-30" class="text-red-500 font-semibold mt-1">ไม่น้อยกว่า 0.00 บาท</div>
+                                            </div>
+                                        </label>
+                                        <label class="flex items-start gap-3 cursor-pointer">
+                                            <input type="radio" name="contribution_rate" value="40" class="w-5 h-5 mt-0.5 text-blue-600 focus:ring-blue-500" onchange="calculateFinance()">
+                                            <div class="text-base">
+                                                <span class="text-slate-700">ไม่น้อยกว่าร้อยละ 40 (กรณีรายได้ อปท. 6 ถึง 20 ล้านบาท)</span>
+                                                <div id="min-req-40" class="text-slate-400 mt-1">ไม่น้อยกว่า 0.00 บาท</div>
+                                            </div>
+                                        </label>
+                                        <label class="flex items-start gap-3 cursor-pointer">
+                                            <input type="radio" name="contribution_rate" value="50" class="w-5 h-5 mt-0.5 text-blue-600 focus:ring-blue-500" onchange="calculateFinance()">
+                                            <div class="text-base">
+                                                <span class="text-slate-700">ไม่น้อยกว่าร้อยละ 50 (กรณีรายได้ อปท. สูงกว่า 20 ล้านบาท)</span>
+                                                <div id="min-req-50" class="text-slate-400 mt-1">ไม่น้อยกว่า 0.00 บาท</div>
+                                            </div>
+                                        </label>
+                                    </div>
+                                </div>
+
+                                <div class="flex flex-col md:flex-row md:items-center gap-4">
+                                    <label class="md:w-1/3 text-base font-bold text-slate-700">อปท.สมทบ <span class="text-red-500">*</span></label>
+                                    <div class="md:w-2/3 flex items-center gap-3">
+                                        <input type="text" id="income-lao" value="0.00" class="w-full px-4 py-3 bg-white rounded-xl border border-slate-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 outline-none text-right text-lg font-semibold num-input text-slate-800" onkeyup="calculateFinance()">
+                                        <span class="text-slate-500 font-medium w-12 text-center">บาท</span>
+                                    </div>
+                                </div>
+
+                                <div class="flex flex-col md:flex-row md:items-center gap-4">
+                                    <label class="md:w-1/3 text-base font-bold text-slate-700">รายได้อื่นๆ <span class="text-red-500">*</span></label>
+                                    <div class="md:w-2/3 flex items-center gap-3">
+                                        <input type="text" id="income-other" value="0.00" class="w-full px-4 py-3 bg-white rounded-xl border border-slate-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 outline-none text-right text-lg font-semibold num-input text-slate-800" onkeyup="calculateFinance()">
+                                        <span class="text-slate-500 font-medium w-12 text-center">บาท</span>
+                                    </div>
+                                </div>
+
+                                <div class="flex flex-col md:flex-row md:items-center gap-4 mt-6 bg-slate-100 p-4 rounded-xl border border-slate-200">
+                                    <label class="md:w-1/3 text-lg font-bold text-slate-800">ประมาณการรายรับ</label>
+                                    <div class="md:w-2/3 flex items-center gap-3">
+                                        <input type="text" id="total-revenue" value="0.00" readonly class="w-full px-4 py-3 bg-transparent border-none text-slate-800 outline-none text-right text-xl font-bold p-0 text-slate-800">
+                                        <span class="text-slate-700 font-bold w-12 text-center">บาท</span>
+                                    </div>
+                                </div>
+
+                                <div class="flex flex-col md:flex-row md:items-center gap-4 mt-2 bg-blue-50 p-4 rounded-xl border border-blue-200">
+                                    <label class="md:w-1/3 text-xl font-bold text-blue-900">รวมเงินทั้งสิ้น</label>
+                                    <div class="md:w-2/3 flex items-center gap-3">
+                                        <input type="text" id="total-money" value="0.00" readonly class="w-full px-4 py-3 bg-transparent border-none text-blue-900 outline-none text-right text-2xl font-black p-0">
+                                        <span class="text-blue-900 font-bold w-12 text-center">บาท</span>
+                                    </div>
+                                </div>
                             </div>
                         </div>
-                    </div>
 
-                    <div class="bg-white rounded-[24px] p-5 shadow-sm border border-slate-200 cursor-pointer hover:bg-slate-50 transition-colors" onclick="window.location.href='admin_datacenter.html'">
-                        <div class="flex justify-between items-center">
-                            <div class="flex items-center gap-3">
-                                <span class="material-symbols-outlined text-red-500 text-[24px]">notification_important</span>
-                                <h4 class="font-bold text-slate-700 text-sm">รายการผู้ป่วยค้างเยี่ยม (>1 เดือน)</h4>
-                            </div>
-                            <div class="flex items-center gap-2">
-                                <span class="font-black text-red-600 text-lg" id="stat-overdue">0</span>
-                                <span class="bg-red-50 border border-red-200 text-red-600 text-[10px] px-2 py-1 rounded-lg font-bold">ค้างประเมิน</span>
+                        <!-- Section 2: รายจ่าย (Expenses) -->
+                        <div class="bg-slate-50/50 p-6 rounded-2xl border border-slate-200">
+                            <h3 class="text-xl font-bold text-slate-800 mb-6 flex items-center gap-2">
+                                <span class="material-symbols-outlined text-rose-500">account_balance</span> ส่วนที่ 2: ประมาณการรายจ่าย
+                            </h3>
+
+                            <div class="space-y-5">
+                                <div class="flex flex-col md:flex-row md:items-center gap-4">
+                                    <label class="md:w-2/3 text-base font-bold text-slate-700">1. สนับสนุนหน่วยบริการ สถานบริการ หรือหน่วยงานสาธารณสุข <span class="text-red-500">*</span></label>
+                                    <div class="md:w-1/3 flex items-center gap-3">
+                                        <input type="text" id="exp-1" value="0.00" class="w-full px-4 py-3 bg-white rounded-xl border border-slate-200 focus:border-rose-500 focus:ring-2 focus:ring-rose-500/20 outline-none text-right text-lg font-semibold num-input text-slate-800" onkeyup="calculateFinance()">
+                                        <span class="text-slate-500 font-medium w-12 text-center">บาท</span>
+                                    </div>
+                                </div>
+
+                                <div class="flex flex-col md:flex-row md:items-center gap-4">
+                                    <label class="md:w-2/3 text-base font-bold text-slate-700">2. สนับสนุนองค์กร หรือกลุ่มประชาชน <span class="text-red-500">*</span></label>
+                                    <div class="md:w-1/3 flex items-center gap-3">
+                                        <input type="text" id="exp-2" value="0.00" class="w-full px-4 py-3 bg-white rounded-xl border border-slate-200 focus:border-rose-500 focus:ring-2 focus:ring-rose-500/20 outline-none text-right text-lg font-semibold num-input text-slate-800" onkeyup="calculateFinance()">
+                                        <span class="text-slate-500 font-medium w-12 text-center">บาท</span>
+                                    </div>
+                                </div>
+
+                                <div class="flex flex-col md:flex-row md:items-center gap-4">
+                                    <label class="md:w-2/3 text-base font-bold text-slate-700">3. สนับสนุนศูนย์ฯเด็ก/ผู้สูงอายุ/คนพิการ/หน่วยงานที่รับผิดชอบศูนย์ <span class="text-red-500">*</span></label>
+                                    <div class="md:w-1/3 flex items-center gap-3">
+                                        <input type="text" id="exp-3" value="0.00" class="w-full px-4 py-3 bg-white rounded-xl border border-slate-200 focus:border-rose-500 focus:ring-2 focus:ring-rose-500/20 outline-none text-right text-lg font-semibold num-input text-slate-800" onkeyup="calculateFinance()">
+                                        <span class="text-slate-500 font-medium w-12 text-center">บาท</span>
+                                    </div>
+                                </div>
+
+                                <div class="flex flex-col gap-3 py-3 border-y border-slate-200/60">
+                                    <label class="text-base font-bold text-slate-700">4. สนับสนุนค่าใช้จ่ายในการบริหารหรือพัฒนากองทุน <span class="text-red-500">*</span></label>
+                                    
+                                    <div class="flex flex-col md:flex-row gap-4 items-start md:items-center pl-4 border-l-4 border-slate-200 ml-2">
+                                        <div class="md:w-2/3 space-y-3">
+                                            <label class="flex items-center gap-3 cursor-pointer">
+                                                <input type="radio" name="management_rate" value="15" checked class="w-5 h-5 text-rose-600 focus:ring-rose-500" onchange="calculateFinance()">
+                                                <span class="text-base text-slate-700">15% ไม่เข้าร่วม long term care <span id="max-req-15" class="text-red-500 font-semibold ml-1">ไม่เกิน 0.00 บาท</span></span>
+                                            </label>
+                                            <label class="flex items-center gap-3 cursor-pointer">
+                                                <input type="radio" name="management_rate" value="20" class="w-5 h-5 text-rose-600 focus:ring-rose-500" onchange="calculateFinance()">
+                                                <span class="text-base text-slate-700">20% เข้าร่วม long term care <span id="max-req-20" class="text-slate-400 ml-1">ไม่เกิน 0.00 บาท</span></span>
+                                            </label>
+                                        </div>
+                                        <div class="md:w-1/3 flex items-center gap-3 w-full">
+                                            <input type="text" id="exp-4" value="0.00" class="w-full px-4 py-3 bg-white rounded-xl border border-slate-200 focus:border-rose-500 focus:ring-2 focus:ring-rose-500/20 outline-none text-right text-lg font-semibold num-input text-slate-800" onkeyup="calculateFinance()">
+                                            <span class="text-slate-500 font-medium w-12 text-center">บาท</span>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="flex flex-col md:flex-row md:items-center gap-4">
+                                    <label class="md:w-2/3 text-base font-bold text-slate-700">5. สนับสนุนกรณีเกิดโรคระบาด หรือภัยพิบัติในพื้นที่ <span class="text-red-500">*</span></label>
+                                    <div class="md:w-1/3 flex items-center gap-3">
+                                        <input type="text" id="exp-5" value="0.00" class="w-full px-4 py-3 bg-white rounded-xl border border-slate-200 focus:border-rose-500 focus:ring-2 focus:ring-rose-500/20 outline-none text-right text-lg font-semibold num-input text-slate-800" onkeyup="calculateFinance()">
+                                        <span class="text-slate-500 font-medium w-12 text-center">บาท</span>
+                                    </div>
+                                </div>
+
+                                <div class="flex flex-col md:flex-row md:items-center gap-4">
+                                    <label class="md:w-2/3 text-base font-bold text-slate-700">6. สนับสนุนค่าจ้าง ค่าตอบแทน หรือค่าป่วยการของ CG <span class="text-red-500">*</span></label>
+                                    <div class="md:w-1/3 flex items-center gap-3">
+                                        <input type="text" id="exp-6" value="0.00" class="w-full px-4 py-3 bg-white rounded-xl border border-slate-200 focus:border-rose-500 focus:ring-2 focus:ring-rose-500/20 outline-none text-right text-lg font-semibold num-input text-slate-800" onkeyup="calculateFinance()">
+                                        <span class="text-slate-500 font-medium w-12 text-center">บาท</span>
+                                    </div>
+                                </div>
+
+                                <div class="flex flex-col md:flex-row md:items-center gap-4">
+                                    <label class="md:w-2/3 text-base font-bold text-slate-700">7. สนับสนุนฯ ตามมติคณะกรรมการหลักประกันสุขภาพแห่งชาติ <span class="text-red-500">*</span></label>
+                                    <div class="md:w-1/3 flex items-center gap-3">
+                                        <input type="text" id="exp-7" value="0.00" class="w-full px-4 py-3 bg-white rounded-xl border border-slate-200 focus:border-rose-500 focus:ring-2 focus:ring-rose-500/20 outline-none text-right text-lg font-semibold num-input text-slate-800" onkeyup="calculateFinance()">
+                                        <span class="text-slate-500 font-medium w-12 text-center">บาท</span>
+                                    </div>
+                                </div>
+
+                                <div class="flex flex-col md:flex-row md:items-center gap-4">
+                                    <label class="md:w-2/3 text-base font-bold text-slate-700">8. สนับสนุนฯ การจัดบริการพาหนะรับส่งผู้ทุพพลภาพ <span class="text-red-500">*</span></label>
+                                    <div class="md:w-1/3 flex items-center gap-3">
+                                        <input type="text" id="exp-8" value="0.00" class="w-full px-4 py-3 bg-white rounded-xl border border-slate-200 focus:border-rose-500 focus:ring-2 focus:ring-rose-500/20 outline-none text-right text-lg font-semibold num-input text-slate-800" onkeyup="calculateFinance()">
+                                        <span class="text-slate-500 font-medium w-12 text-center">บาท</span>
+                                    </div>
+                                </div>
+
+                                <div class="flex flex-col md:flex-row md:items-center gap-4 mt-6 p-4 bg-slate-100 rounded-xl border border-slate-200">
+                                    <label class="md:w-2/3 text-xl font-bold text-slate-800 text-right pr-4">รวมเป็นเงินทั้งสิ้น</label>
+                                    <div class="md:w-1/3 flex items-center gap-3">
+                                        <input type="text" id="total-expense" value="0.00" readonly class="w-full px-4 py-3 bg-transparent border-none text-slate-800 outline-none text-right text-xl font-bold p-0">
+                                        <span class="text-slate-700 font-bold w-12 text-center">บาท</span>
+                                    </div>
+                                </div>
+                                
+                                <div id="balance-alert" class="hidden mt-4 p-4 rounded-xl border border-red-200 bg-red-50 flex items-start gap-3">
+                                    <span class="material-symbols-outlined text-red-500">warning</span>
+                                    <div>
+                                        <h4 class="font-bold text-red-700 text-base">ยอดเงินไม่สมดุล</h4>
+                                        <p class="text-red-600 text-sm mt-1">ยอดรวมรายจ่าย (<span id="alert-exp">0.00</span>) สูงกว่ายอดรวมรายรับ (<span id="alert-inc">0.00</span>)</p>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     </div>
                 </div>
-
             </div>
         </div>
-
-        <div id="group-list-modal" class="fixed inset-0 bg-[#111c2d]/50 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4 opacity-0 transition-opacity duration-300">
-            <div class="bg-white rounded-[24px] w-full max-w-lg max-h-[85vh] flex flex-col shadow-2xl transform scale-95 transition-transform duration-300" id="group-list-content">
-                <div class="p-5 border-b border-slate-100 flex justify-between items-center bg-slate-50 rounded-t-[24px]">
-                    <h3 class="text-lg font-bold text-navy flex items-center gap-2" id="group-modal-title">รายชื่อผู้ป่วย</h3>
-                    <button onclick="closeGroupList()" class="text-slate-400 hover:text-slate-600 bg-white p-1 rounded-full"><span class="material-symbols-outlined">close</span></button>
-                </div>
-                <div class="p-5 overflow-y-auto flex-1 bg-slate-50/50" id="group-list-container">
-                </div>
-            </div>
-        </div>
-
-    </main>
+</main>
 
     <script>
         firebase.initializeApp(firebaseConfig);
@@ -522,37 +660,229 @@
 
         // ----------------------------------------------------
 
-        async function savePlan() { alert("บันทึกข้อมูลเรียบร้อย (ตัวอย่าง)"); }
-
-        function loadDashboardData() {
-            try {
-                const snapshot = await db.collection('Patients').get();
-                dashboardPatients = [];
+        async 
+        document.addEventListener('DOMContentLoaded', () => {
+            const today = new Date().toISOString().split('T')[0];
+            const dateInput = document.getElementById('plan-date');
+            if(dateInput) dateInput.value = today;
+            
+            document.querySelectorAll('.num-input').forEach(input => {
+                input.addEventListener('blur', function() {
+                    const val = parseNum(this.value);
+                    this.value = formatNum(val);
+                    calculateFinance();
+                });
                 
-                let cSocial = 0, cHome = 0, cBed = 0, cAll = 0;
-                let cPending = 0;
-                let cOverdue = 0;
+                input.addEventListener('focus', function() {
+                    if(this.value === '0.00') this.value = '';
+                    else this.value = this.value.replace(/,/g, '');
+                });
+            });
+            
+            setTimeout(() => calculateFinance(), 500);
+        });
 
-                snapshot.forEach(doc => {
-                    const p = doc.data();
-                    let hasPermissionToView = true;
-                    if (currentUserRole === 'SUB_ADMIN') hasPermissionToView = assignedVillages.includes(String(p.village_no).trim());
+        function parseNum(str) {
+            if(!str) return 0;
+            const parsed = parseFloat(String(str).replace(/,/g, ''));
+            return isNaN(parsed) ? 0 : parsed;
+        }
 
-                    if (hasPermissionToView && String(p.status).toLowerCase() === 'active') {
-                        dashboardPatients.push(p);
-                        cAll++;
-                        if(p.group === 'ติดสังคม') cSocial++;
-                        else if(p.group === 'ติดบ้าน') cHome++;
-                        else if(p.group === 'ติดเตียง') cBed++;
+        function formatNum(num) {
+            return num.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2});
+        }
 
-                        if (p.diaper) {
-                            try {
-                                let dp = {};
-                                if (typeof p.diaper === 'object') {
-                                    dp = p.diaper;
-                                } else {
-                                    let dpStr = String(p.diaper).trim();
-                                    if (dpStr.startsWith('"') && dpStr.endsWith('"')) { dpStr = dpStr.substring(1, dpStr.length - 1); }
+        function calculateFinance() {
+            try {
+                // Income
+                const carry = parseNum(document.getElementById('income-carry').value);
+                const nhso = parseNum(document.getElementById('income-nhso').value);
+                const lao = parseNum(document.getElementById('income-lao').value);
+                const other = parseNum(document.getElementById('income-other').value);
+                
+                // Calc Min Contribution
+                const min30 = nhso * 0.30;
+                const min40 = nhso * 0.40;
+                const min50 = nhso * 0.50;
+                
+                document.getElementById('min-req-30').innerText = 'ไม่น้อยกว่า ' + formatNum(min30) + ' บาท';
+                document.getElementById('min-req-40').innerText = 'ไม่น้อยกว่า ' + formatNum(min40) + ' บาท';
+                document.getElementById('min-req-50').innerText = 'ไม่น้อยกว่า ' + formatNum(min50) + ' บาท';
+                
+                const selectedCont = document.querySelector('input[name="contribution_rate"]:checked').value;
+                document.getElementById('min-req-30').className = selectedCont === '30' ? 'text-red-500 font-semibold mt-1' : 'text-slate-400 mt-1';
+                document.getElementById('min-req-40').className = selectedCont === '40' ? 'text-red-500 font-semibold mt-1' : 'text-slate-400 mt-1';
+                document.getElementById('min-req-50').className = selectedCont === '50' ? 'text-red-500 font-semibold mt-1' : 'text-slate-400 mt-1';
+                
+                // Calc Revenue
+                const revenue = nhso + lao + other;
+                document.getElementById('total-revenue').value = formatNum(revenue);
+                
+                const totalMoney = carry + revenue;
+                document.getElementById('total-money').value = formatNum(totalMoney);
+                
+                // Expenses Management limits
+                const max15 = revenue * 0.15;
+                const max20 = revenue * 0.20;
+                
+                document.getElementById('max-req-15').innerText = 'ไม่เกิน ' + formatNum(max15) + ' บาท';
+                document.getElementById('max-req-20').innerText = 'ไม่เกิน ' + formatNum(max20) + ' บาท';
+                
+                const selectedMgt = document.querySelector('input[name="management_rate"]:checked').value;
+                document.getElementById('max-req-15').className = selectedMgt === '15' ? 'text-red-500 font-semibold ml-1' : 'text-slate-400 ml-1';
+                document.getElementById('max-req-20').className = selectedMgt === '20' ? 'text-red-500 font-semibold ml-1' : 'text-slate-400 ml-1';
+                
+                // Calc Expenses
+                let totalExp = 0;
+                for(let i=1; i<=8; i++) {
+                    totalExp += parseNum(document.getElementById('exp-'+i).value);
+                }
+                document.getElementById('total-expense').value = formatNum(totalExp);
+                
+                // Check Balance
+                const alertBox = document.getElementById('balance-alert');
+                if (totalExp > totalMoney) {
+                    alertBox.classList.remove('hidden');
+                    document.getElementById('alert-exp').innerText = formatNum(totalExp);
+                    document.getElementById('alert-inc').innerText = formatNum(totalMoney);
+                } else {
+                    alertBox.classList.add('hidden');
+                }
+            } catch(e) {
+                console.error("Finance calculation error:", e);
+            }
+        }
+
+        function savePlan() {
+            alert('อยู่ระหว่างการพัฒนา: บันทึกข้อมูลแผนการเงิน');
+        }
+
+        // We replace loadDashboardData completely so we don't fetch stats
+        
+        document.addEventListener('DOMContentLoaded', () => {
+            document.querySelectorAll('.num-input').forEach(input => {
+                input.addEventListener('blur', function() {
+                    const val = parseNum(this.value);
+                    this.value = formatNum(val);
+                    calculateMatrix();
+                });
+                
+                input.addEventListener('focus', function() {
+                    if(this.value === '0.00') this.value = '';
+                    else this.value = this.value.replace(/,/g, '');
+                });
+            });
+            
+            // Format initial values
+            document.querySelectorAll('.num-input').forEach(input => {
+                const val = parseNum(input.value);
+                input.value = formatNum(val);
+            });
+            
+            setTimeout(() => calculateMatrix(), 200);
+        });
+
+        function parseNum(str) {
+            if(!str) return 0;
+            const parsed = parseFloat(String(str).replace(/,/g, ''));
+            return isNaN(parsed) ? 0 : parsed;
+        }
+
+        function formatNum(num) {
+            return num.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2});
+        }
+        
+        function updateDiffColor(elementId, val, isSum = false) {
+            const el = document.getElementById(elementId);
+            el.innerText = formatNum(val);
+            if (val < 0) {
+                el.className = isSum ? "px-4 py-4 text-right text-red-400" : "px-4 py-3 text-right font-bold text-red-500";
+            } else if (val > 0) {
+                el.className = isSum ? "px-4 py-4 text-right text-emerald-400" : "px-4 py-3 text-right font-bold text-emerald-500";
+            } else {
+                el.className = isSum ? "px-4 py-4 text-right text-slate-300" : "px-4 py-3 text-right font-bold text-slate-400";
+            }
+        }
+
+        function calculateMatrix() {
+            try {
+                // 1. Income & Globals
+                const nhso = parseNum(document.getElementById('income-nhso').value);
+                const lao = parseNum(document.getElementById('income-lao').value);
+                const other = parseNum(document.getElementById('income-other').value);
+                const carry = parseNum(document.getElementById('income-carry').value);
+                
+                const revenue = nhso + lao + other;
+                const totalMoney = revenue + carry;
+                
+                // 2. Management Fee Ceiling (Cat 4)
+                const mgtRate = parseInt(document.getElementById('mgt-rate').value) / 100;
+                const maxMgtFee = revenue * mgtRate;
+                
+                // 3. Usable Amount (For other categories)
+                const usableMoney = totalMoney - maxMgtFee;
+                
+                // Update Dashboard
+                document.getElementById('dash-revenue').innerText = formatNum(revenue);
+                document.getElementById('dash-total-money').innerText = formatNum(totalMoney);
+                document.getElementById('dash-mgt-max').innerText = formatNum(maxMgtFee);
+                document.getElementById('dash-usable').innerText = formatNum(usableMoney);
+                
+                // 4. Matrix Calculations
+                let sumPct = 0;
+                let sumTarget = 0;
+                let sumActual = 0;
+                
+                for(let i=1; i<=8; i++) {
+                    const actual = parseNum(document.getElementById('exp-'+i).value);
+                    let target = 0;
+                    
+                    if (i === 4) {
+                        // Category 4 is special (based on revenue * mgtRate)
+                        target = maxMgtFee;
+                        document.getElementById('target-4').innerText = formatNum(target);
+                    } else {
+                        // Other categories based on Usable Money * pct
+                        const pctInput = document.getElementById('pct-'+i);
+                        const pct = parseFloat(pctInput.value) || 0;
+                        sumPct += pct;
+                        
+                        target = usableMoney * (pct / 100);
+                        document.getElementById('target-'+i).innerText = formatNum(target);
+                    }
+                    
+                    // Diff = Target - Actual (Positive = Surplus/Under budget, Negative = Deficit/Over budget)
+                    const diff = target - actual;
+                    updateDiffColor('diff-'+i, diff);
+                    
+                    sumTarget += target;
+                    sumActual += actual;
+                }
+                
+                // Update Footers
+                document.getElementById('sum-pct').innerText = sumPct.toFixed(1) + '%';
+                document.getElementById('sum-target').innerText = formatNum(sumTarget);
+                document.getElementById('sum-actual').innerText = formatNum(sumActual);
+                
+                const sumDiff = sumTarget - sumActual;
+                updateDiffColor('sum-diff', sumDiff, true);
+                
+                // Final Account Balance
+                const finalBalance = totalMoney - sumActual;
+                const fbEl = document.getElementById('final-balance');
+                fbEl.innerText = formatNum(finalBalance);
+                fbEl.className = finalBalance < 0 ? "text-3xl font-black text-red-500" : "text-3xl font-black text-emerald-600";
+                
+            } catch(e) {
+                console.error("Matrix calculation error:", e);
+            }
+        }
+
+        function savePlan() {
+            alert('บันทึกแม่แบบตารางแผนการเงินสำเร็จ!');
+        }
+
+        function loadDashboardData() { }
                                     dp = JSON.parse(dpStr);
                                 }
                                 if (dp.approve_status === 'รออนุมัติ') cPending++;
