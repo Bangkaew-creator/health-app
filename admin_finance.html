@@ -522,7 +522,9 @@
 
         // ----------------------------------------------------
 
-        async function loadDashboardData() {
+        async function savePlan() { alert("บันทึกข้อมูลเรียบร้อย (ตัวอย่าง)"); }
+
+        function loadDashboardData() {
             try {
                 const snapshot = await db.collection('Patients').get();
                 dashboardPatients = [];
