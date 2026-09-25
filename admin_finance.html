@@ -2,121 +2,77 @@
 <html lang="th">
 <head>
     <meta charset="utf-8"/>
-    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    
+                            <!-- Section 3: รายละเอียดการขอรับงบประมาณ -->
+                            <div class="mt-8 pt-8 border-t border-slate-200">
+                                <h3 class="text-lg font-bold text-slate-800 flex items-center gap-2 mb-4">
+                                    <span class="material-symbols-outlined text-indigo-500">list_alt</span> ส่วนที่ 3: รายละเอียดการขอรับงบประมาณ (รายโครงการ/กลุ่ม)
+                                </h3>
+                                <div class="bg-indigo-50/50 p-4 lg:p-6 rounded-2xl border border-indigo-100 mb-6">
+                                    <div class="grid grid-cols-1 md:grid-cols-5 gap-4 items-end">
+                                        <div class="md:col-span-2">
+                                            <label class="block text-xs font-bold text-slate-500 mb-1">ประเภทรายจ่าย <span class="text-red-500">*</span></label>
+                                            <select id="proj-cat" class="w-full px-3 py-2 bg-white rounded-lg border border-slate-200 focus:border-indigo-500 outline-none text-sm font-medium text-slate-700">
+                                                <option value="">-- เลือกประเภท --</option>
+                                                <option value="1">(1) สนับสนุนหน่วยบริการ/สาธารณสุข</option>
+                                                <option value="2">(2) สนับสนุนองค์กร/กลุ่มประชาชน</option>
+                                                <option value="3">(3) สนับสนุนศูนย์ฯ/ผู้สูงอายุ/คนพิการ</option>
+                                                <option value="4">(4) ค่าใช้จ่ายบริหารกองทุน</option>
+                                                <option value="5">(5) สนับสนุนกรณีโรคระบาด/ภัยพิบัติ</option>
+                                                <option value="6">(6) สนับสนุนค่าป่วยการ CG</option>
+                                                <option value="7">(7) สนับสนุนตามมติคณะกรรมการฯ</option>
+                                                <option value="8">(8) สนับสนุนพาหนะรับส่งผู้ทุพพลภาพ</option>
+                                            </select>
+                                        </div>
+                                        <div class="md:col-span-3">
+                                            <label class="block text-xs font-bold text-slate-500 mb-1">ชื่อโครงการ <span class="text-red-500">*</span></label>
+                                            <input type="text" id="proj-name" placeholder="เช่น โครงการออกกำลังกาย" class="w-full px-3 py-2 bg-white rounded-lg border border-slate-200 focus:border-indigo-500 outline-none text-sm font-medium">
+                                        </div>
+                                        
+                                        <div class="md:col-span-2">
+                                            <label class="block text-xs font-bold text-slate-500 mb-1">จำนวน (กลุ่ม/ครั้ง/คน) <span class="text-red-500">*</span></label>
+                                            <input type="number" id="proj-groups" placeholder="เช่น 20" value="1" class="w-full px-3 py-2 bg-white rounded-lg border border-slate-200 focus:border-indigo-500 outline-none text-sm font-medium text-center">
+                                        </div>
+                                        <div class="md:col-span-3">
+                                            <label class="block text-xs font-bold text-slate-500 mb-1">จำนวนงบที่ขอรับ (ต่อ 1 หน่วย) <span class="text-red-500">*</span></label>
+                                            <div class="flex gap-2">
+                                                <input type="text" id="proj-amt" placeholder="0.00" class="w-full px-3 py-2 bg-white rounded-lg border border-slate-200 focus:border-indigo-500 outline-none text-right font-bold text-indigo-700 num-input">
+                                                <button onclick="addProject()" class="bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-2 rounded-lg font-bold text-sm transition-colors flex items-center justify-center whitespace-nowrap shadow-sm"><span class="material-symbols-outlined text-[18px]">add</span> เพิ่มรายการ</button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="overflow-x-auto rounded-xl border border-slate-200 shadow-sm">
+                                    <table class="w-full text-sm text-left whitespace-nowrap min-w-[900px]">
+                                        <thead class="bg-slate-100 text-slate-600 font-bold">
+                                            <tr>
+                                                <th class="px-4 py-3 border-b border-slate-200 w-12 text-center">ลำดับ</th>
+                                                <th class="px-4 py-3 border-b border-slate-200">ประเภทรายจ่าย</th>
+                                                <th class="px-4 py-3 border-b border-slate-200">ชื่อโครงการ</th>
+                                                <th class="px-4 py-3 border-b border-slate-200 text-center">จำนวนหน่วย</th>
+                                                <th class="px-4 py-3 border-b border-slate-200 text-right">งบ/หน่วย</th>
+                                                <th class="px-4 py-3 border-b border-slate-200 text-right bg-indigo-50">งบรวม (บาท)</th>
+                                                <th class="px-4 py-3 border-b border-slate-200 text-center w-20">ลบ</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody class="divide-y divide-slate-100 bg-white" id="projects-body">
+                                            <tr><td colspan="7" class="px-4 py-8 text-center text-slate-400">ยังไม่มีข้อมูลการขอรับงบประมาณ</td></tr>
+                                        </tbody>
+                                        <tfoot class="bg-slate-50 border-t border-slate-200 font-bold text-indigo-900 hidden" id="projects-footer">
+                                            <tr>
+                                                <td colspan="5" class="px-4 py-3 text-right">รวมเงินขอรับงบประมาณจากส่วนที่ 3 ทั้งสิ้น:</td>
+                                                <td class="px-4 py-3 text-right text-lg" id="projects-total">0.00</td>
+                                                <td></td>
+                                            </tr>
+                                        </tfoot>
+                                    </table>
+                                </div>
+                            </div>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
     <title>แผนการเงิน (Budget Plan) - อสม.สามารถ</title>
     <script src="https://cdn.tailwindcss.com">
-        // Section 3 Logic
-        let requestedProjects = [];
-        let projectIdCounter = 1;
-
-        function addProject() {
-            const catSelect = document.getElementById('proj-cat');
-            const nameInput = document.getElementById('proj-name');
-            const amtInput = document.getElementById('proj-amt');
-
-            const catId = parseInt(catSelect.value);
-            const name = nameInput.value.trim();
-            const amt = parseNum(amtInput.value);
-
-            if (!catId || !name || amt <= 0) {
-                return alert('กรุณากรอกข้อมูล ประเภทรายจ่าย, ชื่อกลุ่ม และ จำนวนงบให้ครบถ้วนและมากกว่า 0');
-            }
-
-            const catObj = categories.find(c => c.id === catId);
-            
-            requestedProjects.push({
-                id: projectIdCounter++,
-                catId: catId,
-                catName: catObj.name,
-                name: name,
-                amount: amt
-            });
-
-            nameInput.value = '';
-            amtInput.value = '';
-            catSelect.value = '';
-            
-            renderProjects();
-            syncProjectsToMatrix();
-        }
-
-        function removeProject(id) {
-            requestedProjects = requestedProjects.filter(p => p.id !== id);
-            renderProjects();
-            syncProjectsToMatrix();
-        }
-
-        function renderProjects() {
-            const tbody = document.getElementById('projects-body');
-            if (requestedProjects.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="5" class="px-4 py-8 text-center text-slate-400">ยังไม่มีข้อมูลการขอรับงบประมาณ</td></tr>';
-                return;
-            }
-
-            let htmlStr = '';
-            requestedProjects.forEach((p, index) => {
-                htmlStr += `
-                    <tr class="hover:bg-slate-50 transition-colors">
-                        <td class="px-4 py-3 text-center text-slate-500">${index + 1}</td>
-                        <td class="px-4 py-3 text-slate-700 font-medium">${p.catName}</td>
-                        <td class="px-4 py-3 text-slate-600">${p.name}</td>
-                        <td class="px-4 py-3 text-right font-bold text-indigo-600">${formatNum(p.amount)}</td>
-                        <td class="px-4 py-3 text-center">
-                            <button onclick="removeProject(${p.id})" class="text-slate-400 hover:text-red-500 w-8 h-8 rounded-full hover:bg-red-50 flex items-center justify-center transition-colors mx-auto"><span class="material-symbols-outlined text-[18px]">delete</span></button>
-                        </td>
-                    </tr>
-                `;
-            });
-            tbody.innerHTML = htmlStr;
-        }
-
-        function syncProjectsToMatrix() {
-            const sums = {};
-            requestedProjects.forEach(p => {
-                if(!sums[p.catId]) sums[p.catId] = 0;
-                sums[p.catId] += p.amount;
-            });
-
-            categories.forEach(c => {
-                const actualAmtInput = document.getElementById('actual-amt-' + c.id);
-                const actualPctInput = document.getElementById('actual-pct-' + c.id);
-                
-                if (sums[c.id] !== undefined) {
-                    actualAmtInput.value = formatNum(sums[c.id]);
-                    actualAmtInput.classList.add('bg-slate-100', 'text-indigo-700');
-                    actualAmtInput.classList.remove('bg-white', 'text-rose-700', 'text-amber-800');
-                    actualAmtInput.readOnly = true;
-                    actualAmtInput.title = "ยอดรวมจากส่วนที่ 3 (ไม่สามารถแก้ไขตรงนี้ได้)";
-                    
-                    if (actualPctInput) {
-                        actualPctInput.classList.add('bg-slate-100', 'text-indigo-700');
-                        actualPctInput.classList.remove('bg-white', 'text-rose-700');
-                        actualPctInput.readOnly = true;
-                        actualPctInput.title = "ยอดรวมจากส่วนที่ 3 (ไม่สามารถแก้ไขตรงนี้ได้)";
-                    }
-                    
-                    if (c.id !== 4) handleActualAmtChange(c.id);
-                } else {
-                    actualAmtInput.classList.remove('bg-slate-100', 'text-indigo-700');
-                    actualAmtInput.classList.add('bg-white');
-                    if (c.isMgt) actualAmtInput.classList.add('text-amber-800');
-                    else actualAmtInput.classList.add('text-rose-700');
-                    
-                    actualAmtInput.readOnly = false;
-                    actualAmtInput.title = "";
-                    
-                    if (actualPctInput) {
-                        actualPctInput.classList.remove('bg-slate-100', 'text-indigo-700');
-                        actualPctInput.classList.add('bg-white', 'text-rose-700');
-                        actualPctInput.readOnly = false;
-                        actualPctInput.title = "";
-                    }
-                }
-            });
-            
-            calculateMatrix(false); 
-        }
-</script>
+        </script>
     <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700&display=swap" rel="stylesheet"/>
     <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
     <script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
@@ -288,58 +244,7 @@
                                 </div>
                             </div>
                         
-                            <!-- Section 3: รายละเอียดการขอรับงบประมาณ -->
-                            <div class="mt-8 pt-8 border-t border-slate-200">
-                                <h3 class="text-lg font-bold text-slate-800 flex items-center gap-2 mb-4">
-                                    <span class="material-symbols-outlined text-indigo-500">list_alt</span> ส่วนที่ 3: รายละเอียดการขอรับงบประมาณ (รายโครงการ/กลุ่ม)
-                                </h3>
-                                <div class="bg-indigo-50/50 p-4 rounded-2xl border border-indigo-100 mb-6">
-                                    <div class="grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
-                                        <div class="md:col-span-2">
-                                            <label class="block text-xs font-bold text-slate-500 mb-1">ประเภทรายจ่าย <span class="text-red-500">*</span></label>
-                                            <select id="proj-cat" class="w-full px-3 py-2 bg-white rounded-lg border border-slate-200 focus:border-indigo-500 outline-none text-sm font-medium text-slate-700">
-                                                <option value="">-- เลือกประเภท --</option>
-                                                <option value="1">(1) สนับสนุนหน่วยบริการ/สาธารณสุข</option>
-                                                <option value="2">(2) สนับสนุนองค์กร/กลุ่มประชาชน</option>
-                                                <option value="3">(3) สนับสนุนศูนย์ฯ/ผู้สูงอายุ/คนพิการ</option>
-                                                <option value="4">(4) ค่าใช้จ่ายบริหารกองทุน</option>
-                                                <option value="5">(5) สนับสนุนกรณีโรคระบาด/ภัยพิบัติ</option>
-                                                <option value="6">(6) สนับสนุนค่าป่วยการ CG</option>
-                                                <option value="7">(7) สนับสนุนตามมติคณะกรรมการฯ</option>
-                                                <option value="8">(8) สนับสนุนพาหนะรับส่งผู้ทุพพลภาพ</option>
-                                            </select>
-                                        </div>
-                                        <div>
-                                            <label class="block text-xs font-bold text-slate-500 mb-1">ชื่อโครงการ / จำนวนกลุ่ม <span class="text-red-500">*</span></label>
-                                            <input type="text" id="proj-name" placeholder="เช่น ชมรมผู้สูงอายุ ก" class="w-full px-3 py-2 bg-white rounded-lg border border-slate-200 focus:border-indigo-500 outline-none text-sm font-medium">
-                                        </div>
-                                        <div>
-                                            <label class="block text-xs font-bold text-slate-500 mb-1">จำนวนงบที่ขอรับ (บาท) <span class="text-red-500">*</span></label>
-                                            <div class="flex gap-2">
-                                                <input type="text" id="proj-amt" placeholder="0.00" class="w-full px-3 py-2 bg-white rounded-lg border border-slate-200 focus:border-indigo-500 outline-none text-right font-bold text-indigo-700 num-input">
-                                                <button onclick="addProject()" class="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg font-bold text-sm transition-colors flex items-center justify-center whitespace-nowrap"><span class="material-symbols-outlined text-[18px]">add</span> เพิ่ม</button>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-
-                                <div class="overflow-x-auto rounded-xl border border-slate-200 shadow-sm">
-                                    <table class="w-full text-sm text-left whitespace-nowrap min-w-[800px]">
-                                        <thead class="bg-slate-100 text-slate-600 font-bold">
-                                            <tr>
-                                                <th class="px-4 py-3 border-b border-slate-200 w-12 text-center">ลำดับ</th>
-                                                <th class="px-4 py-3 border-b border-slate-200">ประเภทรายจ่าย</th>
-                                                <th class="px-4 py-3 border-b border-slate-200">ชื่อโครงการ / กลุ่ม</th>
-                                                <th class="px-4 py-3 border-b border-slate-200 text-right">งบที่ขอรับ (บาท)</th>
-                                                <th class="px-4 py-3 border-b border-slate-200 text-center w-20">ลบ</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody class="divide-y divide-slate-100 bg-white" id="projects-body">
-                                            <tr><td colspan="5" class="px-4 py-8 text-center text-slate-400">ยังไม่มีข้อมูลการขอรับงบประมาณ</td></tr>
-                                        </tbody>
-                                    </table>
-                                </div>
-                            </div>
+                            
 </div>
 
                     </div>
@@ -505,6 +410,11 @@
                 projAmt.addEventListener('focus', function() { if(this.value === '0.00') this.value = ''; else this.value = this.value.replace(/,/g, ''); });
             }
             ['income-nhso', 'income-lao', 'income-other', 'income-carry'].forEach(id => {
+            const projAmt = document.getElementById('proj-amt');
+            if(projAmt) {
+                projAmt.addEventListener('blur', function() { this.value = formatNum(parseNum(this.value)); });
+                projAmt.addEventListener('focus', function() { if(this.value === '0.00') this.value = ''; else this.value = this.value.replace(/,/g, ''); });
+            }
                 const el = document.getElementById(id);
                 if(el) {
                     el.addEventListener('keyup', calculateMatrix);
@@ -637,6 +547,136 @@
                 console.error("Matrix calculation error:", e);
             }
         }
+
+        // --- Section 3 Logic ---
+        let requestedProjects = [];
+        let projectIdCounter = 1;
+
+        function addProject() {
+            const catSelect = document.getElementById('proj-cat');
+            const nameInput = document.getElementById('proj-name');
+            const groupsInput = document.getElementById('proj-groups');
+            const amtInput = document.getElementById('proj-amt');
+
+            const catId = parseInt(catSelect.value);
+            const name = nameInput.value.trim();
+            const groups = parseFloat(groupsInput.value) || 0;
+            const amtPerGroup = parseNum(amtInput.value);
+
+            if (!catId || !name || groups <= 0 || amtPerGroup <= 0) {
+                return alert('กรุณากรอกข้อมูล ประเภทรายจ่าย, ชื่อโครงการ, จำนวน และ จำนวนงบ ให้ครบถ้วนและมากกว่า 0');
+            }
+
+            const catObj = categories.find(c => c.id === catId);
+            const totalAmt = groups * amtPerGroup;
+            
+            requestedProjects.push({
+                id: projectIdCounter++,
+                catId: catId,
+                catName: catObj.name,
+                name: name,
+                groups: groups,
+                amtPerGroup: amtPerGroup,
+                totalAmt: totalAmt
+            });
+
+            // clear inputs except category
+            nameInput.value = '';
+            groupsInput.value = '1';
+            amtInput.value = '';
+            
+            renderProjects();
+            syncProjectsToMatrix();
+        }
+
+        function removeProject(id) {
+            requestedProjects = requestedProjects.filter(p => p.id !== id);
+            renderProjects();
+            syncProjectsToMatrix();
+        }
+
+        function renderProjects() {
+            const tbody = document.getElementById('projects-body');
+            const tfoot = document.getElementById('projects-footer');
+            
+            if (requestedProjects.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="7" class="px-4 py-8 text-center text-slate-400">ยังไม่มีข้อมูลการขอรับงบประมาณ</td></tr>';
+                tfoot.classList.add('hidden');
+                return;
+            }
+
+            let htmlStr = '';
+            let grandTotal = 0;
+            
+            requestedProjects.forEach((p, index) => {
+                grandTotal += p.totalAmt;
+                htmlStr += `
+                    <tr class="hover:bg-slate-50 transition-colors">
+                        <td class="px-4 py-3 text-center text-slate-500">${index + 1}</td>
+                        <td class="px-4 py-3 text-slate-700 font-medium">${p.catName}</td>
+                        <td class="px-4 py-3 text-slate-600">${p.name}</td>
+                        <td class="px-4 py-3 text-center font-medium">${p.groups}</td>
+                        <td class="px-4 py-3 text-right text-slate-500">${formatNum(p.amtPerGroup)}</td>
+                        <td class="px-4 py-3 text-right font-bold text-indigo-600 bg-indigo-50/30">${formatNum(p.totalAmt)}</td>
+                        <td class="px-4 py-3 text-center">
+                            <button onclick="removeProject(${p.id})" class="text-slate-400 hover:text-red-500 w-8 h-8 rounded-full hover:bg-red-50 flex items-center justify-center transition-colors mx-auto"><span class="material-symbols-outlined text-[18px]">delete</span></button>
+                        </td>
+                    </tr>
+                `;
+            });
+            
+            tbody.innerHTML = htmlStr;
+            document.getElementById('projects-total').innerText = formatNum(grandTotal);
+            tfoot.classList.remove('hidden');
+        }
+
+        function syncProjectsToMatrix() {
+            const sums = {};
+            requestedProjects.forEach(p => {
+                if(!sums[p.catId]) sums[p.catId] = 0;
+                sums[p.catId] += p.totalAmt;
+            });
+
+            categories.forEach(c => {
+                const actualAmtInput = document.getElementById('actual-amt-' + c.id);
+                const actualPctInput = document.getElementById('actual-pct-' + c.id);
+                
+                if (sums[c.id] !== undefined) {
+                    actualAmtInput.value = formatNum(sums[c.id]);
+                    actualAmtInput.classList.add('bg-indigo-50', 'text-indigo-700', 'border-indigo-300');
+                    actualAmtInput.classList.remove('bg-white', 'text-rose-700', 'text-amber-800');
+                    actualAmtInput.readOnly = true;
+                    actualAmtInput.title = "ยอดรวมจากส่วนที่ 3 (ไม่สามารถแก้ไขตรงนี้ได้)";
+                    
+                    if (actualPctInput) {
+                        actualPctInput.classList.add('bg-indigo-50', 'text-indigo-700', 'border-indigo-300');
+                        actualPctInput.classList.remove('bg-white', 'text-rose-700');
+                        actualPctInput.readOnly = true;
+                        actualPctInput.title = "ยอดรวมจากส่วนที่ 3 (ไม่สามารถแก้ไขตรงนี้ได้)";
+                    }
+                    
+                    if (c.id !== 4) handleActualAmtChange(c.id);
+                } else {
+                    actualAmtInput.classList.remove('bg-indigo-50', 'text-indigo-700', 'border-indigo-300');
+                    actualAmtInput.classList.add('bg-white');
+                    if (c.isMgt) actualAmtInput.classList.add('text-amber-800');
+                    else actualAmtInput.classList.add('text-rose-700');
+                    
+                    actualAmtInput.readOnly = false;
+                    actualAmtInput.title = "";
+                    
+                    if (actualPctInput) {
+                        actualPctInput.classList.remove('bg-indigo-50', 'text-indigo-700', 'border-indigo-300');
+                        actualPctInput.classList.add('bg-white', 'text-rose-700');
+                        actualPctInput.readOnly = false;
+                        actualPctInput.title = "";
+                    }
+                }
+            });
+            
+            calculateMatrix(false); 
+        }
+
 </script>
 </body>
 </html>
