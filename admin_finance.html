@@ -3,72 +3,7 @@
 <head>
     <meta charset="utf-8"/>
     
-                            <!-- Section 3: รายละเอียดการขอรับงบประมาณ -->
-                            <div class="mt-8 pt-8 border-t border-slate-200">
-                                <h3 class="text-lg font-bold text-slate-800 flex items-center gap-2 mb-4">
-                                    <span class="material-symbols-outlined text-indigo-500">list_alt</span> ส่วนที่ 3: รายละเอียดการขอรับงบประมาณ (รายโครงการ/กลุ่ม)
-                                </h3>
-                                <div class="bg-indigo-50/50 p-4 lg:p-6 rounded-2xl border border-indigo-100 mb-6">
-                                    <div class="grid grid-cols-1 md:grid-cols-5 gap-4 items-end">
-                                        <div class="md:col-span-2">
-                                            <label class="block text-xs font-bold text-slate-500 mb-1">ประเภทรายจ่าย <span class="text-red-500">*</span></label>
-                                            <select id="proj-cat" class="w-full px-3 py-2 bg-white rounded-lg border border-slate-200 focus:border-indigo-500 outline-none text-sm font-medium text-slate-700">
-                                                <option value="">-- เลือกประเภท --</option>
-                                                <option value="1">(1) สนับสนุนหน่วยบริการ/สาธารณสุข</option>
-                                                <option value="2">(2) สนับสนุนองค์กร/กลุ่มประชาชน</option>
-                                                <option value="3">(3) สนับสนุนศูนย์ฯ/ผู้สูงอายุ/คนพิการ</option>
-                                                <option value="4">(4) ค่าใช้จ่ายบริหารกองทุน</option>
-                                                <option value="5">(5) สนับสนุนกรณีโรคระบาด/ภัยพิบัติ</option>
-                                                <option value="6">(6) สนับสนุนค่าป่วยการ CG</option>
-                                                <option value="7">(7) สนับสนุนตามมติคณะกรรมการฯ</option>
-                                                <option value="8">(8) สนับสนุนพาหนะรับส่งผู้ทุพพลภาพ</option>
-                                            </select>
-                                        </div>
-                                        <div class="md:col-span-3">
-                                            <label class="block text-xs font-bold text-slate-500 mb-1">ชื่อโครงการ <span class="text-red-500">*</span></label>
-                                            <input type="text" id="proj-name" placeholder="เช่น โครงการออกกำลังกาย" class="w-full px-3 py-2 bg-white rounded-lg border border-slate-200 focus:border-indigo-500 outline-none text-sm font-medium">
-                                        </div>
-                                        
-                                        <div class="md:col-span-2">
-                                            <label class="block text-xs font-bold text-slate-500 mb-1">จำนวน (กลุ่ม/ครั้ง/คน) <span class="text-red-500">*</span></label>
-                                            <input type="number" id="proj-groups" placeholder="เช่น 20" value="1" class="w-full px-3 py-2 bg-white rounded-lg border border-slate-200 focus:border-indigo-500 outline-none text-sm font-medium text-center">
-                                        </div>
-                                        <div class="md:col-span-3">
-                                            <label class="block text-xs font-bold text-slate-500 mb-1">จำนวนงบที่ขอรับ (ต่อ 1 หน่วย) <span class="text-red-500">*</span></label>
-                                            <div class="flex gap-2">
-                                                <input type="text" id="proj-amt" placeholder="0.00" class="w-full px-3 py-2 bg-white rounded-lg border border-slate-200 focus:border-indigo-500 outline-none text-right font-bold text-indigo-700 num-input">
-                                                <button onclick="addProject()" class="bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-2 rounded-lg font-bold text-sm transition-colors flex items-center justify-center whitespace-nowrap shadow-sm"><span class="material-symbols-outlined text-[18px]">add</span> เพิ่มรายการ</button>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-
-                                <div class="overflow-x-auto rounded-xl border border-slate-200 shadow-sm">
-                                    <table class="w-full text-sm text-left whitespace-nowrap min-w-[900px]">
-                                        <thead class="bg-slate-100 text-slate-600 font-bold">
-                                            <tr>
-                                                <th class="px-4 py-3 border-b border-slate-200 w-12 text-center">ลำดับ</th>
-                                                <th class="px-4 py-3 border-b border-slate-200">ประเภทรายจ่าย</th>
-                                                <th class="px-4 py-3 border-b border-slate-200">ชื่อโครงการ</th>
-                                                <th class="px-4 py-3 border-b border-slate-200 text-center">จำนวนหน่วย</th>
-                                                <th class="px-4 py-3 border-b border-slate-200 text-right">งบ/หน่วย</th>
-                                                <th class="px-4 py-3 border-b border-slate-200 text-right bg-indigo-50">งบรวม (บาท)</th>
-                                                <th class="px-4 py-3 border-b border-slate-200 text-center w-20">ลบ</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody class="divide-y divide-slate-100 bg-white" id="projects-body">
-                                            <tr><td colspan="7" class="px-4 py-8 text-center text-slate-400">ยังไม่มีข้อมูลการขอรับงบประมาณ</td></tr>
-                                        </tbody>
-                                        <tfoot class="bg-slate-50 border-t border-slate-200 font-bold text-indigo-900 hidden" id="projects-footer">
-                                            <tr>
-                                                <td colspan="5" class="px-4 py-3 text-right">รวมเงินขอรับงบประมาณจากส่วนที่ 3 ทั้งสิ้น:</td>
-                                                <td class="px-4 py-3 text-right text-lg" id="projects-total">0.00</td>
-                                                <td></td>
-                                            </tr>
-                                        </tfoot>
-                                    </table>
-                                </div>
-                            </div>
+                            
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
     <title>แผนการเงิน (Budget Plan) - อสม.สามารถ</title>
     <script src="https://cdn.tailwindcss.com">
@@ -243,6 +178,74 @@
                                     <span id="final-balance" class="text-3xl font-black text-emerald-600">0.00</span>
                                 </div>
                             </div>
+
+                            <!-- Section 3: รายละเอียดการขอรับงบประมาณ -->
+                            <div class="mt-8 pt-8 border-t border-slate-200">
+                                <h3 class="text-lg font-bold text-slate-800 flex items-center gap-2 mb-4">
+                                    <span class="material-symbols-outlined text-indigo-500">list_alt</span> ส่วนที่ 3: รายละเอียดการขอรับงบประมาณ (รายโครงการ/กลุ่ม)
+                                </h3>
+                                <div class="bg-indigo-50/50 p-4 lg:p-6 rounded-2xl border border-indigo-100 mb-6">
+                                    <div class="grid grid-cols-1 md:grid-cols-5 gap-4 items-end">
+                                        <div class="md:col-span-2">
+                                            <label class="block text-xs font-bold text-slate-500 mb-1">ประเภทรายจ่าย <span class="text-red-500">*</span></label>
+                                            <select id="proj-cat" class="w-full px-3 py-2 bg-white rounded-lg border border-slate-200 focus:border-indigo-500 outline-none text-sm font-medium text-slate-700">
+                                                <option value="">-- เลือกประเภท --</option>
+                                                <option value="1">(1) สนับสนุนหน่วยบริการ/สาธารณสุข</option>
+                                                <option value="2">(2) สนับสนุนองค์กร/กลุ่มประชาชน</option>
+                                                <option value="3">(3) สนับสนุนศูนย์ฯ/ผู้สูงอายุ/คนพิการ</option>
+                                                <option value="4">(4) ค่าใช้จ่ายบริหารกองทุน</option>
+                                                <option value="5">(5) สนับสนุนกรณีโรคระบาด/ภัยพิบัติ</option>
+                                                <option value="6">(6) สนับสนุนค่าป่วยการ CG</option>
+                                                <option value="7">(7) สนับสนุนตามมติคณะกรรมการฯ</option>
+                                                <option value="8">(8) สนับสนุนพาหนะรับส่งผู้ทุพพลภาพ</option>
+                                            </select>
+                                        </div>
+                                        <div class="md:col-span-3">
+                                            <label class="block text-xs font-bold text-slate-500 mb-1">ชื่อโครงการ <span class="text-red-500">*</span></label>
+                                            <input type="text" id="proj-name" placeholder="เช่น โครงการออกกำลังกาย" class="w-full px-3 py-2 bg-white rounded-lg border border-slate-200 focus:border-indigo-500 outline-none text-sm font-medium">
+                                        </div>
+                                        
+                                        <div class="md:col-span-2">
+                                            <label class="block text-xs font-bold text-slate-500 mb-1">จำนวน (กลุ่ม/ครั้ง/คน) <span class="text-red-500">*</span></label>
+                                            <input type="number" id="proj-groups" placeholder="เช่น 20" value="1" class="w-full px-3 py-2 bg-white rounded-lg border border-slate-200 focus:border-indigo-500 outline-none text-sm font-medium text-center">
+                                        </div>
+                                        <div class="md:col-span-3">
+                                            <label class="block text-xs font-bold text-slate-500 mb-1">จำนวนงบที่ขอรับ (ต่อ 1 หน่วย) <span class="text-red-500">*</span></label>
+                                            <div class="flex gap-2">
+                                                <input type="text" id="proj-amt" placeholder="0.00" class="w-full px-3 py-2 bg-white rounded-lg border border-slate-200 focus:border-indigo-500 outline-none text-right font-bold text-indigo-700 num-input">
+                                                <button onclick="addProject()" class="bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-2 rounded-lg font-bold text-sm transition-colors flex items-center justify-center whitespace-nowrap shadow-sm"><span class="material-symbols-outlined text-[18px]">add</span> เพิ่มรายการ</button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="overflow-x-auto rounded-xl border border-slate-200 shadow-sm">
+                                    <table class="w-full text-sm text-left whitespace-nowrap min-w-[900px]">
+                                        <thead class="bg-slate-100 text-slate-600 font-bold">
+                                            <tr>
+                                                <th class="px-4 py-3 border-b border-slate-200 w-12 text-center">ลำดับ</th>
+                                                <th class="px-4 py-3 border-b border-slate-200">ประเภทรายจ่าย</th>
+                                                <th class="px-4 py-3 border-b border-slate-200">ชื่อโครงการ</th>
+                                                <th class="px-4 py-3 border-b border-slate-200 text-center">จำนวนหน่วย</th>
+                                                <th class="px-4 py-3 border-b border-slate-200 text-right">งบ/หน่วย</th>
+                                                <th class="px-4 py-3 border-b border-slate-200 text-right bg-indigo-50">งบรวม (บาท)</th>
+                                                <th class="px-4 py-3 border-b border-slate-200 text-center w-20">ลบ</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody class="divide-y divide-slate-100 bg-white" id="projects-body">
+                                            <tr><td colspan="7" class="px-4 py-8 text-center text-slate-400">ยังไม่มีข้อมูลการขอรับงบประมาณ</td></tr>
+                                        </tbody>
+                                        <tfoot class="bg-slate-50 border-t border-slate-200 font-bold text-indigo-900 hidden" id="projects-footer">
+                                            <tr>
+                                                <td colspan="5" class="px-4 py-3 text-right">รวมเงินขอรับงบประมาณจากส่วนที่ 3 ทั้งสิ้น:</td>
+                                                <td class="px-4 py-3 text-right text-lg" id="projects-total">0.00</td>
+                                                <td></td>
+                                            </tr>
+                                        </tfoot>
+                                    </table>
+                                </div>
+                            </div>
+
                         
                             
 </div>
