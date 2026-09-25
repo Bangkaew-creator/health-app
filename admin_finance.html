@@ -694,7 +694,7 @@
                     other: document.getElementById('income-other').value,
                     carry: document.getElementById('income-carry').value
                 },
-                mgtFeePct: document.getElementById('mgt-fee-pct').value,
+                mgtFeePct: document.getElementById('mgt-rate').value,
                 section2Overrides: {},
                 projects: requestedProjects
             };
@@ -725,7 +725,7 @@
                 }
                 
                 if (draft.mgtFeePct) {
-                    document.getElementById('mgt-fee-pct').value = draft.mgtFeePct;
+                    document.getElementById('mgt-rate').value = draft.mgtFeePct;
                 }
                 
                 if (draft.projects && Array.isArray(draft.projects)) {
