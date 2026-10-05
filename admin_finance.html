@@ -687,7 +687,9 @@
 
         
         // --- Draft Logic ---
-        function saveFinanceDraft() {
+        async function saveFinanceDraft() {
+            showToast('กำลังบันทึกข้อมูล...', 'info');
+            
             const draft = {
                 incomes: {
                     nhso: document.getElementById('income-nhso').value,
@@ -698,7 +700,8 @@
                 mgtFeePct: document.getElementById('mgt-rate').value,
                 section2Overrides: {},
                 section2Targets: {},
-                projects: requestedProjects
+                projects: requestedProjects,
+                updatedAt: new Date().toISOString()
             };
             
             categories.forEach(c => {
@@ -713,16 +716,21 @@
                 }
             });
             
-            localStorage.setItem('finance_board_draft', JSON.stringify(draft));
-            showToast('บันทึกร่างข้อมูลเรียบร้อยแล้ว (จะดึงข้อมูลเดิมเมื่อเปิดหน้าต่างใหม่)');
+            try {
+                await db.collection('Configs').doc('FinanceDraft').set(draft);
+                showToast('บันทึกข้อมูลส่วนกลางสำเร็จ! (แอดมินทุกคนจะเห็นข้อมูลนี้)', 'success');
+            } catch(e) {
+                console.error("Error saving draft to Firestore", e);
+                showToast('เกิดข้อผิดพลาดในการบันทึกข้อมูลส่วนกลาง', 'error');
+            }
         }
 
-        function loadFinanceDraft() {
-            const saved = localStorage.getItem('finance_board_draft');
-            if (!saved) return;
-            
+        async function loadFinanceDraft() {
             try {
-                const draft = JSON.parse(saved);
+                const docSnap = await db.collection('Configs').doc('FinanceDraft').get();
+                if (!docSnap.exists) return; 
+                
+                const draft = docSnap.data();
                 
                 if (draft.incomes) {
                     document.getElementById('income-nhso').value = draft.incomes.nhso || '';
@@ -768,16 +776,21 @@
                 calculateMatrix(false); 
                 
             } catch(e) {
-                console.error("Error loading draft", e);
+                console.error("Error loading draft from Firestore", e);
             }
         }
 
-        function clearFinanceDraft() {
-            if(confirm('คุณต้องการล้างข้อมูลทั้งหมดในกระดานนี้และเริ่มใหม่ใช่หรือไม่?')) {
-                localStorage.removeItem('finance_board_draft');
-                location.reload();
+        async function clearFinanceDraft() {
+            if(confirm('คุณต้องการล้างข้อมูลทั้งหมดในกระดานนี้และเริ่มใหม่ใช่หรือไม่? (การล้างจะลบข้อมูลที่แอดมินคนอื่นเห็นด้วย)')) {
+                try {
+                    await db.collection('Configs').doc('FinanceDraft').delete();
+                    location.reload();
+                } catch(e) {
+                    console.error("Error deleting draft", e);
+                    showToast('เกิดข้อผิดพลาดในการล้างข้อมูล', 'error');
+                }
             }
-        }
+        }}
 
 </script>
 </body>
