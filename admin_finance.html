@@ -733,10 +733,10 @@
                 const draft = docSnap.data();
                 
                 if (draft.incomes) {
-                    document.getElementById('income-nhso').value = draft.incomes.nhso || '';
-                    document.getElementById('income-lao').value = draft.incomes.lao || '';
-                    document.getElementById('income-other').value = draft.incomes.other || '';
-                    document.getElementById('income-carry').value = draft.incomes.carry || '';
+                    document.getElementById('income-nhso').value = draft.incomes.nhso ? formatNum(parseNum(draft.incomes.nhso)) : '';
+                    document.getElementById('income-lao').value = draft.incomes.lao ? formatNum(parseNum(draft.incomes.lao)) : '';
+                    document.getElementById('income-other').value = draft.incomes.other ? formatNum(parseNum(draft.incomes.other)) : '';
+                    document.getElementById('income-carry').value = draft.incomes.carry ? formatNum(parseNum(draft.incomes.carry)) : '';
                 }
                 
                 if (draft.mgtFeePct) {
@@ -790,7 +790,7 @@
                     showToast('เกิดข้อผิดพลาดในการล้างข้อมูล', 'error');
                 }
             }
-        }}
+        }
 
 </script>
 </body>
