@@ -306,16 +306,15 @@
                                     <th class="p-4 font-bold w-12 text-center">ลำดับ</th>
                                     <th class="p-4 font-bold">ชื่อ-สกุล</th>
                                     <th class="p-4 font-bold">เลขบัตร ปชช.</th>
-                                    <th class="p-4 font-bold text-center">หมู่ที่</th>
                                     <th class="p-4 font-bold">บ้านเลขที่</th>
+                                    <th class="p-4 font-bold text-center">หมู่ที่</th>
                                     <th class="p-4 font-bold">เบอร์โทรญาติ</th>
                                     <th class="p-4 font-bold text-center">คะแนน ADL (ล่าสุด)</th>
                                     <th class="p-4 font-bold text-center">วันที่ประเมิน</th>
                                     <th class="p-4 font-bold text-center">การประเมิน 2Q/9Q</th>
                                     <th class="p-4 font-bold">โรคประจำตัว</th>
-                                    <th class="p-4 font-bold">ยาที่ใช้ปัจจุบัน</th>
-                                    <th class="p-4 font-bold">ประวัติแพ้ยา</th>
                                     <th class="p-4 font-bold text-center">สิทธิ์ผ้าอ้อม</th>
+                                    <th class="p-4 font-bold text-center">ขนาดผ้าอ้อมที่ได้รับ</th>
                                 </tr>
                             </thead>
                             <tbody id="tbody-registry" class="text-sm text-slate-700 divide-y divide-slate-100">
@@ -669,42 +668,65 @@
             const tr = document.createElement('tr');
             tr.className = "hover:bg-slate-50 transition-colors";
             
-            let adlScore = '-'; let adlDate = '-';
-            let ptAdl = allAssessments.filter(a => String(a.patient_id) === p.id);
+            let adlScore = p.adl || '-'; let adlDate = '-';
+            let ptAdl = allAssessments.filter(a => String(a.patient_id) === String(p.id) && a.type === 'ADL');
             if(ptAdl.length > 0) {
                 ptAdl.sort((a,b) => b.parsedDate - a.parsedDate);
-                adlScore = ptAdl[0].score1 || '-';
+                adlScore = ptAdl[0].score1 || ptAdl[0].total_score || '-';
                 adlDate = ptAdl[0].date || '-';
             }
             
-            let diaperStatus = '<span class="text-slate-400">-</span>';
+            let depStatus = p.dep_status || '-';
+            let ptDep = allAssessments.filter(a => String(a.patient_id) === String(p.id) && (a.type === 'DEP' || a.type === '2Q9Q'));
+            if(ptDep.length > 0) {
+                ptDep.sort((a,b) => b.parsedDate - a.parsedDate);
+                depStatus = ptDep[0].result || depStatus;
+            }
+
+            let diaperStatus = 'ยังไม่เคยได้รับ';
+            let diaperSizeStr = 'ยังไม่เคยได้';
+            
             if (p.diaper) {
                 try {
                     let d = typeof p.diaper === 'string' ? JSON.parse(p.diaper) : p.diaper;
-                    if (d.status === 'approved') diaperStatus = `<span class="bg-emerald-50 text-emerald-600 border border-emerald-100 px-2 py-1 rounded font-bold text-[10px]">อนุมัติแล้ว</span>`;
-                    else if (d.status === 'pending') diaperStatus = `<span class="bg-amber-50 text-amber-600 border border-amber-100 px-2 py-1 rounded font-bold text-[10px]">รออนุมัติ</span>`;
-                    else if (d.status === 'rejected') diaperStatus = `<span class="bg-rose-50 text-rose-600 border border-rose-100 px-2 py-1 rounded font-bold text-[10px]">ไม่อนุมัติ</span>`;
+                    
+                    if (d.allocations && Array.isArray(d.allocations) && d.allocations.length > 0) {
+                        diaperStatus = 'รอบ ' + d.allocations[d.allocations.length - 1];
+                    } else if (d.status === 'approved') {
+                        diaperStatus = 'อนุมัติแล้ว';
+                    }
+                    
+                    let sizes = [];
+                    if (d.req_diaper && parseInt(d.approved_diaper) > 0 && d.size && d.size !== '-') {
+                        sizes.push(d.size);
+                    }
+                    if (d.req_underpad && parseInt(d.approved_underpad) > 0) {
+                        sizes.push('แผ่นรองซับ');
+                    }
+                    if (sizes.length > 0) {
+                        diaperSizeStr = sizes.join(', ');
+                    }
+
                 } catch(e) {}
             }
 
             tr.innerHTML = `
                 <td class="p-4 text-center text-slate-400 font-medium">${index++}</td>
                 <td class="p-4 whitespace-nowrap font-bold text-navy">${p.prefix||""}${p.name||""}</td>
-                <td class="p-4 whitespace-nowrap font-medium">${p.id_card||'-'}</td>
+                <td class="p-4 whitespace-nowrap font-medium" t="s" style="mso-number-format:'\@';">${p.id_card||'-'}</td>
+                <td class="p-4 whitespace-nowrap" t="s" style="mso-number-format:'\@';">${p.house_no||'-'}</td>
                 <td class="p-4 whitespace-nowrap text-center font-bold text-blue-600">${p.village_no||'-'}</td>
-                <td class="p-4 whitespace-nowrap">${p.house_no||'-'}</td>
-                <td class="p-4 whitespace-nowrap">${p.caregiver_phone||'-'}</td>
+                <td class="p-4 whitespace-nowrap" t="s" style="mso-number-format:'\@';">${p.caregiver_phone || p.phone || '-'}</td>
                 <td class="p-4 whitespace-nowrap text-center font-bold text-emerald-600">${adlScore}</td>
                 <td class="p-4 whitespace-nowrap text-center text-slate-500">${adlDate}</td>
-                <td class="p-4 whitespace-nowrap text-center text-slate-400">-</td>
-                <td class="p-4 whitespace-nowrap"><div class="max-w-[150px] truncate" title="${p.underlying_disease||'-'}">${p.underlying_disease||'-'}</div></td>
-                <td class="p-4 whitespace-nowrap"><div class="max-w-[150px] truncate" title="${p.current_medication||'-'}">${p.current_medication||'-'}</div></td>
-                <td class="p-4 whitespace-nowrap"><div class="max-w-[150px] truncate" title="${p.drug_allergy||'-'}">${p.drug_allergy||'-'}</div></td>
-                <td class="p-4 whitespace-nowrap text-center">${diaperStatus}</td>
+                <td class="p-4 whitespace-nowrap text-center text-slate-600 font-medium">${depStatus}</td>
+                <td class="p-4 whitespace-nowrap"><div class="max-w-[150px] truncate" title="${p.disease||'-'}">${p.disease||'-'}</div></td>
+                <td class="p-4 whitespace-nowrap text-center font-bold text-blue-600">${diaperStatus}</td>
+                <td class="p-4 whitespace-nowrap text-center">${diaperSizeStr}</td>
             `;
             tbody.appendChild(tr);
         });
-        if(activePatients.length === 0) { tbody.innerHTML = '<tr><td colspan="13" class="p-8 text-center text-slate-400 font-medium">ไม่พบข้อมูลผู้ป่วย</td></tr>'; }
+        if(activePatients.length === 0) { tbody.innerHTML = '<tr><td colspan="12" class="p-8 text-center text-slate-400 font-medium">ไม่พบข้อมูลผู้ป่วย</td></tr>'; }
     }
 
     function renderVHVTable() {
