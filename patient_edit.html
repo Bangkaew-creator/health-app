@@ -691,6 +691,20 @@
                 return;
             }
 
+            const cleanIdCard = idcard.replace(/[^0-9]/g, '');
+            if (cleanIdCard.length === 13 && (!currentPatientData || currentPatientData.id_card !== cleanIdCard)) {
+                try {
+                    const snap = await db.collection('Patients').where('id_card', '==', cleanIdCard).get();
+                    const dup = snap.docs.find(d => d.id !== patientId);
+                    if (dup) {
+                        alert(`⚠️ ไม่สามารถบันทึกได้!\n\nเนื่องจากเลขบัตรประชาชน ${cleanIdCard} มีบันทึกเป็นของผู้ป่วยรายอื่นแล้ว:\n"${dup.data().prefix || ''}${dup.data().name || ''}" (หมู่ที่ ${dup.data().village_no || '-'} บ้านเลขที่ ${dup.data().house_no || '-'})\n\nกรุณาตรวจสอบความถูกต้อง`);
+                        return;
+                    }
+                } catch(err) {
+                    console.warn("Check duplicate error:", err);
+                }
+            }
+
             const btn = document.getElementById('btn-save');
             btn.innerHTML = '<div class="loader-small" style="border-color:white;border-bottom-color:transparent"></div> กำลังบันทึกข้อมูล...'; 
             btn.disabled = true;

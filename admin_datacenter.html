@@ -127,7 +127,10 @@ function exportToCSV() {
                 </div>
                 
                 <div class="flex gap-2">
-                    <button onclick="exportToCSV()" class="bg-emerald-50 text-emerald-700 hover:bg-emerald-100 px-4 py-3 rounded-xl text-sm font-bold shadow-sm transition-all border border-emerald-200 flex justify-center items-center gap-1.5 active:scale-95 whitespace-nowrap">
+                    <button id="btn-merge-duplicates" onclick="openDuplicateManager()" class="hidden bg-amber-500 hover:bg-amber-600 text-white px-4 py-3 rounded-xl text-sm font-bold shadow-sm transition-all flex justify-center items-center gap-1.5 active:scale-95 whitespace-nowrap">
+                            <span class="material-symbols-outlined text-[18px]">call_merge</span> รวมข้อมูลซ้ำ (<span id="duplicate-badge-count">0</span>)
+                        </button>
+                        <button onclick="exportToCSV()" class="bg-emerald-50 text-emerald-700 hover:bg-emerald-100 px-4 py-3 rounded-xl text-sm font-bold shadow-sm transition-all border border-emerald-200 flex justify-center items-center gap-1.5 active:scale-95 whitespace-nowrap">
                             <span class="material-symbols-outlined text-[18px]">download</span> ส่งออก CSV
                         </button>
                         <button onclick="openImportModal()" class="bg-blue-50 text-blue-700 hover:bg-blue-100 px-4 py-3 rounded-xl text-sm font-bold shadow-sm transition-all border border-blue-200 flex justify-center items-center gap-1.5 active:scale-95 whitespace-nowrap">
@@ -157,9 +160,26 @@ function exportToCSV() {
                     <optgroup label="ดูเฉพาะรอบ" id="alloc-options"></optgroup>
                 </select>
                 <select id="status-filter" onchange="filterPatients()" class="w-full px-4 py-2.5 bg-white border border-slate-200 rounded-xl text-sm font-bold text-slate-600 focus:ring-2 focus:ring-emerald-500 shadow-sm outline-none">
-                    <option value="Active">✓ สถานะ: กำลังดูแล (Active)</option>
-                    <option value="Inactive">✕ สถานะ: ยุติการดูแล</option>
+                    <option value="Active" selected>✓ สถานะ: กำลังดูแล (Active)</option>
+                    <option value="Inactive">✕ สถานะ: ยุติการดูแล (เสียชีวิต / ย้ายออก)</option>
+                    <option value="all">ดูทุกสถานะ (ทั้งหมด)</option>
                 </select>
+            </div>
+
+            <!-- แถบแจ้งเตือนข้อมูลซ้ำ -->
+            <div id="duplicate-banner" class="hidden bg-gradient-to-r from-amber-50 to-orange-50 border border-amber-200 rounded-2xl p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 shadow-sm">
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-xl bg-amber-500 text-white flex items-center justify-center flex-shrink-0 shadow-sm">
+                        <span class="material-symbols-outlined text-[24px]">call_merge</span>
+                    </div>
+                    <div>
+                        <h4 class="text-sm font-bold text-amber-950" id="duplicate-banner-title">ตรวจพบข้อมูลผู้ป่วยเลขบัตรประชาชนซ้ำกัน</h4>
+                        <p class="text-xs text-amber-700 mt-0.5" id="duplicate-banner-desc">มีผู้ป่วยที่มีเลขบัตร ปชช. ซ้ำกัน คุณสามารถเปรียบเทียบและคลิกเลือกว่าจะเก็บข้อมูลใดไว้บ้าง</p>
+                    </div>
+                </div>
+                <button onclick="openDuplicateManager()" class="bg-amber-600 hover:bg-amber-700 text-white text-xs font-bold px-4 py-2.5 rounded-xl shadow-sm transition-all flex items-center gap-1.5 flex-shrink-0 active:scale-95 whitespace-nowrap">
+                    <span class="material-symbols-outlined text-[16px]">tune</span> เปรียบเทียบและรวมข้อมูล
+                </button>
             </div>
         </div>
 
@@ -317,11 +337,29 @@ function exportToCSV() {
         }
 
         async function addNewPatient() {
-            // แก้ไข \n ให้ถูกต้องใน JavaScript เพื่อป้องกันบั๊ก Syntax Error
             let idCard = prompt("กรุณาระบุเลขบัตรประชาชน 13 หลัก\n(หากไม่มี ให้เว้นว่างไว้เพื่อสร้างรหัสชั่วคราวก่อนได้ครับ):");
             if (idCard === null) return; 
             
             idCard = idCard.replace(/[^0-9]/g, ''); 
+
+            // ตรวจสอบเลขบัตรประชาชนซ้ำในระบบก่อนบันทึก
+            if (idCard.length === 13) {
+                const existing = allPatients.find(p => p.id_card === idCard || p.id === idCard);
+                if (existing) {
+                    alert(`⚠️ เลขบัตรประชาชน ${idCard} มีบันทึกอยู่ในระบบแล้ว!\n\nผู้ป่วย: ${existing.prefix || ''}${existing.name || 'ไม่ระบุชื่อ'} (หมู่ที่ ${existing.village_no || '-'} บ้านเลขที่ ${existing.house_no || '-' })\n\nระบบจะพาไปยังแฟ้มประวัติของผู้ป่วยรายนี้ทันที`);
+                    window.location.href = `patient_profile.html?id=${existing.docId || existing.id}`;
+                    return;
+                }
+                try {
+                    const snap = await db.collection('Patients').where('id_card', '==', idCard).get();
+                    if (!snap.empty) {
+                        const found = snap.docs[0].data();
+                        alert(`⚠️ เลขบัตรประชาชน ${idCard} มีบันทึกอยู่ในระบบแล้ว!\n\nผู้ป่วย: ${found.prefix || ''}${found.name || 'ไม่ระบุชื่อ'} (หมู่ที่ ${found.village_no || '-'} บ้านเลขที่ ${found.house_no || '-' })\n\nระบบจะพาไปยังแฟ้มประวัติของผู้ป่วยรายนี้ทันที`);
+                        window.location.href = `patient_profile.html?id=${snap.docs[0].id}`;
+                        return;
+                    }
+                } catch(e) {}
+            }
 
             let docId = idCard;
             if (docId.length !== 13) {
@@ -393,6 +431,7 @@ function exportToCSV() {
                 document.getElementById('loading-state').classList.add('hidden');
                 document.getElementById('patient-list').classList.remove('hidden');
                 filterPatients();
+                updateDuplicateUI();
             } catch (error) { alert("ดึงฐานข้อมูลล้มเหลว"); }
         }
 
@@ -408,23 +447,21 @@ function exportToCSV() {
             container.innerHTML = '';
             let displayCount = 0;
 
+            // Map of CID duplicates
+            const duplicateGroups = findDuplicateGroups();
+            const duplicateCIDMap = {};
+            duplicateGroups.forEach(g => {
+                duplicateCIDMap[g.cid] = g.patients.length;
+            });
+
             allPatients.forEach(p => {
-                const pStatus = String(p.status || 'Active').trim().toLowerCase();
-                const targetStatus = statusFilter.toLowerCase();
-                
-                let isMatchStatus = false;
-                if (targetStatus === 'inactive') {
-                    if (pStatus === 'inactive' || pStatus === 'เสียชีวิต' || pStatus === 'ย้ายที่อยู่') isMatchStatus = true;
-                } else if (pStatus === targetStatus) {
-                    isMatchStatus = true;
-                }
-                
-                if (searchKeyword !== '') {
-                    isMatchStatus = true;
-                }
-                
-                if (!isMatchStatus) return;
-                
+                const pStatus = String(p.status || 'Active').trim();
+                const isInactive = (pStatus === 'Inactive' || pStatus === 'inactive' || pStatus === 'เสียชีวิต' || pStatus === 'ย้ายที่อยู่');
+
+                // จัดการตัวกรองสถานะ: กำลังดูแล vs ยุติการดูแล vs ทั้งหมด (ใช้กับทุกการค้นหา)
+                if (statusFilter === 'Active' && isInactive) return;
+                if (statusFilter === 'Inactive' && !isInactive) return;
+
                 if (villageFilter !== '' && String(p.village_no) !== villageFilter) return;
                 
                 const groupDisplay = (p.group && p.group !== '-' && p.group !== 'ยังไม่ประเมิน') ? p.group : 'ยังไม่ประเมิน';
@@ -445,7 +482,6 @@ function exportToCSV() {
 
                 if (searchKeyword && !matchHN && !matchID && !matchName && !matchHouse) return;
 
-                
                 displayCount++;
                 let badgeColor = 'bg-slate-100 text-slate-600';
                 if (groupDisplay === 'ติดสังคม') badgeColor = 'bg-emerald-50 text-emerald-700 border-emerald-200';
@@ -466,11 +502,26 @@ function exportToCSV() {
                 }
 
                 let remarkText = p.remark && p.remark !== '-' && p.remark.trim() !== '' ? p.remark : '-';
+                const pDocId = p.docId || p.id;
+                const cleanCID = String(p.id_card || '').replace(/[^0-9]/g, '');
+                const dupCount = duplicateCIDMap[cleanCID] || 0;
+
+                const dupBadgeHtml = dupCount > 1 
+                    ? `<button onclick="event.stopPropagation(); openMergeModalForCID('${cleanCID}')" class="text-[10px] bg-amber-50 text-amber-700 hover:bg-amber-600 hover:text-white border border-amber-300 px-2 py-0.5 rounded shadow-sm transition-all w-fit inline-flex items-center gap-1 font-bold"><span class="material-symbols-outlined text-[12px]">call_merge</span> ซ้ำ ${dupCount} รายการ (รวมข้อมูล)</button>`
+                    : '';
 
                 container.insertAdjacentHTML('beforeend', `
-                    <tr class="hover:bg-slate-50 transition-colors cursor-pointer group" onclick="window.open('patient_profile.html?id=${p.id}', '_blank')">
+                    <tr class="hover:bg-slate-50 transition-colors cursor-pointer group" onclick="window.open('patient_profile.html?id=${pDocId}', '_blank')">
                         <td class="p-3 whitespace-nowrap text-center">${avatarHtml}</td>
-                        <td class="p-3 whitespace-nowrap font-bold text-navy group-hover:text-blue-600 transition-colors">${p.prefix || ''}${p.name || 'ไม่ระบุชื่อ'}</td>
+                        <td class="p-3 whitespace-nowrap">
+                            <div class="flex flex-col gap-1 items-start">
+                                <span class="font-bold text-navy group-hover:text-blue-600 transition-colors">${p.prefix || ''}${p.name || 'ไม่ระบุชื่อ'}</span>
+                                <div class="flex flex-wrap items-center gap-1.5">
+                                    <button onclick="event.stopPropagation(); openStatusModal('${pDocId}', '${p.prefix || ''}${p.name || 'ไม่ระบุชื่อ'}')" class="text-[10px] ${isInactive ? 'bg-slate-100 text-slate-600 border-slate-300' : 'bg-rose-50 text-rose-600 border-rose-200'} border px-2 py-0.5 rounded shadow-sm hover:bg-rose-500 hover:text-white transition-colors w-fit inline-flex items-center gap-1"><span class="material-symbols-outlined text-[12px]">${isInactive ? 'info' : 'person_off'}</span>${isInactive ? pStatus + ' (แก้ไข/ลบ)' : 'เสียชีวิต / ย้าย / ลบ'}</button>
+                                    ${dupBadgeHtml}
+                                </div>
+                            </div>
+                        </td>
                         <td class="p-3 whitespace-nowrap"><span class="text-blue-500 font-bold text-[11px] block">CID:</span>${p.id_card || p.id || '-'}</td>
                         <td class="p-3 whitespace-nowrap text-center"><span class="${badgeColor} text-[10px] font-bold px-3 py-1 rounded-full border shadow-sm">${groupDisplay}</span></td>
                         <td class="p-3 whitespace-nowrap text-center font-bold text-blue-600">${p.village_no || '-'}</td>
@@ -480,24 +531,501 @@ function exportToCSV() {
                         <td class="p-3 whitespace-nowrap text-[12px] text-slate-500 max-w-[200px] truncate" title="${remarkText}">${remarkText}</td>
                     </tr>
                 `);
-});
+            });
 
             if (displayCount === 0) emptyState.classList.remove('hidden');
             else emptyState.classList.add('hidden');
         }
 
-        async function updatePatientStatus(patientId, newStatus) {
-            const actionText = newStatus === 'Inactive' ? 'ยุติการดูแล (Soft Delete)' : 'นำกลับมาดูแล (Active)';
-            if (!confirm(`คุณต้องการ ${actionText} ผู้ป่วยรหัส ${patientId} ใช่หรือไม่?`)) return;
+        function openStatusModal(patientId, patientName) {
+            const p = allPatients.find(item => String(item.docId || item.id) === String(patientId));
+            const pName = p ? `${p.prefix || ''}${p.name || 'ไม่ระบุชื่อ'}` : (patientName || 'ผู้ป่วย');
+            const pDocId = p ? (p.docId || p.id) : patientId;
+
+            document.getElementById('status-patient-id').value = pDocId;
+            document.getElementById('status-modal-desc').innerHTML = `ผู้ป่วย: <strong class="text-navy">${pName}</strong> (รหัส: ${pDocId})`;
+            
+            // Set default radio
+            const radios = document.querySelectorAll('input[name="patient_status"]');
+            radios.forEach(r => r.checked = false);
+            if (p && p.status === 'เสียชีวิต') {
+                const r = document.querySelector('input[name="patient_status"][value="เสียชีวิต"]');
+                if (r) r.checked = true;
+            } else if (p && p.status === 'ย้ายที่อยู่') {
+                const r = document.querySelector('input[name="patient_status"][value="ย้ายที่อยู่"]');
+                if (r) r.checked = true;
+            } else {
+                const r = document.querySelector('input[name="patient_status"][value="เสียชีวิต"]');
+                if (r) r.checked = true;
+            }
+
+            const m = document.getElementById('status-modal');
+            const c = document.getElementById('status-modal-content');
+            m.classList.remove('hidden'); 
+            setTimeout(() => { m.classList.remove('opacity-0'); c.classList.remove('scale-95'); }, 10);
+        }
+
+        function closeStatusModal() {
+            const m = document.getElementById('status-modal');
+            const c = document.getElementById('status-modal-content');
+            m.classList.add('opacity-0'); c.classList.add('scale-95');
+            setTimeout(() => { m.classList.add('hidden'); }, 300);
+        }
+
+        async function confirmStatusChange() {
+            const patientId = document.getElementById('status-patient-id').value;
+            if (!patientId) return;
+
+            const selectedRadio = document.querySelector('input[name="patient_status"]:checked');
+            if (!selectedRadio) {
+                alert("กรุณาเลือกการดำเนินการที่ต้องการ");
+                return;
+            }
+            const action = selectedRadio.value;
+            const p = allPatients.find(item => String(item.docId || item.id) === String(patientId));
+            const targetDocId = p ? (p.docId || p.id) : patientId;
+            const patientName = p ? `${p.prefix || ''}${p.name || ''}` : 'ผู้ป่วย';
+
+            const btn = document.getElementById('btn-save-status');
+            btn.disabled = true;
+            btn.innerHTML = `<span class="material-symbols-outlined text-[16px] animate-spin">sync</span> กำลังบันทึก...`;
+
+            if (action === 'DELETE') {
+                if (!confirm(`⚠️ คำเตือน: ยืนยันการลบข้อมูลอย่างถาวร!\n\nคุณต้องการลบข้อมูลของ "${patientName}" (ID: ${targetDocId}) ออกจากฐานข้อมูลอย่างถาวรใช่หรือไม่?\n\n*การกระทำนี้ไม่สามารถย้อนกลับได้ (เหมาะสำหรับลบข้อมูลที่ซ้ำซ้อนหรือบันทึกผิด)`)) {
+                    btn.disabled = false;
+                    btn.innerHTML = 'บันทึก';
+                    return;
+                }
+                try {
+                    await db.collection('Patients').doc(String(targetDocId)).delete();
+                    allPatients = allPatients.filter(item => String(item.docId || item.id) !== String(targetDocId));
+                    closeStatusModal();
+                    showToast(`ลบข้อมูล ${patientName} เรียบร้อยแล้ว`, 'success');
+                    filterPatients();
+                    updateDuplicateUI();
+                } catch(err) {
+                    console.error("Delete error:", err);
+                    alert("เกิดข้อผิดพลาดในการลบ: " + err.message);
+                } finally {
+                    btn.disabled = false;
+                    btn.innerHTML = 'บันทึก';
+                }
+            } else if (action === 'Active') {
+                try {
+                    await db.collection('Patients').doc(String(targetDocId)).update({ status: 'Active' });
+                    if (p) p.status = 'Active';
+                    closeStatusModal();
+                    showToast(`คืนสถานะกำลังดูแล (${patientName}) เรียบร้อยแล้ว`, 'success');
+                    filterPatients();
+                } catch(err) {
+                    console.error("Status error:", err);
+                    alert("เกิดข้อผิดพลาด: " + err.message);
+                } finally {
+                    btn.disabled = false;
+                    btn.innerHTML = 'บันทึก';
+                }
+            } else { // 'เสียชีวิต' or 'ย้ายที่อยู่'
+                if (!confirm(`ยืนยันการตั้งสถานะของ "${patientName}" เป็น "${action}" ใช่หรือไม่?`)) {
+                    btn.disabled = false;
+                    btn.innerHTML = 'บันทึก';
+                    return;
+                }
+                try {
+                    await db.collection('Patients').doc(String(targetDocId)).update({ status: action });
+                    if (p) p.status = action;
+                    closeStatusModal();
+                    showToast(`อัปเดตสถานะเป็น "${action}" เรียบร้อยแล้ว`, 'success');
+                    filterPatients();
+                } catch(err) {
+                    console.error("Status update error:", err);
+                    alert("เกิดข้อผิดพลาด: " + err.message);
+                } finally {
+                    btn.disabled = false;
+                    btn.innerHTML = 'บันทึก';
+                }
+            }
+        }
+
+        // ==========================================
+        // 🌟 ฟังก์ชันจัดการรวมข้อมูลผู้ป่วยที่ซ้ำกัน (Merge) 🌟
+        // ==========================================
+        let currentDuplicateGroups = [];
+        let currentMergeGroupIdx = 0;
+        let selectedMergeData = {};
+
+        function findDuplicateGroups() {
+            const cidMap = {};
+            allPatients.forEach(p => {
+                const cid = String(p.id_card || '').trim().replace(/[^0-9]/g, '');
+                if (cid && cid.length === 13) {
+                    if (!cidMap[cid]) cidMap[cid] = [];
+                    cidMap[cid].push(p);
+                }
+            });
+            const groups = Object.keys(cidMap)
+                .filter(cid => cidMap[cid].length > 1)
+                .map(cid => ({ cid, patients: cidMap[cid] }));
+            return groups;
+        }
+
+        function updateDuplicateUI() {
+            currentDuplicateGroups = findDuplicateGroups();
+            const btn = document.getElementById('btn-merge-duplicates');
+            const badge = document.getElementById('duplicate-badge-count');
+            const banner = document.getElementById('duplicate-banner');
+            const title = document.getElementById('duplicate-banner-title');
+            const desc = document.getElementById('duplicate-banner-desc');
+
+            if (currentDuplicateGroups.length > 0) {
+                const totalDupRecords = currentDuplicateGroups.reduce((acc, g) => acc + g.patients.length, 0);
+                if (btn) {
+                    btn.classList.remove('hidden');
+                    if (badge) badge.innerText = currentDuplicateGroups.length;
+                }
+                if (banner) {
+                    banner.classList.remove('hidden');
+                    if (title) title.innerText = `ตรวจพบข้อมูลผู้ป่วยเลขบัตรประชาชนซ้ำกัน ${currentDuplicateGroups.length} ชุด (รวม ${totalDupRecords} รายการ)`;
+                    if (desc) desc.innerText = `มีผู้ป่วยที่มีเลขบัตร ปชช. ซ้ำกัน คุณสามารถเปรียบเทียบและคลิกเลือกว่าจะเก็บข้อมูลใดไว้บ้าง`;
+                }
+            } else {
+                if (btn) btn.classList.add('hidden');
+                if (banner) banner.classList.add('hidden');
+            }
+        }
+
+        function openDuplicateManager() {
+            currentDuplicateGroups = findDuplicateGroups();
+            if (currentDuplicateGroups.length === 0) {
+                alert("✨ ไม่พบข้อมูลผู้ป่วยที่มีเลขบัตรประชาชนซ้ำกันในระบบ");
+                return;
+            }
+            openMergeModalForGroup(0);
+        }
+
+        function openMergeModalForCID(cid) {
+            currentDuplicateGroups = findDuplicateGroups();
+            const idx = currentDuplicateGroups.findIndex(g => g.cid === String(cid));
+            if (idx > -1) {
+                openMergeModalForGroup(idx);
+            } else {
+                alert("ไม่พบข้อมูลซ้ำสำหรับเลขบัตรนี้");
+            }
+        }
+
+        function openMergeModalForGroup(idx) {
+            currentMergeGroupIdx = idx;
+            renderMergeModal();
+            const m = document.getElementById('merge-modal');
+            const c = document.getElementById('merge-modal-content');
+            m.classList.remove('hidden');
+            setTimeout(() => { m.classList.remove('opacity-0'); c.classList.remove('scale-95'); }, 10);
+        }
+
+        function closeMergeModal() {
+            const m = document.getElementById('merge-modal');
+            const c = document.getElementById('merge-modal-content');
+            m.classList.add('opacity-0'); c.classList.add('scale-95');
+            setTimeout(() => { m.classList.add('hidden'); }, 300);
+        }
+
+        function prevMergeGroup() {
+            if (currentMergeGroupIdx > 0) {
+                currentMergeGroupIdx--;
+                renderMergeModal();
+            }
+        }
+
+        function nextMergeGroup() {
+            if (currentMergeGroupIdx < currentDuplicateGroups.length - 1) {
+                currentMergeGroupIdx++;
+                renderMergeModal();
+            }
+        }
+
+        function renderMergeModal() {
+            const group = currentDuplicateGroups[currentMergeGroupIdx];
+            if (!group) return closeMergeModal();
+
+            const patients = group.patients;
+            document.getElementById('merge-modal-cid-text').innerHTML = `เลขบัตร ปชช: <b class="text-blue-600 font-mono">${group.cid}</b> (พบข้อมูลซ้ำ ${patients.length} รายการ)`;
+            document.getElementById('merge-group-counter').innerText = `${currentMergeGroupIdx + 1} / ${currentDuplicateGroups.length}`;
+            document.getElementById('btn-prev-merge').disabled = (currentMergeGroupIdx === 0);
+            document.getElementById('btn-next-merge').disabled = (currentMergeGroupIdx >= currentDuplicateGroups.length - 1);
+
+            // Determine best primary doc (prefer doc whose ID is 13 digit CID)
+            let primaryPatient = patients.find(p => String(p.docId || p.id) === String(group.cid)) || patients[0];
+            let primaryDocId = primaryPatient.docId || primaryPatient.id;
+            
+            if (!selectedMergeData.primaryDocId || !patients.some(p => (p.docId || p.id) === selectedMergeData.primaryDocId)) {
+                selectedMergeData.primaryDocId = primaryDocId;
+            }
+
+            document.getElementById('merge-primary-doc-label').innerText = `${selectedMergeData.primaryDocId}`;
+
+            // Initialize selected values with smart pre-selection if not already selected
+            if (!selectedMergeData.initializedForCID || selectedMergeData.initializedForCID !== group.cid) {
+                selectedMergeData = {
+                    initializedForCID: group.cid,
+                    primaryDocId: primaryDocId,
+                    profile_pic: pickBestValue(patients, 'profile_pic', v => v && (v.startsWith('data:image') || v.startsWith('http'))),
+                    prefix: pickBestValue(patients, 'prefix', v => v && v !== '-'),
+                    name: pickBestValue(patients, 'name', v => v && v !== 'ไม่ระบุชื่อ' && v !== '-'),
+                    dob: pickBestValue(patients, 'dob', v => v && v !== '-'),
+                    age: pickBestValue(patients, 'age', v => v && v !== '-' && v !== '0' && v !== 0),
+                    house_no: pickBestValue(patients, 'house_no', v => v && v !== '-'),
+                    village_no: pickBestValue(patients, 'village_no', v => v && v !== '-'),
+                    lat_long: pickBestValue(patients, 'lat_long', v => v && v.includes(',')),
+                    caregiver_name: pickBestValue(patients, 'caregiver_name', v => v && v !== '-'),
+                    caregiver_phone: pickBestValue(patients, 'caregiver_phone', v => v && v !== '-' && v.length >= 8),
+                    group: pickBestValue(patients, 'group', v => v && v !== 'ยังไม่ประเมิน' && v !== '-'),
+                    adl: pickBestValue(patients, 'adl', v => v && v !== '-'),
+                    dep_status: pickBestValue(patients, 'dep_status', v => v && v !== '-'),
+                    disease: pickBestValue(patients, 'disease', v => v && v !== '-'),
+                    diaper: pickBestValue(patients, 'diaper', v => {
+                        const d = cleanJSON(v);
+                        return d && (d.status === 'approved' || (d.allocations && d.allocations.length > 0));
+                    }),
+                    remark: pickBestValue(patients, 'remark', v => v && v !== '-' && v.trim() !== '')
+                };
+            }
+
+            const container = document.getElementById('merge-modal-body');
+            container.innerHTML = '';
+
+            // Document selector
+            let docSelectorHtml = `
+                <div class="mb-5 p-4 bg-slate-50 border border-slate-200 rounded-2xl">
+                    <label class="text-xs font-bold text-slate-700 block mb-2">เลือกรหัสเอกสารหลักที่จะเก็บไว้ในระบบ (Primary ID):</label>
+                    <div class="grid grid-cols-1 sm:grid-cols-${Math.min(patients.length, 3)} gap-2.5">
+            `;
+            patients.forEach((p, idx) => {
+                const docId = p.docId || p.id;
+                const isSelected = (docId === selectedMergeData.primaryDocId);
+                const isCID = (docId === group.cid);
+                docSelectorHtml += `
+                    <label class="flex items-center gap-3 p-3 bg-white border ${isSelected ? 'border-blue-500 ring-2 ring-blue-100' : 'border-slate-200'} rounded-xl cursor-pointer hover:bg-slate-50 transition-all">
+                        <input type="radio" name="merge_primary_doc" value="${docId}" ${isSelected ? 'checked' : ''} onchange="onPrimaryDocChange('${docId}')" class="text-blue-600 focus:ring-blue-500 w-4 h-4">
+                        <div class="min-w-0">
+                            <span class="text-xs font-bold text-slate-800 block truncate">รายการที่ ${idx + 1} (${p.prefix || ''}${p.name || 'ไม่ระบุชื่อ'})</span>
+                            <span class="text-[11px] font-mono text-slate-500 block truncate">ID: ${docId} ${isCID ? '<b class="text-emerald-600 font-sans">(ตรงกับ CID)</b>' : ''}</span>
+                        </div>
+                    </label>
+                `;
+            });
+            docSelectorHtml += `</div></div>`;
+            container.insertAdjacentHTML('beforeend', docSelectorHtml);
+
+            // Comparison table
+            let tableHtml = `
+                <div class="border border-slate-200 rounded-2xl overflow-hidden bg-white shadow-sm overflow-x-auto">
+                    <table class="w-full text-left border-collapse text-xs min-w-[650px]">
+                        <thead>
+                            <tr class="bg-slate-100/90 border-b border-slate-200 text-slate-600 font-bold">
+                                <th class="p-3.5 w-40 bg-slate-100">หัวข้อข้อมูล</th>
+            `;
+            patients.forEach((p, idx) => {
+                tableHtml += `
+                    <th class="p-3.5 border-l border-slate-200">
+                        <div class="flex items-center justify-between gap-2">
+                            <span>รายการที่ ${idx + 1}</span>
+                            <button type="button" onclick="selectAllFromPatient(${idx})" class="text-[10px] bg-white hover:bg-blue-50 text-blue-600 border border-blue-200 px-2 py-0.5 rounded-lg shadow-xs transition-colors">
+                                ✓ เลือกทั้งหมด
+                            </button>
+                        </div>
+                    </th>
+                `;
+            });
+            tableHtml += `</tr></thead><tbody class="divide-y divide-slate-100">`;
+
+            const fields = [
+                { key: 'profile_pic', label: 'รูปถ่ายโปรไฟล์', renderVal: (p) => {
+                    if (p.profile_pic && (p.profile_pic.startsWith('data:image') || p.profile_pic.startsWith('http'))) {
+                        return `<img src="${p.profile_pic}" class="w-12 h-12 rounded-full object-cover border border-slate-200 shadow-sm">`;
+                    }
+                    return `<div class="w-12 h-12 rounded-full bg-slate-100 text-slate-400 font-bold flex items-center justify-center border border-slate-200 text-sm">${p.name ? p.name.substring(0,1) : '?'}</div>`;
+                }},
+                { key: 'name', label: 'คำนำหน้า + ชื่อ-สกุล', renderVal: (p) => `<b>${p.prefix || ''}${p.name || '-'}</b>` },
+                { key: 'dob', label: 'วันเกิด / อายุ', renderVal: (p) => `เกิด: ${p.dob || '-'} (อายุ ${p.age || '-'} ปี)` },
+                { key: 'house_no', label: 'บ้านเลขที่', renderVal: (p) => `${p.house_no || '-'}` },
+                { key: 'village_no', label: 'หมู่ที่', renderVal: (p) => `หมู่ ${p.village_no || '-'}` },
+                { key: 'caregiver_phone', label: 'เบอร์ติดต่อญาติ', renderVal: (p) => `${p.caregiver_phone || '-'}` },
+                { key: 'caregiver_name', label: 'ชื่อผู้ดูแล', renderVal: (p) => `${p.caregiver_name || '-'}` },
+                { key: 'group', label: 'กลุ่มสุขภาพ / ADL', renderVal: (p) => `<span class="font-bold">${p.group || 'ยังไม่ประเมิน'}</span> (ADL: ${p.adl || '-'})` },
+                { key: 'dep_status', label: 'ผลประเมิน 2Q/9Q', renderVal: (p) => `${p.dep_status || '-'}` },
+                { key: 'disease', label: 'โรคประจำตัว', renderVal: (p) => `<span class="text-slate-700 font-medium">${p.disease || '-'}</span>` },
+                { key: 'diaper', label: 'สิทธิ์ผ้าอ้อม', renderVal: (p) => {
+                    const d = cleanJSON(p.diaper);
+                    if (d && d.allocations && d.allocations.length > 0) {
+                        return `<span class="text-blue-600 font-bold">รอบ ${d.allocations.join(', ')}</span> (สถานะ: ${d.status || '-'})`;
+                    } else if (d && d.status === 'approved') {
+                        return `<span class="text-emerald-600 font-bold">อนุมัติแล้ว</span>`;
+                    }
+                    return `<span class="text-slate-400">ยังไม่เคยได้รับ</span>`;
+                }},
+                { key: 'lat_long', label: 'พิกัด GPS', renderVal: (p) => `${p.lat_long || '-'}` },
+                { key: 'remark', label: 'หมายเหตุ', renderVal: (p) => `${p.remark || '-'}` }
+            ];
+
+            fields.forEach(f => {
+                tableHtml += `<tr class="hover:bg-slate-50/50 transition-colors">
+                    <td class="p-3 font-bold text-slate-700 bg-slate-50/50 border-r border-slate-100">${f.label}</td>
+                `;
+
+                patients.forEach((p, idx) => {
+                    const isChecked = isFieldSelected(f.key, p);
+                    tableHtml += `
+                        <td class="p-3 border-l border-slate-100 ${isChecked ? 'bg-blue-50/40' : ''}">
+                            <label class="flex items-start gap-2.5 cursor-pointer">
+                                <input type="radio" name="merge_field_${f.key}" value="${idx}" ${isChecked ? 'checked' : ''} onchange="onFieldOptionChange('${f.key}', ${idx})" class="mt-0.5 text-blue-600 focus:ring-blue-500 w-4 h-4">
+                                <div class="min-w-0 flex-1 text-slate-800">
+                                    ${f.renderVal(p)}
+                                </div>
+                            </label>
+                        </td>
+                    `;
+                });
+                tableHtml += `</tr>`;
+            });
+
+            tableHtml += `</tbody></table></div>`;
+            container.insertAdjacentHTML('beforeend', tableHtml);
+        }
+
+        function pickBestValue(patients, key, validator) {
+            for (let p of patients) {
+                if (validator(p[key])) return p[key];
+            }
+            return patients[0][key] || '';
+        }
+
+        function isFieldSelected(key, patient) {
+            const currentVal = selectedMergeData[key];
+            return String(currentVal || '') === String(patient[key] || '');
+        }
+
+        function onPrimaryDocChange(docId) {
+            selectedMergeData.primaryDocId = docId;
+            document.getElementById('merge-primary-doc-label').innerText = docId;
+        }
+
+        function onFieldOptionChange(key, patientIdx) {
+            const group = currentDuplicateGroups[currentMergeGroupIdx];
+            const p = group.patients[patientIdx];
+            selectedMergeData[key] = p[key] || '';
+            renderMergeModal();
+        }
+
+        function selectAllFromPatient(patientIdx) {
+            const group = currentDuplicateGroups[currentMergeGroupIdx];
+            const p = group.patients[patientIdx];
+            if (!p) return;
+            const keys = ['profile_pic', 'prefix', 'name', 'dob', 'age', 'house_no', 'village_no', 'lat_long', 'caregiver_name', 'caregiver_phone', 'group', 'adl', 'dep_status', 'disease', 'diaper', 'remark'];
+            keys.forEach(k => {
+                selectedMergeData[k] = p[k] || '';
+            });
+            renderMergeModal();
+        }
+
+        async function executeMerge() {
+            const group = currentDuplicateGroups[currentMergeGroupIdx];
+            if (!group) return;
+
+            const primaryDocId = selectedMergeData.primaryDocId || (group.patients[0].docId || group.patients[0].id);
+            const secondaryDocIds = group.patients
+                .map(p => p.docId || p.id)
+                .filter(id => String(id) !== String(primaryDocId));
+
+            if (!confirm(`ยืนยันการรวมข้อมูลผู้ป่วย CID: ${group.cid} ?\n\n- ข้อมูลที่เลือกจะถูกบันทึกไปยังรหัสหลัก: ${primaryDocId}\n- ระบบจะย้ายประวัติการประเมินและสัญญาณชีพจากรายการที่ซ้ำมายังรหัสหลัก\n- รายการซ้ำอีก ${secondaryDocIds.length} รายการจะถูกลบออกจากระบบถาวร\n\nต้องการดำเนินการต่อหรือไม่?`)) {
+                return;
+            }
+
+            const btn = document.getElementById('btn-execute-merge');
+            btn.disabled = true;
+            btn.innerHTML = `<span class="material-symbols-outlined text-[16px] animate-spin">sync</span> กำลังรวมข้อมูล...`;
 
             try {
-                await db.collection('Patients').doc(String(patientId)).update({ status: newStatus });
-                const index = allPatients.findIndex(p => p.id === patientId);
-                if(index > -1) allPatients[index].status = newStatus;
-                
-                showToast('อัปเดตสถานะสำเร็จ!'); 
-                filterPatients(); 
-            } catch (error) { showToast('เกิดข้อผิดพลาดในการเชื่อมต่อฐานข้อมูล', 'error'); }
+                // 1. Prepare merged patient data
+                const mergedData = {
+                    id: primaryDocId,
+                    id_card: group.cid,
+                    profile_pic: selectedMergeData.profile_pic || '',
+                    prefix: selectedMergeData.prefix || '',
+                    name: selectedMergeData.name || '',
+                    dob: selectedMergeData.dob || '',
+                    age: selectedMergeData.age || '',
+                    house_no: selectedMergeData.house_no || '',
+                    village_no: selectedMergeData.village_no || '',
+                    lat_long: selectedMergeData.lat_long || '',
+                    caregiver_name: selectedMergeData.caregiver_name || '',
+                    caregiver_phone: selectedMergeData.caregiver_phone || '',
+                    group: selectedMergeData.group || 'ยังไม่ประเมิน',
+                    adl: selectedMergeData.adl || '-',
+                    dep_status: selectedMergeData.dep_status || '-',
+                    disease: selectedMergeData.disease || '-',
+                    diaper: selectedMergeData.diaper || '',
+                    remark: selectedMergeData.remark || '',
+                    status: 'Active',
+                    updated_at: firebase.firestore.FieldValue.serverTimestamp()
+                };
+
+                // 2. Save merged data to primary doc
+                await db.collection('Patients').doc(String(primaryDocId)).set(mergedData, { merge: true });
+
+                // 3. Relink Assessments and Vitals, and delete secondary documents
+                for (let secId of secondaryDocIds) {
+                    try {
+                        const aSnap = await db.collection('Assessments').where('patient_id', '==', String(secId)).get();
+                        if (!aSnap.empty) {
+                            const aBatch = db.batch();
+                            aSnap.forEach(d => aBatch.update(d.ref, { patient_id: String(primaryDocId) }));
+                            await aBatch.commit();
+                        }
+                    } catch(errA) { console.warn("Relink Assessments warning:", errA); }
+
+                    try {
+                        const vSnap = await db.collection('Vitals').where('patient_id', '==', String(secId)).get();
+                        if (!vSnap.empty) {
+                            const vBatch = db.batch();
+                            vSnap.forEach(d => vBatch.update(d.ref, { patient_id: String(primaryDocId) }));
+                            await vBatch.commit();
+                        }
+                    } catch(errV) { console.warn("Relink Vitals warning:", errV); }
+
+                    // Delete the secondary patient doc
+                    await db.collection('Patients').doc(String(secId)).delete();
+                }
+
+                // 4. Update memory cache allPatients
+                allPatients = allPatients.filter(p => !secondaryDocIds.includes(String(p.docId || p.id)));
+                const pIdx = allPatients.findIndex(p => String(p.docId || p.id) === String(primaryDocId));
+                if (pIdx > -1) {
+                    allPatients[pIdx] = { ...allPatients[pIdx], ...mergedData };
+                }
+
+                showToast(`รวมข้อมูลผู้ป่วย CID: ${group.cid} สำเร็จแล้ว!`, 'success');
+
+                // 5. Re-check duplicate groups
+                currentDuplicateGroups = findDuplicateGroups();
+                updateDuplicateUI();
+                filterPatients();
+
+                if (currentDuplicateGroups.length > 0) {
+                    if (currentMergeGroupIdx >= currentDuplicateGroups.length) {
+                        currentMergeGroupIdx = currentDuplicateGroups.length - 1;
+                    }
+                    renderMergeModal();
+                } else {
+                    closeMergeModal();
+                    showToast('🎉 จัดการรวมข้อมูลที่ซ้ำกันครบทั้งหมดเรียบร้อยแล้ว!', 'success');
+                }
+
+            } catch(err) {
+                console.error("Execute merge error:", err);
+                alert("เกิดข้อผิดพลาดในการรวมข้อมูล: " + err.message);
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = `<span class="material-symbols-outlined text-[16px]">call_merge</span> ยืนยันการรวมข้อมูล (Merge)`;
+            }
         }
 
         function openImportModal() {
@@ -574,7 +1102,14 @@ function exportToCSV() {
                         if (rawIdCard.length === 12) rawIdCard = '0' + rawIdCard; 
                         
                         let docId = rawIdCard;
-                        if (docId.length !== 13) {
+                        let existingPatient = null;
+                        if (rawIdCard.length === 13) {
+                            existingPatient = allPatients.find(p => p.id_card === rawIdCard || p.id === rawIdCard);
+                        }
+
+                        if (existingPatient) {
+                            docId = existingPatient.docId || existingPatient.id;
+                        } else if (docId.length !== 13) {
                             const now = new Date();
                             const randomNum = Math.floor(Math.random() * 1000).toString().padStart(3, '0');
                             docId = `TEMP-${now.getFullYear()}${String(now.getMonth()+1).padStart(2,'0')}${String(now.getDate()).padStart(2,'0')}-${randomNum}`;
@@ -635,29 +1170,104 @@ function exportToCSV() {
             reader.readAsArrayBuffer(selectedExcelFile);
         }
     </script>
-<script>\n\n</script>\n
-    <!-- Modal เปลี่ยนสถานะ -->
+
+    <!-- Modal เปลี่ยนสถานะ / ลบข้อมูล -->
     <div id="status-modal" class="fixed inset-0 bg-black/60 z-[100] hidden flex-col items-center justify-center opacity-0 transition-opacity duration-300 p-4">
-        <div id="status-modal-content" class="bg-white rounded-[24px] w-[90%] max-w-sm p-6 transform scale-95 transition-transform duration-300">
-            <h3 class="text-lg font-bold text-[#ba1a1a] mb-2 flex items-center gap-2">
-                <span class="material-symbols-outlined">warning</span> ยุติการดูแลผู้ป่วย
+        <div id="status-modal-content" class="bg-white rounded-[24px] w-[90%] max-w-sm p-6 transform scale-95 transition-transform duration-300 shadow-2xl">
+            <input type="hidden" id="status-patient-id" value="">
+            <h3 class="text-lg font-bold text-slate-800 mb-1 flex items-center gap-2">
+                <span class="material-symbols-outlined text-rose-600">manage_accounts</span> จัดการสถานะผู้ป่วย
             </h3>
-            <p class="text-sm text-gray-600 mb-4">กรุณาระบุสาเหตุของการยุติการดูแลผู้ป่วยรายนี้</p>
+            <p id="status-modal-desc" class="text-xs text-slate-500 mb-4">ระบุสถานะหรือดำเนินการกับข้อมูลผู้ป่วยรายนี้</p>
             
-            <div class="space-y-3 mb-6">
-                <label class="flex items-center gap-3 p-3 border border-gray-200 rounded-xl cursor-pointer hover:bg-red-50">
-                    <input type="radio" name="patient_status" value="เสียชีวิต" class="w-4 h-4 text-red-600 focus:ring-red-500">
-                    <span class="text-sm font-semibold text-gray-800">เสียชีวิต</span>
+            <div class="space-y-2.5 mb-6">
+                <label class="flex items-center gap-3 p-3 border border-slate-200 rounded-xl cursor-pointer hover:bg-slate-50 transition-colors">
+                    <input type="radio" name="patient_status" value="Active" class="w-4 h-4 text-emerald-600 focus:ring-emerald-500">
+                    <div>
+                        <span class="text-sm font-bold text-slate-800 block">กำลังดูแล (Active)</span>
+                        <span class="text-[11px] text-slate-400">ผู้ป่วยยังอยู่ในความดูแลของ อสม. ตามปกติ</span>
+                    </div>
                 </label>
-                <label class="flex items-center gap-3 p-3 border border-gray-200 rounded-xl cursor-pointer hover:bg-orange-50">
-                    <input type="radio" name="patient_status" value="ย้ายที่อยู่" class="w-4 h-4 text-orange-500 focus:ring-orange-500">
-                    <span class="text-sm font-semibold text-gray-800">ย้ายที่อยู่ / ออกจากพื้นที่</span>
+                <label class="flex items-center gap-3 p-3 border border-rose-100 rounded-xl cursor-pointer hover:bg-rose-50/50 transition-colors">
+                    <input type="radio" name="patient_status" value="เสียชีวิต" class="w-4 h-4 text-rose-600 focus:ring-rose-500">
+                    <div>
+                        <span class="text-sm font-bold text-rose-700 block">เสียชีวิต (Deceased)</span>
+                        <span class="text-[11px] text-slate-400">ยุติการดูแลเนื่องจากผู้ป่วยเสียชีวิต</span>
+                    </div>
+                </label>
+                <label class="flex items-center gap-3 p-3 border border-amber-100 rounded-xl cursor-pointer hover:bg-amber-50/50 transition-colors">
+                    <input type="radio" name="patient_status" value="ย้ายที่อยู่" class="w-4 h-4 text-amber-500 focus:ring-amber-500">
+                    <div>
+                        <span class="text-sm font-bold text-amber-700 block">ย้ายที่อยู่ / ออกจากพื้นที่</span>
+                        <span class="text-[11px] text-slate-400">ผู้ป่วยย้ายไปอยู่นอกเขตรับผิดชอบ</span>
+                    </div>
+                </label>
+                <label class="flex items-center gap-3 p-3 border border-red-200 bg-red-50/40 rounded-xl cursor-pointer hover:bg-red-50 transition-colors">
+                    <input type="radio" name="patient_status" value="DELETE" class="w-4 h-4 text-red-600 focus:ring-red-500">
+                    <div>
+                        <span class="text-sm font-bold text-red-600 flex items-center gap-1"><span class="material-symbols-outlined text-[16px]">delete_forever</span> ลบข้อมูลผู้ป่วยถาวร</span>
+                        <span class="text-[11px] text-red-500/80">ลบรายการนี้ออกจากฐานข้อมูล (ใช้กรณีข้อมูลซ้ำ / บันทึกผิด)</span>
+                    </div>
                 </label>
             </div>
 
-            <div class="flex gap-3">
-                <button onclick="closeStatusModal()" class="flex-1 py-3 bg-gray-100 text-gray-700 rounded-xl font-bold hover:bg-gray-200">ยกเลิก</button>
-                <button onclick="confirmStatusChange()" id="btn-save-status" class="flex-1 py-3 bg-[#ba1a1a] text-white rounded-xl font-bold hover:bg-red-700">ยืนยัน</button>
+            <div class="flex gap-2.5">
+                <button onclick="closeStatusModal()" class="flex-1 py-3 bg-slate-100 text-slate-700 rounded-xl font-bold hover:bg-slate-200 text-sm transition-colors">ยกเลิก</button>
+                <button onclick="confirmStatusChange()" id="btn-save-status" class="flex-1 py-3 bg-[#00694a] text-white rounded-xl font-bold hover:bg-[#005239] text-sm shadow-md transition-all active:scale-95">บันทึก</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal รวมข้อมูลผู้ป่วยที่ซ้ำกัน (Merge Duplicates) -->
+    <div id="merge-modal" class="fixed inset-0 bg-black/60 z-[110] hidden flex-col items-center justify-center opacity-0 transition-opacity duration-300 p-2 sm:p-4">
+        <div id="merge-modal-content" class="bg-white rounded-[24px] w-full max-w-4xl max-h-[92vh] flex flex-col transform scale-95 transition-transform duration-300 shadow-2xl overflow-hidden">
+            <!-- Modal Header -->
+            <div class="p-5 border-b border-slate-200 bg-slate-50 flex items-center justify-between flex-shrink-0">
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-xl bg-amber-500 text-white flex items-center justify-center flex-shrink-0 shadow-sm">
+                        <span class="material-symbols-outlined text-[24px]">call_merge</span>
+                    </div>
+                    <div>
+                        <h3 class="text-base font-bold text-slate-800 flex items-center gap-2">
+                            รวมข้อมูลผู้ป่วยที่ซ้ำกัน (Merge Duplicates)
+                        </h3>
+                        <p class="text-xs text-slate-500" id="merge-modal-cid-text">เลขประจำตัวประชาชน: -</p>
+                    </div>
+                </div>
+                <div class="flex items-center gap-2">
+                    <div id="merge-group-pagination" class="flex items-center gap-1.5 text-xs font-bold text-slate-600 bg-white border border-slate-200 px-3 py-1.5 rounded-xl shadow-sm">
+                        <button onclick="prevMergeGroup()" id="btn-prev-merge" class="hover:text-blue-600 disabled:opacity-30 disabled:hover:text-slate-600">◀</button>
+                        <span id="merge-group-counter">1 / 1</span>
+                        <button onclick="nextMergeGroup()" id="btn-next-merge" class="hover:text-blue-600 disabled:opacity-30 disabled:hover:text-slate-600">▶</button>
+                    </div>
+                    <button onclick="closeMergeModal()" class="w-9 h-9 rounded-xl hover:bg-slate-200 text-slate-500 flex items-center justify-center transition-colors">
+                        <span class="material-symbols-outlined text-[20px]">close</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Modal Info Note -->
+            <div class="bg-amber-50/70 border-b border-amber-200/60 px-5 py-2.5 text-xs text-amber-800 flex items-center gap-2 flex-shrink-0">
+                <span class="material-symbols-outlined text-[18px] text-amber-600 flex-shrink-0">info</span>
+                <span>คลิกเลือกข้อมูลที่คุณต้องการเก็บไว้ในแต่ละหัวข้อ โดยข้อมูลที่เลือกจะถูกบันทึกลงในรายการหลัก และระบบจะลบรายการที่ซ้ำออก พร้อมโอนย้ายประวัติการประเมินมาให้อัตโนมัติ</span>
+            </div>
+
+            <!-- Modal Body (Comparison Table) -->
+            <div class="flex-1 overflow-y-auto p-4 sm:p-6" id="merge-modal-body">
+                <!-- Dynamically rendered comparison UI -->
+            </div>
+
+            <!-- Modal Footer -->
+            <div class="p-4 border-t border-slate-200 bg-slate-50 flex items-center justify-between flex-shrink-0">
+                <div class="text-xs text-slate-500">
+                    <span class="font-bold text-slate-700">รายการหลักที่จะเก็บไว้:</span> <span id="merge-primary-doc-label" class="font-mono text-blue-600 font-bold">-</span>
+                </div>
+                <div class="flex gap-2.5">
+                    <button onclick="closeMergeModal()" class="px-5 py-2.5 bg-slate-200 hover:bg-slate-300 text-slate-700 rounded-xl text-xs font-bold transition-colors">ยกเลิก</button>
+                    <button onclick="executeMerge()" id="btn-execute-merge" class="px-6 py-2.5 bg-amber-600 hover:bg-amber-700 text-white rounded-xl text-xs font-bold shadow-md transition-all active:scale-95 flex items-center gap-1.5">
+                        <span class="material-symbols-outlined text-[16px]">call_merge</span> ยืนยันการรวมข้อมูล (Merge)
+                    </button>
+                </div>
             </div>
         </div>
     </div>

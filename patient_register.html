@@ -43,6 +43,7 @@
             <div class="space-y-1.5">
                 <label class="text-xs font-bold text-[#526069]">เลขประจำตัวประชาชน (13 หลัก)</label>
                 <input type="tel" id="id_card" maxlength="13" class="input-field" placeholder="ระบุเลขบัตรประชาชน">
+                <div id="id_card_check_status" class="hidden text-xs mt-1 transition-all"></div>
             </div>
 
             <div class="grid grid-cols-3 gap-3">
@@ -207,17 +208,88 @@
         }
     });
 
+    let checkTimeout = null;
+    document.getElementById('id_card').addEventListener('input', function() {
+        const val = this.value.trim().replace(/[^0-9]/g, '');
+        this.value = val;
+        clearTimeout(checkTimeout);
+        const statusDiv = document.getElementById('id_card_check_status');
+        if (val.length === 13) {
+            statusDiv.className = "text-xs mt-1.5 flex items-center gap-1.5 text-blue-600 font-medium";
+            statusDiv.innerHTML = `<span class="material-symbols-outlined text-[16px] animate-spin">sync</span> กำลังตรวจสอบข้อมูลซ้ำ...`;
+            statusDiv.classList.remove('hidden');
+            checkTimeout = setTimeout(() => checkDuplicateCID(val), 350);
+        } else {
+            statusDiv.classList.add('hidden');
+            statusDiv.innerHTML = '';
+        }
+    });
+
+    async function checkDuplicateCID(cid) {
+        const statusDiv = document.getElementById('id_card_check_status');
+        try {
+            const snap = await db.collection('Patients').where('id_card', '==', cid).get();
+            if (!snap.empty) {
+                const p = snap.docs[0].data();
+                const docId = snap.docs[0].id;
+                statusDiv.className = "p-3 bg-red-50 border border-red-200 rounded-xl text-xs mt-2 text-red-700 flex flex-col gap-1.5";
+                statusDiv.innerHTML = `
+                    <div class="font-bold flex items-center gap-1.5 text-red-800">
+                        <span class="material-symbols-outlined text-[18px]">error</span> พบเลขบัตรประชาชนนี้ในระบบแล้ว!
+                    </div>
+                    <div class="text-[11px] text-red-600">
+                        ชื่อ: <b>${p.prefix || ''}${p.name || '-'}</b> (หมู่ที่ ${p.village_no || '-'} บ้านเลขที่ ${p.house_no || '-'})
+                    </div>
+                    <div class="pt-1 flex gap-2">
+                        <a href="patient_profile.html?id=${docId}" target="_blank" class="px-3 py-1 bg-red-600 text-white rounded-lg font-bold text-[11px] inline-flex items-center gap-1 hover:bg-red-700">
+                            <span class="material-symbols-outlined text-[14px]">visibility</span> ดูแฟ้มประวัติ
+                        </a>
+                    </div>
+                `;
+                statusDiv.classList.remove('hidden');
+                return true;
+            } else {
+                statusDiv.className = "text-xs mt-1.5 flex items-center gap-1 text-emerald-600 font-bold";
+                statusDiv.innerHTML = `<span class="material-symbols-outlined text-[16px]">check_circle</span> เลขบัตรนี้ยังไม่มีในระบบ (สามารถลงทะเบียนได้)`;
+                statusDiv.classList.remove('hidden');
+                return false;
+            }
+        } catch(err) {
+            console.error("Check duplicate error:", err);
+            statusDiv.classList.add('hidden');
+            return false;
+        }
+    }
+
     document.getElementById('patient-form').addEventListener('submit', async function(e) {
         e.preventDefault();
         const btn = document.getElementById('btn-save');
         btn.innerHTML = `<div class="loader-small" style="border-bottom-color:#fff;"></div> กำลังบันทึกข้อมูล...`;
         btn.disabled = true;
 
+        const idCard = document.getElementById('id_card').value.trim().replace(/[^0-9]/g, '');
+
+        if (idCard.length === 13) {
+            try {
+                const dupSnap = await db.collection('Patients').where('id_card', '==', idCard).get();
+                if (!dupSnap.empty) {
+                    const dupP = dupSnap.docs[0].data();
+                    alert(`⚠️ ไม่สามารถลงทะเบียนได้!\n\nเนื่องจากเลขบัตรประชาชน ${idCard} มีบันทึกอยู่ในระบบแล้ว:\n"${dupP.prefix || ''}${dupP.name || ''}" (หมู่ที่ ${dupP.village_no || '-'} บ้านเลขที่ ${dupP.house_no || '-'})\n\nกรุณาตรวจสอบหรือเปิดแฟ้มประวัติเพื่ออัปเดตข้อมูล`);
+                    btn.innerHTML = `<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">save</span> บันทึกข้อมูลและลงทะเบียนผู้ป่วย`;
+                    btn.disabled = false;
+                    return;
+                }
+            } catch(e) {
+                console.warn("Pre-check error:", e);
+            }
+        }
+
         const docRef = db.collection('Patients').doc();
+        const targetDocId = (idCard.length === 13) ? idCard : docRef.id;
         
         const patientData = {
-            id: docRef.id,
-            id_card: document.getElementById('id_card').value.trim(),
+            id: targetDocId,
+            id_card: idCard,
             prefix: document.getElementById('prefix').value,
             name: document.getElementById('fullname').value.trim(), 
             dob: document.getElementById('dob').value,
@@ -241,7 +313,7 @@
         };
 
         try {
-            await docRef.set(patientData);
+            await db.collection('Patients').doc(targetDocId).set(patientData);
             
             alert(`ลงทะเบียนผู้ป่วยใหม่เรียบร้อยแล้ว!\n(หากใช้งานออฟไลน์ ข้อมูลจะถูกอัปเดตอัตโนมัติเมื่อมีสัญญาณเน็ต)`);
             goBack(); 
