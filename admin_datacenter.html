@@ -25,7 +25,7 @@ function exportToCSV() {
 
     // Define CSV Headers
     let csvContent = "\uFEFF"; // BOM for UTF-8 Excel compatibility
-    csvContent += "เลขบัตรประชาชน,คำนำหน้า,ชื่อ,นามสกุล,วันเกิด,ที่อยู่,หมู่,รหัสไปรษณีย์,พิกัด,กลุ่มผู้ป่วย,ประเมิน ADL,สิทธิ์ผ้าอ้อม,โรคประจำตัว,ยาที่ใช้,สถานะ,รหัสอสม.ที่ดูแล\n";
+    csvContent += "เลขบัตรประชาชน,คำนำหน้า,ชื่อ,นามสกุล,วันเกิด,ที่อยู่,หมู่,รหัสไปรษณีย์,พิกัด,กลุ่มผู้ป่วย,ประเมิน ADL,สิทธิ์ผ้าอ้อม,ขนาดผ้าอ้อม,โรคประจำตัว,ยาที่ใช้,สถานะ,รหัสอสม.ที่ดูแล\n";
 
     filteredPatients.forEach(p => {
         const idcard = `"${p.id || ''}"`;
@@ -45,7 +45,28 @@ function exportToCSV() {
         const status = `"${p.status || 'Active'}"`;
         const vhv = `"${p.assigned_vhv_id || ''}"`;
 
-        csvContent += `${idcard},${prefix},${fname},${lname},${dob},${house},${moo},${zip},${coords},${group},${adl},${diaper},${disease},${meds},${status},${vhv}\n`;
+        let diaperSizeStr = '-';
+        if (p.diaper) {
+            try {
+                const dp = (typeof p.diaper === 'object') ? p.diaper : (cleanJSON(p.diaper) || {});
+                let sizes = [];
+                const hasDiaper = (dp.req_diaper === true || dp.req_diaper === 'true' || (dp.size && dp.size !== '-' && dp.size.trim() !== '') || (parseInt(dp.approved_diaper) > 0));
+                if (hasDiaper) {
+                    const sz = (dp.size && dp.size !== '-' && dp.size.trim() !== '') ? dp.size.trim() : 'ผ้าอ้อม';
+                    sizes.push(sz);
+                }
+                const hasUnderpad = (dp.req_underpad === true || dp.req_underpad === 'true' || (parseInt(dp.approved_underpad) > 0));
+                if (hasUnderpad) {
+                    sizes.push('แผ่นรองซับ');
+                }
+                if (sizes.length > 0) {
+                    diaperSizeStr = sizes.join(', ');
+                }
+            } catch(e) {}
+        }
+        const diaperSize = `"${diaperSizeStr}"`;
+
+        csvContent += `${idcard},${prefix},${fname},${lname},${dob},${house},${moo},${zip},${coords},${group},${adl},${diaper},${diaperSize},${disease},${meds},${status},${vhv}\n`;
     });
 
     const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
@@ -202,6 +223,7 @@ function exportToCSV() {
                                 <th class="p-4 font-bold">บ้านเลขที่</th>
                                 <th class="p-4 font-bold">เบอร์ญาติ</th>
                                 <th class="p-4 font-bold text-center">สิทธิ์ / รอบล่าสุด</th>
+                                <th class="p-4 font-bold text-center">ขนาดผ้าอ้อม</th>
                                 <th class="p-4 font-bold">หมายเหตุ</th>
                             </tr>
                         </thead>
@@ -510,6 +532,30 @@ function exportToCSV() {
                     ? `<button onclick="event.stopPropagation(); openMergeModalForCID('${cleanCID}')" class="text-[10px] bg-amber-50 text-amber-700 hover:bg-amber-600 hover:text-white border border-amber-300 px-2 py-0.5 rounded shadow-sm transition-all w-fit inline-flex items-center gap-1 font-bold"><span class="material-symbols-outlined text-[12px]">call_merge</span> ซ้ำ ${dupCount} รายการ (รวมข้อมูล)</button>`
                     : '';
 
+                let diaperSizeStr = '-';
+                if (p.diaper) {
+                    try {
+                        const dp = (typeof p.diaper === 'object') ? p.diaper : (cleanJSON(p.diaper) || {});
+                        let sizes = [];
+                        const hasDiaper = (dp.req_diaper === true || dp.req_diaper === 'true' || (dp.size && dp.size !== '-' && dp.size.trim() !== '') || (parseInt(dp.approved_diaper) > 0));
+                        if (hasDiaper) {
+                            const sz = (dp.size && dp.size !== '-' && dp.size.trim() !== '') ? dp.size.trim() : 'ผ้าอ้อม';
+                            sizes.push(sz);
+                        }
+                        const hasUnderpad = (dp.req_underpad === true || dp.req_underpad === 'true' || (parseInt(dp.approved_underpad) > 0));
+                        if (hasUnderpad) {
+                            sizes.push('แผ่นรองซับ');
+                        }
+                        if (sizes.length > 0) {
+                            diaperSizeStr = sizes.join(', ');
+                        }
+                    } catch(e) {}
+                }
+                let diaperSizeBadge = `<span class="text-slate-400 font-medium">-</span>`;
+                if (diaperSizeStr !== '-') {
+                    diaperSizeBadge = `<span class="bg-indigo-50 text-indigo-700 border border-indigo-200 text-[11px] font-bold px-2.5 py-1 rounded-lg shadow-xs inline-flex items-center gap-1">${diaperSizeStr}</span>`;
+                }
+
                 container.insertAdjacentHTML('beforeend', `
                     <tr class="hover:bg-slate-50 transition-colors cursor-pointer group" onclick="window.open('patient_profile.html?id=${pDocId}', '_blank')">
                         <td class="p-3 whitespace-nowrap text-center">${avatarHtml}</td>
@@ -528,6 +574,7 @@ function exportToCSV() {
                         <td class="p-3 whitespace-nowrap">${p.house_no || '-'}</td>
                         <td class="p-3 whitespace-nowrap">${p.caregiver_phone || '-'}</td>
                         <td class="p-3 whitespace-nowrap text-center">${allocBadge}</td>
+                        <td class="p-3 whitespace-nowrap text-center">${diaperSizeBadge}</td>
                         <td class="p-3 whitespace-nowrap text-[12px] text-slate-500 max-w-[200px] truncate" title="${remarkText}">${remarkText}</td>
                     </tr>
                 `);

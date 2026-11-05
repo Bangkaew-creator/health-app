@@ -141,6 +141,7 @@
                                     <th class="p-4 font-bold border-b border-slate-200 text-center">ประเมินฟอร์ม</th>
                                     <th class="p-4 font-bold border-b border-slate-200 text-center">ประวัติได้รับจัดสรร (รอบล่าสุด)</th>
                                     <th class="p-4 font-bold border-b border-slate-200">ความต้องการ (ต่อเดือน)</th>
+                                    <th class="p-4 font-bold border-b border-slate-200">หมายเหตุ</th>
                                 </tr>
                             </thead>
                             <tbody id="report-list" class="text-sm"></tbody>
@@ -409,7 +410,8 @@
                     historyBadge = `<span class="bg-amber-100 text-amber-700 font-bold px-2 py-1 rounded text-[10px] border border-amber-200" title="รอบทั้งหมด: ${d.allocations.join(', ')}">ได้รับรอบ ${latestAlloc}</span>`;
                 }
 
-                const rawData = { id: p.id, name: p.name, id_card: p.id_card, house_no: p.house_no, village_no: p.village_no, adl: p.adl, phone: p.caregiver_phone || p.phone || '-', detail: d };
+                const remarkText = (p.remark && p.remark !== '-' && p.remark.trim() !== '') ? p.remark.trim() : '-';
+                const rawData = { id: p.id, name: p.name, id_card: p.id_card, house_no: p.house_no, village_no: p.village_no, adl: p.adl, phone: p.caregiver_phone || p.phone || '-', remark: remarkText, detail: d };
                 
                 const tr = document.createElement('tr');
                 tr.className = "border-b border-slate-100 hover:bg-slate-50 transition-colors";
@@ -420,6 +422,7 @@
                     <td class="p-4 text-center">${diaperFormBadge}</td>
                     <td class="p-4 text-center">${historyBadge}</td>
                     <td class="p-4"><p class="text-[11px] font-bold text-navy leading-tight">${needText}</p></td>
+                    <td class="p-4"><p class="text-[12px] text-slate-600 max-w-[200px] truncate" title="${remarkText}">${remarkText}</p></td>
                 `;
                 tr.dataset.rawData = JSON.stringify(rawData);
                 tbody.appendChild(tr);
@@ -578,6 +581,15 @@
                     if (d.allocations && d.allocations.length > 0) { remarkText = `ได้รับรอบ ${d.allocations.join(', ')}`; }
                 }
 
+                let finalRemarkParts = [];
+                if (p.remark && p.remark !== '-' && p.remark.trim() !== '') {
+                    finalRemarkParts.push(p.remark.trim());
+                }
+                if (remarkText) {
+                    finalRemarkParts.push(`(${remarkText})`);
+                }
+                const finalRemark = finalRemarkParts.length > 0 ? finalRemarkParts.join(' ') : '-';
+
                 exportData.push({
                     "ลำดับ": runningNumber++, 
                     "ชื่อ-สกุล": p.name || '-', 
@@ -590,7 +602,7 @@
                     "จำนวน": diaperQty,
                     "ขนาดแผ่นรองซับ": underpadSize, 
                     "จำนวน ": underpadQty, 
-                    "หมายเหตุ": remarkText
+                    "หมายเหตุ": finalRemark
                 });
             });
 
