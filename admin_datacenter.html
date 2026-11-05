@@ -413,6 +413,39 @@ function exportToCSV() {
             } catch (error) { showToast('ไม่สามารถสร้างข้อมูลได้', 'error'); }
         }
 
+        function showToast(msg, type = 'info', redirectUrl = null) {
+            let toast = document.getElementById('global-floating-toast');
+            if (!toast) {
+                toast = document.createElement('div');
+                toast.id = 'global-floating-toast';
+                document.body.appendChild(toast);
+            }
+
+            let bg = 'bg-slate-900 text-white border border-slate-700';
+            let icon = 'info';
+            if (type === 'success') {
+                bg = 'bg-emerald-600 text-white shadow-lg shadow-emerald-600/30';
+                icon = 'check_circle';
+            } else if (type === 'error') {
+                bg = 'bg-rose-600 text-white shadow-lg shadow-rose-600/30';
+                icon = 'error';
+            } else if (type === 'info') {
+                bg = 'bg-blue-600 text-white shadow-lg shadow-blue-600/30';
+                icon = 'info';
+            }
+
+            toast.className = 'fixed bottom-6 right-6 z-[9999] px-4 py-3 rounded-2xl shadow-xl font-bold text-xs sm:text-sm flex items-center gap-2 transition-all duration-300 transform translate-y-0 opacity-100 ' + bg;
+            toast.innerHTML = '<span class="material-symbols-outlined text-[20px]">' + icon + '</span><span>' + msg + '</span>';
+
+            if (toast.timer) clearTimeout(toast.timer);
+            toast.timer = setTimeout(() => {
+                toast.className = 'fixed bottom-6 right-6 z-[9999] px-4 py-3 rounded-2xl shadow-xl font-bold text-xs sm:text-sm flex items-center gap-2 transition-all duration-300 transform translate-y-10 opacity-0 pointer-events-none';
+                if (redirectUrl) {
+                    window.location.href = redirectUrl;
+                }
+            }, redirectUrl ? 1500 : 3500);
+        }
+
         function cleanJSON(rawStr) {
             if (!rawStr || String(rawStr).trim() === '') return null;
             let cleanStr = String(rawStr).trim();

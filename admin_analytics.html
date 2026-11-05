@@ -1148,7 +1148,7 @@
                 if (hasDiaper) sizes.push(cleanSize);
                 const hasUnderpad = (d.req_underpad === true || d.req_underpad === 'true' || (parseInt(d.approved_underpad) > 0));
                 if (hasUnderpad) sizes.push('แผ่นรองซับ');
-                const diaperSizeStr = sizes.length > 0 ? sizes.join(', ') : '-';
+                let diaperSizeStr = sizes.length > 0 ? sizes.join(', ') : '-';
 
                 // Determine Quantity: read recorded from alloc_history or compute default
                 let dQty = 0;
