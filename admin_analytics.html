@@ -549,7 +549,7 @@
                                     <th class="p-3.5 font-bold">บ้านเลขที่</th>
                                     <th class="p-3.5 font-bold text-center">สถานะผู้ป่วย</th>
                                     <th class="p-3.5 font-bold text-center">รอบที่ได้รับ</th>
-                                    <th class="p-3.5 font-bold text-center">ขนาดผ้าอ้อม</th>
+                                    <th class="p-3.5 font-bold text-center text-indigo-700">ขนาด/ชนิดที่ได้รับ</th>
                                     <th class="p-3.5 font-bold text-center text-blue-700">จำนวนผ้าอ้อม (ชิ้น)</th>
                                     <th class="p-3.5 font-bold text-center text-emerald-700">จำนวนแผ่นรองซับ (ชิ้น)</th>
                                     <th class="p-3.5 font-bold text-center">รวม (ชิ้น)</th>
@@ -1158,7 +1158,10 @@
                 if (d.alloc_history && d.alloc_history[r]) {
                     dQty = parseInt(d.alloc_history[r].diaper_qty) || 0;
                     pQty = parseInt(d.alloc_history[r].underpad_qty) || 0;
-                    if (d.alloc_history[r].size) cleanSize = d.alloc_history[r].size;
+                    if (d.alloc_history[r].size && d.alloc_history[r].size !== '-') {
+                        diaperSizeStr = d.alloc_history[r].size;
+                        cleanSize = d.alloc_history[r].size;
+                    }
                     isRecorded = true;
                 } else {
                     const allocDays = parseInt(d.alloc_days) || 90;
@@ -1174,7 +1177,15 @@
                 totalPadQty += pQty;
 
                 if (dQty > 0) {
-                    if (sizeCounts[cleanSize] !== undefined) sizeCounts[cleanSize] += dQty;
+                    let baseSize = 'L';
+                    const upSize = (cleanSize || '').toUpperCase();
+                    if (upSize.includes('XXL')) baseSize = 'XXL';
+                    else if (upSize.includes('XL')) baseSize = 'XL';
+                    else if (upSize.includes('S')) baseSize = 'S';
+                    else if (upSize.includes('M')) baseSize = 'M';
+                    else if (upSize.includes('L')) baseSize = 'L';
+
+                    if (sizeCounts[baseSize] !== undefined) sizeCounts[baseSize] += dQty;
                     else sizeCounts.other += dQty;
                 }
 
@@ -1200,19 +1211,25 @@
             });
         });
 
-        // Update Summary KPI Cards
-        document.getElementById('kpi-diaper-total').innerText = `${totalDiaperQty.toLocaleString()} ชิ้น`;
-        document.getElementById('kpi-diaper-sizes').innerText = `S: ${sizeCounts.S.toLocaleString()} | M: ${sizeCounts.M.toLocaleString()} | L: ${sizeCounts.L.toLocaleString()} | XL: ${sizeCounts.XL.toLocaleString()} | XXL: ${sizeCounts.XXL.toLocaleString()}`;
-        document.getElementById('kpi-pad-total').innerText = `${totalPadQty.toLocaleString()} ชิ้น`;
-        document.getElementById('kpi-recipients-count').innerText = `${uniqueRecipients.size.toLocaleString()} ราย`;
-        document.getElementById('kpi-deceased-count').innerText = `${deceasedRecipients.length.toLocaleString()} ราย`;
+        // Update Summary KPI Cards (Null-Safe)
+        const kpiDiaperTotal = document.getElementById('kpi-diaper-total');
+        if (kpiDiaperTotal) kpiDiaperTotal.innerText = `${totalDiaperQty.toLocaleString()} ชิ้น`;
+        const kpiDiaperSizes = document.getElementById('kpi-diaper-sizes');
+        if (kpiDiaperSizes) kpiDiaperSizes.innerText = `S: ${sizeCounts.S.toLocaleString()} | M: ${sizeCounts.M.toLocaleString()} | L: ${sizeCounts.L.toLocaleString()} | XL: ${sizeCounts.XL.toLocaleString()} | XXL: ${sizeCounts.XXL.toLocaleString()}`;
+        const kpiPadTotal = document.getElementById('kpi-pad-total');
+        if (kpiPadTotal) kpiPadTotal.innerText = `${totalPadQty.toLocaleString()} ชิ้น`;
+        const kpiRecipients = document.getElementById('kpi-recipients-count');
+        if (kpiRecipients) kpiRecipients.innerText = `${uniqueRecipients.size.toLocaleString()} ราย`;
+        const kpiDeceased = document.getElementById('kpi-deceased-count');
+        if (kpiDeceased) kpiDeceased.innerText = `${deceasedRecipients.length.toLocaleString()} ราย`;
 
         // Calculate total pieces received by deceased recipients
         let deceasedTotalPieces = 0;
         currentDeliveryTableData.forEach(item => {
             if (item.isDeceased) deceasedTotalPieces += (item.diaperQty + item.padQty);
         });
-        document.getElementById('kpi-deceased-sub').innerText = `ได้รับก่อนเสียชีวิตรวม ${deceasedTotalPieces.toLocaleString()} ชิ้น`;
+        const kpiDeceasedSub = document.getElementById('kpi-deceased-sub');
+        if (kpiDeceasedSub) kpiDeceasedSub.innerText = `ได้รับก่อนเสียชีวิตรวม ${deceasedTotalPieces.toLocaleString()} ชิ้น`;
 
         // Render Deceased Highlight Box
         const deceasedBox = document.getElementById('deceased-highlight-box');
@@ -1220,9 +1237,9 @@
         const deceasedBadge = document.getElementById('deceased-highlight-badge');
 
         if (deceasedRecipients.length > 0) {
-            deceasedBox.classList.remove('hidden');
-            deceasedBadge.innerText = `${deceasedRecipients.length} ราย`;
-            deceasedListEl.innerHTML = '';
+            if (deceasedBox) deceasedBox.classList.remove('hidden');
+            if (deceasedBadge) deceasedBadge.innerText = `${deceasedRecipients.length} ราย`;
+            if (deceasedListEl) deceasedListEl.innerHTML = '';
             
             deceasedRecipients.forEach(dec => {
                 // Compute total pieces this deceased patient got in this filter view
@@ -1255,11 +1272,13 @@
         // Render Table Body
         if (currentDeliveryTableData.length === 0) {
             tbody.innerHTML = '<tr><td colspan="12" class="p-8 text-center text-slate-400 font-medium">ไม่พบข้อมูลการส่งมอบผ้าอ้อมตามเงื่อนไขที่เลือก</td></tr>';
-            document.getElementById('save-qty-count').innerText = '0';
+            const saveEl0 = document.getElementById('save-qty-count');
+            if (saveEl0) saveEl0.innerText = '0';
             return;
         }
 
-        document.getElementById('save-qty-count').innerText = String(currentDeliveryTableData.length);
+        const saveEl = document.getElementById('save-qty-count');
+        if (saveEl) saveEl.innerText = String(currentDeliveryTableData.length);
 
         currentDeliveryTableData.forEach((row, idx) => {
             const tr = document.createElement('tr');
@@ -1275,6 +1294,28 @@
 
             const uniqueRowKey = `${row.patientId}_${row.round.replace(/[^a-zA-Z0-9]/g, '_')}`;
 
+            // Build Diaper Size Select Dropdown
+            const standardSizes = [
+                'S', 'M', 'L', 'XL', 'XXL',
+                'แผ่นรองซับ',
+                'S, แผ่นรองซับ', 'M, แผ่นรองซับ', 'L, แผ่นรองซับ', 'XL, แผ่นรองซับ', 'XXL, แผ่นรองซับ'
+            ];
+
+            let sizeOptions = [...standardSizes];
+            if (row.diaperSizeStr && row.diaperSizeStr !== '-' && !sizeOptions.includes(row.diaperSizeStr)) {
+                sizeOptions.unshift(row.diaperSizeStr);
+            }
+
+            let sizeSelectHtml = `<select class="sel-deliv-size text-xs font-bold text-indigo-700 bg-indigo-50/70 hover:bg-indigo-100/60 border border-indigo-200 rounded-lg px-2 py-1 outline-none focus:ring-2 focus:ring-indigo-500 focus:bg-white cursor-pointer transition-colors" data-patient-id="${row.patientId}" data-round="${row.round}" data-row-key="${uniqueRowKey}" onchange="onDeliverySizeChange(this)">`;
+            if (!row.diaperSizeStr || row.diaperSizeStr === '-') {
+                sizeSelectHtml += `<option value="-" selected>- ระบุไซส์ -</option>`;
+            }
+            sizeOptions.forEach(opt => {
+                const isSel = (row.diaperSizeStr === opt) ? 'selected' : '';
+                sizeSelectHtml += `<option value="${opt}" ${isSel}>${opt}</option>`;
+            });
+            sizeSelectHtml += `</select>`;
+
             tr.innerHTML = `
                 <td class="p-3.5 text-center text-slate-400 font-medium">${idx + 1}</td>
                 <td class="p-3.5 whitespace-nowrap font-bold text-navy">${row.prefix}${row.name}</td>
@@ -1283,7 +1324,7 @@
                 <td class="p-3.5 whitespace-nowrap text-slate-600">${row.house_no}</td>
                 <td class="p-3.5 whitespace-nowrap text-center">${statusBadge}</td>
                 <td class="p-3.5 whitespace-nowrap text-center"><span class="bg-blue-50 text-blue-700 border border-blue-200 px-2 py-0.5 rounded font-bold text-xs">${row.round}</span></td>
-                <td class="p-3.5 whitespace-nowrap text-center font-bold text-indigo-700">${row.diaperSizeStr}</td>
+                <td class="p-3.5 whitespace-nowrap text-center">${sizeSelectHtml}</td>
                 <td class="p-3.5 whitespace-nowrap text-center">
                     <input type="number" min="0" value="${row.diaperQty}" onchange="onDeliveryQtyChange(this)" class="inp-deliv-diaper w-16 px-2 py-1 bg-slate-50 border border-slate-300 rounded-lg text-center font-bold text-blue-700 focus:bg-white focus:ring-2 focus:ring-blue-500 outline-none" data-patient-id="${row.patientId}" data-round="${row.round}" data-row-key="${uniqueRowKey}">
                 </td>
@@ -1304,6 +1345,39 @@
     function toggleRecordQuantityPanel() {
         const panel = document.getElementById('quantity-settings-panel');
         if (panel) panel.classList.toggle('hidden');
+    }
+
+    function onDeliverySizeChange(selectEl) {
+        const rowKey = selectEl.dataset.rowKey;
+        const selectedVal = selectEl.value;
+        const dInp = document.querySelector(`.inp-deliv-diaper[data-row-key="${rowKey}"]`);
+        const pInp = document.querySelector(`.inp-deliv-pad[data-row-key="${rowKey}"]`);
+
+        const rowData = currentDeliveryTableData.find(r => `${r.patientId}_${r.round.replace(/[^a-zA-Z0-9]/g, '_')}` === rowKey);
+        if (rowData) {
+            rowData.diaperSizeStr = selectedVal;
+            rowData.size = selectedVal;
+        }
+
+        // Auto-adjust quantities intelligently based on selected size/type
+        if (selectedVal === 'แผ่นรองซับ') {
+            if (dInp) dInp.value = 0;
+            if (pInp && parseInt(pInp.value) === 0) pInp.value = 90;
+        } else if (selectedVal && selectedVal.includes('แผ่นรองซับ')) {
+            if (dInp && parseInt(dInp.value) === 0) dInp.value = 90;
+            if (pInp && parseInt(pInp.value) === 0) pInp.value = 90;
+        } else if (selectedVal && selectedVal !== '-') {
+            if (dInp && parseInt(dInp.value) === 0) dInp.value = 90;
+            if (pInp) pInp.value = 0;
+        }
+
+        if (dInp) onDeliveryQtyChange(dInp);
+        else if (pInp) onDeliveryQtyChange(pInp);
+
+        const badgeEl = document.getElementById(`badge-deliv-${rowKey}`);
+        if (badgeEl) {
+            badgeEl.innerHTML = `<span class="text-blue-600 font-bold text-[11px] flex items-center justify-center gap-1"><span class="material-symbols-outlined text-[13px]">pending</span> รอคลิกบันทึก</span>`;
+        }
     }
 
     function onDeliveryQtyChange(input) {
@@ -1382,18 +1456,21 @@
                 const round = dInp.dataset.round;
                 const rowKey = dInp.dataset.rowKey;
                 const pInp = document.querySelector(`.inp-deliv-pad[data-row-key="${rowKey}"]`);
+                const sSel = document.querySelector(`.sel-deliv-size[data-row-key="${rowKey}"]`);
 
                 const dQty = parseInt(dInp.value) || 0;
                 const pQty = pInp ? (parseInt(pInp.value) || 0) : 0;
+                const sizeVal = sSel ? sSel.value : 'L';
 
                 if (!updatesByPatient[patientId]) updatesByPatient[patientId] = {};
-                updatesByPatient[patientId][round] = { diaper_qty: dQty, underpad_qty: pQty };
+                updatesByPatient[patientId][round] = { diaper_qty: dQty, underpad_qty: pQty, size: sizeVal };
             });
 
             const patientIds = Object.keys(updatesByPatient);
             const batch = db.batch();
             let batchCount = 0;
             let successCount = 0;
+            const nowISO = new Date().toISOString();
 
             for (const pId of patientIds) {
                 const p = allPatients.find(item => String(item.docId || item.id) === String(pId));
@@ -1403,12 +1480,34 @@
                 if (!d.alloc_history) d.alloc_history = {};
 
                 for (const r in updatesByPatient[pId]) {
+                    const u = updatesByPatient[pId][r];
                     d.alloc_history[r] = {
-                        diaper_qty: updatesByPatient[pId][r].diaper_qty,
-                        underpad_qty: updatesByPatient[pId][r].underpad_qty,
-                        size: d.size || 'L',
-                        recorded_at: new Date().toISOString()
+                        diaper_qty: u.diaper_qty,
+                        underpad_qty: u.underpad_qty,
+                        size: u.size || 'L',
+                        recorded_at: nowISO
                     };
+
+                    // Sync latest preference to patient diaper profile
+                    const s = u.size || '';
+                    if (s === 'แผ่นรองซับ') {
+                        d.req_underpad = true;
+                        d.req_diaper = false;
+                    } else if (s && s !== '-') {
+                        d.req_diaper = true;
+                        let baseSize = 'L';
+                        if (s.includes('XXL')) baseSize = 'XXL';
+                        else if (s.includes('XL')) baseSize = 'XL';
+                        else if (s.includes('S')) baseSize = 'S';
+                        else if (s.includes('M')) baseSize = 'M';
+                        else if (s.includes('L')) baseSize = 'L';
+                        d.size = baseSize;
+                        if (s.includes('แผ่นรองซับ')) {
+                            d.req_underpad = true;
+                        } else {
+                            d.req_underpad = false;
+                        }
+                    }
                 }
 
                 p.diaper = JSON.stringify(d);
@@ -1427,7 +1526,7 @@
                 await batch.commit();
             }
 
-            showToast(`บันทึกจำนวนการส่งมอบเรียบร้อยแล้ว (${successCount} คน)`, 'success');
+            showToast(`บันทึกข้อมูลและขนาดผ้าอ้อมเรียบร้อยแล้ว (${successCount} คน)`, 'success');
             renderDiaperDeliveryReport();
 
         } catch(err) {
@@ -1455,6 +1554,15 @@
 
         const exportData = currentDeliveryTableData.map((row, idx) => {
             const deceasedNote = row.isDeceased ? `เสียชีวิตแล้ว (ได้รับถึงรอบ ${row.lastRound})` : '-';
+            const uniqueRowKey = `${row.patientId}_${row.round.replace(/[^a-zA-Z0-9]/g, '_')}`;
+            const sSel = document.querySelector(`.sel-deliv-size[data-row-key="${uniqueRowKey}"]`);
+            const dInp = document.querySelector(`.inp-deliv-diaper[data-row-key="${uniqueRowKey}"]`);
+            const pInp = document.querySelector(`.inp-deliv-pad[data-row-key="${uniqueRowKey}"]`);
+
+            const actualSize = sSel ? sSel.value : row.diaperSizeStr;
+            const actualDQty = dInp ? (parseInt(dInp.value) || 0) : row.diaperQty;
+            const actualPQty = pInp ? (parseInt(pInp.value) || 0) : row.padQty;
+
             return {
                 "ลำดับ": idx + 1,
                 "ชื่อ-สกุล": `${row.prefix}${row.name}`,
@@ -1464,10 +1572,10 @@
                 "หมู่ที่": row.village_no,
                 "บ้านเลขที่": row.house_no,
                 "รอบที่ได้รับ": row.round,
-                "ขนาดผ้าอ้อม": row.diaperSizeStr,
-                "จำนวนผ้าอ้อม (ชิ้น)": row.diaperQty,
-                "จำนวนแผ่นรองซับ (ชิ้น)": row.padQty,
-                "รวมทั้งสิ้น (ชิ้น)": (row.diaperQty + row.padQty),
+                "ขนาดผ้าอ้อม": actualSize,
+                "จำนวนผ้าอ้อม (ชิ้น)": actualDQty,
+                "จำนวนแผ่นรองซับ (ชิ้น)": actualPQty,
+                "รวมทั้งสิ้น (ชิ้น)": (actualDQty + actualPQty),
                 "สถานะบันทึกยอด": row.isRecorded ? 'บันทึกแล้ว' : 'ค่าประมาณการ'
             };
         });
