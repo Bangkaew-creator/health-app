@@ -522,12 +522,25 @@
                 if(String(p.status).toLowerCase() !== 'active') return;
                 const d = cleanJSON(p.diaper);
                 if(d && Array.isArray(d.allocations) && d.allocations.includes(round)) {
-                    // คำนวณชิ้นให้เลย
-                    const allocDays = parseInt(d.alloc_days) || (parseInt(d.alloc_months)*30) || 30;
-                    const dQty = d.req_diaper ? Math.ceil((parseInt(d.approved_diaper||0)/30)*allocDays) : 0;
-                    const pQty = d.req_underpad ? Math.ceil((parseInt(d.approved_underpad||0)/30)*allocDays) : 0;
+                    // ดึงยอดจริงที่บันทึกไว้ใน alloc_history[round] ก่อน (ถ้ามี) เพื่อให้ตรงกับหน้าศูนย์รายงานและบันทึกมติ
+                    const hist = (d.alloc_history && d.alloc_history[round]) ? d.alloc_history[round] : null;
+                    const allocDays = parseInt(d.alloc_days) || (parseInt(d.alloc_months)*30) || 90;
+                    const dQty = (hist && hist.diaper_qty !== undefined)
+                        ? (parseInt(hist.diaper_qty) || 0)
+                        : (d.req_diaper ? Math.ceil((parseInt(d.approved_diaper||0)/30)*allocDays) : 0);
+                    const pQty = (hist && hist.underpad_qty !== undefined)
+                        ? (parseInt(hist.underpad_qty) || 0)
+                        : (d.req_underpad ? Math.ceil((parseInt(d.approved_underpad||0)/30)*allocDays) : 0);
+
+                    let rawSize = (hist && hist.size && hist.size !== '-') ? String(hist.size).toUpperCase() : String(d.size||'L').toUpperCase();
+                    let baseSize = 'L';
+                    if (rawSize.includes('XXL')) baseSize = 'XXL';
+                    else if (rawSize.includes('XL')) baseSize = 'XL';
+                    else if (rawSize.includes('S')) baseSize = 'S';
+                    else if (rawSize.includes('M')) baseSize = 'M';
+                    else if (rawSize.includes('L')) baseSize = 'L';
                     
-                    targetPatients.push({ id: doc.id, name: p.name, size: String(d.size||'L').toUpperCase(), diaperQty: dQty, padQty: pQty });
+                    targetPatients.push({ id: doc.id, name: p.name, size: baseSize, diaperQty: dQty, padQty: pQty });
                 }
             });
 

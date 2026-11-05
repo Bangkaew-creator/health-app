@@ -1244,6 +1244,26 @@
                         if(reqHtml.length > 0) diaperItems.innerHTML = '<div class="flex gap-2 flex-wrap mt-1">' + reqHtml.join('') + '</div>';
 
                         // 🌟 แทรกปุ่มดูรูปใบรับรองแพทย์โดยตรงที่นี่ 🌟
+                        if (Array.isArray(dp.allocations) && dp.allocations.length > 0) {
+                            const allocChips = dp.allocations.map(r => {
+                                const h = (dp.alloc_history && dp.alloc_history[r]) ? dp.alloc_history[r] : null;
+                                let extra = '';
+                                if (h) {
+                                    let qParts = [];
+                                    if (parseInt(h.diaper_qty) > 0) qParts.push(`ผ้าอ้อม ${h.size || dp.size || 'L'}: ${h.diaper_qty} ชิ้น`);
+                                    if (parseInt(h.underpad_qty) > 0) qParts.push(`แผ่นรอง: ${h.underpad_qty} ชิ้น`);
+                                    if (h.delivered_at) {
+                                        const dpParts = String(h.delivered_at).split('-');
+                                        const thDate = dpParts.length === 3 ? `${dpParts[2]}/${dpParts[1]}/${parseInt(dpParts[0]) > 2400 ? dpParts[0] : parseInt(dpParts[0]) + 543}` : h.delivered_at;
+                                        qParts.push(`ส่งมอบ ${thDate}`);
+                                    }
+                                    if (qParts.length > 0) extra = ` (${qParts.join(' • ')})`;
+                                }
+                                return `<div class="text-[11px] bg-amber-50 text-amber-800 border border-amber-200 px-2.5 py-1 rounded-lg font-bold flex items-center gap-1"><span class="material-symbols-outlined text-[14px] text-amber-600">local_shipping</span> รอบ ${r}${extra}</div>`;
+                            }).join('');
+                            diaperItems.insertAdjacentHTML('beforeend', `<div class="w-full mt-2 pt-2 border-t border-gray-100 space-y-1.5"><p class="text-[11px] font-bold text-[#526069]">ประวัติการได้รับจัดสรร/ส่งมอบ:</p>${allocChips}</div>`);
+                        }
+
                         if (dp.medical_cert) {
                             diaperItems.insertAdjacentHTML('beforeend', `<button onclick="openModal('${dp.medical_cert}')" class="mt-2 text-[10px] bg-blue-50 text-blue-600 hover:bg-blue-100 px-3 py-1.5 rounded-lg font-bold flex items-center gap-1 transition-colors border border-blue-100 w-fit"><span class="material-symbols-outlined text-[14px]">description</span> ดูใบรับรองแพทย์</button>`);
                         }

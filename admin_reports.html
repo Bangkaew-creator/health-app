@@ -1291,13 +1291,27 @@
                 if (d) {
                     const allocDays = d.alloc_days ? parseInt(d.alloc_days) : (parseInt(d.alloc_months) ? parseInt(d.alloc_months) * 30 : 30); 
                     
-                    if (d.req_diaper && parseInt(d.approved_diaper) > 0) { 
-                        diaperSize = d.size || '-'; 
-                        diaperQty = Math.ceil((parseInt(d.approved_diaper) / 30) * allocDays); 
-                    }
-                    if (d.req_underpad && parseInt(d.approved_underpad) > 0) { 
-                        underpadSize = 'แผ่นรองซับ'; 
-                        underpadQty = Math.ceil((parseInt(d.approved_underpad) / 30) * allocDays); 
+                    const latestAlloc = (Array.isArray(d.allocations) && d.allocations.length > 0) ? d.allocations[d.allocations.length - 1] : null;
+                    const latestHist = (latestAlloc && d.alloc_history && d.alloc_history[latestAlloc]) ? d.alloc_history[latestAlloc] : null;
+
+                    if (latestHist && (parseInt(latestHist.diaper_qty) > 0 || parseInt(latestHist.underpad_qty) > 0)) {
+                        if (parseInt(latestHist.diaper_qty) > 0) {
+                            diaperSize = (latestHist.size || d.size || 'L').replace(/,?\s*แผ่นรองซับ/g, '').trim() || d.size || 'L';
+                            diaperQty = parseInt(latestHist.diaper_qty);
+                        }
+                        if (parseInt(latestHist.underpad_qty) > 0) {
+                            underpadSize = 'แผ่นรองซับ';
+                            underpadQty = parseInt(latestHist.underpad_qty);
+                        }
+                    } else {
+                        if (d.req_diaper && parseInt(d.approved_diaper) > 0) { 
+                            diaperSize = d.size || '-'; 
+                            diaperQty = Math.ceil((parseInt(d.approved_diaper) / 30) * allocDays); 
+                        }
+                        if (d.req_underpad && parseInt(d.approved_underpad) > 0) { 
+                            underpadSize = 'แผ่นรองซับ'; 
+                            underpadQty = Math.ceil((parseInt(d.approved_underpad) / 30) * allocDays); 
+                        }
                     }
                     if (d.allocations && d.allocations.length > 0) { remarkText = `ได้รับรอบ ${d.allocations.join(', ')}`; }
                 }
