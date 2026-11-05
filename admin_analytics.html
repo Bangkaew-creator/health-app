@@ -381,11 +381,11 @@
                             <p class="text-xs text-slate-500 mt-0.5">สรุปจำนวนผ้าอ้อมและแผ่นรองซับที่ส่งมอบตามรอบ/ปีงบประมาณ พร้อมสถิติผู้ป่วยที่เสียชีวิต</p>
                         </div>
                         <div class="flex flex-wrap items-center gap-2">
-                            <button onclick="toggleRecordQuantityPanel()" class="bg-blue-50 text-blue-700 hover:bg-blue-100 border border-blue-200 px-3.5 py-2 rounded-xl text-xs font-bold shadow-xs flex items-center gap-1.5 transition-all active:scale-95">
-                                <span class="material-symbols-outlined text-[16px]">tune</span> บันทึก/แก้ไขจำนวนที่ได้รับในรอบนี้
+                            <button onclick="openRecordQuantityModal()" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2.5 rounded-xl text-xs font-bold shadow-md flex items-center gap-1.5 transition-all active:scale-95">
+                                <span class="material-symbols-outlined text-[18px]">edit_calendar</span> กำหนดและบันทึกจำนวนในรอบนี้
                             </button>
-                            <button onclick="exportDiaperDeliveryExcel()" class="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-xl text-xs font-bold shadow-sm flex items-center gap-1.5 transition-all active:scale-95">
-                                <span class="material-symbols-outlined text-[16px]">download</span> โหลดตาราง Excel
+                            <button onclick="exportDiaperDeliveryExcel()" class="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2.5 rounded-xl text-xs font-bold shadow-sm flex items-center gap-1.5 transition-all active:scale-95">
+                                <span class="material-symbols-outlined text-[18px]">download</span> โหลดตาราง Excel
                             </button>
                         </div>
                     </div>
@@ -469,14 +469,23 @@
 
                 <!-- Deceased Patients Highlight Box (ตามคำขอที่ 2) -->
                 <div id="deceased-highlight-box" class="hidden bg-gradient-to-r from-rose-50 to-orange-50 border border-rose-200 rounded-2xl p-4 mb-5 shadow-sm">
-                    <div class="flex items-center justify-between mb-3">
+                    <div class="flex items-center justify-between">
                         <div class="flex items-center gap-2">
-                            <span class="material-symbols-outlined text-rose-600 text-[20px]">warning</span>
-                            <h4 class="text-xs sm:text-sm font-bold text-rose-900" id="deceased-highlight-title">สรุปข้อมูลผู้ป่วยที่เสียชีวิตแล้ว</h4>
+                            <span class="material-symbols-outlined text-rose-600 text-[20px]">person_off</span>
+                            <div>
+                                <h4 class="text-xs sm:text-sm font-bold text-rose-950" id="deceased-highlight-title">สรุปข้อมูลผู้ป่วยที่เสียชีวิตแล้ว</h4>
+                                <p class="text-[11px] text-rose-700">รายชื่อผู้ป่วยที่เคยได้รับผ้าอ้อมและเสียชีวิตแล้ว พร้อมรอบสุดท้ายที่ได้รับ</p>
+                            </div>
                         </div>
-                        <span class="text-[11px] font-bold text-rose-700 bg-rose-100 px-2.5 py-0.5 rounded-full" id="deceased-highlight-badge">0 ราย</span>
+                        <div class="flex items-center gap-2">
+                            <span class="text-xs font-bold text-rose-700 bg-rose-100 border border-rose-200 px-2.5 py-1 rounded-full" id="deceased-highlight-badge">0 ราย</span>
+                            <button type="button" onclick="toggleDeceasedList()" class="text-xs font-bold text-rose-800 bg-white hover:bg-rose-100 border border-rose-200 px-3 py-1 rounded-xl transition-colors flex items-center gap-1 shadow-2xs">
+                                <span id="toggle-deceased-text">ดูรายชื่อผู้เสียชีวิต</span>
+                                <span class="material-symbols-outlined text-[16px]" id="toggle-deceased-icon">expand_more</span>
+                            </button>
+                        </div>
                     </div>
-                    <div id="deceased-highlight-list" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2.5">
+                    <div id="deceased-highlight-list" class="hidden grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2.5 mt-3 pt-3 border-t border-rose-200/60 max-h-72 overflow-y-auto custom-scrollbar pr-1">
                         <!-- Deceased item cards injected here -->
                     </div>
                 </div>
@@ -512,6 +521,19 @@
                             ปรับใช้กับทุกคนในตาราง
                         </button>
                     </div>
+                </div>
+
+                <!-- Table Actions Bar -->
+                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-3 bg-white p-4 rounded-2xl border border-slate-200 shadow-xs">
+                    <div>
+                        <h4 class="text-sm font-bold text-slate-800 flex items-center gap-1.5">
+                            <span class="material-symbols-outlined text-blue-600 text-[18px]">list_alt</span> รายชื่อผู้ป่วยที่ได้รับจัดสรรในรอบที่เลือก
+                        </h4>
+                        <p class="text-[11px] text-slate-500">สามารถแก้ไขจำนวนชิ้นในช่องของแต่ละคนได้โดยตรง แล้วกดปุ่มบันทึกด้านขวา</p>
+                    </div>
+                    <button onclick="saveRoundDeliveryQuantities()" id="btn-save-table-quantities" class="bg-[#00694a] hover:bg-[#005239] text-white px-4 py-2 rounded-xl text-xs font-bold shadow-sm flex items-center justify-center gap-1.5 active:scale-95 transition-all whitespace-nowrap">
+                        <span class="material-symbols-outlined text-[16px]">save</span> บันทึกจำนวนที่แก้ไขในตาราง
+                    </button>
                 </div>
 
                 <!-- Detailed Delivery Table -->
@@ -1340,9 +1362,16 @@
         const diaperInputs = document.querySelectorAll('.inp-deliv-diaper');
         if (diaperInputs.length === 0) return showToast('ไม่พบรายการที่จะบันทึก', 'error');
 
-        const btn = document.getElementById('btn-save-round-quantities');
-        btn.disabled = true;
-        btn.innerHTML = '<span class="material-symbols-outlined text-[16px] animate-spin">sync</span> กำลังบันทึกข้อมูล...';
+        const btn1 = document.getElementById('btn-save-round-quantities');
+        const btn2 = document.getElementById('btn-save-table-quantities');
+        if (btn1) {
+            btn1.disabled = true;
+            btn1.innerHTML = '<span class="material-symbols-outlined text-[16px] animate-spin">sync</span> กำลังบันทึกข้อมูล...';
+        }
+        if (btn2) {
+            btn2.disabled = true;
+            btn2.innerHTML = '<span class="material-symbols-outlined text-[16px] animate-spin">sync</span> กำลังบันทึก...';
+        }
 
         try {
             // Group updates by patientId
@@ -1405,8 +1434,14 @@
             console.error("Save round delivery error:", err);
             alert("เกิดข้อผิดพลาดในการบันทึก: " + err.message);
         } finally {
-            btn.disabled = false;
-            btn.innerHTML = '<span class="material-symbols-outlined text-[16px]">save</span> บันทึกจำนวนลงฐานข้อมูล (<span id="save-qty-count">' + diaperInputs.length + '</span> คน)';
+            if (btn1) {
+                btn1.disabled = false;
+                btn1.innerHTML = '<span class="material-symbols-outlined text-[16px]">save</span> บันทึกจำนวนลงฐานข้อมูล (<span id="save-qty-count">' + diaperInputs.length + '</span> คน)';
+            }
+            if (btn2) {
+                btn2.disabled = false;
+                btn2.innerHTML = '<span class="material-symbols-outlined text-[16px]">save</span> บันทึกจำนวนที่แก้ไขในตาราง';
+            }
         }
     }
 
@@ -1461,6 +1496,296 @@
         XLSX.writeFile(workbook, fileName);
     }
 
+
+    // --- Toast Notification Helper ---
+    function showToast(msg, type = 'info') {
+        let toast = document.getElementById('global-floating-toast');
+        if (!toast) {
+            toast = document.createElement('div');
+            toast.id = 'global-floating-toast';
+            document.body.appendChild(toast);
+        }
+
+        let bg = 'bg-slate-900 text-white border border-slate-700';
+        let icon = 'info';
+        if (type === 'success') {
+            bg = 'bg-emerald-600 text-white shadow-lg shadow-emerald-600/30';
+            icon = 'check_circle';
+        } else if (type === 'error') {
+            bg = 'bg-rose-600 text-white shadow-lg shadow-rose-600/30';
+            icon = 'error';
+        } else if (type === 'info') {
+            bg = 'bg-blue-600 text-white shadow-lg shadow-blue-600/30';
+            icon = 'info';
+        }
+
+        toast.className = 'fixed bottom-6 right-6 z-[9999] px-4 py-3 rounded-2xl shadow-xl font-bold text-xs sm:text-sm flex items-center gap-2 transition-all duration-300 transform translate-y-0 opacity-100 ' + bg;
+        toast.innerHTML = '<span class="material-symbols-outlined text-[20px]">' + icon + '</span><span>' + msg + '</span>';
+
+        if (toast.timer) clearTimeout(toast.timer);
+        toast.timer = setTimeout(() => {
+            toast.className = 'fixed bottom-6 right-6 z-[9999] px-4 py-3 rounded-2xl shadow-xl font-bold text-xs sm:text-sm flex items-center gap-2 transition-all duration-300 transform translate-y-10 opacity-0 pointer-events-none';
+        }, 3500);
+    }
+
+    // --- Toggle Deceased Patients List ---
+    function toggleDeceasedList() {
+        const list = document.getElementById('deceased-highlight-list');
+        const text = document.getElementById('toggle-deceased-text');
+        const icon = document.getElementById('toggle-deceased-icon');
+        if (!list) return;
+
+        if (list.classList.contains('hidden')) {
+            list.classList.remove('hidden');
+            if (text) text.textContent = 'ซ่อนรายชื่อ';
+            if (icon) icon.textContent = 'expand_less';
+        } else {
+            list.classList.add('hidden');
+            if (text) text.textContent = 'ดูรายชื่อผู้เสียชีวิต';
+            if (icon) icon.textContent = 'expand_more';
+        }
+    }
+
+    // --- Modal กำหนดและบันทึกจำนวนที่ได้รับในรอบนี้ ---
+    function openRecordQuantityModal() {
+        const modal = document.getElementById('record-qty-modal');
+        if (!modal) return;
+
+        const roundSel = document.getElementById('modal-round-select');
+        if (roundSel) {
+            const roundsSet = new Set();
+            (allPatients || []).forEach(p => {
+                const d = cleanJSON(p.diaper);
+                if (d && Array.isArray(d.allocations)) {
+                    d.allocations.forEach(r => roundsSet.add(r));
+                }
+            });
+
+            const currentSelectedRound = document.getElementById('deliv-round') ? document.getElementById('deliv-round').value : '';
+            const sortedRounds = Array.from(roundsSet).sort((a,b) => b.localeCompare(a, undefined, { numeric: true }));
+
+            roundSel.innerHTML = '';
+            if (sortedRounds.length === 0) {
+                roundSel.innerHTML = '<option value="">-- ไม่พบข้อมูลรอบจัดสรร --</option>';
+            } else {
+                sortedRounds.forEach(r => {
+                    const opt = document.createElement('option');
+                    opt.value = r;
+                    opt.textContent = 'รอบ ' + r;
+                    if (currentSelectedRound && (currentSelectedRound === r || (currentSelectedRound === 'all' && r === sortedRounds[0]))) {
+                        opt.selected = true;
+                    }
+                    roundSel.appendChild(opt);
+                });
+            }
+        }
+
+        onModalRoundChange();
+
+        modal.classList.remove('hidden');
+        modal.classList.add('flex');
+        setTimeout(() => {
+            modal.classList.remove('opacity-0');
+            const content = document.getElementById('record-qty-modal-content');
+            if (content) {
+                content.classList.remove('scale-95');
+                content.classList.add('scale-100');
+            }
+        }, 10);
+    }
+
+    function closeRecordQuantityModal() {
+        const modal = document.getElementById('record-qty-modal');
+        if (!modal) return;
+        modal.classList.add('opacity-0');
+        const content = document.getElementById('record-qty-modal-content');
+        if (content) {
+            content.classList.remove('scale-100');
+            content.classList.add('scale-95');
+        }
+        setTimeout(() => {
+            modal.classList.add('hidden');
+            modal.classList.remove('flex');
+        }, 250);
+    }
+
+    function onModalRoundChange() {
+        const roundSel = document.getElementById('modal-round-select');
+        const targetRound = roundSel ? roundSel.value : '';
+        const countBadge = document.getElementById('modal-round-patient-count');
+        if (!targetRound) {
+            if (countBadge) countBadge.textContent = '0 คน';
+            return;
+        }
+
+        let count = 0;
+        (allPatients || []).forEach(p => {
+            const d = cleanJSON(p.diaper);
+            if (d && Array.isArray(d.allocations) && d.allocations.includes(targetRound)) {
+                count++;
+            }
+        });
+
+        if (countBadge) {
+            countBadge.textContent = count + ' คน';
+        }
+    }
+
+    async function confirmModalSaveQuantities() {
+        const roundSel = document.getElementById('modal-round-select');
+        const targetRound = roundSel ? roundSel.value : '';
+        if (!targetRound) {
+            return showToast('กรุณาเลือกรอบการจัดสรรที่จะบันทึก', 'error');
+        }
+
+        const dQtyInput = parseInt(document.getElementById('modal-diaper-qty').value);
+        const pQtyInput = parseInt(document.getElementById('modal-pad-qty').value);
+        const dQty = isNaN(dQtyInput) ? 90 : Math.max(0, dQtyInput);
+        const pQty = isNaN(pQtyInput) ? 90 : Math.max(0, pQtyInput);
+
+        const saveBtn = document.getElementById('btn-modal-save-qty');
+        if (saveBtn) {
+            saveBtn.disabled = true;
+            saveBtn.innerHTML = '<span class="material-symbols-outlined text-[16px] animate-spin">sync</span> กำลังบันทึกข้อมูล...';
+        }
+
+        try {
+            // Find target patients who have targetRound in d.allocations
+            const targetPatients = (allPatients || []).filter(p => {
+                const d = cleanJSON(p.diaper);
+                return d && Array.isArray(d.allocations) && d.allocations.includes(targetRound);
+            });
+
+            if (targetPatients.length === 0) {
+                showToast('ไม่พบผู้ป่วยที่ได้รับจัดสรรในรอบ ' + targetRound, 'error');
+                return;
+            }
+
+            const batch = db.batch();
+            let batchCount = 0;
+            let successCount = 0;
+            const nowISO = new Date().toISOString();
+
+            for (const p of targetPatients) {
+                let d = cleanJSON(p.diaper) || {};
+                if (!d.alloc_history) d.alloc_history = {};
+
+                const hasDiaper = (d.req_diaper === true || d.req_diaper === 'true' || (d.size && d.size !== '-' && d.size.trim() !== '') || (parseInt(d.approved_diaper) > 0));
+                let cleanSize = (d.size && d.size !== '-' && d.size.trim() !== '') ? d.size.trim().toUpperCase() : 'L';
+                const hasUnderpad = (d.req_underpad === true || d.req_underpad === 'true' || (parseInt(d.approved_underpad) > 0));
+
+                d.alloc_history[targetRound] = {
+                    diaper_qty: hasDiaper ? dQty : 0,
+                    underpad_qty: hasUnderpad ? pQty : 0,
+                    size: cleanSize,
+                    recorded_at: nowISO
+                };
+
+                // Update in-memory
+                p.diaper = JSON.stringify(d);
+
+                const ref = db.collection('Patients').doc(String(p.docId || p.id));
+                batch.update(ref, { diaper: JSON.stringify(d) });
+                batchCount++;
+                successCount++;
+
+                if (batchCount === 450) {
+                    await batch.commit();
+                    batchCount = 0;
+                }
+            }
+
+            if (batchCount > 0) {
+                await batch.commit();
+            }
+
+            closeRecordQuantityModal();
+            showToast('บันทึกจำนวนการส่งมอบรอบ ' + targetRound + ' เรียบร้อยแล้ว (' + successCount + ' คน)', 'success');
+
+            // Select this round in filter if available
+            const delivRoundSel = document.getElementById('deliv-round');
+            if (delivRoundSel) {
+                delivRoundSel.value = targetRound;
+            }
+
+            renderDiaperDeliveryReport();
+
+        } catch (err) {
+            console.error("confirmModalSaveQuantities error:", err);
+            alert("เกิดข้อผิดพลาดในการบันทึก: " + err.message);
+        } finally {
+            if (saveBtn) {
+                saveBtn.disabled = false;
+                saveBtn.innerHTML = '<span class="material-symbols-outlined text-[16px]">save</span> ยืนยันบันทึกลงฐานข้อมูล';
+            }
+        }
+    }
+
 </script>
+
+    <!-- Modal กำหนดและบันทึกจำนวนผ้าอ้อมในแต่ละรอบ (ตามคำขอ) -->
+    <div id="record-qty-modal" class="fixed inset-0 bg-black/60 z-[120] hidden flex-col items-center justify-center opacity-0 transition-opacity duration-300 p-4">
+        <div id="record-qty-modal-content" class="bg-white rounded-[24px] w-full max-w-lg p-6 transform scale-95 transition-transform duration-300 shadow-2xl overflow-hidden">
+            <div class="flex items-center justify-between pb-3 mb-4 border-b border-slate-100">
+                <div class="flex items-center gap-2.5">
+                    <div class="w-10 h-10 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center flex-shrink-0">
+                        <span class="material-symbols-outlined text-[24px]">edit_calendar</span>
+                    </div>
+                    <div>
+                        <h3 class="text-base font-bold text-slate-900">กำหนดและบันทึกจำนวนที่ได้รับในรอบนี้</h3>
+                        <p class="text-xs text-slate-500">บันทึกจำนวนผ้าอ้อม/แผ่นรองซับมาตรฐานลงฐานข้อมูล</p>
+                    </div>
+                </div>
+                <button onclick="closeRecordQuantityModal()" class="w-8 h-8 rounded-full hover:bg-slate-100 text-slate-400 hover:text-slate-600 flex items-center justify-center transition-colors">
+                    <span class="material-symbols-outlined text-[20px]">close</span>
+                </button>
+            </div>
+
+            <div class="space-y-4">
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 mb-1">เลือกรอบการจัดสรรที่จะบันทึก <span class="text-red-500">*</span></label>
+                    <select id="modal-round-select" onchange="onModalRoundChange()" class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold text-blue-700 outline-none focus:ring-2 focus:ring-blue-500">
+                    </select>
+                </div>
+
+                <div class="bg-blue-50/70 p-3.5 rounded-xl border border-blue-100 flex items-center justify-between text-xs text-blue-900">
+                    <span class="font-bold flex items-center gap-1"><span class="material-symbols-outlined text-[16px] text-blue-600">group</span> จำนวนผู้ป่วยในรอบนี้:</span>
+                    <span id="modal-round-patient-count" class="font-bold text-sm bg-white text-blue-700 px-3 py-1 rounded-lg border border-blue-200">0 คน</span>
+                </div>
+
+                <div class="grid grid-cols-2 gap-3">
+                    <div class="p-3.5 bg-slate-50 border border-slate-200 rounded-xl">
+                        <label class="block text-xs font-bold text-slate-700 mb-1">จำนวนผ้าอ้อมผู้ใหญ่</label>
+                        <div class="flex items-center gap-1.5">
+                            <input type="number" id="modal-diaper-qty" value="90" min="0" class="w-full px-3 py-2 bg-white border border-slate-300 rounded-lg text-center font-bold text-base text-blue-700 outline-none focus:ring-2 focus:ring-blue-500">
+                            <span class="text-xs text-slate-500 font-medium">ชิ้น</span>
+                        </div>
+                        <p class="text-[10px] text-slate-400 mt-1">*ให้เฉพาะผู้ที่ขอผ้าอ้อม</p>
+                    </div>
+
+                    <div class="p-3.5 bg-slate-50 border border-slate-200 rounded-xl">
+                        <label class="block text-xs font-bold text-slate-700 mb-1">จำนวนแผ่นรองซับ</label>
+                        <div class="flex items-center gap-1.5">
+                            <input type="number" id="modal-pad-qty" value="90" min="0" class="w-full px-3 py-2 bg-white border border-slate-300 rounded-lg text-center font-bold text-base text-emerald-700 outline-none focus:ring-2 focus:ring-emerald-500">
+                            <span class="text-xs text-slate-500 font-medium">ชิ้น</span>
+                        </div>
+                        <p class="text-[10px] text-slate-400 mt-1">*ให้เฉพาะผู้ที่ขอแผ่นรองซับ</p>
+                    </div>
+                </div>
+
+                <div class="bg-amber-50 p-3 rounded-xl border border-amber-200 text-[11px] text-amber-800 flex items-start gap-2">
+                    <span class="material-symbols-outlined text-[16px] text-amber-600 flex-shrink-0 mt-0.5">info</span>
+                    <span>ระบบจะบันทึกจำนวนชิ้นดังกล่าวเข้าสู่แฟ้มประวัติของผู้ป่วยทุกคนที่ได้รับในรอบนี้ และคำนวณยอดสรุปให้อัตโนมัติ</span>
+                </div>
+            </div>
+
+            <div class="flex gap-2.5 mt-6 pt-3 border-t border-slate-100">
+                <button type="button" onclick="closeRecordQuantityModal()" class="flex-1 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-bold transition-colors">ยกเลิก</button>
+                <button type="button" onclick="confirmModalSaveQuantities()" id="btn-modal-save-qty" class="flex-1 py-2.5 bg-[#00694a] hover:bg-[#005239] text-white rounded-xl text-xs font-bold shadow-md flex items-center justify-center gap-1.5 transition-all active:scale-95">
+                    <span class="material-symbols-outlined text-[16px]">save</span> ยืนยันบันทึกลงฐานข้อมูล
+                </button>
+            </div>
+        </div>
+    </div>
 </body>
 </html>
