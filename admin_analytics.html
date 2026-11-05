@@ -120,7 +120,7 @@
         <div class="flex-1 pb-20 overflow-y-auto custom-scrollbar relative w-full overflow-x-hidden">
             
             <!-- Tabs Navigation -->
-            <div class="bg-white border-b border-slate-200 grid grid-cols-5 shadow-sm z-10 sticky top-0 flex-shrink-0 w-full">
+            <div class="bg-white border-b border-slate-200 grid grid-cols-3 sm:grid-cols-6 shadow-sm z-10 sticky top-0 flex-shrink-0 w-full">
                 <button class="tab-btn active border-r border-slate-100 flex flex-col items-center justify-center py-3 px-1 leading-tight transition-colors hover:bg-slate-50" id="tab-adl-assess" onclick="switchTab('adl-assess')">
                     <span class="material-symbols-outlined text-[20px] mb-1">fact_check</span>
                     <span class="text-[11px] sm:text-[13px] text-center font-bold">ประเมิน ADL</span>
@@ -137,9 +137,13 @@
                     <span class="text-[18px] mb-1">🏥</span>
                     <span class="text-[11px] sm:text-[13px] text-center font-bold">ทะเบียนสุขภาพ</span>
                 </button>
-                <button class="tab-btn flex flex-col items-center justify-center py-3 px-1 leading-tight transition-colors hover:bg-slate-50" id="tab-vhv" onclick="switchTab('vhv')">
+                <button class="tab-btn border-r border-slate-100 flex flex-col items-center justify-center py-3 px-1 leading-tight transition-colors hover:bg-slate-50" id="tab-vhv" onclick="switchTab('vhv')">
                     <span class="text-[18px] mb-1">👥</span>
                     <span class="text-[11px] sm:text-[13px] text-center font-bold">สถิติ อสม.</span>
+                </button>
+                <button class="tab-btn flex flex-col items-center justify-center py-3 px-1 leading-tight transition-colors hover:bg-slate-50" id="tab-diaper-delivery" onclick="switchTab('diaper-delivery')">
+                    <span class="material-symbols-outlined text-[20px] mb-1">local_shipping</span>
+                    <span class="text-[11px] sm:text-[13px] text-center font-bold">ส่งมอบผ้าอ้อม</span>
                 </button>
             </div>
 
@@ -363,7 +367,180 @@
                 </div>
             </div>
 
-        </div>
+        
+            <!-- TAB 6: รายงานการส่งมอบผ้าอ้อมประจำปี (ตามคำขอ) -->
+            <div id="content-diaper-delivery" class="tab-content px-6 lg:px-8 mt-6 pb-20 lg:pb-8 hidden w-full">
+                
+                <!-- Filter & Controls Header -->
+                <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200 mb-5">
+                    <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-slate-100 pb-4 mb-4">
+                        <div>
+                            <h3 class="text-base font-bold text-navy flex items-center gap-2">
+                                <span class="material-symbols-outlined text-blue-600">local_shipping</span> รายงานการส่งมอบผ้าอ้อมประจำปี (กองทุน กปท.)
+                            </h3>
+                            <p class="text-xs text-slate-500 mt-0.5">สรุปจำนวนผ้าอ้อมและแผ่นรองซับที่ส่งมอบตามรอบ/ปีงบประมาณ พร้อมสถิติผู้ป่วยที่เสียชีวิต</p>
+                        </div>
+                        <div class="flex flex-wrap items-center gap-2">
+                            <button onclick="toggleRecordQuantityPanel()" class="bg-blue-50 text-blue-700 hover:bg-blue-100 border border-blue-200 px-3.5 py-2 rounded-xl text-xs font-bold shadow-xs flex items-center gap-1.5 transition-all active:scale-95">
+                                <span class="material-symbols-outlined text-[16px]">tune</span> บันทึก/แก้ไขจำนวนที่ได้รับในรอบนี้
+                            </button>
+                            <button onclick="exportDiaperDeliveryExcel()" class="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-xl text-xs font-bold shadow-sm flex items-center gap-1.5 transition-all active:scale-95">
+                                <span class="material-symbols-outlined text-[16px]">download</span> โหลดตาราง Excel
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+                        <div>
+                            <label class="text-xs text-slate-500 font-bold block mb-1">ปีงบประมาณ</label>
+                            <select id="deliv-fy" onchange="onDeliveryFYChange()" class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-700 outline-none focus:ring-2 focus:ring-blue-500">
+                                <option value="">ดูทุกปีงบประมาณ</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="text-xs text-slate-500 font-bold block mb-1">รอบการจัดสรร</label>
+                            <select id="deliv-round" onchange="renderDiaperDeliveryReport()" class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-700 outline-none focus:ring-2 focus:ring-blue-500">
+                                <option value="">ดูทุกรอบ</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="text-xs text-slate-500 font-bold block mb-1">สถานะผู้ป่วย</label>
+                            <select id="deliv-status" onchange="renderDiaperDeliveryReport()" class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-700 outline-none focus:ring-2 focus:ring-blue-500">
+                                <option value="all">ทั้งหมด (กำลังดูแล + เสียชีวิต)</option>
+                                <option value="Active">เฉพาะผู้ป่วยที่กำลังดูแล</option>
+                                <option value="deceased">เฉพาะผู้ป่วยที่เสียชีวิตแล้ว</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="text-xs text-slate-500 font-bold block mb-1">หมู่บ้าน</label>
+                            <select id="deliv-village" onchange="renderDiaperDeliveryReport()" class="global-village-filter w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-700 outline-none focus:ring-2 focus:ring-blue-500">
+                                <option value="">ดูทุกหมู่ (ทั้งหมด)</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- KPI Summary Cards -->
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-5">
+                    <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200">
+                        <div class="flex items-center justify-between mb-2">
+                            <span class="text-xs font-bold text-slate-500">ผ้าอ้อมผู้ใหญ่ส่งมอบรวม</span>
+                            <div class="w-8 h-8 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center font-bold">
+                                <span class="material-symbols-outlined text-[18px]">inventory_2</span>
+                            </div>
+                        </div>
+                        <div class="text-2xl font-black text-navy" id="kpi-diaper-total">0 ชิ้น</div>
+                        <p class="text-[11px] text-slate-500 mt-1" id="kpi-diaper-sizes">S: 0 | M: 0 | L: 0 | XL: 0 | XXL: 0</p>
+                    </div>
+
+                    <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200">
+                        <div class="flex items-center justify-between mb-2">
+                            <span class="text-xs font-bold text-slate-500">แผ่นรองซับส่งมอบรวม</span>
+                            <div class="w-8 h-8 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center font-bold">
+                                <span class="material-symbols-outlined text-[18px]">layers</span>
+                            </div>
+                        </div>
+                        <div class="text-2xl font-black text-emerald-600" id="kpi-pad-total">0 ชิ้น</div>
+                        <p class="text-[11px] text-slate-500 mt-1" id="kpi-pad-sub">สำหรับผู้ป่วยที่มีภาวะกลั้นไม่ได้</p>
+                    </div>
+
+                    <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200">
+                        <div class="flex items-center justify-between mb-2">
+                            <span class="text-xs font-bold text-slate-500">ผู้ได้รับจัดสรรทั้งหมด</span>
+                            <div class="w-8 h-8 rounded-lg bg-purple-50 text-purple-600 flex items-center justify-center font-bold">
+                                <span class="material-symbols-outlined text-[18px]">group</span>
+                            </div>
+                        </div>
+                        <div class="text-2xl font-black text-purple-600" id="kpi-recipients-count">0 ราย</div>
+                        <p class="text-[11px] text-slate-500 mt-1" id="kpi-recipients-sub">ในรอบ/ปีงบประมาณที่เลือก</p>
+                    </div>
+
+                    <div class="bg-white p-5 rounded-2xl shadow-sm border border-rose-200 bg-rose-50/20">
+                        <div class="flex items-center justify-between mb-2">
+                            <span class="text-xs font-bold text-rose-700">ผู้ป่วยที่เสียชีวิตแล้ว</span>
+                            <div class="w-8 h-8 rounded-lg bg-rose-100 text-rose-600 flex items-center justify-center font-bold">
+                                <span class="material-symbols-outlined text-[18px]">person_off</span>
+                            </div>
+                        </div>
+                        <div class="text-2xl font-black text-rose-600" id="kpi-deceased-count">0 ราย</div>
+                        <p class="text-[11px] text-rose-600/80 mt-1 font-medium" id="kpi-deceased-sub">ได้รับก่อนเสียชีวิตรวม 0 ชิ้น</p>
+                    </div>
+                </div>
+
+                <!-- Deceased Patients Highlight Box (ตามคำขอที่ 2) -->
+                <div id="deceased-highlight-box" class="hidden bg-gradient-to-r from-rose-50 to-orange-50 border border-rose-200 rounded-2xl p-4 mb-5 shadow-sm">
+                    <div class="flex items-center justify-between mb-3">
+                        <div class="flex items-center gap-2">
+                            <span class="material-symbols-outlined text-rose-600 text-[20px]">warning</span>
+                            <h4 class="text-xs sm:text-sm font-bold text-rose-900" id="deceased-highlight-title">สรุปข้อมูลผู้ป่วยที่เสียชีวิตแล้ว</h4>
+                        </div>
+                        <span class="text-[11px] font-bold text-rose-700 bg-rose-100 px-2.5 py-0.5 rounded-full" id="deceased-highlight-badge">0 ราย</span>
+                    </div>
+                    <div id="deceased-highlight-list" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2.5">
+                        <!-- Deceased item cards injected here -->
+                    </div>
+                </div>
+
+                <!-- Quick Quantity Set / Save Panel (ตามคำขอที่ 1) -->
+                <div id="quantity-settings-panel" class="hidden bg-blue-50 border border-blue-200 rounded-2xl p-4 mb-5 shadow-sm">
+                    <div class="flex flex-col md:flex-row md:items-center justify-between gap-3 mb-3 pb-3 border-b border-blue-200/60">
+                        <div class="flex items-center gap-2">
+                            <span class="material-symbols-outlined text-blue-600">settings_suggest</span>
+                            <div>
+                                <h4 class="text-xs sm:text-sm font-bold text-blue-950">กำหนดและบันทึกจำนวนผ้าอ้อมที่ได้รับในแต่ละรอบ</h4>
+                                <p class="text-[11px] text-blue-700">สามารถใส่จำนวนมาตรฐานต่อคน หรือปรับแก้ในแต่ละแถวด้านล่าง แล้วกดปุ่มบันทึกลงฐานข้อมูล</p>
+                            </div>
+                        </div>
+                        <button onclick="saveRoundDeliveryQuantities()" id="btn-save-round-quantities" class="bg-[#00694a] hover:bg-[#005239] text-white px-4 py-2 rounded-xl text-xs font-bold shadow-md flex items-center gap-1.5 transition-all active:scale-95 whitespace-nowrap">
+                            <span class="material-symbols-outlined text-[16px]">save</span> บันทึกจำนวนลงฐานข้อมูล (<span id="save-qty-count">0</span> คน)
+                        </button>
+                    </div>
+
+                    <div class="flex flex-wrap items-center gap-4 text-xs font-medium text-slate-700 bg-white p-3 rounded-xl border border-blue-100">
+                        <span class="font-bold text-blue-800">ใส่จำนวนมาตรฐานด่วน:</span>
+                        <div class="flex items-center gap-1.5">
+                            <span>ผ้าอ้อม:</span>
+                            <input type="number" id="quick-diaper-input" value="90" min="0" class="w-16 px-2 py-1 bg-slate-50 border border-slate-300 rounded-lg text-center font-bold text-slate-800">
+                            <span class="text-slate-500">ชิ้น/คน</span>
+                        </div>
+                        <div class="flex items-center gap-1.5">
+                            <span>แผ่นรองซับ:</span>
+                            <input type="number" id="quick-pad-input" value="90" min="0" class="w-16 px-2 py-1 bg-slate-50 border border-slate-300 rounded-lg text-center font-bold text-slate-800">
+                            <span class="text-slate-500">ชิ้น/คน</span>
+                        </div>
+                        <button onclick="applyQuickQuantitiesToAll()" class="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1.5 rounded-lg text-xs font-bold transition-all shadow-xs active:scale-95">
+                            ปรับใช้กับทุกคนในตาราง
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Detailed Delivery Table -->
+                <div class="bg-white border border-slate-200 rounded-[20px] shadow-sm w-full overflow-hidden">
+                    <div class="w-full overflow-x-auto rounded-[20px]">
+                        <table class="w-full text-left border-collapse min-w-[1050px]">
+                            <thead>
+                                <tr class="bg-slate-50 text-slate-500 text-[11px] uppercase tracking-wider border-b border-slate-200">
+                                    <th class="p-3.5 w-12 text-center font-bold">ลำดับ</th>
+                                    <th class="p-3.5 font-bold">ชื่อ-สกุล</th>
+                                    <th class="p-3.5 font-bold">เลขบัตร ปชช.</th>
+                                    <th class="p-3.5 font-bold text-center">หมู่ที่</th>
+                                    <th class="p-3.5 font-bold">บ้านเลขที่</th>
+                                    <th class="p-3.5 font-bold text-center">สถานะผู้ป่วย</th>
+                                    <th class="p-3.5 font-bold text-center">รอบที่ได้รับ</th>
+                                    <th class="p-3.5 font-bold text-center">ขนาดผ้าอ้อม</th>
+                                    <th class="p-3.5 font-bold text-center text-blue-700">จำนวนผ้าอ้อม (ชิ้น)</th>
+                                    <th class="p-3.5 font-bold text-center text-emerald-700">จำนวนแผ่นรองซับ (ชิ้น)</th>
+                                    <th class="p-3.5 font-bold text-center">รวม (ชิ้น)</th>
+                                    <th class="p-3.5 font-bold text-center">การบันทึกยอด</th>
+                                </tr>
+                            </thead>
+                            <tbody id="tbody-diaper-delivery" class="text-sm text-slate-700 divide-y divide-slate-100">
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+</div>
 </main>
 
     
@@ -538,6 +715,8 @@
             renderInactiveReport();
             renderRegistryTable();
             renderVHVTable();
+            populateDeliveryFilters();
+            renderDiaperDeliveryReport();
 
             document.getElementById('loading-state').classList.add('hidden');
             switchTab('adl-assess');
@@ -549,6 +728,9 @@
         document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
         document.getElementById(`content-${tabId}`).classList.remove('hidden');
         document.getElementById(`tab-${tabId}`).classList.add('active');
+        if (tabId === 'diaper-delivery') {
+            renderDiaperDeliveryReport();
+        }
     }
 
     function isBetween(targetDate, startStr, endStr) {
@@ -772,6 +954,513 @@
     function exportInactiveReport() { const wb = XLSX.utils.table_to_book(document.querySelector('#content-inactive table'), {sheet:"ยุติการดูแล"}); XLSX.writeFile(wb, "รายงานผู้ป่วยยุติการดูแล.xlsx"); }
     function exportRegistry() { const wb = XLSX.utils.table_to_book(document.querySelector('#content-registry table'), {sheet:"ทะเบียนสุขภาพ"}); XLSX.writeFile(wb, "ทะเบียนสุขภาพ.xlsx"); }
     function exportVHVStats() { const wb = XLSX.utils.table_to_book(document.querySelector('#content-vhv table'), {sheet:"สถิติ อสม."}); XLSX.writeFile(wb, "สถิติ_อสม.xlsx"); }
+
+    // ==========================================
+    // 🌟 ระบบรายงานการส่งมอบผ้าอ้อม และบันทึกจำนวนรายรอบ (ตามคำขอ) 🌟
+    // ==========================================
+    function cleanJSON(rawStr) {
+        if (!rawStr) return null;
+        if (typeof rawStr === 'object') return rawStr;
+        let cleanStr = String(rawStr).trim();
+        if (cleanStr.startsWith('"') && cleanStr.endsWith('"')) {
+            cleanStr = cleanStr.substring(1, cleanStr.length - 1);
+        }
+        try {
+            return JSON.parse(cleanStr);
+        } catch(e) {
+            return null;
+        }
+    }
+
+    function parseRoundString(rStr) {
+        if (!rStr) return { round: '-', fy: '-', raw: '' };
+        const clean = String(rStr).trim();
+        const slashMatch = clean.match(/^([0-9]+)\/([0-9]{4})(.*)$/);
+        if (slashMatch) {
+            return { round: slashMatch[1] + slashMatch[3], fy: slashMatch[2], raw: clean };
+        }
+        const dashMatch = clean.match(/^([0-9]{4})-([0-9]+)$/);
+        if (dashMatch) {
+            return { round: dashMatch[2], fy: dashMatch[1], raw: clean };
+        }
+        return { round: clean, fy: 'อื่นๆ', raw: clean };
+    }
+
+    function populateDeliveryFilters() {
+        const fySelect = document.getElementById('deliv-fy');
+        const roundSelect = document.getElementById('deliv-round');
+        if (!fySelect || !roundSelect) return;
+
+        const currentFY = fySelect.value;
+        const currentRound = roundSelect.value;
+
+        const allFYs = new Set();
+        const allRounds = new Set();
+
+        allPatients.forEach(p => {
+            const d = cleanJSON(p.diaper);
+            if (d && Array.isArray(d.allocations)) {
+                d.allocations.forEach(r => {
+                    const cleanR = String(r).trim();
+                    if (cleanR) {
+                        allRounds.add(cleanR);
+                        const parsed = parseRoundString(cleanR);
+                        if (parsed.fy && parsed.fy !== '-' && parsed.fy !== 'อื่นๆ') {
+                            allFYs.add(parsed.fy);
+                        }
+                    }
+                });
+            }
+        });
+
+        // Populate Fiscal Years
+        const sortedFYs = Array.from(allFYs).sort().reverse();
+        fySelect.innerHTML = '<option value="">ดูทุกปีงบประมาณ</option>';
+        sortedFYs.forEach(fy => {
+            fySelect.insertAdjacentHTML('beforeend', `<option value="${fy}" ${currentFY === fy ? 'selected' : ''}>ปีงบประมาณ ${fy}</option>`);
+        });
+
+        // Populate Rounds
+        filterRoundsByFY(sortedFYs.includes(currentFY) ? currentFY : '');
+    }
+
+    function filterRoundsByFY(targetFY) {
+        const roundSelect = document.getElementById('deliv-round');
+        if (!roundSelect) return;
+
+        const currentRound = roundSelect.value;
+        const matchingRounds = new Set();
+
+        allPatients.forEach(p => {
+            const d = cleanJSON(p.diaper);
+            if (d && Array.isArray(d.allocations)) {
+                d.allocations.forEach(r => {
+                    const cleanR = String(r).trim();
+                    if (cleanR) {
+                        const parsed = parseRoundString(cleanR);
+                        if (!targetFY || parsed.fy === targetFY) {
+                            matchingRounds.add(cleanR);
+                        }
+                    }
+                });
+            }
+        });
+
+        const sortedRounds = Array.from(matchingRounds).sort().reverse();
+        roundSelect.innerHTML = '<option value="">ดูทุกรอบ</option>';
+        sortedRounds.forEach(r => {
+            roundSelect.insertAdjacentHTML('beforeend', `<option value="${r}" ${currentRound === r ? 'selected' : ''}>รอบ ${r}</option>`);
+        });
+    }
+
+    function onDeliveryFYChange() {
+        const selectedFY = document.getElementById('deliv-fy').value;
+        filterRoundsByFY(selectedFY);
+        renderDiaperDeliveryReport();
+    }
+
+    let currentDeliveryTableData = [];
+
+    function renderDiaperDeliveryReport() {
+        const tbody = document.getElementById('tbody-diaper-delivery');
+        if (!tbody) return;
+        tbody.innerHTML = '';
+
+        const selectedFY = document.getElementById('deliv-fy') ? document.getElementById('deliv-fy').value : '';
+        const selectedRound = document.getElementById('deliv-round') ? document.getElementById('deliv-round').value : '';
+        const selectedStatus = document.getElementById('deliv-status') ? document.getElementById('deliv-status').value : 'all';
+        const selectedVillage = document.getElementById('deliv-village') ? document.getElementById('deliv-village').value : '';
+
+        currentDeliveryTableData = [];
+
+        let totalDiaperQty = 0;
+        let totalPadQty = 0;
+        let sizeCounts = { S: 0, M: 0, L: 0, XL: 0, XXL: 0, other: 0 };
+        let uniqueRecipients = new Set();
+        let deceasedRecipients = [];
+
+        allPatients.forEach(p => {
+            const d = cleanJSON(p.diaper);
+            if (!d || !Array.isArray(d.allocations) || d.allocations.length === 0) return;
+
+            // Check village filter
+            if (selectedVillage && String(p.village_no) !== String(selectedVillage)) return;
+
+            // Check patient status filter
+            const pStatus = String(p.status || 'Active').trim();
+            const isDeceased = (pStatus === 'เสียชีวิต');
+            if (selectedStatus === 'Active' && isDeceased) return;
+            if (selectedStatus === 'deceased' && !isDeceased) return;
+
+            // Find matching rounds
+            const matchingAllocs = d.allocations.filter(alloc => {
+                const parsed = parseRoundString(alloc);
+                const matchFY = !selectedFY || parsed.fy === selectedFY;
+                const matchRound = !selectedRound || alloc === selectedRound;
+                return matchFY && matchRound;
+            });
+
+            if (matchingAllocs.length === 0) return;
+
+            uniqueRecipients.add(p.docId || p.id);
+
+            // Deceased patient stats tracking
+            const latestRoundOfPatient = d.allocations[d.allocations.length - 1];
+            if (isDeceased && !deceasedRecipients.some(item => item.id === (p.docId || p.id))) {
+                deceasedRecipients.push({
+                    id: p.docId || p.id,
+                    prefix: p.prefix || '',
+                    name: p.name || 'ไม่ระบุชื่อ',
+                    village_no: p.village_no || '-',
+                    house_no: p.house_no || '-',
+                    lastRound: latestRoundOfPatient,
+                    matchingRounds: matchingAllocs
+                });
+            }
+
+            matchingAllocs.forEach(r => {
+                // Determine Diaper Size string
+                let sizes = [];
+                const hasDiaper = (d.req_diaper === true || d.req_diaper === 'true' || (d.size && d.size !== '-' && d.size.trim() !== '') || (parseInt(d.approved_diaper) > 0));
+                let cleanSize = (d.size && d.size !== '-' && d.size.trim() !== '') ? d.size.trim().toUpperCase() : 'L';
+                if (hasDiaper) sizes.push(cleanSize);
+                const hasUnderpad = (d.req_underpad === true || d.req_underpad === 'true' || (parseInt(d.approved_underpad) > 0));
+                if (hasUnderpad) sizes.push('แผ่นรองซับ');
+                const diaperSizeStr = sizes.length > 0 ? sizes.join(', ') : '-';
+
+                // Determine Quantity: read recorded from alloc_history or compute default
+                let dQty = 0;
+                let pQty = 0;
+                let isRecorded = false;
+
+                if (d.alloc_history && d.alloc_history[r]) {
+                    dQty = parseInt(d.alloc_history[r].diaper_qty) || 0;
+                    pQty = parseInt(d.alloc_history[r].underpad_qty) || 0;
+                    if (d.alloc_history[r].size) cleanSize = d.alloc_history[r].size;
+                    isRecorded = true;
+                } else {
+                    const allocDays = parseInt(d.alloc_days) || 90;
+                    if (hasDiaper) {
+                        dQty = d.approved_diaper ? Math.ceil((parseInt(d.approved_diaper) / 30) * allocDays) : (hasUnderpad ? 30 : 90);
+                    }
+                    if (hasUnderpad) {
+                        pQty = d.approved_underpad ? Math.ceil((parseInt(d.approved_underpad) / 30) * allocDays) : (hasDiaper ? 90 : 150);
+                    }
+                }
+
+                totalDiaperQty += dQty;
+                totalPadQty += pQty;
+
+                if (dQty > 0) {
+                    if (sizeCounts[cleanSize] !== undefined) sizeCounts[cleanSize] += dQty;
+                    else sizeCounts.other += dQty;
+                }
+
+                currentDeliveryTableData.push({
+                    patientId: p.docId || p.id,
+                    prefix: p.prefix || '',
+                    name: p.name || 'ไม่ระบุชื่อ',
+                    id_card: p.id_card || '-',
+                    village_no: p.village_no || '-',
+                    house_no: p.house_no || '-',
+                    status: pStatus,
+                    isDeceased: isDeceased,
+                    lastRound: latestRoundOfPatient,
+                    round: r,
+                    size: cleanSize,
+                    diaperSizeStr: diaperSizeStr,
+                    hasDiaper: hasDiaper,
+                    hasUnderpad: hasUnderpad,
+                    diaperQty: dQty,
+                    padQty: pQty,
+                    isRecorded: isRecorded
+                });
+            });
+        });
+
+        // Update Summary KPI Cards
+        document.getElementById('kpi-diaper-total').innerText = `${totalDiaperQty.toLocaleString()} ชิ้น`;
+        document.getElementById('kpi-diaper-sizes').innerText = `S: ${sizeCounts.S.toLocaleString()} | M: ${sizeCounts.M.toLocaleString()} | L: ${sizeCounts.L.toLocaleString()} | XL: ${sizeCounts.XL.toLocaleString()} | XXL: ${sizeCounts.XXL.toLocaleString()}`;
+        document.getElementById('kpi-pad-total').innerText = `${totalPadQty.toLocaleString()} ชิ้น`;
+        document.getElementById('kpi-recipients-count').innerText = `${uniqueRecipients.size.toLocaleString()} ราย`;
+        document.getElementById('kpi-deceased-count').innerText = `${deceasedRecipients.length.toLocaleString()} ราย`;
+
+        // Calculate total pieces received by deceased recipients
+        let deceasedTotalPieces = 0;
+        currentDeliveryTableData.forEach(item => {
+            if (item.isDeceased) deceasedTotalPieces += (item.diaperQty + item.padQty);
+        });
+        document.getElementById('kpi-deceased-sub').innerText = `ได้รับก่อนเสียชีวิตรวม ${deceasedTotalPieces.toLocaleString()} ชิ้น`;
+
+        // Render Deceased Highlight Box
+        const deceasedBox = document.getElementById('deceased-highlight-box');
+        const deceasedListEl = document.getElementById('deceased-highlight-list');
+        const deceasedBadge = document.getElementById('deceased-highlight-badge');
+
+        if (deceasedRecipients.length > 0) {
+            deceasedBox.classList.remove('hidden');
+            deceasedBadge.innerText = `${deceasedRecipients.length} ราย`;
+            deceasedListEl.innerHTML = '';
+            
+            deceasedRecipients.forEach(dec => {
+                // Compute total pieces this deceased patient got in this filter view
+                const patientRows = currentDeliveryTableData.filter(row => row.patientId === dec.id);
+                const sumD = patientRows.reduce((acc, r) => acc + r.diaperQty, 0);
+                const sumP = patientRows.reduce((acc, r) => acc + r.padQty, 0);
+
+                deceasedListEl.insertAdjacentHTML('beforeend', `
+                    <div class="bg-white p-3.5 rounded-xl border border-rose-200 shadow-xs flex flex-col justify-between">
+                        <div>
+                            <div class="flex items-center justify-between">
+                                <b class="text-slate-800 text-xs truncate">${dec.prefix}${dec.name}</b>
+                                <span class="text-[10px] bg-rose-100 text-rose-700 px-1.5 py-0.5 rounded font-bold">เสียชีวิต</span>
+                            </div>
+                            <p class="text-[11px] text-slate-500 mt-0.5">หมู่ ${dec.village_no} บ้านเลขที่ ${dec.house_no}</p>
+                            <p class="text-[11px] text-rose-700 font-bold mt-1.5 flex items-center gap-1">
+                                <span class="material-symbols-outlined text-[13px]">history</span> ได้รับถึงรอบ ${dec.lastRound} ก่อนเสียชีวิต
+                            </p>
+                        </div>
+                        <div class="text-[11px] text-slate-600 bg-slate-50 p-2 rounded-lg mt-2 font-medium">
+                            ยอดส่งมอบในรายงานนี้: ผ้าอ้อม ${sumD} ชิ้น, แผ่นรอง ${sumP} ชิ้น
+                        </div>
+                    </div>
+                `);
+            });
+        } else {
+            deceasedBox.classList.add('hidden');
+        }
+
+        // Render Table Body
+        if (currentDeliveryTableData.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="12" class="p-8 text-center text-slate-400 font-medium">ไม่พบข้อมูลการส่งมอบผ้าอ้อมตามเงื่อนไขที่เลือก</td></tr>';
+            document.getElementById('save-qty-count').innerText = '0';
+            return;
+        }
+
+        document.getElementById('save-qty-count').innerText = String(currentDeliveryTableData.length);
+
+        currentDeliveryTableData.forEach((row, idx) => {
+            const tr = document.createElement('tr');
+            tr.className = "hover:bg-slate-50 transition-colors";
+
+            const statusBadge = row.isDeceased
+                ? `<span class="bg-rose-50 text-rose-700 border border-rose-200 px-2 py-0.5 rounded font-bold text-[11px] inline-flex items-center gap-1"><span class="material-symbols-outlined text-[12px]">person_off</span> เสียชีวิต (ถึงรอบ ${row.lastRound})</span>`
+                : `<span class="bg-emerald-50 text-emerald-700 border border-emerald-200 px-2 py-0.5 rounded font-bold text-[11px] inline-flex items-center gap-1"><span class="material-symbols-outlined text-[12px]">check_circle</span> กำลังดูแล</span>`;
+
+            const recordBadge = row.isRecorded
+                ? `<span class="text-emerald-600 font-bold text-[11px] flex items-center justify-center gap-1"><span class="material-symbols-outlined text-[13px]">verified</span> บันทึกแล้ว</span>`
+                : `<span class="text-amber-600 font-medium text-[11px] flex items-center justify-center gap-1"><span class="material-symbols-outlined text-[13px]">schedule</span> ค่าประมาณ</span>`;
+
+            const uniqueRowKey = `${row.patientId}_${row.round.replace(/[^a-zA-Z0-9]/g, '_')}`;
+
+            tr.innerHTML = `
+                <td class="p-3.5 text-center text-slate-400 font-medium">${idx + 1}</td>
+                <td class="p-3.5 whitespace-nowrap font-bold text-navy">${row.prefix}${row.name}</td>
+                <td class="p-3.5 whitespace-nowrap font-medium text-slate-600" t="s" style="mso-number-format:'\\@';">${row.id_card}</td>
+                <td class="p-3.5 whitespace-nowrap text-center font-bold text-blue-600">${row.village_no}</td>
+                <td class="p-3.5 whitespace-nowrap text-slate-600">${row.house_no}</td>
+                <td class="p-3.5 whitespace-nowrap text-center">${statusBadge}</td>
+                <td class="p-3.5 whitespace-nowrap text-center"><span class="bg-blue-50 text-blue-700 border border-blue-200 px-2 py-0.5 rounded font-bold text-xs">${row.round}</span></td>
+                <td class="p-3.5 whitespace-nowrap text-center font-bold text-indigo-700">${row.diaperSizeStr}</td>
+                <td class="p-3.5 whitespace-nowrap text-center">
+                    <input type="number" min="0" value="${row.diaperQty}" onchange="onDeliveryQtyChange(this)" class="inp-deliv-diaper w-16 px-2 py-1 bg-slate-50 border border-slate-300 rounded-lg text-center font-bold text-blue-700 focus:bg-white focus:ring-2 focus:ring-blue-500 outline-none" data-patient-id="${row.patientId}" data-round="${row.round}" data-row-key="${uniqueRowKey}">
+                </td>
+                <td class="p-3.5 whitespace-nowrap text-center">
+                    <input type="number" min="0" value="${row.padQty}" onchange="onDeliveryQtyChange(this)" class="inp-deliv-pad w-16 px-2 py-1 bg-slate-50 border border-slate-300 rounded-lg text-center font-bold text-emerald-700 focus:bg-white focus:ring-2 focus:ring-emerald-500 outline-none" data-patient-id="${row.patientId}" data-round="${row.round}" data-row-key="${uniqueRowKey}">
+                </td>
+                <td class="p-3.5 whitespace-nowrap text-center font-black text-navy" id="total-deliv-${uniqueRowKey}">
+                    ${row.diaperQty + row.padQty}
+                </td>
+                <td class="p-3.5 whitespace-nowrap text-center" id="badge-deliv-${uniqueRowKey}">
+                    ${recordBadge}
+                </td>
+            `;
+            tbody.appendChild(tr);
+        });
+    }
+
+    function toggleRecordQuantityPanel() {
+        const panel = document.getElementById('quantity-settings-panel');
+        if (panel) panel.classList.toggle('hidden');
+    }
+
+    function onDeliveryQtyChange(input) {
+        const rowKey = input.dataset.rowKey;
+        const dInp = document.querySelector(`.inp-deliv-diaper[data-row-key="${rowKey}"]`);
+        const pInp = document.querySelector(`.inp-deliv-pad[data-row-key="${rowKey}"]`);
+        
+        const dVal = dInp ? (parseInt(dInp.value) || 0) : 0;
+        const pVal = pInp ? (parseInt(pInp.value) || 0) : 0;
+        
+        const totalEl = document.getElementById(`total-deliv-${rowKey}`);
+        if (totalEl) totalEl.innerText = (dVal + pVal);
+
+        // Mark as modified/pending save
+        const badgeEl = document.getElementById(`badge-deliv-${rowKey}`);
+        if (badgeEl) {
+            badgeEl.innerHTML = `<span class="text-blue-600 font-bold text-[11px] flex items-center justify-center gap-1"><span class="material-symbols-outlined text-[13px]">pending</span> รอคลิกบันทึก</span>`;
+        }
+    }
+
+    function applyQuickQuantitiesToAll() {
+        const qD = parseInt(document.getElementById('quick-diaper-input').value) || 0;
+        const qP = parseInt(document.getElementById('quick-pad-input').value) || 0;
+
+        document.querySelectorAll('.inp-deliv-diaper').forEach(inp => {
+            const rowKey = inp.dataset.rowKey;
+            const rowData = currentDeliveryTableData.find(r => `${r.patientId}_${r.round.replace(/[^a-zA-Z0-9]/g, '_')}` === rowKey);
+            // Apply only if patient actually requests diaper or unconditionally
+            if (rowData && rowData.hasDiaper) {
+                inp.value = qD;
+            } else if (rowData && !rowData.hasDiaper && qD > 0) {
+                inp.value = 0; // Don't give diapers to underpad-only patients
+            } else {
+                inp.value = qD;
+            }
+            onDeliveryQtyChange(inp);
+        });
+
+        document.querySelectorAll('.inp-deliv-pad').forEach(inp => {
+            const rowKey = inp.dataset.rowKey;
+            const rowData = currentDeliveryTableData.find(r => `${r.patientId}_${r.round.replace(/[^a-zA-Z0-9]/g, '_')}` === rowKey);
+            if (rowData && rowData.hasUnderpad) {
+                inp.value = qP;
+            } else if (rowData && !rowData.hasUnderpad && qP > 0) {
+                inp.value = 0; // Don't give pads to diaper-only patients
+            } else {
+                inp.value = qP;
+            }
+            onDeliveryQtyChange(inp);
+        });
+
+        showToast('ปรับใช้จำนวนมาตรฐานเรียบร้อยแล้ว กรุณากด "บันทึกจำนวนลงฐานข้อมูล"', 'info');
+    }
+
+    async function saveRoundDeliveryQuantities() {
+        const diaperInputs = document.querySelectorAll('.inp-deliv-diaper');
+        if (diaperInputs.length === 0) return showToast('ไม่พบรายการที่จะบันทึก', 'error');
+
+        const btn = document.getElementById('btn-save-round-quantities');
+        btn.disabled = true;
+        btn.innerHTML = '<span class="material-symbols-outlined text-[16px] animate-spin">sync</span> กำลังบันทึกข้อมูล...';
+
+        try {
+            // Group updates by patientId
+            const updatesByPatient = {};
+
+            diaperInputs.forEach(dInp => {
+                const patientId = dInp.dataset.patientId;
+                const round = dInp.dataset.round;
+                const rowKey = dInp.dataset.rowKey;
+                const pInp = document.querySelector(`.inp-deliv-pad[data-row-key="${rowKey}"]`);
+
+                const dQty = parseInt(dInp.value) || 0;
+                const pQty = pInp ? (parseInt(pInp.value) || 0) : 0;
+
+                if (!updatesByPatient[patientId]) updatesByPatient[patientId] = {};
+                updatesByPatient[patientId][round] = { diaper_qty: dQty, underpad_qty: pQty };
+            });
+
+            const patientIds = Object.keys(updatesByPatient);
+            const batch = db.batch();
+            let batchCount = 0;
+            let successCount = 0;
+
+            for (const pId of patientIds) {
+                const p = allPatients.find(item => String(item.docId || item.id) === String(pId));
+                if (!p) continue;
+
+                let d = cleanJSON(p.diaper) || {};
+                if (!d.alloc_history) d.alloc_history = {};
+
+                for (const r in updatesByPatient[pId]) {
+                    d.alloc_history[r] = {
+                        diaper_qty: updatesByPatient[pId][r].diaper_qty,
+                        underpad_qty: updatesByPatient[pId][r].underpad_qty,
+                        size: d.size || 'L',
+                        recorded_at: new Date().toISOString()
+                    };
+                }
+
+                p.diaper = JSON.stringify(d);
+                const ref = db.collection('Patients').doc(String(p.docId || p.id));
+                batch.update(ref, { diaper: JSON.stringify(d) });
+                batchCount++;
+                successCount++;
+
+                if (batchCount === 450) {
+                    await batch.commit();
+                    batchCount = 0;
+                }
+            }
+
+            if (batchCount > 0) {
+                await batch.commit();
+            }
+
+            showToast(`บันทึกจำนวนการส่งมอบเรียบร้อยแล้ว (${successCount} คน)`, 'success');
+            renderDiaperDeliveryReport();
+
+        } catch(err) {
+            console.error("Save round delivery error:", err);
+            alert("เกิดข้อผิดพลาดในการบันทึก: " + err.message);
+        } finally {
+            btn.disabled = false;
+            btn.innerHTML = '<span class="material-symbols-outlined text-[16px]">save</span> บันทึกจำนวนลงฐานข้อมูล (<span id="save-qty-count">' + diaperInputs.length + '</span> คน)';
+        }
+    }
+
+    function exportDiaperDeliveryExcel() {
+        if (!currentDeliveryTableData || currentDeliveryTableData.length === 0) {
+            return showToast('ไม่มีข้อมูลการส่งมอบที่จะส่งออก', 'error');
+        }
+
+        const selectedFY = document.getElementById('deliv-fy') ? document.getElementById('deliv-fy').value : '';
+        const selectedRound = document.getElementById('deliv-round') ? document.getElementById('deliv-round').value : '';
+
+        const exportData = currentDeliveryTableData.map((row, idx) => {
+            const deceasedNote = row.isDeceased ? `เสียชีวิตแล้ว (ได้รับถึงรอบ ${row.lastRound})` : '-';
+            return {
+                "ลำดับ": idx + 1,
+                "ชื่อ-สกุล": `${row.prefix}${row.name}`,
+                "เลขประจำตัวประชาชน": row.id_card,
+                "สถานะผู้ป่วย": row.isDeceased ? 'เสียชีวิตแล้ว' : 'กำลังดูแล',
+                "ข้อมูลผู้เสียชีวิต": deceasedNote,
+                "หมู่ที่": row.village_no,
+                "บ้านเลขที่": row.house_no,
+                "รอบที่ได้รับ": row.round,
+                "ขนาดผ้าอ้อม": row.diaperSizeStr,
+                "จำนวนผ้าอ้อม (ชิ้น)": row.diaperQty,
+                "จำนวนแผ่นรองซับ (ชิ้น)": row.padQty,
+                "รวมทั้งสิ้น (ชิ้น)": (row.diaperQty + row.padQty),
+                "สถานะบันทึกยอด": row.isRecorded ? 'บันทึกแล้ว' : 'ค่าประมาณการ'
+            };
+        });
+
+        const worksheet = XLSX.utils.json_to_sheet(exportData);
+        worksheet['!cols'] = [
+            { wch: 6 },  // ลำดับ
+            { wch: 25 }, // ชื่อ-สกุล
+            { wch: 20 }, // เลขประจำตัวประชาชน
+            { wch: 14 }, // สถานะ
+            { wch: 32 }, // ข้อมูลผู้เสียชีวิต
+            { wch: 8 },  // หมู่ที่
+            { wch: 12 }, // บ้านเลขที่
+            { wch: 14 }, // รอบที่ได้รับ
+            { wch: 16 }, // ขนาดผ้าอ้อม
+            { wch: 18 }, // จำนวนผ้าอ้อม
+            { wch: 20 }, // จำนวนแผ่นรองซับ
+            { wch: 16 }, // รวมทั้งสิ้น
+            { wch: 16 }  // สถานะบันทึกยอด
+        ];
+
+        const workbook = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(workbook, worksheet, "รายงานส่งมอบผ้าอ้อม");
+
+        const fileName = `รายงานการส่งมอบผ้าอ้อม_${selectedFY ? 'ปี' + selectedFY : 'ทุกปี'}_${selectedRound ? 'รอบ' + selectedRound.replace(/[^a-zA-Z0-9]/g, '_') : 'ทุกรอบ'}.xlsx`;
+        XLSX.writeFile(workbook, fileName);
+    }
+
 </script>
 </body>
 </html>

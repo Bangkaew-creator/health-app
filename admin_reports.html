@@ -534,6 +534,18 @@
                     if (!diaperObj.allocations) diaperObj.allocations = [];
                     if (!diaperObj.allocations.includes(allocStr)) diaperObj.allocations.push(allocStr);
 
+                    // บันทึกประวัติและจำนวนชิ้นในรอบนี้อัตโนมัติ
+                    if (!diaperObj.alloc_history) diaperObj.alloc_history = {};
+                    const allocDays = parseInt(days) || 90;
+                    const dQty = diaperObj.req_diaper ? Math.ceil((parseInt(diaperObj.approved_diaper || 0) / 30) * allocDays) : 0;
+                    const pQty = diaperObj.req_underpad ? Math.ceil((parseInt(diaperObj.approved_underpad || 0) / 30) * allocDays) : 0;
+                    diaperObj.alloc_history[allocStr] = {
+                        diaper_qty: dQty,
+                        underpad_qty: pQty,
+                        size: diaperObj.size || 'L',
+                        recorded_at: new Date().toISOString()
+                    };
+
                     const ref = db.collection('Patients').doc(String(cb.value));
                     batch.update(ref, { diaper: JSON.stringify(diaperObj) });
                 });
