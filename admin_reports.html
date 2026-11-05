@@ -100,7 +100,12 @@
                         <div class="lg:col-span-3 bg-blue-50/50 p-3 lg:p-4 rounded-xl border border-blue-100 flex flex-col justify-center">
                             <div class="flex justify-between items-center mb-3">
                                 <p class="text-[11px] font-bold text-blue-800 uppercase tracking-wider">จำนวนชิ้นรวมที่ต้องใช้</p>
-                                <span class="bg-blue-600 text-white text-[10px] font-bold px-2 py-0.5 rounded-full shadow-sm">เลือกไว้ <span id="summary-selected-count">0</span> คน</span>
+                                <div class="flex items-center gap-2">
+                                    <button type="button" id="btn-clear-selected" onclick="clearAllSelections()" class="hidden text-[10px] font-bold text-rose-600 hover:text-rose-700 bg-rose-50 hover:bg-rose-100 border border-rose-200 px-2 py-0.5 rounded-full transition-colors flex items-center gap-0.5">
+                                        <span class="material-symbols-outlined text-[12px]">close</span> ล้างที่เลือกทั้งหมด
+                                    </button>
+                                    <span class="bg-blue-600 text-white text-[10px] font-bold px-2.5 py-0.5 rounded-full shadow-sm">เลือกไว้ <span id="summary-selected-count">0</span> คน</span>
+                                </div>
                             </div>
                             <div class="grid grid-cols-3 lg:grid-cols-5 gap-2 text-center">
                                 <div class="bg-white p-2 rounded-lg border border-slate-100"><span class="text-[10px] text-slate-400 block">ไซส์ S</span><span class="font-bold text-navy text-sm lg:text-base" id="sum-s">0</span></div>
@@ -117,13 +122,35 @@
                     </div>
                 </div>
 
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-3 mb-4">
+                <!-- แถบแสดงรายชื่อที่ติ๊กเลือกไว้แล้ว (ไม่หายเมื่อค้นหาคนถัดไป) -->
+                <div id="selected-patients-bar" class="hidden mb-3 bg-blue-50/90 border border-blue-200 rounded-xl p-3 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 shadow-xs">
+                    <div class="flex items-center gap-2 flex-wrap flex-1 min-w-0">
+                        <span class="bg-blue-600 text-white text-xs font-bold px-2.5 py-1 rounded-lg flex items-center gap-1 shrink-0">
+                            <span class="material-symbols-outlined text-[15px]">check_box</span> เลือกค้างไว้ <span id="bar-selected-count">0</span> คน
+                        </span>
+                        <div id="selected-patients-chips" class="flex items-center gap-1.5 flex-wrap max-h-20 overflow-y-auto py-0.5"></div>
+                    </div>
+                    <div class="flex items-center gap-2 shrink-0 self-end sm:self-center">
+                        <button type="button" onclick="clearAllSelections()" class="text-xs font-bold text-rose-600 hover:text-rose-700 bg-white hover:bg-rose-50 border border-rose-200 px-2.5 py-1 rounded-lg transition-colors">
+                            ล้างที่เลือก
+                        </button>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-3 mb-4">
                     <div class="relative">
                         <span class="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-slate-400">search</span>
-                        <input type="text" id="kpt-search" oninput="renderKPTTable()" class="w-full pl-12 pr-4 py-2.5 bg-white border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-amber-500 shadow-sm outline-none" placeholder="ค้นหาชื่อ, เลขบัตร, บ้านเลขที่...">
+                        <input type="text" id="kpt-search" oninput="renderKPTTable()" class="w-full pl-12 pr-9 py-2.5 bg-white border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-amber-500 shadow-sm outline-none" placeholder="ค้นหาชื่อ, นามสกุล, เลขบัตร, บ้านเลขที่...">
+                        <button type="button" id="btn-clear-kpt-search" onclick="clearKPTSearch()" class="hidden absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600">
+                            <span class="material-symbols-outlined text-[18px]">cancel</span>
+                        </button>
                     </div>
+                    <select id="kpt-village-filter" onchange="renderKPTTable()" class="w-full px-4 py-2.5 bg-white border border-slate-200 rounded-xl text-sm font-bold text-slate-600 focus:ring-2 focus:ring-amber-500 shadow-sm outline-none">
+                        <option value="all">ดูทุกหมู่ (ทั้งหมด)</option>
+                    </select>
                     <select id="kpt-alloc-filter" onchange="renderKPTTable()" class="w-full px-4 py-2.5 bg-white border border-slate-200 rounded-xl text-sm font-bold text-slate-600 focus:ring-2 focus:ring-amber-500 shadow-sm outline-none">
                         <option value="all">แสดงผู้ป่วยทั้งหมด</option>
+                        <option value="selected_only">เฉพาะรายชื่อที่ติ๊กเลือกไว้แล้ว (✓)</option>
                         <option value="never">ยังไม่เคยได้รับการจัดสรรผ้าอ้อม</option>
                         <option value="ever">ผู้ที่เคยได้รับการจัดสรรผ้าอ้อมแล้ว</option>
                         <optgroup label="ดูเฉพาะรอบ" id="kpt-alloc-options"></optgroup>
@@ -346,9 +373,31 @@
         let currentUserRole = "ADMIN";
         let assignedVillages = [];
         let selectedAllocFile = null;
+        let configVillageCount = DEFAULT_CONFIGS.VILLAGE_COUNT || 15;
+        const selectedPatientIds = new Set();
 
         let configDiaperPrice = DEFAULT_CONFIGS.DIAPER_PRICE || 9.50;
         let configUnderpadPrice = DEFAULT_CONFIGS.UNDERPAD_PRICE || 6.00;
+
+        function showToast(msg, type = 'success') {
+            let container = document.getElementById('toast-container');
+            if (!container) {
+                container = document.createElement('div');
+                container.id = 'toast-container';
+                container.className = 'fixed bottom-5 right-5 z-[200] flex flex-col gap-2 pointer-events-none';
+                document.body.appendChild(container);
+            }
+            const toast = document.createElement('div');
+            const bgClass = type === 'error' ? 'bg-rose-600 text-white' : (type === 'warning' ? 'bg-amber-500 text-white' : 'bg-emerald-600 text-white');
+            const icon = type === 'error' ? 'error' : (type === 'warning' ? 'warning' : 'check_circle');
+            toast.className = `${bgClass} px-4 py-3 rounded-xl shadow-lg text-xs font-bold flex items-center gap-2 transition-all duration-300 pointer-events-auto`;
+            toast.innerHTML = `<span class="material-symbols-outlined text-[18px]">${icon}</span><span>${msg}</span>`;
+            container.appendChild(toast);
+            setTimeout(() => {
+                toast.classList.add('opacity-0', 'translate-y-2');
+                setTimeout(() => toast.remove(), 300);
+            }, 3500);
+        }
 
         function toggleSidebar() { document.getElementById('sidebar').classList.toggle('-translate-x-full'); }
 
@@ -393,6 +442,7 @@
                     if(sysSnap.exists) hospital = sysSnap.data().value || hospital;
                     const sysCountSnap = await db.collection('SystemConfig').doc('VILLAGE_COUNT').get();
                     if(sysCountSnap.exists) vCount = parseInt(sysCountSnap.data().value) || vCount;
+                    configVillageCount = vCount;
                     
                     const sysSnapDiaper = await db.collection('SystemConfig').doc('DIAPER_PRICE').get();
                     if(sysSnapDiaper.exists) configDiaperPrice = parseFloat(sysSnapDiaper.data().value) || configDiaperPrice;
@@ -463,6 +513,28 @@
                 Array.from(uniqueAllocations).sort().reverse().forEach(alloc => {
                     allocGroup.insertAdjacentHTML('beforeend', `<option value="${alloc}">เฉพาะรอบ ${alloc}</option>`);
                 });
+
+                // Populate Village Filter Dropdown
+                const villageFilterEl = document.getElementById('kpt-village-filter');
+                if (villageFilterEl) {
+                    const prevVal = villageFilterEl.value || 'all';
+                    const villageSet = new Set();
+                    const maxV = parseInt(configVillageCount) || 15;
+                    for (let i = 1; i <= maxV; i++) villageSet.add(String(i));
+                    allPatients.forEach(p => {
+                        if (p.village_no && String(p.village_no).trim() !== '' && String(p.village_no).trim() !== '-') {
+                            villageSet.add(String(p.village_no).trim());
+                        }
+                    });
+                    const sortedVillages = Array.from(villageSet).sort((a, b) => a.localeCompare(b, undefined, { numeric: true }));
+                    villageFilterEl.innerHTML = '<option value="all">ดูทุกหมู่ (ทั้งหมด)</option>';
+                    sortedVillages.forEach(v => {
+                        villageFilterEl.insertAdjacentHTML('beforeend', `<option value="${v}">หมู่ที่ ${v}</option>`);
+                    });
+                    if ( Array.from(villageFilterEl.options).some(o => o.value === prevVal) ) {
+                        villageFilterEl.value = prevVal;
+                    }
+                }
                 
                 allVHVs = [];
                 vhvsSnap.forEach(doc => {
@@ -482,17 +554,129 @@
 
         
 
+        function getPatientKey(p) {
+            return String(p.docId || p.id || '');
+        }
+
+        function buildPatientRawData(p) {
+            const d = cleanJSON(p.diaper);
+            const remarkText = (p.remark && p.remark !== '-' && p.remark.trim() !== '') ? p.remark.trim() : '-';
+            return {
+                id: getPatientKey(p),
+                name: p.name,
+                prefix: p.prefix || '',
+                id_card: p.id_card,
+                house_no: p.house_no,
+                village_no: p.village_no,
+                adl: p.adl,
+                phone: p.caregiver_phone || p.phone || '-',
+                remark: remarkText,
+                detail: d
+            };
+        }
+
+        function getSelectedPatientRawList() {
+            const list = [];
+            allPatients.forEach(p => {
+                if (String(p.status || 'Active').trim().toLowerCase() !== 'active') return;
+                const pKey = getPatientKey(p);
+                if (selectedPatientIds.has(pKey)) {
+                    list.push(buildPatientRawData(p));
+                }
+            });
+            return list;
+        }
+
+        function clearKPTSearch() {
+            const s = document.getElementById('kpt-search');
+            if (s) s.value = '';
+            renderKPTTable();
+        }
+
+        function onRowCheckboxChange(cb) {
+            const pKey = String(cb.value);
+            if (cb.checked) {
+                selectedPatientIds.add(pKey);
+            } else {
+                selectedPatientIds.delete(pKey);
+            }
+            const tr = cb.closest('tr');
+            if (tr) {
+                if (cb.checked) tr.classList.add('bg-amber-50/60');
+                else tr.classList.remove('bg-amber-50/60');
+            }
+            syncCheckAllCheckbox();
+            updateSelectCount();
+        }
+
+        function removeSelectedPatient(pKey) {
+            selectedPatientIds.delete(String(pKey));
+            const cb = document.querySelector(`.row-checkbox[value="${CSS.escape(String(pKey))}"]`);
+            if (cb) {
+                cb.checked = false;
+                const tr = cb.closest('tr');
+                if (tr) tr.classList.remove('bg-amber-50/60');
+            }
+            syncCheckAllCheckbox();
+            updateSelectCount();
+            if (document.getElementById('kpt-alloc-filter')?.value === 'selected_only') {
+                renderKPTTable();
+            }
+        }
+
+        function clearAllSelections() {
+            selectedPatientIds.clear();
+            document.querySelectorAll('.row-checkbox').forEach(cb => {
+                cb.checked = false;
+                const tr = cb.closest('tr');
+                if (tr) tr.classList.remove('bg-amber-50/60');
+            });
+            const checkAll = document.getElementById('check-all');
+            if (checkAll) checkAll.checked = false;
+            updateSelectCount();
+            if (document.getElementById('kpt-alloc-filter')?.value === 'selected_only') {
+                document.getElementById('kpt-alloc-filter').value = 'all';
+                renderKPTTable();
+            }
+        }
+
+        function syncCheckAllCheckbox() {
+            const visibleBoxes = Array.from(document.querySelectorAll('.row-checkbox'));
+            const checkAll = document.getElementById('check-all');
+            if (!checkAll) return;
+            if (visibleBoxes.length === 0) {
+                checkAll.checked = false;
+                return;
+            }
+            checkAll.checked = visibleBoxes.every(cb => cb.checked);
+        }
+
         function renderKPTTable() {
             const tbody = document.getElementById('report-list');
             tbody.innerHTML = '';
             
-            const searchKeyword = document.getElementById('kpt-search').value.trim().toLowerCase();
+            const searchInputEl = document.getElementById('kpt-search');
+            const searchKeyword = (searchInputEl ? searchInputEl.value : '').trim().toLowerCase();
+            const clearSearchBtn = document.getElementById('btn-clear-kpt-search');
+            if (clearSearchBtn) {
+                if (searchKeyword.length > 0) clearSearchBtn.classList.remove('hidden');
+                else clearSearchBtn.classList.add('hidden');
+            }
+
+            const villageFilterEl = document.getElementById('kpt-village-filter');
+            const villageFilter = villageFilterEl ? villageFilterEl.value : 'all';
             const allocFilter = document.getElementById('kpt-alloc-filter').value;
 
             allPatients.forEach(p => {
                 if (String(p.status || 'Active').trim().toLowerCase() !== 'active') return;
 
-                const nameMatch = p.name ? String(p.name).toLowerCase().includes(searchKeyword) : false;
+                const pKey = getPatientKey(p);
+                const isSelected = selectedPatientIds.has(pKey);
+
+                if (villageFilter !== 'all' && String(p.village_no || '').trim() !== String(villageFilter)) return;
+
+                const fullName = ((p.prefix || '') + (p.name || '')).toLowerCase();
+                const nameMatch = fullName.includes(searchKeyword) || (p.name ? String(p.name).toLowerCase().includes(searchKeyword) : false);
                 const idMatch = p.id_card ? String(p.id_card).toLowerCase().includes(searchKeyword) : false;
                 const houseMatch = p.house_no ? String(p.house_no).toLowerCase().includes(searchKeyword) : false;
                 if (searchKeyword && !nameMatch && !idMatch && !houseMatch) return;
@@ -500,9 +684,10 @@
                 const d = cleanJSON(p.diaper);
                 
                 const hasAllocations = (d && Array.isArray(d.allocations) && d.allocations.length > 0);
+                if (allocFilter === 'selected_only' && !isSelected) return;
                 if (allocFilter === 'never' && hasAllocations) return;
                 if (allocFilter === 'ever' && !hasAllocations) return;
-                if (allocFilter !== 'all' && allocFilter !== 'never' && allocFilter !== 'ever') {
+                if (allocFilter !== 'all' && allocFilter !== 'selected_only' && allocFilter !== 'never' && allocFilter !== 'ever') {
                     if (!hasAllocations || !d.allocations.includes(allocFilter)) return;
                 }
 
@@ -531,13 +716,13 @@
                     historyBadge = `<span class="bg-amber-100 text-amber-700 font-bold px-2 py-1 rounded text-[10px] border border-amber-200 block text-center" title="รอบทั้งหมด: ${d.allocations.join(', ')}">ได้รับรอบ ${latestAlloc}${dateNote}</span>`;
                 }
 
-                const remarkText = (p.remark && p.remark !== '-' && p.remark.trim() !== '') ? p.remark.trim() : '-';
-                const rawData = { id: p.id, name: p.name, id_card: p.id_card, house_no: p.house_no, village_no: p.village_no, adl: p.adl, phone: p.caregiver_phone || p.phone || '-', remark: remarkText, detail: d };
+                const rawData = buildPatientRawData(p);
+                const remarkText = rawData.remark;
                 
                 const tr = document.createElement('tr');
-                tr.className = "border-b border-slate-100 hover:bg-slate-50 transition-colors";
+                tr.className = "border-b border-slate-100 hover:bg-slate-50 transition-colors" + (isSelected ? " bg-amber-50/60" : "");
                 tr.innerHTML = `
-                    <td class="p-4 text-center"><input type="checkbox" class="check-row row-checkbox" value="${p.id}" onchange="updateSelectCount()"></td>
+                    <td class="p-4 text-center"><input type="checkbox" class="check-row row-checkbox" value="${pKey}" ${isSelected ? 'checked' : ''} onchange="onRowCheckboxChange(this)"></td>
                     <td class="p-4"><p class="font-bold text-slate-800">${p.prefix||''}${p.name}</p><p class="text-[11px] text-slate-500">ID: ${p.id_card || '-'} | หมู่ ${p.village_no || '-'}</p></td>
                     <td class="p-4 text-center">${adlBadge}</td>
                     <td class="p-4 text-center">${diaperFormBadge}</td>
@@ -548,29 +733,65 @@
                 tr.dataset.rawData = JSON.stringify(rawData);
                 tbody.appendChild(tr);
             });
-            document.getElementById('check-all').checked = false;
+            syncCheckAllCheckbox();
             updateSelectCount();
         }
 
         function toggleAll(source) {
-            document.querySelectorAll('.row-checkbox').forEach(cb => cb.checked = source.checked);
+            document.querySelectorAll('.row-checkbox').forEach(cb => {
+                cb.checked = source.checked;
+                const pKey = String(cb.value);
+                if (source.checked) selectedPatientIds.add(pKey);
+                else selectedPatientIds.delete(pKey);
+                const tr = cb.closest('tr');
+                if (tr) {
+                    if (source.checked) tr.classList.add('bg-amber-50/60');
+                    else tr.classList.remove('bg-amber-50/60');
+                }
+            });
             updateSelectCount();
         }
 
         function updateSelectCount() {
-            const checkedBoxes = document.querySelectorAll('.row-checkbox:checked');
-            const count = checkedBoxes.length;
+            const selectedList = getSelectedPatientRawList();
+            const count = selectedList.length;
             
             document.getElementById('select-count-1').innerText = count;
             document.getElementById('select-count-2').innerText = count;
             document.getElementById('summary-selected-count').innerText = count;
 
+            const clearBtn = document.getElementById('btn-clear-selected');
+            if (clearBtn) {
+                if (count > 0) clearBtn.classList.remove('hidden');
+                else clearBtn.classList.add('hidden');
+            }
+
+            // Update persistent selected patients bar
+            const selBar = document.getElementById('selected-patients-bar');
+            const barCount = document.getElementById('bar-selected-count');
+            const chipsContainer = document.getElementById('selected-patients-chips');
+            if (selBar && barCount && chipsContainer) {
+                barCount.innerText = count;
+                if (count > 0) {
+                    selBar.classList.remove('hidden');
+                    chipsContainer.innerHTML = selectedList.map(p => `
+                        <span class="inline-flex items-center gap-1 bg-white border border-blue-200 text-slate-700 text-[11px] font-bold px-2 py-0.5 rounded-full shadow-2xs">
+                            <span>${p.prefix || ''}${p.name} <span class="text-slate-400 font-normal">(ม.${p.village_no || '-'})</span></span>
+                            <button type="button" onclick="removeSelectedPatient('${p.id}')" class="text-slate-400 hover:text-rose-600 flex items-center" title="เอาออก">
+                                <span class="material-symbols-outlined text-[14px]">close</span>
+                            </button>
+                        </span>
+                    `).join('');
+                } else {
+                    selBar.classList.add('hidden');
+                    chipsContainer.innerHTML = '';
+                }
+            }
+
             const days = parseInt(document.getElementById('kpt-forecast-days').value) || 30;
             let totalS = 0, totalM = 0, totalL = 0, totalXL = 0, totalPad = 0;
 
-            checkedBoxes.forEach(cb => {
-                const tr = cb.closest('tr');
-                const p = JSON.parse(tr.dataset.rawData);
+            selectedList.forEach(p => {
                 const d = p.detail;
 
                 if (d && (d.req_diaper || d.req_underpad)) {
@@ -651,19 +872,14 @@
         }
 
         function populateModalRoundDropdowns() {
-            const checkedBoxes = document.querySelectorAll('.row-checkbox:checked');
+            const selectedList = getSelectedPatientRawList();
             const roundsSet = new Set();
 
-            checkedBoxes.forEach(cb => {
-                const tr = cb.closest('tr');
-                if (!tr || !tr.dataset.rawData) return;
-                try {
-                    const raw = JSON.parse(tr.dataset.rawData);
-                    const d = raw.detail;
-                    if (d && Array.isArray(d.allocations)) {
-                        d.allocations.forEach(r => roundsSet.add(r));
-                    }
-                } catch(e) {}
+            selectedList.forEach(raw => {
+                const d = raw.detail;
+                if (d && Array.isArray(d.allocations)) {
+                    d.allocations.forEach(r => roundsSet.add(r));
+                }
             });
 
             // Also check allPatients if none found in checked subset
@@ -705,20 +921,14 @@
             const targetRound = sel ? sel.value : '';
             if (!targetRound) return;
 
-            // Find first checked patient who has this round in alloc_history
-            const checkedBoxes = document.querySelectorAll('.row-checkbox:checked');
+            const selectedList = getSelectedPatientRawList();
             let foundData = null;
-            for (const cb of checkedBoxes) {
-                const tr = cb.closest('tr');
-                if (!tr || !tr.dataset.rawData) continue;
-                try {
-                    const raw = JSON.parse(tr.dataset.rawData);
-                    const d = raw.detail;
-                    if (d && d.alloc_history && d.alloc_history[targetRound]) {
-                        foundData = d.alloc_history[targetRound];
-                        break;
-                    }
-                } catch(e) {}
+            for (const raw of selectedList) {
+                const d = raw.detail;
+                if (d && d.alloc_history && d.alloc_history[targetRound]) {
+                    foundData = d.alloc_history[targetRound];
+                    break;
+                }
             }
 
             const dateInp = document.getElementById('edit-delivery-date');
@@ -739,19 +949,14 @@
         function onDeductRoundChange() {
             const sel = document.getElementById('deduct-round-select');
             const targetRound = sel ? sel.value : '';
-            const checkedBoxes = document.querySelectorAll('.row-checkbox:checked');
+            const selectedList = getSelectedPatientRawList();
             let matchCount = 0;
 
-            checkedBoxes.forEach(cb => {
-                const tr = cb.closest('tr');
-                if (!tr || !tr.dataset.rawData) return;
-                try {
-                    const raw = JSON.parse(tr.dataset.rawData);
-                    const d = raw.detail;
-                    if (d && Array.isArray(d.allocations) && d.allocations.includes(targetRound)) {
-                        matchCount++;
-                    }
-                } catch(e) {}
+            selectedList.forEach(raw => {
+                const d = raw.detail;
+                if (d && Array.isArray(d.allocations) && d.allocations.includes(targetRound)) {
+                    matchCount++;
+                }
             });
 
             const countEl = document.getElementById('deduct-target-count');
@@ -759,7 +964,8 @@
         }
 
         function openCommitteeModal() {
-            const count = document.querySelectorAll('.row-checkbox:checked').length;
+            const selectedList = getSelectedPatientRawList();
+            const count = selectedList.length;
             if (count === 0) return showToast('กรุณาติ๊กเลือกรายชื่ออย่างน้อย 1 รายการก่อน', 'error');
             document.getElementById('modal-selected-count').innerText = count;
 
@@ -790,8 +996,8 @@
 
         // --- MODE 1: เพิ่มรอบการส่งมอบ/จัดสรร ---
         async function confirmAddRoundDelivery() {
-            const checkedBoxes = document.querySelectorAll('.row-checkbox:checked');
-            if (checkedBoxes.length === 0) return showToast('กรุณาติ๊กเลือกรายชื่ออย่างน้อย 1 รายการก่อน', 'error');
+            const selectedList = getSelectedPatientRawList();
+            if (selectedList.length === 0) return showToast('กรุณาติ๊กเลือกรายชื่ออย่างน้อย 1 รายการก่อน', 'error');
 
             const round = document.getElementById('input-round').value.trim();
             const fy = document.getElementById('input-fy').value.trim();
@@ -811,15 +1017,12 @@
             }
 
             try {
-                const batch = db.batch();
+                let batch = db.batch();
                 let batchCount = 0;
                 let successCount = 0;
                 const nowISO = new Date().toISOString();
 
-                for (const cb of checkedBoxes) {
-                    const tr = cb.closest('tr');
-                    if (!tr || !tr.dataset.rawData) continue;
-                    const rawData = JSON.parse(tr.dataset.rawData);
+                for (const rawData of selectedList) {
                     let diaperObj = rawData.detail || {};
 
                     diaperObj.committee_status = 'จัดสรรแล้ว';
@@ -859,13 +1062,14 @@
                         recorded_at: nowISO
                     };
 
-                    const ref = db.collection('Patients').doc(String(cb.value));
+                    const ref = db.collection('Patients').doc(String(rawData.id));
                     batch.update(ref, { diaper: JSON.stringify(diaperObj) });
                     batchCount++;
                     successCount++;
 
                     if (batchCount === 450) {
                         await batch.commit();
+                        batch = db.batch();
                         batchCount = 0;
                     }
                 }
@@ -876,6 +1080,7 @@
 
                 showToast(`บันทึกรอบส่งมอบ ${allocStr} เรียบร้อยแล้ว (${successCount} คน)`, 'success');
                 closeCommitteeModal();
+                selectedPatientIds.clear();
                 document.getElementById('check-all').checked = false;
                 updateSelectCount();
                 await loadReportData();
@@ -898,8 +1103,8 @@
 
         // --- MODE 2: แก้ไขข้อมูลรอบ ---
         async function confirmEditRoundDelivery() {
-            const checkedBoxes = document.querySelectorAll('.row-checkbox:checked');
-            if (checkedBoxes.length === 0) return showToast('กรุณาติ๊กเลือกรายชื่ออย่างน้อย 1 รายการก่อน', 'error');
+            const selectedList = getSelectedPatientRawList();
+            if (selectedList.length === 0) return showToast('กรุณาติ๊กเลือกรายชื่ออย่างน้อย 1 รายการก่อน', 'error');
 
             const targetRound = document.getElementById('edit-round-select').value;
             if (!targetRound) return showToast('กรุณาเลือกรอบที่ต้องการแก้ไข', 'error');
@@ -915,15 +1120,12 @@
             }
 
             try {
-                const batch = db.batch();
+                let batch = db.batch();
                 let batchCount = 0;
                 let successCount = 0;
                 const nowISO = new Date().toISOString();
 
-                for (const cb of checkedBoxes) {
-                    const tr = cb.closest('tr');
-                    if (!tr || !tr.dataset.rawData) continue;
-                    const rawData = JSON.parse(tr.dataset.rawData);
+                for (const rawData of selectedList) {
                     let diaperObj = rawData.detail || {};
 
                     if (!diaperObj.allocations) diaperObj.allocations = [];
@@ -959,13 +1161,14 @@
                         recorded_at: nowISO
                     };
 
-                    const ref = db.collection('Patients').doc(String(cb.value));
+                    const ref = db.collection('Patients').doc(String(rawData.id));
                     batch.update(ref, { diaper: JSON.stringify(diaperObj) });
                     batchCount++;
                     successCount++;
 
                     if (batchCount === 450) {
                         await batch.commit();
+                        batch = db.batch();
                         batchCount = 0;
                     }
                 }
@@ -976,6 +1179,7 @@
 
                 showToast(`แก้ไขข้อมูลรอบ ${targetRound} เรียบร้อยแล้ว (${successCount} คน)`, 'success');
                 closeCommitteeModal();
+                selectedPatientIds.clear();
                 document.getElementById('check-all').checked = false;
                 updateSelectCount();
                 await loadReportData();
@@ -993,13 +1197,13 @@
 
         // --- MODE 3: ตัดลด/ลบรอบ ---
         async function confirmDeductRoundDelivery() {
-            const checkedBoxes = document.querySelectorAll('.row-checkbox:checked');
-            if (checkedBoxes.length === 0) return showToast('กรุณาติ๊กเลือกรายชื่ออย่างน้อย 1 รายการก่อน', 'error');
+            const selectedList = getSelectedPatientRawList();
+            if (selectedList.length === 0) return showToast('กรุณาติ๊กเลือกรายชื่ออย่างน้อย 1 รายการก่อน', 'error');
 
             const targetRound = document.getElementById('deduct-round-select').value;
             if (!targetRound) return showToast('กรุณาเลือกรอบที่ต้องการตัดลด', 'error');
 
-            if (!confirm(`คุณต้องการตัดลด/ลบรอบ "${targetRound}" ออกจากประวัติของผู้ป่วยที่เลือก (${checkedBoxes.length} คน) ใช่หรือไม่?`)) {
+            if (!confirm(`คุณต้องการตัดลด/ลบรอบ "${targetRound}" ออกจากประวัติของผู้ป่วยที่เลือก (${selectedList.length} คน) ใช่หรือไม่?`)) {
                 return;
             }
 
@@ -1010,14 +1214,11 @@
             }
 
             try {
-                const batch = db.batch();
+                let batch = db.batch();
                 let batchCount = 0;
                 let successCount = 0;
 
-                for (const cb of checkedBoxes) {
-                    const tr = cb.closest('tr');
-                    if (!tr || !tr.dataset.rawData) continue;
-                    const rawData = JSON.parse(tr.dataset.rawData);
+                for (const rawData of selectedList) {
                     let diaperObj = rawData.detail || {};
 
                     if (diaperObj.allocations && Array.isArray(diaperObj.allocations)) {
@@ -1041,13 +1242,14 @@
                         }
                     }
 
-                    const ref = db.collection('Patients').doc(String(cb.value));
+                    const ref = db.collection('Patients').doc(String(rawData.id));
                     batch.update(ref, { diaper: JSON.stringify(diaperObj) });
                     batchCount++;
                     successCount++;
 
                     if (batchCount === 450) {
                         await batch.commit();
+                        batch = db.batch();
                         batchCount = 0;
                     }
                 }
@@ -1058,6 +1260,7 @@
 
                 showToast(`ตัดลดรอบ ${targetRound} ออกจากประวัติเรียบร้อยแล้ว (${successCount} คน)`, 'success');
                 closeCommitteeModal();
+                selectedPatientIds.clear();
                 document.getElementById('check-all').checked = false;
                 updateSelectCount();
                 await loadReportData();
@@ -1074,13 +1277,11 @@
         }
 
         function exportToExcel() {
-            const checkedBoxes = document.querySelectorAll('.row-checkbox:checked');
-            if (checkedBoxes.length === 0) return showToast('กรุณาติ๊กเลือกรายชื่อที่ต้องการออกรายงาน', 'error');
+            const selectedList = getSelectedPatientRawList();
+            if (selectedList.length === 0) return showToast('กรุณาติ๊กเลือกรายชื่อที่ต้องการออกรายงาน', 'error');
             const exportData = []; let runningNumber = 1;
 
-            checkedBoxes.forEach(cb => {
-                const tr = cb.closest('tr');
-                const p = JSON.parse(tr.dataset.rawData);
+            selectedList.forEach(p => {
                 const d = p.detail;
 
                 let diaperSize = '-'; let diaperQty = '-';
