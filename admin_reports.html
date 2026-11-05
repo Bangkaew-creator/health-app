@@ -77,7 +77,7 @@
                     </div>
                     <div class="flex flex-wrap gap-2 w-full xl:w-auto">
                         <button onclick="openImportAllocModal()" class="flex-1 xl:flex-none bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-xl font-bold text-xs flex items-center justify-center gap-1.5 shadow-sm active:scale-95"><span class="material-symbols-outlined text-[16px]">upload_file</span> อัปโหลด Excel (ประวัติ)</button>
-                        <button onclick="openCommitteeModal()" class="flex-1 xl:flex-none bg-amber-500 hover:bg-amber-600 text-white px-4 py-2 rounded-xl font-bold text-xs flex items-center justify-center gap-1.5 shadow-sm active:scale-95"><span class="material-symbols-outlined text-[16px]">gavel</span> บันทึกมติ (<span id="select-count-1">0</span>)</button>
+                        <button onclick="openCommitteeModal()" class="flex-1 xl:flex-none bg-amber-500 hover:bg-amber-600 text-white px-4 py-2 rounded-xl font-bold text-xs flex items-center justify-center gap-1.5 shadow-sm active:scale-95"><span class="material-symbols-outlined text-[16px]">local_shipping</span> จัดการรอบส่งมอบ/มติ (<span id="select-count-1">0</span>)</button>
                         <button onclick="exportToExcel()" class="flex-1 xl:flex-none bg-[#00694a] hover:bg-[#005239] text-white px-4 py-2 rounded-xl font-bold text-xs flex items-center justify-center gap-1.5 shadow-sm active:scale-95"><span class="material-symbols-outlined text-[16px]">download</span> โหลด Excel (<span id="select-count-2">0</span>)</button>
                     </div>
                 </div>
@@ -181,39 +181,156 @@
             </div>
         </div>
     
-        <!-- Modal บันทึกมติคณะกรรมการ -->
-        <div id="committee-modal" class="fixed inset-0 bg-[#111c2d]/40 backdrop-blur-sm z-[100] hidden flex items-center justify-center p-4 transition-all duration-300 opacity-0">
-            <div id="committee-modal-content" class="bg-white rounded-3xl w-full max-w-md shadow-2xl overflow-hidden flex flex-col transform scale-95 transition-all duration-300">
-                <div class="px-6 py-5 border-b border-slate-100 flex justify-between items-center bg-slate-50">
-                    <h3 class="text-lg font-black text-navy flex items-center gap-2"><span class="material-symbols-outlined text-amber-500">gavel</span> บันทึกมติคณะกรรมการ</h3>
-                    <button onclick="closeCommitteeModal()" class="text-slate-400 hover:text-slate-600 bg-white hover:bg-slate-100 w-8 h-8 rounded-full flex items-center justify-center transition-colors shadow-sm"><span class="material-symbols-outlined text-[20px]">close</span></button>
+        <!-- Modal จัดการรอบการส่งมอบ/มติจัดสรร (เพิ่ม แก้ไข ตัดลด) -->
+        <div id="committee-modal" class="fixed inset-0 bg-[#111c2d]/50 backdrop-blur-sm z-[100] hidden flex items-center justify-center p-4 transition-all duration-300 opacity-0">
+            <div id="committee-modal-content" class="bg-white rounded-[28px] w-full max-w-lg shadow-2xl overflow-hidden flex flex-col transform scale-95 transition-all duration-300">
+                <div class="px-6 py-4 border-b border-slate-100 flex justify-between items-center bg-slate-50">
+                    <div class="flex items-center gap-2.5">
+                        <div class="w-10 h-10 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center font-bold">
+                            <span class="material-symbols-outlined text-[24px]">local_shipping</span>
+                        </div>
+                        <div>
+                            <h3 class="text-base font-bold text-slate-900">จัดการรอบการส่งมอบและมติผ้าอ้อม</h3>
+                            <p class="text-xs text-slate-500">เลือกไว้: <strong id="modal-selected-count" class="text-amber-600">0</strong> คน</p>
+                        </div>
+                    </div>
+                    <button onclick="closeCommitteeModal()" class="text-slate-400 hover:text-slate-600 bg-white hover:bg-slate-100 w-8 h-8 rounded-full flex items-center justify-center transition-colors shadow-xs">
+                        <span class="material-symbols-outlined text-[20px]">close</span>
+                    </button>
                 </div>
+
+                <!-- Tabs สลับโหมด: เพิ่ม / แก้ไข / ตัดลด -->
+                <div class="px-6 pt-4 pb-1 border-b border-slate-100 bg-white">
+                    <div class="flex bg-slate-100 p-1 rounded-xl gap-1">
+                        <button type="button" id="btn-modal-mode-add" onclick="switchRoundModalMode('add')" class="flex-1 py-2 rounded-lg text-xs font-bold transition-all shadow-xs bg-amber-500 text-white flex items-center justify-center gap-1">
+                            <span class="material-symbols-outlined text-[16px]">add_circle</span> เพิ่มรอบ/ส่งมอบ
+                        </button>
+                        <button type="button" id="btn-modal-mode-edit" onclick="switchRoundModalMode('edit')" class="flex-1 py-2 rounded-lg text-xs font-bold transition-all text-slate-600 hover:bg-white/60 flex items-center justify-center gap-1">
+                            <span class="material-symbols-outlined text-[16px]">edit</span> แก้ไขข้อมูลรอบ
+                        </button>
+                        <button type="button" id="btn-modal-mode-deduct" onclick="switchRoundModalMode('deduct')" class="flex-1 py-2 rounded-lg text-xs font-bold transition-all text-slate-600 hover:bg-white/60 flex items-center justify-center gap-1">
+                            <span class="material-symbols-outlined text-[16px]">remove_circle</span> ตัดลด/ลบรอบ
+                        </button>
+                    </div>
+                </div>
+
                 <div class="p-6 overflow-y-auto max-h-[70vh]">
-                    <div class="bg-amber-50 rounded-xl p-4 mb-5 border border-amber-100 flex gap-3">
-                        <span class="material-symbols-outlined text-amber-500">info</span>
-                        <div class="text-sm text-amber-800">
-                            คุณกำลังจะบันทึกมติคณะกรรมการให้กับผู้ป่วย <strong id="modal-selected-count">0</strong> รายการ <br>เมื่อบันทึกแล้ว รายชื่อเหล่านี้จะถูกย้ายไปยังแท็บ "ประวัติ (อนุมัติแล้ว)"
+                    <!-- ================= MODE 1: เพิ่มรอบการส่งมอบ/จัดสรร ================= -->
+                    <div id="panel-modal-mode-add" class="space-y-4">
+                        <div class="grid grid-cols-2 gap-3">
+                            <div>
+                                <label class="block text-xs font-bold text-slate-700 mb-1">รอบที่ <span class="text-red-500">*</span></label>
+                                <input type="text" id="input-round" placeholder="เช่น 1, 2, 3" value="1" class="w-full px-3.5 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold text-navy outline-none focus:ring-2 focus:ring-amber-500">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-bold text-slate-700 mb-1">ปีงบประมาณ <span class="text-red-500">*</span></label>
+                                <input type="text" id="input-fy" placeholder="เช่น 2569" value="2569" class="w-full px-3.5 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold text-navy outline-none focus:ring-2 focus:ring-amber-500">
+                            </div>
+                        </div>
+
+                        <div>
+                            <label class="block text-xs font-bold text-slate-700 mb-1">
+                                <span class="flex items-center gap-1"><span class="material-symbols-outlined text-[16px] text-blue-600">event</span> วันที่ได้รับ/ส่งมอบผ้าอ้อม (เมื่อใด) <span class="text-red-500">*</span></span>
+                            </label>
+                            <input type="date" id="input-delivery-date" class="w-full px-3.5 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold text-slate-800 outline-none focus:ring-2 focus:ring-blue-500">
+                        </div>
+
+                        <div class="grid grid-cols-2 gap-3">
+                            <div class="bg-blue-50/60 p-3 rounded-xl border border-blue-100">
+                                <label class="block text-xs font-bold text-blue-900 mb-1">จำนวนผ้าอ้อมผู้ใหญ่</label>
+                                <div class="flex items-center gap-1.5">
+                                    <input type="number" id="input-diaper-qty" value="90" min="0" class="w-full px-3 py-1.5 bg-white border border-slate-200 rounded-lg text-center font-bold text-blue-700 text-sm outline-none focus:ring-2 focus:ring-blue-500">
+                                    <span class="text-xs text-slate-500 font-medium">ชิ้น</span>
+                                </div>
+                            </div>
+                            <div class="bg-emerald-50/60 p-3 rounded-xl border border-emerald-100">
+                                <label class="block text-xs font-bold text-emerald-900 mb-1">จำนวนแผ่นรองซับ</label>
+                                <div class="flex items-center gap-1.5">
+                                    <input type="number" id="input-underpad-qty" value="90" min="0" class="w-full px-3 py-1.5 bg-white border border-slate-200 rounded-lg text-center font-bold text-emerald-700 text-sm outline-none focus:ring-2 focus:ring-emerald-500">
+                                    <span class="text-xs text-slate-500 font-medium">ชิ้น</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="bg-slate-50 p-3.5 rounded-xl border border-slate-200 text-xs text-slate-600 space-y-1">
+                            <p class="font-bold text-slate-800 flex items-center gap-1"><span class="material-symbols-outlined text-[16px] text-amber-500">info</span> กติกาการจัดสรรตามความต้องการ:</p>
+                            <p>• ผู้ขอผ้าอ้อมอย่างเดียว: ได้รับผ้าอ้อมตามจำนวนที่ตั้ง (แผ่นรอง 0)</p>
+                            <p>• ผู้ขอแผ่นรองซับอย่างเดียว: ได้รับแผ่นรองซับตามจำนวนที่ตั้ง (ผ้าอ้อม 0)</p>
+                            <p>• <strong class="text-blue-800">ผู้ขอทั้ง 2 อย่าง:</strong> จะได้รับทั้ง 2 อย่าง <strong class="text-navy">อย่างละเท่ากับจำนวนที่กำหนดไว้ด้านบน</strong></p>
                         </div>
                     </div>
 
-                    <div class="space-y-4">
+                    <!-- ================= MODE 2: แก้ไขข้อมูลรอบ ================= -->
+                    <div id="panel-modal-mode-edit" class="hidden space-y-4">
                         <div>
-                            <label class="block text-sm font-bold text-slate-700 mb-1">รอบที่ <span class="text-red-500">*</span></label>
-                            <input type="text" id="input-round" placeholder="เช่น 1, 2, 3" class="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 font-medium">
+                            <label class="block text-xs font-bold text-slate-700 mb-1">เลือกรอบที่ต้องการแก้ไข <span class="text-red-500">*</span></label>
+                            <select id="edit-round-select" onchange="onEditRoundChange()" class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold text-blue-700 outline-none focus:ring-2 focus:ring-blue-500">
+                            </select>
                         </div>
+
                         <div>
-                            <label class="block text-sm font-bold text-slate-700 mb-1">ปีงบประมาณ <span class="text-red-500">*</span></label>
-                            <input type="text" id="input-fy" placeholder="เช่น 2568" value="2568" class="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 font-medium">
+                            <label class="block text-xs font-bold text-slate-700 mb-1">
+                                <span class="flex items-center gap-1"><span class="material-symbols-outlined text-[16px] text-blue-600">event</span> แก้ไขวันที่ได้รับ/ส่งมอบ</span>
+                            </label>
+                            <input type="date" id="edit-delivery-date" class="w-full px-3.5 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold text-slate-800 outline-none focus:ring-2 focus:ring-blue-500">
                         </div>
+
+                        <div class="grid grid-cols-2 gap-3">
+                            <div class="bg-blue-50/60 p-3 rounded-xl border border-blue-100">
+                                <label class="block text-xs font-bold text-blue-900 mb-1">แก้ไขจำนวนผ้าอ้อม</label>
+                                <div class="flex items-center gap-1.5">
+                                    <input type="number" id="edit-diaper-qty" value="90" min="0" class="w-full px-3 py-1.5 bg-white border border-slate-200 rounded-lg text-center font-bold text-blue-700 text-sm outline-none focus:ring-2 focus:ring-blue-500">
+                                    <span class="text-xs text-slate-500 font-medium">ชิ้น</span>
+                                </div>
+                            </div>
+                            <div class="bg-emerald-50/60 p-3 rounded-xl border border-emerald-100">
+                                <label class="block text-xs font-bold text-emerald-900 mb-1">แก้ไขจำนวนแผ่นรองซับ</label>
+                                <div class="flex items-center gap-1.5">
+                                    <input type="number" id="edit-underpad-qty" value="90" min="0" class="w-full px-3 py-1.5 bg-white border border-slate-200 rounded-lg text-center font-bold text-emerald-700 text-sm outline-none focus:ring-2 focus:ring-emerald-500">
+                                    <span class="text-xs text-slate-500 font-medium">ชิ้น</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="bg-blue-50 p-3 rounded-xl border border-blue-200 text-xs text-blue-800">
+                            ข้อมูลในรอบดังกล่าวของผู้ป่วยที่เลือกทั้งหมด จะถูกปรับปรุงด้วยวันที่และจำนวนชิ้นใหม่ทันที
+                        </div>
+                    </div>
+
+                    <!-- ================= MODE 3: ตัดลด/ลบรอบ ================= -->
+                    <div id="panel-modal-mode-deduct" class="hidden space-y-4">
                         <div>
-                            <label class="block text-sm font-bold text-slate-700 mb-1">จำนวนวัน (สำหรับคำนวณ) <span class="text-red-500">*</span></label>
-                            <input type="text" id="input-days" value="90" placeholder="เช่น 90 หรือ 30" class="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 font-medium">
+                            <label class="block text-xs font-bold text-slate-700 mb-1">เลือกรอบที่ต้องการตัดลด/ลบออก <span class="text-red-500">*</span></label>
+                            <select id="deduct-round-select" onchange="onDeductRoundChange()" class="w-full px-3.5 py-2.5 bg-rose-50 border border-rose-200 rounded-xl text-sm font-bold text-rose-700 outline-none focus:ring-2 focus:ring-rose-500">
+                            </select>
+                        </div>
+
+                        <div class="bg-rose-50 p-4 rounded-xl border border-rose-200 text-xs text-rose-800 space-y-2">
+                            <p class="font-bold flex items-center gap-1.5 text-sm text-rose-900">
+                                <span class="material-symbols-outlined text-rose-600">warning</span> ยืนยันการตัดลดรอบ
+                            </p>
+                            <p class="leading-relaxed">
+                                ระบบจะทำการ <strong>ลบรอบที่เลือก</strong> ออกจากประวัติการจัดสรรและประวัติการส่งมอบของผู้ป่วยที่เลือกทั้งหมด 
+                                <strong id="deduct-target-count" class="underline text-rose-950 font-black">0</strong> คน 
+                                และปรับปรุงสถานะผู้ป่วยให้ถูกต้องอัตโนมัติ
+                            </p>
                         </div>
                     </div>
                 </div>
+
+                <!-- Footer Buttons -->
                 <div class="p-4 border-t border-slate-100 bg-slate-50 flex gap-3 justify-end rounded-b-3xl">
-                    <button onclick="closeCommitteeModal()" class="px-5 py-2.5 text-sm font-bold text-slate-600 bg-white border border-slate-200 hover:bg-slate-50 rounded-xl transition-colors">ยกเลิก</button>
-                    <button id="btn-save-committee" onclick="saveCommitteeDecision()" class="px-5 py-2.5 text-sm font-bold text-white bg-amber-500 hover:bg-amber-600 rounded-xl transition-colors shadow-sm flex items-center gap-2"><span class="material-symbols-outlined text-[18px]">save</span> บันทึกมติ</button>
+                    <button type="button" onclick="closeCommitteeModal()" class="px-5 py-2.5 text-xs font-bold text-slate-600 bg-white border border-slate-200 hover:bg-slate-50 rounded-xl transition-colors">ยกเลิก</button>
+                    
+                    <button type="button" id="btn-confirm-add-round" onclick="confirmAddRoundDelivery()" class="px-5 py-2.5 text-xs font-bold text-white bg-amber-500 hover:bg-amber-600 rounded-xl transition-colors shadow-sm flex items-center gap-1.5 active:scale-95">
+                        <span class="material-symbols-outlined text-[16px]">save</span> ยืนยันบันทึกรอบส่งมอบ
+                    </button>
+                    <button type="button" id="btn-confirm-edit-round" onclick="confirmEditRoundDelivery()" class="hidden px-5 py-2.5 text-xs font-bold text-white bg-blue-600 hover:bg-blue-700 rounded-xl transition-colors shadow-sm flex items-center gap-1.5 active:scale-95">
+                        <span class="material-symbols-outlined text-[16px]">edit_note</span> ยืนยันบันทึกการแก้ไขรอบ
+                    </button>
+                    <button type="button" id="btn-confirm-deduct-round" onclick="confirmDeductRoundDelivery()" class="hidden px-5 py-2.5 text-xs font-bold text-white bg-rose-600 hover:bg-rose-700 rounded-xl transition-colors shadow-sm flex items-center gap-1.5 active:scale-95">
+                        <span class="material-symbols-outlined text-[16px]">delete_sweep</span> ยืนยันตัดลดรอบที่เลือก
+                    </button>
                 </div>
             </div>
         </div>
@@ -407,7 +524,11 @@
                 let historyBadge = `<span class="text-slate-400 text-[11px] font-medium">รอเข้าคณะกรรมการ</span>`;
                 if (hasAllocations) {
                     const latestAlloc = d.allocations[d.allocations.length - 1];
-                    historyBadge = `<span class="bg-amber-100 text-amber-700 font-bold px-2 py-1 rounded text-[10px] border border-amber-200" title="รอบทั้งหมด: ${d.allocations.join(', ')}">ได้รับรอบ ${latestAlloc}</span>`;
+                    let dateNote = '';
+                    if (d.alloc_history && d.alloc_history[latestAlloc] && d.alloc_history[latestAlloc].delivered_at) {
+                        dateNote = `<br><span class="text-[9px] text-amber-600 font-medium">วันที่: ${formatThaiDate(d.alloc_history[latestAlloc].delivered_at)}</span>`;
+                    }
+                    historyBadge = `<span class="bg-amber-100 text-amber-700 font-bold px-2 py-1 rounded text-[10px] border border-amber-200 block text-center" title="รอบทั้งหมด: ${d.allocations.join(', ')}">ได้รับรอบ ${latestAlloc}${dateNote}</span>`;
                 }
 
                 const remarkText = (p.remark && p.remark !== '-' && p.remark.trim() !== '') ? p.remark.trim() : '-';
@@ -485,13 +606,179 @@
             document.getElementById('sum-cost').innerHTML = totalCost.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2}) + ' <span class="text-sm text-amber-500 font-bold">฿</span>';
         }
 
+        function formatThaiDate(dStr) {
+            if (!dStr) return '-';
+            try {
+                const parts = dStr.split('-');
+                if (parts.length === 3) {
+                    const y = parseInt(parts[0]) > 2500 ? parts[0] : parseInt(parts[0]) + 543;
+                    return `${parts[2]}/${parts[1]}/${y}`;
+                }
+                return dStr;
+            } catch(e) { return dStr; }
+        }
+
+        let currentModalMode = 'add'; // 'add' | 'edit' | 'deduct'
+
+        function switchRoundModalMode(mode) {
+            currentModalMode = mode;
+            ['add', 'edit', 'deduct'].forEach(m => {
+                const btn = document.getElementById(`btn-modal-mode-${m}`);
+                const panel = document.getElementById(`panel-modal-mode-${m}`);
+                const footerBtn = document.getElementById(`btn-confirm-${m}-round`);
+
+                if (btn) {
+                    if (m === mode) {
+                        btn.className = "flex-1 py-2 rounded-lg text-xs font-bold transition-all shadow-xs " + 
+                            (m === 'deduct' ? 'bg-rose-600 text-white' : (m === 'edit' ? 'bg-blue-600 text-white' : 'bg-amber-500 text-white')) + " flex items-center justify-center gap-1";
+                    } else {
+                        btn.className = "flex-1 py-2 rounded-lg text-xs font-bold transition-all text-slate-600 hover:bg-white/60 flex items-center justify-center gap-1";
+                    }
+                }
+                if (panel) {
+                    if (m === mode) panel.classList.remove('hidden');
+                    else panel.classList.add('hidden');
+                }
+                if (footerBtn) {
+                    if (m === mode) footerBtn.classList.remove('hidden');
+                    else footerBtn.classList.add('hidden');
+                }
+            });
+
+            if (mode === 'edit' || mode === 'deduct') {
+                populateModalRoundDropdowns();
+            }
+        }
+
+        function populateModalRoundDropdowns() {
+            const checkedBoxes = document.querySelectorAll('.row-checkbox:checked');
+            const roundsSet = new Set();
+
+            checkedBoxes.forEach(cb => {
+                const tr = cb.closest('tr');
+                if (!tr || !tr.dataset.rawData) return;
+                try {
+                    const raw = JSON.parse(tr.dataset.rawData);
+                    const d = raw.detail;
+                    if (d && Array.isArray(d.allocations)) {
+                        d.allocations.forEach(r => roundsSet.add(r));
+                    }
+                } catch(e) {}
+            });
+
+            // Also check allPatients if none found in checked subset
+            if (roundsSet.size === 0) {
+                allPatients.forEach(p => {
+                    const d = cleanJSON(p.diaper);
+                    if (d && Array.isArray(d.allocations)) {
+                        d.allocations.forEach(r => roundsSet.add(r));
+                    }
+                });
+            }
+
+            const sortedRounds = Array.from(roundsSet).sort((a,b) => b.localeCompare(a, undefined, { numeric: true }));
+
+            const editSel = document.getElementById('edit-round-select');
+            const deductSel = document.getElementById('deduct-round-select');
+
+            let optsHtml = '';
+            if (sortedRounds.length === 0) {
+                optsHtml = '<option value="">-- ไม่พบประวัติรอบที่เคยจัดสรร --</option>';
+            } else {
+                sortedRounds.forEach(r => {
+                    optsHtml += `<option value="${r}">รอบ ${r}</option>`;
+                });
+            }
+
+            if (editSel) {
+                editSel.innerHTML = optsHtml;
+                onEditRoundChange();
+            }
+            if (deductSel) {
+                deductSel.innerHTML = optsHtml;
+                onDeductRoundChange();
+            }
+        }
+
+        function onEditRoundChange() {
+            const sel = document.getElementById('edit-round-select');
+            const targetRound = sel ? sel.value : '';
+            if (!targetRound) return;
+
+            // Find first checked patient who has this round in alloc_history
+            const checkedBoxes = document.querySelectorAll('.row-checkbox:checked');
+            let foundData = null;
+            for (const cb of checkedBoxes) {
+                const tr = cb.closest('tr');
+                if (!tr || !tr.dataset.rawData) continue;
+                try {
+                    const raw = JSON.parse(tr.dataset.rawData);
+                    const d = raw.detail;
+                    if (d && d.alloc_history && d.alloc_history[targetRound]) {
+                        foundData = d.alloc_history[targetRound];
+                        break;
+                    }
+                } catch(e) {}
+            }
+
+            const dateInp = document.getElementById('edit-delivery-date');
+            const dQtyInp = document.getElementById('edit-diaper-qty');
+            const pQtyInp = document.getElementById('edit-underpad-qty');
+
+            if (foundData) {
+                if (dateInp) dateInp.value = foundData.delivered_at || new Date().toISOString().split('T')[0];
+                if (dQtyInp) dQtyInp.value = foundData.diaper_qty !== undefined ? foundData.diaper_qty : 90;
+                if (pQtyInp) pQtyInp.value = foundData.underpad_qty !== undefined ? foundData.underpad_qty : 90;
+            } else {
+                if (dateInp) dateInp.value = new Date().toISOString().split('T')[0];
+                if (dQtyInp) dQtyInp.value = 90;
+                if (pQtyInp) pQtyInp.value = 90;
+            }
+        }
+
+        function onDeductRoundChange() {
+            const sel = document.getElementById('deduct-round-select');
+            const targetRound = sel ? sel.value : '';
+            const checkedBoxes = document.querySelectorAll('.row-checkbox:checked');
+            let matchCount = 0;
+
+            checkedBoxes.forEach(cb => {
+                const tr = cb.closest('tr');
+                if (!tr || !tr.dataset.rawData) return;
+                try {
+                    const raw = JSON.parse(tr.dataset.rawData);
+                    const d = raw.detail;
+                    if (d && Array.isArray(d.allocations) && d.allocations.includes(targetRound)) {
+                        matchCount++;
+                    }
+                } catch(e) {}
+            });
+
+            const countEl = document.getElementById('deduct-target-count');
+            if (countEl) countEl.textContent = matchCount;
+        }
+
         function openCommitteeModal() {
             const count = document.querySelectorAll('.row-checkbox:checked').length;
             if (count === 0) return showToast('กรุณาติ๊กเลือกรายชื่ออย่างน้อย 1 รายการก่อน', 'error');
             document.getElementById('modal-selected-count').innerText = count;
+
+            // Set default date to today
+            const delivDateInp = document.getElementById('input-delivery-date');
+            if (delivDateInp && !delivDateInp.value) {
+                delivDateInp.value = new Date().toISOString().split('T')[0];
+            }
+            const fyInp = document.getElementById('input-fy');
+            if (fyInp && !fyInp.value) {
+                fyInp.value = String(new Date().getFullYear() + 543);
+            }
+
+            switchRoundModalMode('add');
+
             const m = document.getElementById('committee-modal');
             const c = document.getElementById('committee-modal-content');
-            m.classList.remove('hidden'); setTimeout(() => { m.classList.remove('opacity-0'); c.classList.remove('scale-95'); }, 10);
+            m.classList.remove('hidden'); 
+            setTimeout(() => { m.classList.remove('opacity-0'); c.classList.remove('scale-95'); }, 10);
         }
 
         function closeCommitteeModal() {
@@ -501,68 +788,289 @@
             setTimeout(() => { m.classList.add('hidden'); }, 300);
         }
 
-        async function saveCommitteeDecision() {
+        // --- MODE 1: เพิ่มรอบการส่งมอบ/จัดสรร ---
+        async function confirmAddRoundDelivery() {
             const checkedBoxes = document.querySelectorAll('.row-checkbox:checked');
-            if(checkedBoxes.length === 0) return;
+            if (checkedBoxes.length === 0) return showToast('กรุณาติ๊กเลือกรายชื่ออย่างน้อย 1 รายการก่อน', 'error');
 
-            const fy = document.getElementById('input-fy').value.trim();
             const round = document.getElementById('input-round').value.trim();
-            const days = document.getElementById('input-days').value.trim();
+            const fy = document.getElementById('input-fy').value.trim();
+            const delivDate = document.getElementById('input-delivery-date').value || new Date().toISOString().split('T')[0];
+            const targetDiaperQty = parseInt(document.getElementById('input-diaper-qty').value) || 0;
+            const targetUnderpadQty = parseInt(document.getElementById('input-underpad-qty').value) || 0;
 
-            if(!fy || !round || !days) {
-                return showToast('กรุณากรอกข้อมูล ปีงบประมาณ, รอบ และ จำนวนวัน ให้ครบถ้วน', 'error');
+            if (!round || !fy) {
+                return showToast('กรุณาระบุรอบที่ และ ปีงบประมาณ ให้ครบถ้วน', 'error');
             }
 
-            const btn = document.getElementById('btn-save-committee');
-            btn.disabled = true; btn.innerText = 'กำลังบันทึก...';
+            const allocStr = `${round}/${fy}`;
+            const btn = document.getElementById('btn-confirm-add-round');
+            if (btn) {
+                btn.disabled = true;
+                btn.innerHTML = '<span class="material-symbols-outlined text-[16px] animate-spin">sync</span> กำลังบันทึกข้อมูล...';
+            }
 
             try {
                 const batch = db.batch();
-                const allocStr = `${round}/${fy}`;
+                let batchCount = 0;
+                let successCount = 0;
+                const nowISO = new Date().toISOString();
 
-                checkedBoxes.forEach(cb => {
+                for (const cb of checkedBoxes) {
                     const tr = cb.closest('tr');
+                    if (!tr || !tr.dataset.rawData) continue;
                     const rawData = JSON.parse(tr.dataset.rawData);
-                    
-                    let diaperObj = rawData.detail || {}; 
-                    
+                    let diaperObj = rawData.detail || {};
+
                     diaperObj.committee_status = 'จัดสรรแล้ว';
                     diaperObj.fy = fy;
                     diaperObj.round = round;
-                    diaperObj.alloc_days = days; 
-                    
+                    diaperObj.alloc_days = '90';
+
                     if (!diaperObj.allocations) diaperObj.allocations = [];
                     if (!diaperObj.allocations.includes(allocStr)) diaperObj.allocations.push(allocStr);
 
-                    // บันทึกประวัติและจำนวนชิ้นในรอบนี้อัตโนมัติ
                     if (!diaperObj.alloc_history) diaperObj.alloc_history = {};
-                    const allocDays = parseInt(days) || 90;
-                    const dQty = diaperObj.req_diaper ? Math.ceil((parseInt(diaperObj.approved_diaper || 0) / 30) * allocDays) : 0;
-                    const pQty = diaperObj.req_underpad ? Math.ceil((parseInt(diaperObj.approved_underpad || 0) / 30) * allocDays) : 0;
+
+                    const hasDiaper = (diaperObj.req_diaper === true || diaperObj.req_diaper === 'true' || (diaperObj.size && diaperObj.size !== '-' && diaperObj.size.trim() !== '') || (parseInt(diaperObj.approved_diaper) > 0));
+                    const hasUnderpad = (diaperObj.req_underpad === true || diaperObj.req_underpad === 'true' || (parseInt(diaperObj.approved_underpad) > 0));
+
+                    let dQty = 0;
+                    let pQty = 0;
+                    if (hasDiaper && hasUnderpad) {
+                        dQty = targetDiaperQty;
+                        pQty = targetUnderpadQty;
+                    } else if (hasDiaper) {
+                        dQty = targetDiaperQty;
+                        pQty = 0;
+                    } else if (hasUnderpad) {
+                        dQty = 0;
+                        pQty = targetUnderpadQty;
+                    } else {
+                        dQty = targetDiaperQty;
+                        pQty = targetUnderpadQty;
+                    }
+
                     diaperObj.alloc_history[allocStr] = {
                         diaper_qty: dQty,
                         underpad_qty: pQty,
                         size: diaperObj.size || 'L',
-                        recorded_at: new Date().toISOString()
+                        delivered_at: delivDate,
+                        recorded_at: nowISO
                     };
 
                     const ref = db.collection('Patients').doc(String(cb.value));
                     batch.update(ref, { diaper: JSON.stringify(diaperObj) });
-                });
-                await batch.commit();
+                    batchCount++;
+                    successCount++;
 
-                showToast('บันทึกมติคณะกรรมการเรียบร้อยแล้ว');
-                closeCommitteeModal(); 
-                document.getElementById('check-all').checked = false; 
-                updateSelectCount(); 
-                
-                await loadReportData(); 
-            } catch (e) { 
-                console.error(e);
-                showToast("บันทึกล้มเหลว กรุณาลองใหม่", "error"); 
+                    if (batchCount === 450) {
+                        await batch.commit();
+                        batchCount = 0;
+                    }
+                }
+
+                if (batchCount > 0) {
+                    await batch.commit();
+                }
+
+                showToast(`บันทึกรอบส่งมอบ ${allocStr} เรียบร้อยแล้ว (${successCount} คน)`, 'success');
+                closeCommitteeModal();
+                document.getElementById('check-all').checked = false;
+                updateSelectCount();
+                await loadReportData();
+
+            } catch (err) {
+                console.error("confirmAddRoundDelivery error:", err);
+                showToast("บันทึกล้มเหลว: " + err.message, "error");
+            } finally {
+                if (btn) {
+                    btn.disabled = false;
+                    btn.innerHTML = '<span class="material-symbols-outlined text-[16px]">save</span> ยืนยันบันทึกรอบส่งมอบ';
+                }
             }
-            
-            btn.disabled = false; btn.innerText = 'บันทึกมติ';
+        }
+
+        // Alias for backward compatibility
+        function saveCommitteeDecision() {
+            return confirmAddRoundDelivery();
+        }
+
+        // --- MODE 2: แก้ไขข้อมูลรอบ ---
+        async function confirmEditRoundDelivery() {
+            const checkedBoxes = document.querySelectorAll('.row-checkbox:checked');
+            if (checkedBoxes.length === 0) return showToast('กรุณาติ๊กเลือกรายชื่ออย่างน้อย 1 รายการก่อน', 'error');
+
+            const targetRound = document.getElementById('edit-round-select').value;
+            if (!targetRound) return showToast('กรุณาเลือกรอบที่ต้องการแก้ไข', 'error');
+
+            const delivDate = document.getElementById('edit-delivery-date').value;
+            const targetDiaperQty = parseInt(document.getElementById('edit-diaper-qty').value) || 0;
+            const targetUnderpadQty = parseInt(document.getElementById('edit-underpad-qty').value) || 0;
+
+            const btn = document.getElementById('btn-confirm-edit-round');
+            if (btn) {
+                btn.disabled = true;
+                btn.innerHTML = '<span class="material-symbols-outlined text-[16px] animate-spin">sync</span> กำลังบันทึก...';
+            }
+
+            try {
+                const batch = db.batch();
+                let batchCount = 0;
+                let successCount = 0;
+                const nowISO = new Date().toISOString();
+
+                for (const cb of checkedBoxes) {
+                    const tr = cb.closest('tr');
+                    if (!tr || !tr.dataset.rawData) continue;
+                    const rawData = JSON.parse(tr.dataset.rawData);
+                    let diaperObj = rawData.detail || {};
+
+                    if (!diaperObj.allocations) diaperObj.allocations = [];
+                    if (!diaperObj.allocations.includes(targetRound)) {
+                        diaperObj.allocations.push(targetRound);
+                    }
+                    if (!diaperObj.alloc_history) diaperObj.alloc_history = {};
+
+                    const hasDiaper = (diaperObj.req_diaper === true || diaperObj.req_diaper === 'true' || (diaperObj.size && diaperObj.size !== '-' && diaperObj.size.trim() !== '') || (parseInt(diaperObj.approved_diaper) > 0));
+                    const hasUnderpad = (diaperObj.req_underpad === true || diaperObj.req_underpad === 'true' || (parseInt(diaperObj.approved_underpad) > 0));
+
+                    let dQty = 0;
+                    let pQty = 0;
+                    if (hasDiaper && hasUnderpad) {
+                        dQty = targetDiaperQty;
+                        pQty = targetUnderpadQty;
+                    } else if (hasDiaper) {
+                        dQty = targetDiaperQty;
+                        pQty = 0;
+                    } else if (hasUnderpad) {
+                        dQty = 0;
+                        pQty = targetUnderpadQty;
+                    } else {
+                        dQty = targetDiaperQty;
+                        pQty = targetUnderpadQty;
+                    }
+
+                    diaperObj.alloc_history[targetRound] = {
+                        diaper_qty: dQty,
+                        underpad_qty: pQty,
+                        size: diaperObj.size || 'L',
+                        delivered_at: delivDate,
+                        recorded_at: nowISO
+                    };
+
+                    const ref = db.collection('Patients').doc(String(cb.value));
+                    batch.update(ref, { diaper: JSON.stringify(diaperObj) });
+                    batchCount++;
+                    successCount++;
+
+                    if (batchCount === 450) {
+                        await batch.commit();
+                        batchCount = 0;
+                    }
+                }
+
+                if (batchCount > 0) {
+                    await batch.commit();
+                }
+
+                showToast(`แก้ไขข้อมูลรอบ ${targetRound} เรียบร้อยแล้ว (${successCount} คน)`, 'success');
+                closeCommitteeModal();
+                document.getElementById('check-all').checked = false;
+                updateSelectCount();
+                await loadReportData();
+
+            } catch (err) {
+                console.error("confirmEditRoundDelivery error:", err);
+                showToast("แก้ไขล้มเหลว: " + err.message, "error");
+            } finally {
+                if (btn) {
+                    btn.disabled = false;
+                    btn.innerHTML = '<span class="material-symbols-outlined text-[16px]">edit_note</span> ยืนยันบันทึกการแก้ไขรอบ';
+                }
+            }
+        }
+
+        // --- MODE 3: ตัดลด/ลบรอบ ---
+        async function confirmDeductRoundDelivery() {
+            const checkedBoxes = document.querySelectorAll('.row-checkbox:checked');
+            if (checkedBoxes.length === 0) return showToast('กรุณาติ๊กเลือกรายชื่ออย่างน้อย 1 รายการก่อน', 'error');
+
+            const targetRound = document.getElementById('deduct-round-select').value;
+            if (!targetRound) return showToast('กรุณาเลือกรอบที่ต้องการตัดลด', 'error');
+
+            if (!confirm(`คุณต้องการตัดลด/ลบรอบ "${targetRound}" ออกจากประวัติของผู้ป่วยที่เลือก (${checkedBoxes.length} คน) ใช่หรือไม่?`)) {
+                return;
+            }
+
+            const btn = document.getElementById('btn-confirm-deduct-round');
+            if (btn) {
+                btn.disabled = true;
+                btn.innerHTML = '<span class="material-symbols-outlined text-[16px] animate-spin">sync</span> กำลังตัดลด...';
+            }
+
+            try {
+                const batch = db.batch();
+                let batchCount = 0;
+                let successCount = 0;
+
+                for (const cb of checkedBoxes) {
+                    const tr = cb.closest('tr');
+                    if (!tr || !tr.dataset.rawData) continue;
+                    const rawData = JSON.parse(tr.dataset.rawData);
+                    let diaperObj = rawData.detail || {};
+
+                    if (diaperObj.allocations && Array.isArray(diaperObj.allocations)) {
+                        diaperObj.allocations = diaperObj.allocations.filter(r => r !== targetRound);
+                    }
+                    if (diaperObj.alloc_history && diaperObj.alloc_history[targetRound]) {
+                        delete diaperObj.alloc_history[targetRound];
+                    }
+
+                    // Sync committee status and round pointers
+                    if (!diaperObj.allocations || diaperObj.allocations.length === 0) {
+                        diaperObj.committee_status = 'รออนุมัติ';
+                        diaperObj.round = '';
+                        diaperObj.fy = '';
+                    } else {
+                        const latestRemaining = diaperObj.allocations[diaperObj.allocations.length - 1];
+                        const parts = latestRemaining.split('/');
+                        if (parts.length === 2) {
+                            diaperObj.round = parts[0];
+                            diaperObj.fy = parts[1];
+                        }
+                    }
+
+                    const ref = db.collection('Patients').doc(String(cb.value));
+                    batch.update(ref, { diaper: JSON.stringify(diaperObj) });
+                    batchCount++;
+                    successCount++;
+
+                    if (batchCount === 450) {
+                        await batch.commit();
+                        batchCount = 0;
+                    }
+                }
+
+                if (batchCount > 0) {
+                    await batch.commit();
+                }
+
+                showToast(`ตัดลดรอบ ${targetRound} ออกจากประวัติเรียบร้อยแล้ว (${successCount} คน)`, 'success');
+                closeCommitteeModal();
+                document.getElementById('check-all').checked = false;
+                updateSelectCount();
+                await loadReportData();
+
+            } catch (err) {
+                console.error("confirmDeductRoundDelivery error:", err);
+                showToast("ตัดลดรอบล้มเหลว: " + err.message, "error");
+            } finally {
+                if (btn) {
+                    btn.disabled = false;
+                    btn.innerHTML = '<span class="material-symbols-outlined text-[16px]">delete_sweep</span> ยืนยันตัดลดรอบที่เลือก';
+                }
+            }
         }
 
         function exportToExcel() {

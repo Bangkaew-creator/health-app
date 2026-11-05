@@ -390,6 +390,24 @@
                         </div>
                     </div>
 
+                    <!-- Search Bar (ค้นหาชื่อ นามสกุล หรือ เลขบัตร) -->
+                    <div class="mb-4">
+                        <label class="text-xs text-slate-600 font-bold flex items-center justify-between mb-1.5">
+                            <span class="flex items-center gap-1.5 text-blue-700">
+                                <span class="material-symbols-outlined text-[18px] text-blue-600">person_search</span> 
+                                ค้นหาผู้ป่วยในตาราง (ชื่อ, นามสกุล หรือ เลขบัตร ปชช.)
+                            </span>
+                            <span id="deliv-search-count" class="text-[11px] text-blue-700 font-bold bg-blue-50 border border-blue-200 px-2.5 py-0.5 rounded-lg hidden"></span>
+                        </label>
+                        <div class="relative">
+                            <span class="material-symbols-outlined absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 text-[18px]">search</span>
+                            <input type="text" id="deliv-search" oninput="onDeliverySearchInput()" placeholder="พิมพ์ชื่อ หรือ นามสกุลบางส่วน เช่น สมหมาย, จันทร์, วิชา, หรือเลขบัตร ปชช. เพื่อค้นหาและกรอกข้อมูล..." class="w-full pl-10 pr-10 py-2.5 bg-slate-50 hover:bg-white focus:bg-white border border-slate-200 rounded-xl text-xs sm:text-sm font-bold text-slate-800 outline-none focus:ring-2 focus:ring-blue-500 transition-all shadow-2xs">
+                            <button type="button" id="btn-clear-deliv-search" onclick="clearDeliverySearch()" class="hidden absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 p-1">
+                                <span class="material-symbols-outlined text-[16px]">close</span>
+                            </button>
+                        </div>
+                    </div>
+
                     <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
                         <div>
                             <label class="text-xs text-slate-500 font-bold block mb-1">ปีงบประมาณ</label>
@@ -529,11 +547,17 @@
                         <h4 class="text-sm font-bold text-slate-800 flex items-center gap-1.5">
                             <span class="material-symbols-outlined text-blue-600 text-[18px]">list_alt</span> รายชื่อผู้ป่วยที่ได้รับจัดสรรในรอบที่เลือก
                         </h4>
-                        <p class="text-[11px] text-slate-500">สามารถแก้ไขจำนวนชิ้นในช่องของแต่ละคนได้โดยตรง แล้วกดปุ่มบันทึกด้านขวา</p>
+                        <p class="text-[11px] text-slate-500">สามารถค้นหาชื่อ แก้ไขขนาด/ชนิด และจำนวนชิ้นได้ต่อเนื่อง (ข้อมูลที่แก้ไว้จะไม่สูญหายเมื่อค้นหาชื่อใหม่)</p>
                     </div>
-                    <button onclick="saveRoundDeliveryQuantities()" id="btn-save-table-quantities" class="bg-[#00694a] hover:bg-[#005239] text-white px-4 py-2 rounded-xl text-xs font-bold shadow-sm flex items-center justify-center gap-1.5 active:scale-95 transition-all whitespace-nowrap">
-                        <span class="material-symbols-outlined text-[16px]">save</span> บันทึกจำนวนที่แก้ไขในตาราง
-                    </button>
+                    <div class="flex items-center gap-2">
+                        <span id="pending-edits-badge" class="hidden text-xs font-bold text-amber-700 bg-amber-50 border border-amber-200 px-3 py-1.5 rounded-xl flex items-center gap-1.5">
+                            <span class="w-2 h-2 rounded-full bg-amber-500 animate-ping"></span>
+                            <span id="pending-edits-count">มีรายการรอคลิกบันทึก 0 คน</span>
+                        </span>
+                        <button onclick="saveRoundDeliveryQuantities()" id="btn-save-table-quantities" class="bg-[#00694a] hover:bg-[#005239] text-white px-4 py-2 rounded-xl text-xs font-bold shadow-sm flex items-center justify-center gap-1.5 active:scale-95 transition-all whitespace-nowrap">
+                            <span class="material-symbols-outlined text-[16px]">save</span> บันทึกจำนวนที่แก้ไขในตาราง
+                        </button>
+                    </div>
                 </div>
 
                 <!-- Detailed Delivery Table -->
@@ -1082,6 +1106,43 @@
     }
 
     let currentDeliveryTableData = [];
+    const pendingDeliveryEdits = new Map(); // Persistent In-Memory Store for user edits across searches
+
+    let delivSearchDebounceTimer = null;
+    function onDeliverySearchInput() {
+        clearTimeout(delivSearchDebounceTimer);
+        delivSearchDebounceTimer = setTimeout(() => {
+            const val = (document.getElementById('deliv-search') ? document.getElementById('deliv-search').value : '').trim();
+            const clearBtn = document.getElementById('btn-clear-deliv-search');
+            if (clearBtn) {
+                if (val) clearBtn.classList.remove('hidden');
+                else clearBtn.classList.add('hidden');
+            }
+            renderDiaperDeliveryReport();
+        }, 150);
+    }
+
+    function clearDeliverySearch() {
+        const inp = document.getElementById('deliv-search');
+        if (inp) inp.value = '';
+        const clearBtn = document.getElementById('btn-clear-deliv-search');
+        if (clearBtn) clearBtn.classList.add('hidden');
+        renderDiaperDeliveryReport();
+    }
+
+    function updatePendingEditsBadge() {
+        const badge = document.getElementById('pending-edits-badge');
+        const countEl = document.getElementById('pending-edits-count');
+        if (!badge || !countEl) return;
+
+        const count = Array.from(pendingDeliveryEdits.values()).filter(v => v.isModified).length;
+        if (count > 0) {
+            badge.classList.remove('hidden');
+            countEl.textContent = `มีรายการรอคลิกบันทึก ${count} คน`;
+        } else {
+            badge.classList.add('hidden');
+        }
+    }
 
     function renderDiaperDeliveryReport() {
         const tbody = document.getElementById('tbody-diaper-delivery');
@@ -1092,6 +1153,7 @@
         const selectedRound = document.getElementById('deliv-round') ? document.getElementById('deliv-round').value : '';
         const selectedStatus = document.getElementById('deliv-status') ? document.getElementById('deliv-status').value : 'all';
         const selectedVillage = document.getElementById('deliv-village') ? document.getElementById('deliv-village').value : '';
+        const searchQuery = (document.getElementById('deliv-search') ? document.getElementById('deliv-search').value : '').trim().toLowerCase();
 
         currentDeliveryTableData = [];
 
@@ -1113,6 +1175,16 @@
             const isDeceased = (pStatus === 'เสียชีวิต');
             if (selectedStatus === 'Active' && isDeceased) return;
             if (selectedStatus === 'deceased' && !isDeceased) return;
+
+            // Check search filter (ชื่อ, สกุล, เลขบัตร ปชช., บ้านเลขที่)
+            if (searchQuery) {
+                const fullName = `${p.prefix || ''}${p.name || ''}`.toLowerCase();
+                const idCard = String(p.id_card || '').toLowerCase();
+                const house = String(p.house_no || '').toLowerCase();
+                if (!fullName.includes(searchQuery) && !idCard.includes(searchQuery) && !house.includes(searchQuery)) {
+                    return;
+                }
+            }
 
             // Find matching rounds
             const matchingAllocs = d.allocations.filter(alloc => {
@@ -1149,13 +1221,33 @@
                 const hasUnderpad = (d.req_underpad === true || d.req_underpad === 'true' || (parseInt(d.approved_underpad) > 0));
                 if (hasUnderpad) sizes.push('แผ่นรองซับ');
                 let diaperSizeStr = sizes.length > 0 ? sizes.join(', ') : '-';
+                const uniqueRowKey = `${p.docId || p.id}_${r.replace(/[^a-zA-Z0-9]/g, '_')}`;
 
-                // Determine Quantity: read recorded from alloc_history or compute default
+                // Determine Quantity & Size:
+                // Priority 1: In-memory pending edit (persists across searches/filters)
+                // Priority 2: Database alloc_history
+                // Priority 3: Default computation
                 let dQty = 0;
                 let pQty = 0;
                 let isRecorded = false;
+                let isPendingEdit = false;
 
-                if (d.alloc_history && d.alloc_history[r]) {
+                let deliveredAt = '';
+                if (d.alloc_history && d.alloc_history[r] && d.alloc_history[r].delivered_at) {
+                    deliveredAt = d.alloc_history[r].delivered_at;
+                }
+
+                if (pendingDeliveryEdits.has(uniqueRowKey)) {
+                    const ped = pendingDeliveryEdits.get(uniqueRowKey);
+                    dQty = ped.diaperQty;
+                    pQty = ped.padQty;
+                    if (ped.size && ped.size !== '-') {
+                        diaperSizeStr = ped.size;
+                        cleanSize = ped.size;
+                    }
+                    isPendingEdit = true;
+                    isRecorded = false;
+                } else if (d.alloc_history && d.alloc_history[r]) {
                     dQty = parseInt(d.alloc_history[r].diaper_qty) || 0;
                     pQty = parseInt(d.alloc_history[r].underpad_qty) || 0;
                     if (d.alloc_history[r].size && d.alloc_history[r].size !== '-') {
@@ -1206,7 +1298,9 @@
                     hasUnderpad: hasUnderpad,
                     diaperQty: dQty,
                     padQty: pQty,
-                    isRecorded: isRecorded
+                    isRecorded: isRecorded,
+                    isPendingEdit: isPendingEdit,
+                    deliveredAt: deliveredAt
                 });
             });
         });
@@ -1280,6 +1374,17 @@
         const saveEl = document.getElementById('save-qty-count');
         if (saveEl) saveEl.innerText = String(currentDeliveryTableData.length);
 
+        const searchCountEl = document.getElementById('deliv-search-count');
+        if (searchCountEl) {
+            if (searchQuery) {
+                searchCountEl.classList.remove('hidden');
+                searchCountEl.textContent = `พบ ${currentDeliveryTableData.length} รายการ`;
+            } else {
+                searchCountEl.classList.add('hidden');
+            }
+        }
+        updatePendingEditsBadge();
+
         currentDeliveryTableData.forEach((row, idx) => {
             const tr = document.createElement('tr');
             tr.className = "hover:bg-slate-50 transition-colors";
@@ -1288,9 +1393,11 @@
                 ? `<span class="bg-rose-50 text-rose-700 border border-rose-200 px-2 py-0.5 rounded font-bold text-[11px] inline-flex items-center gap-1"><span class="material-symbols-outlined text-[12px]">person_off</span> เสียชีวิต (ถึงรอบ ${row.lastRound})</span>`
                 : `<span class="bg-emerald-50 text-emerald-700 border border-emerald-200 px-2 py-0.5 rounded font-bold text-[11px] inline-flex items-center gap-1"><span class="material-symbols-outlined text-[12px]">check_circle</span> กำลังดูแล</span>`;
 
-            const recordBadge = row.isRecorded
-                ? `<span class="text-emerald-600 font-bold text-[11px] flex items-center justify-center gap-1"><span class="material-symbols-outlined text-[13px]">verified</span> บันทึกแล้ว</span>`
-                : `<span class="text-amber-600 font-medium text-[11px] flex items-center justify-center gap-1"><span class="material-symbols-outlined text-[13px]">schedule</span> ค่าประมาณ</span>`;
+            const recordBadge = row.isPendingEdit
+                ? `<span class="text-blue-600 font-bold text-[11px] flex items-center justify-center gap-1"><span class="material-symbols-outlined text-[13px]">pending</span> รอคลิกบันทึก</span>`
+                : (row.isRecorded
+                    ? `<span class="text-emerald-600 font-bold text-[11px] flex items-center justify-center gap-1"><span class="material-symbols-outlined text-[13px]">verified</span> บันทึกแล้ว</span>`
+                    : `<span class="text-amber-600 font-medium text-[11px] flex items-center justify-center gap-1"><span class="material-symbols-outlined text-[13px]">schedule</span> ค่าประมาณ</span>`);
 
             const uniqueRowKey = `${row.patientId}_${row.round.replace(/[^a-zA-Z0-9]/g, '_')}`;
 
@@ -1323,7 +1430,10 @@
                 <td class="p-3.5 whitespace-nowrap text-center font-bold text-blue-600">${row.village_no}</td>
                 <td class="p-3.5 whitespace-nowrap text-slate-600">${row.house_no}</td>
                 <td class="p-3.5 whitespace-nowrap text-center">${statusBadge}</td>
-                <td class="p-3.5 whitespace-nowrap text-center"><span class="bg-blue-50 text-blue-700 border border-blue-200 px-2 py-0.5 rounded font-bold text-xs">${row.round}</span></td>
+                <td class="p-3.5 whitespace-nowrap text-center">
+                    <span class="bg-blue-50 text-blue-700 border border-blue-200 px-2 py-0.5 rounded font-bold text-xs">${row.round}</span>
+                    ${row.deliveredAt ? `<div class="text-[10px] text-slate-500 font-medium mt-0.5 flex items-center justify-center gap-0.5"><span class="material-symbols-outlined text-[11px] text-blue-500">calendar_today</span>${formatThaiDate(row.deliveredAt)}</div>` : ''}
+                </td>
                 <td class="p-3.5 whitespace-nowrap text-center">${sizeSelectHtml}</td>
                 <td class="p-3.5 whitespace-nowrap text-center">
                     <input type="number" min="0" value="${row.diaperQty}" onchange="onDeliveryQtyChange(this)" class="inp-deliv-diaper w-16 px-2 py-1 bg-slate-50 border border-slate-300 rounded-lg text-center font-bold text-blue-700 focus:bg-white focus:ring-2 focus:ring-blue-500 outline-none" data-patient-id="${row.patientId}" data-round="${row.round}" data-row-key="${uniqueRowKey}">
@@ -1349,15 +1459,12 @@
 
     function onDeliverySizeChange(selectEl) {
         const rowKey = selectEl.dataset.rowKey;
+        const patientId = selectEl.dataset.patientId;
+        const round = selectEl.dataset.round;
         const selectedVal = selectEl.value;
+
         const dInp = document.querySelector(`.inp-deliv-diaper[data-row-key="${rowKey}"]`);
         const pInp = document.querySelector(`.inp-deliv-pad[data-row-key="${rowKey}"]`);
-
-        const rowData = currentDeliveryTableData.find(r => `${r.patientId}_${r.round.replace(/[^a-zA-Z0-9]/g, '_')}` === rowKey);
-        if (rowData) {
-            rowData.diaperSizeStr = selectedVal;
-            rowData.size = selectedVal;
-        }
 
         // Auto-adjust quantities intelligently based on selected size/type
         if (selectedVal === 'แผ่นรองซับ') {
@@ -1371,31 +1478,80 @@
             if (pInp) pInp.value = 0;
         }
 
-        if (dInp) onDeliveryQtyChange(dInp);
-        else if (pInp) onDeliveryQtyChange(pInp);
+        const dVal = dInp ? (parseInt(dInp.value) || 0) : 0;
+        const pVal = pInp ? (parseInt(pInp.value) || 0) : 0;
+
+        const totalEl = document.getElementById(`total-deliv-${rowKey}`);
+        if (totalEl) totalEl.innerText = (dVal + pVal);
+
+        // Save into persistent in-memory edits map!
+        pendingDeliveryEdits.set(rowKey, {
+            patientId: patientId,
+            round: round,
+            size: selectedVal,
+            diaperQty: dVal,
+            padQty: pVal,
+            isModified: true
+        });
+
+        const rowData = currentDeliveryTableData.find(r => `${r.patientId}_${r.round.replace(/[^a-zA-Z0-9]/g, '_')}` === rowKey);
+        if (rowData) {
+            rowData.diaperSizeStr = selectedVal;
+            rowData.size = selectedVal;
+            rowData.diaperQty = dVal;
+            rowData.padQty = pVal;
+            rowData.isPendingEdit = true;
+        }
 
         const badgeEl = document.getElementById(`badge-deliv-${rowKey}`);
         if (badgeEl) {
             badgeEl.innerHTML = `<span class="text-blue-600 font-bold text-[11px] flex items-center justify-center gap-1"><span class="material-symbols-outlined text-[13px]">pending</span> รอคลิกบันทึก</span>`;
         }
+
+        updatePendingEditsBadge();
     }
 
     function onDeliveryQtyChange(input) {
         const rowKey = input.dataset.rowKey;
+        const patientId = input.dataset.patientId;
+        const round = input.dataset.round;
+
         const dInp = document.querySelector(`.inp-deliv-diaper[data-row-key="${rowKey}"]`);
         const pInp = document.querySelector(`.inp-deliv-pad[data-row-key="${rowKey}"]`);
+        const sSel = document.querySelector(`.sel-deliv-size[data-row-key="${rowKey}"]`);
         
         const dVal = dInp ? (parseInt(dInp.value) || 0) : 0;
         const pVal = pInp ? (parseInt(pInp.value) || 0) : 0;
+        const sizeVal = sSel ? sSel.value : 'L';
         
         const totalEl = document.getElementById(`total-deliv-${rowKey}`);
         if (totalEl) totalEl.innerText = (dVal + pVal);
 
-        // Mark as modified/pending save
+        // Save into persistent in-memory edits map!
+        pendingDeliveryEdits.set(rowKey, {
+            patientId: patientId,
+            round: round,
+            size: sizeVal,
+            diaperQty: dVal,
+            padQty: pVal,
+            isModified: true
+        });
+
+        const rowData = currentDeliveryTableData.find(r => `${r.patientId}_${r.round.replace(/[^a-zA-Z0-9]/g, '_')}` === rowKey);
+        if (rowData) {
+            rowData.diaperSizeStr = sizeVal;
+            rowData.size = sizeVal;
+            rowData.diaperQty = dVal;
+            rowData.padQty = pVal;
+            rowData.isPendingEdit = true;
+        }
+
         const badgeEl = document.getElementById(`badge-deliv-${rowKey}`);
         if (badgeEl) {
             badgeEl.innerHTML = `<span class="text-blue-600 font-bold text-[11px] flex items-center justify-center gap-1"><span class="material-symbols-outlined text-[13px]">pending</span> รอคลิกบันทึก</span>`;
         }
+
+        updatePendingEditsBadge();
     }
 
     function applyQuickQuantitiesToAll() {
@@ -1433,8 +1589,32 @@
     }
 
     async function saveRoundDeliveryQuantities() {
-        const diaperInputs = document.querySelectorAll('.inp-deliv-diaper');
-        if (diaperInputs.length === 0) return showToast('ไม่พบรายการที่จะบันทึก', 'error');
+        // 1. Gather all currently visible inputs in the DOM into pendingDeliveryEdits
+        document.querySelectorAll('.inp-deliv-diaper').forEach(dInp => {
+            const rowKey = dInp.dataset.rowKey;
+            const patientId = dInp.dataset.patientId;
+            const round = dInp.dataset.round;
+            const pInp = document.querySelector(`.inp-deliv-pad[data-row-key="${rowKey}"]`);
+            const sSel = document.querySelector(`.sel-deliv-size[data-row-key="${rowKey}"]`);
+
+            const dQty = parseInt(dInp.value) || 0;
+            const pQty = pInp ? (parseInt(pInp.value) || 0) : 0;
+            const sizeVal = sSel ? sSel.value : 'L';
+
+            // If not already in pendingDeliveryEdits, add it
+            if (!pendingDeliveryEdits.has(rowKey)) {
+                pendingDeliveryEdits.set(rowKey, {
+                    patientId: patientId,
+                    round: round,
+                    size: sizeVal,
+                    diaperQty: dQty,
+                    padQty: pQty,
+                    isModified: true
+                });
+            }
+        });
+
+        if (pendingDeliveryEdits.size === 0) return showToast('ไม่พบรายการที่จะบันทึก', 'error');
 
         const btn1 = document.getElementById('btn-save-round-quantities');
         const btn2 = document.getElementById('btn-save-table-quantities');
@@ -1448,23 +1628,16 @@
         }
 
         try {
-            // Group updates by patientId
+            // Group updates by patientId from pendingDeliveryEdits (includes all searches/filters)
             const updatesByPatient = {};
-
-            diaperInputs.forEach(dInp => {
-                const patientId = dInp.dataset.patientId;
-                const round = dInp.dataset.round;
-                const rowKey = dInp.dataset.rowKey;
-                const pInp = document.querySelector(`.inp-deliv-pad[data-row-key="${rowKey}"]`);
-                const sSel = document.querySelector(`.sel-deliv-size[data-row-key="${rowKey}"]`);
-
-                const dQty = parseInt(dInp.value) || 0;
-                const pQty = pInp ? (parseInt(pInp.value) || 0) : 0;
-                const sizeVal = sSel ? sSel.value : 'L';
-
-                if (!updatesByPatient[patientId]) updatesByPatient[patientId] = {};
-                updatesByPatient[patientId][round] = { diaper_qty: dQty, underpad_qty: pQty, size: sizeVal };
-            });
+            for (const [rowKey, item] of pendingDeliveryEdits.entries()) {
+                if (!updatesByPatient[item.patientId]) updatesByPatient[item.patientId] = {};
+                updatesByPatient[item.patientId][item.round] = {
+                    diaper_qty: item.diaperQty,
+                    underpad_qty: item.padQty,
+                    size: item.size
+                };
+            }
 
             const patientIds = Object.keys(updatesByPatient);
             const batch = db.batch();
@@ -1526,7 +1699,11 @@
                 await batch.commit();
             }
 
-            showToast(`บันทึกข้อมูลและขนาดผ้าอ้อมเรียบร้อยแล้ว (${successCount} คน)`, 'success');
+            // Successfully committed! Clear in-memory pending edits map
+            pendingDeliveryEdits.clear();
+            updatePendingEditsBadge();
+
+            showToast(`บันทึกข้อมูลเรียบร้อยแล้ว (${successCount} คน)`, 'success');
             renderDiaperDeliveryReport();
 
         } catch(err) {
@@ -1535,7 +1712,7 @@
         } finally {
             if (btn1) {
                 btn1.disabled = false;
-                btn1.innerHTML = '<span class="material-symbols-outlined text-[16px]">save</span> บันทึกจำนวนลงฐานข้อมูล (<span id="save-qty-count">' + diaperInputs.length + '</span> คน)';
+                btn1.innerHTML = '<span class="material-symbols-outlined text-[16px]">save</span> บันทึกจำนวนลงฐานข้อมูล';
             }
             if (btn2) {
                 btn2.disabled = false;
@@ -1559,9 +1736,20 @@
             const dInp = document.querySelector(`.inp-deliv-diaper[data-row-key="${uniqueRowKey}"]`);
             const pInp = document.querySelector(`.inp-deliv-pad[data-row-key="${uniqueRowKey}"]`);
 
-            const actualSize = sSel ? sSel.value : row.diaperSizeStr;
-            const actualDQty = dInp ? (parseInt(dInp.value) || 0) : row.diaperQty;
-            const actualPQty = pInp ? (parseInt(pInp.value) || 0) : row.padQty;
+            let actualSize = row.diaperSizeStr;
+            let actualDQty = row.diaperQty;
+            let actualPQty = row.padQty;
+
+            if (pendingDeliveryEdits.has(uniqueRowKey)) {
+                const ped = pendingDeliveryEdits.get(uniqueRowKey);
+                actualSize = ped.size;
+                actualDQty = ped.diaperQty;
+                actualPQty = ped.padQty;
+            } else {
+                if (sSel) actualSize = sSel.value;
+                if (dInp) actualDQty = parseInt(dInp.value) || 0;
+                if (pInp) actualPQty = parseInt(pInp.value) || 0;
+            }
 
             return {
                 "ลำดับ": idx + 1,
@@ -1572,6 +1760,7 @@
                 "หมู่ที่": row.village_no,
                 "บ้านเลขที่": row.house_no,
                 "รอบที่ได้รับ": row.round,
+                "วันที่ได้รับ/ส่งมอบ": row.deliveredAt ? formatThaiDate(row.deliveredAt) : '-',
                 "ขนาดผ้าอ้อม": actualSize,
                 "จำนวนผ้าอ้อม (ชิ้น)": actualDQty,
                 "จำนวนแผ่นรองซับ (ชิ้น)": actualPQty,
@@ -1773,6 +1962,8 @@
             let batchCount = 0;
             let successCount = 0;
             const nowISO = new Date().toISOString();
+            const delivDateInp = document.getElementById('modal-delivery-date');
+            const targetDelivDate = delivDateInp ? delivDateInp.value : '';
 
             for (const p of targetPatients) {
                 let d = cleanJSON(p.diaper) || {};
@@ -1786,6 +1977,7 @@
                     diaper_qty: hasDiaper ? dQty : 0,
                     underpad_qty: hasUnderpad ? pQty : 0,
                     size: cleanSize,
+                    delivered_at: targetDelivDate || (d.alloc_history[targetRound] ? d.alloc_history[targetRound].delivered_at : ''),
                     recorded_at: nowISO
                 };
 
@@ -1859,6 +2051,13 @@
                 <div class="bg-blue-50/70 p-3.5 rounded-xl border border-blue-100 flex items-center justify-between text-xs text-blue-900">
                     <span class="font-bold flex items-center gap-1"><span class="material-symbols-outlined text-[16px] text-blue-600">group</span> จำนวนผู้ป่วยในรอบนี้:</span>
                     <span id="modal-round-patient-count" class="font-bold text-sm bg-white text-blue-700 px-3 py-1 rounded-lg border border-blue-200">0 คน</span>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 mb-1">
+                        <span class="flex items-center gap-1"><span class="material-symbols-outlined text-[16px] text-blue-600">event</span> วันที่ได้รับ/ส่งมอบผ้าอ้อม (เมื่อใด)</span>
+                    </label>
+                    <input type="date" id="modal-delivery-date" class="w-full px-3.5 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-800 outline-none focus:ring-2 focus:ring-blue-500">
                 </div>
 
                 <div class="grid grid-cols-2 gap-3">
