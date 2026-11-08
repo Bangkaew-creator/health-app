@@ -406,8 +406,14 @@
     </div>
 
     <script>
-        firebase.initializeApp(firebaseConfig);
-        firebase.firestore().enablePersistence({ synchronizeTabs: true }).catch(err => console.warn('Offline persistence error:', err.code));
+        try {
+            if (!firebase.apps || firebase.apps.length === 0) {
+                firebase.initializeApp(firebaseConfig);
+            }
+        } catch (e) {}
+        try {
+            firebase.firestore().enablePersistence({ synchronizeTabs: true }).catch(err => {});
+        } catch (e) {}
         const db = firebase.firestore();
 
         let currentUserRole = "ADMIN";

@@ -237,8 +237,14 @@
     </main>
 
     <script>
-        firebase.initializeApp(firebaseConfig);
-        firebase.firestore().enablePersistence({ synchronizeTabs: true }).catch(err => console.warn('Offline persistence error:', err.code));
+        try {
+            if (!firebase.apps || firebase.apps.length === 0) {
+                firebase.initializeApp(firebaseConfig);
+            }
+        } catch (e) {}
+        try {
+            firebase.firestore().enablePersistence({ synchronizeTabs: true }).catch(err => {});
+        } catch (e) {}
         const db = firebase.firestore();
 
         let currentUserRole = "ADMIN";
@@ -250,9 +256,9 @@
         function toggleSidebar() { document.getElementById('sidebar').classList.toggle('-translate-x-full'); }
 
         document.addEventListener("DOMContentLoaded", async () => {
-            // ปลุก Service Worker
-            if ('serviceWorker' in navigator) {
-                navigator.serviceWorker.register('/firebase-messaging-sw.js').catch(err => console.log('SW failed', err));
+            // ปลุก Service Worker (ถ้ามีไฟล์)
+            if ('serviceWorker' in navigator && window.location.protocol === 'https:') {
+                navigator.serviceWorker.register('./firebase-messaging-sw.js').catch(() => {});
             }
 
             try {
@@ -292,6 +298,10 @@
 
             } catch (err) {
                 console.error("Dashboard init error:", err);
+                const loader = document.getElementById('loading-state');
+                if (loader) loader.classList.add('hidden');
+                const content = document.getElementById('dashboard-content');
+                if (content) content.classList.remove('hidden');
             }
         });
 

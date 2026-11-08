@@ -39,11 +39,18 @@
             }
             if (!_persistenceInitialized) {
                 _persistenceInitialized = true;
-                _dbInstance.enablePersistence({ synchronizeTabs: true }).catch(function (err) {
-                    if (err && err.code !== 'failed-precondition' && err.code !== 'unimplemented') {
-                        console.warn('Firestore persistence warning:', err.code);
+                try {
+                    const p = _dbInstance.enablePersistence({ synchronizeTabs: true });
+                    if (p && typeof p.catch === 'function') {
+                        p.catch(function (err) {
+                            if (err && err.code !== 'failed-precondition' && err.code !== 'unimplemented') {
+                                console.warn('Firestore persistence warning:', err.code);
+                            }
+                        });
                     }
-                });
+                } catch (e) {
+                    // Suppress synchronous "Firestore has already been started" errors
+                }
             }
             return _dbInstance;
         },
