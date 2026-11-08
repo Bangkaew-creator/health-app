@@ -96,14 +96,14 @@
             }
         },
 
-        bindAuthSession: async function (db, liffUid) {
+        bindAuthSession: async function (db, liffUid, forceWrite) {
             if (!db || !liffUid) return null;
             try {
                 const authUser = await Auth.ensureAnonymousSignIn();
                 if (!authUser || !authUser.uid) return null;
 
                 const cacheKey = authUser.uid + ':' + String(liffUid);
-                if (sessionStorage.getItem('orsomo_auth_bound') === cacheKey) {
+                if (!forceWrite && sessionStorage.getItem('orsomo_auth_bound') === cacheKey) {
                     return authUser.uid;
                 }
 

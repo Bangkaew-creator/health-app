@@ -6,34 +6,36 @@ rules_version = '2';
 //
 // Authentication Architecture:
 //   - Frontend authenticates users via LINE LIFF (producing a LINE userId)
-//     paired with Firebase Anonymous Authentication (request.auth.uid).
-//   - /Auth_Sessions/{authUid} binds request.auth.uid -> liff_uid.
+//     paired with Firebase Anonymous Authentication (request.auth.uid), or direct Firebase Auth.
+//   - Supports Direct Account lookup (/VHVs/{request.auth.uid}) and
+//     Two-Tier Session Binding (/Auth_Sessions/{request.auth.uid} -> liff_uid -> /VHVs/{liff_uid}).
 //   - /VHVs/{liffUid} stores user profile, role ('ADMIN', 'SUB_ADMIN',
-//     'VHV', 'None'), and approval status ('Active', 'Pending', 'Rejected').
+//     'VHV', 'None' — case and whitespace tolerant), and approval status
+//     ('Active', 'Pending', 'Rejected' — case and whitespace tolerant).
 //
 // Collection: Auth_Sessions
 // Document ID: {authUid} (must equal request.auth.uid)
 // Fields:
 //   - liff_uid: string (required, 1..128 chars) - Bound LINE userId
-//   - updated_at: timestamp (required) - Last session refresh timestamp
+//   - updated_at: timestamp (optional/merge-friendly) - Last session refresh timestamp
 //   - created_at: timestamp (optional, immutable once set)
 //   - auth_uid: string (optional, must equal request.auth.uid)
 //
 // Collection: VHVs
-// Document ID: {liffUid} (LINE userId)
+// Document ID: {liffUid} (LINE userId or direct Firebase Auth UID)
 // Fields:
 //   - uid: string (required on create, immutable, 1..128 chars)
 //   - name: string (required, 1..200 chars)
 //   - nickname: string (optional, <= 100 chars)
 //   - phone: string (optional, <= 50 chars)
-//   - role: string (required, enum: ['ADMIN', 'SUB_ADMIN', 'VHV', 'None'])
-//   - status: string (required, enum: ['Active', 'active', 'Pending', 'pending', 'Rejected', 'rejected'])
+//   - role: string (required, enum: ['ADMIN', 'SUB_ADMIN', 'VHV', 'None'] - case tolerant)
+//   - status: string (required, enum: ['Active', 'Pending', 'Rejected'] - case tolerant)
 //   - village_no: string | number (optional, <= 30 chars or 0..9999)
 //   - hospital_name: string (optional, <= 300 chars)
 //   - assigned_villages: list (optional, <= 100 items)
 //   - profile_pic / photoURL / pic_url: string (optional, <= 500000 chars)
 //   - secret_verify: string (optional, <= 256 chars, registration verification)
-//   - timestamp / updated_at / created_at: timestamp | string (optional)
+//   - timestamp / updated_at / created_at: timestamp | string | number (optional)
 //
 // Collection: SystemConfig
 // Document ID: {configId} (e.g., HOSPITAL_NAME, VILLAGE_COUNT, DIAPER_PRICE, etc.)
@@ -52,11 +54,11 @@ rules_version = '2';
 // Fields:
 //   - id, id_card, prefix, name, dob, age, house_no, village_no, lat_long,
 //     caregiver_name, caregiver_phone, status, group, adl, dep_status,
-//     last_assess, disease, medication (string or list), diaper (JSON string or map),
-//     equipment, assigned_vhv_id, needs_assessment, task_desc, tasks_required,
-//     task_date, profile_pic, pic_bed, pic_bath, pic_entrance, pic_walkway,
-//     created_by, creator_uid (immutable for VHV), created_at (immutable for VHV),
-//     updated_at, plus legacy migrated fields.
+//     last_assess, disease, medication (string, list, map, or number), diaper (JSON string or map),
+//     equipment, assigned_vhv_id, needs_assessment (bool, string, or number), task_desc,
+//     tasks_required (list or string), task_date, profile_pic, pic_bed, pic_bath,
+//     pic_entrance, pic_walkway, created_by, creator_uid (immutable for VHV),
+//     created_at (immutable for VHV), updated_at, timestamp, plus legacy migrated fields (up to 200 keys).
 //
 // Collection: Patient_Images
 // Document ID: {imageId}
@@ -131,7 +133,15 @@ service cloud.firestore {
     function isOptionalTimestampOrString(data, field, maxStrLen) {
       return !(field in data) || data[field] == null ||
         (data[field] is timestamp) ||
-        (data[field] is string && data[field].size() <= maxStrLen);
+        (data[field] is string && data[field].size() <= maxStrLen) ||
+        (data[field] is number && data[field] >= 0 && data[field] <= 999999999999999);
+    }
+
+    function isOptionalTimestampStringOrNumber(data, field, maxStrLen, minNum, maxNum) {
+      return !(field in data) || data[field] == null ||
+        (data[field] is timestamp) ||
+        (data[field] is string && data[field].size() <= maxStrLen) ||
+        (data[field] is number && data[field] >= minNum && data[field] <= maxNum);
     }
 
     function isOptionalBoundedList(data, field, maxItems) {
@@ -161,50 +171,81 @@ service cloud.firestore {
     }
 
     function currentLiffUid() {
-      return getSessionData().liff_uid;
+      return hasValidSessionLiffUid() ? getSessionData().liff_uid : '';
     }
 
     function isSessionOwner(liffUid) {
-      return hasValidSessionLiffUid() && currentLiffUid() == liffUid;
+      return (isAuthenticated() && request.auth.uid == liffUid) ||
+        (hasValidSessionLiffUid() && currentLiffUid() == liffUid);
+    }
+
+    function hasVhvDirectAccount() {
+      return isAuthenticated() &&
+        exists(/databases/$(database)/documents/VHVs/$(request.auth.uid));
     }
 
     function hasVhvAccount() {
-      return hasValidSessionLiffUid() &&
-        exists(/databases/$(database)/documents/VHVs/$(currentLiffUid()));
+      return hasVhvDirectAccount() || (
+        hasValidSessionLiffUid() &&
+        exists(/databases/$(database)/documents/VHVs/$(currentLiffUid()))
+      );
     }
 
     function currentVhvData() {
-      return get(/databases/$(database)/documents/VHVs/$(currentLiffUid())).data;
+      return hasVhvDirectAccount()
+        ? get(/databases/$(database)/documents/VHVs/$(request.auth.uid)).data
+        : get(/databases/$(database)/documents/VHVs/$(currentLiffUid())).data;
     }
 
     function isActiveVhvStatus(vhv) {
       return ('status' in vhv) &&
         (vhv.status is string) &&
-        (vhv.status in ['Active', 'active']);
+        (
+          (vhv.status in ['Active', 'active', 'ACTIVE']) ||
+          vhv.status.matches('(?i)^\\s*active\\s*$')
+        );
     }
 
     function hasVhvRole(vhv, allowedRoles) {
       return ('role' in vhv) &&
         (vhv.role is string) &&
-        (vhv.role in allowedRoles);
+        (
+          (vhv.role in allowedRoles) ||
+          (
+            ('ADMIN' in allowedRoles || 'admin' in allowedRoles || 'Admin' in allowedRoles) &&
+            vhv.role.matches('(?i)^\\s*admin\\s*$')
+          ) ||
+          (
+            ('SUB_ADMIN' in allowedRoles || 'sub_admin' in allowedRoles || 'Sub_Admin' in allowedRoles) &&
+            vhv.role.matches('(?i)^\\s*sub_admin\\s*$')
+          ) ||
+          (
+            ('VHV' in allowedRoles || 'vhv' in allowedRoles || 'Vhv' in allowedRoles) &&
+            vhv.role.matches('(?i)^\\s*vhv\\s*$')
+          )
+        );
     }
 
     function isApprovedUser() {
       return hasVhvAccount() &&
         isActiveVhvStatus(currentVhvData()) &&
-        hasVhvRole(currentVhvData(), ['ADMIN', 'SUB_ADMIN', 'VHV']);
+        hasVhvRole(currentVhvData(), [
+          'ADMIN', 'admin', 'Admin',
+          'SUB_ADMIN', 'sub_admin', 'Sub_Admin',
+          'VHV', 'vhv', 'Vhv'
+        ]);
     }
 
     function isAdmin() {
       return hasVhvAccount() &&
         isActiveVhvStatus(currentVhvData()) &&
-        hasVhvRole(currentVhvData(), ['ADMIN']);
+        hasVhvRole(currentVhvData(), ['ADMIN', 'admin', 'Admin']);
     }
 
     function isSubAdmin() {
       return hasVhvAccount() &&
         isActiveVhvStatus(currentVhvData()) &&
-        hasVhvRole(currentVhvData(), ['SUB_ADMIN']);
+        hasVhvRole(currentVhvData(), ['SUB_ADMIN', 'sub_admin', 'Sub_Admin']);
     }
 
     function isStaff() {
@@ -214,7 +255,7 @@ service cloud.firestore {
     function isActiveVHV() {
       return hasVhvAccount() &&
         isActiveVhvStatus(currentVhvData()) &&
-        hasVhvRole(currentVhvData(), ['VHV']);
+        hasVhvRole(currentVhvData(), ['VHV', 'vhv', 'Vhv']);
     }
 
     // ===============================================================
@@ -223,14 +264,10 @@ service cloud.firestore {
 
     function isValidAuthSession(data) {
       return data is map &&
-        hasRequiredFields(['liff_uid', 'updated_at']) &&
-        hasOnlyAllowedFields(['liff_uid', 'updated_at', 'created_at', 'auth_uid']) &&
+        ('liff_uid' in data) &&
         (data.liff_uid is string) &&
         data.liff_uid.size() >= 1 &&
-        data.liff_uid.size() <= 128 &&
-        (data.updated_at is timestamp) &&
-        (!('created_at' in data) || data.created_at is timestamp) &&
-        (!('auth_uid' in data) || (data.auth_uid is string && data.auth_uid == request.auth.uid));
+        data.liff_uid.size() <= 128;
     }
 
     function isValidVhv(data) {
@@ -238,9 +275,25 @@ service cloud.firestore {
         data.keys().size() >= 3 &&
         data.keys().size() <= 25 &&
         ('name' in data) && (data.name is string) && data.name.size() >= 1 && data.name.size() <= 200 &&
-        ('role' in data) && (data.role is string) && (data.role in ['ADMIN', 'SUB_ADMIN', 'VHV', 'None']) &&
+        ('role' in data) && (data.role is string) &&
+        (
+          (data.role in [
+            'ADMIN', 'admin', 'Admin',
+            'SUB_ADMIN', 'sub_admin', 'Sub_Admin',
+            'VHV', 'vhv', 'Vhv',
+            'None', 'none', 'NONE'
+          ]) ||
+          data.role.matches('(?i)^\\s*(admin|sub_admin|vhv|none)\\s*$')
+        ) &&
         ('status' in data) && (data.status is string) &&
-        (data.status in ['Active', 'active', 'Pending', 'pending', 'Rejected', 'rejected']) &&
+        (
+          (data.status in [
+            'Active', 'active', 'ACTIVE',
+            'Pending', 'pending', 'PENDING',
+            'Rejected', 'rejected', 'REJECTED'
+          ]) ||
+          data.status.matches('(?i)^\\s*(active|pending|rejected)\\s*$')
+        ) &&
         isOptionalString(data, 'uid', 128) &&
         isOptionalString(data, 'nickname', 100) &&
         isOptionalString(data, 'phone', 50) &&
@@ -319,48 +372,73 @@ service cloud.firestore {
     function isValidPatient(data) {
       return data is map &&
         data.keys().size() >= 1 &&
-        data.keys().size() <= 80 &&
+        data.keys().size() <= 200 &&
         isOptionalStringOrNumber(data, 'id', 128, 0, 999999999999999) &&
         isOptionalStringOrNumber(data, 'id_card', 30, 0, 999999999999999) &&
         isOptionalString(data, 'prefix', 50) &&
         isOptionalString(data, 'name', 300) &&
-        isOptionalString(data, 'dob', 50) &&
+        isOptionalTimestampStringOrNumber(data, 'dob', 100, 0, 999999999999999) &&
         isOptionalStringOrNumber(data, 'age', 20, 0, 200) &&
-        isOptionalStringOrNumber(data, 'house_no', 100, 0, 999999) &&
+        isOptionalStringOrNumber(data, 'house_no', 100, 0, 999999999) &&
         isOptionalStringOrNumber(data, 'village_no', 30, 0, 9999) &&
-        isOptionalString(data, 'lat_long', 150) &&
+        (
+          !('lat_long' in data) || data.lat_long == null ||
+          (data.lat_long is string && data.lat_long.size() <= 200) ||
+          (data.lat_long is map && data.lat_long.keys().size() <= 20) ||
+          (data.lat_long is latlng)
+        ) &&
         isOptionalString(data, 'caregiver_name', 300) &&
         isOptionalStringOrNumber(data, 'caregiver_phone', 100, 0, 999999999999999) &&
-        isOptionalString(data, 'status', 100) &&
-        isOptionalString(data, 'group', 100) &&
-        isOptionalStringOrNumber(data, 'adl', 20, -1, 100) &&
+        isOptionalStringOrNumber(data, 'status', 100, 0, 100) &&
+        isOptionalStringOrNumber(data, 'group', 100, 0, 100) &&
+        (
+          !('adl' in data) || data.adl == null ||
+          (data.adl is string && data.adl.size() <= 100) ||
+          (data.adl is number && data.adl >= -1 && data.adl <= 1000) ||
+          (data.adl is map && data.adl.keys().size() <= 50)
+        ) &&
         isOptionalString(data, 'dep_status', 200) &&
-        isOptionalString(data, 'last_assess', 50) &&
+        isOptionalTimestampStringOrNumber(data, 'last_assess', 100, 0, 999999999999999) &&
         (
           !('disease' in data) || data.disease == null ||
-          (data.disease is string && data.disease.size() <= 2000) ||
-          (data.disease is list && data.disease.size() <= 100)
+          (data.disease is string && data.disease.size() <= 500000) ||
+          (data.disease is list && data.disease.size() <= 100) ||
+          (data.disease is map && data.disease.keys().size() <= 100) ||
+          (data.disease is number && data.disease >= 0 && data.disease <= 999999999)
         ) &&
         (
           !('medication' in data) || data.medication == null ||
           (data.medication is string && data.medication.size() <= 500000) ||
-          (data.medication is list && data.medication.size() <= 100)
+          (data.medication is list && data.medication.size() <= 100) ||
+          (data.medication is map && data.medication.keys().size() <= 100) ||
+          (data.medication is number && data.medication >= 0 && data.medication <= 999999999)
         ) &&
         (
           !('diaper' in data) || data.diaper == null ||
           (data.diaper is string && data.diaper.size() <= 600000) ||
-          (data.diaper is map && data.diaper.keys().size() <= 60)
+          (data.diaper is map && data.diaper.keys().size() <= 100)
         ) &&
         (
           !('equipment' in data) || data.equipment == null ||
-          (data.equipment is string && data.equipment.size() <= 2000) ||
-          (data.equipment is list && data.equipment.size() <= 100)
+          (data.equipment is string && data.equipment.size() <= 500000) ||
+          (data.equipment is list && data.equipment.size() <= 100) ||
+          (data.equipment is map && data.equipment.keys().size() <= 100) ||
+          (data.equipment is number && data.equipment >= 0 && data.equipment <= 999999999)
         ) &&
-        isOptionalString(data, 'assigned_vhv_id', 128) &&
-        (!('needs_assessment' in data) || data.needs_assessment == null || (data.needs_assessment is bool)) &&
+        isOptionalStringOrNumber(data, 'assigned_vhv_id', 128, 0, 999999999999999) &&
+        (
+          !('needs_assessment' in data) || data.needs_assessment == null ||
+          (data.needs_assessment is bool) ||
+          (data.needs_assessment is string && data.needs_assessment.size() <= 20) ||
+          (data.needs_assessment is number && data.needs_assessment >= -100 && data.needs_assessment <= 100000)
+        ) &&
         isOptionalString(data, 'task_desc', 1000) &&
-        isOptionalBoundedList(data, 'tasks_required', 50) &&
-        isOptionalString(data, 'task_date', 50) &&
+        (
+          !('tasks_required' in data) || data.tasks_required == null ||
+          (data.tasks_required is list && data.tasks_required.size() <= 50) ||
+          (data.tasks_required is string && data.tasks_required.size() <= 1000)
+        ) &&
+        isOptionalTimestampStringOrNumber(data, 'task_date', 50, 0, 999999999999999) &&
         isOptionalString(data, 'profile_pic', 600000) &&
         isOptionalString(data, 'pic_bed', 600000) &&
         isOptionalString(data, 'pic_bath', 600000) &&
@@ -368,8 +446,16 @@ service cloud.firestore {
         isOptionalString(data, 'pic_walkway', 600000) &&
         isOptionalString(data, 'created_by', 200) &&
         isOptionalString(data, 'creator_uid', 128) &&
-        isOptionalTimestampOrString(data, 'created_at', 100) &&
-        isOptionalTimestampOrString(data, 'updated_at', 100);
+        isOptionalTimestampStringOrNumber(data, 'timestamp', 100, 0, 999999999999999) &&
+        isOptionalTimestampStringOrNumber(data, 'created_at', 100, 0, 999999999999999) &&
+        isOptionalTimestampStringOrNumber(data, 'updated_at', 100, 0, 999999999999999) &&
+        isOptionalTimestampStringOrNumber(data, 'last_adl_date', 100, 0, 999999999999999) &&
+        isOptionalTimestampStringOrNumber(data, 'last_dep_date', 100, 0, 999999999999999) &&
+        isOptionalTimestampStringOrNumber(data, 'last_vital_date', 100, 0, 999999999999999) &&
+        isOptionalTimestampStringOrNumber(data, 'last_visit_date', 100, 0, 999999999999999) &&
+        isOptionalString(data, 'remark', 5000) &&
+        isOptionalString(data, 'notes', 5000) &&
+        isOptionalString(data, 'note', 5000);
     }
 
     function isDiaperMapApproved(dMap) {
@@ -667,11 +753,22 @@ service cloud.firestore {
         (!('uid' in request.resource.data) || request.resource.data.uid == liffUid) &&
         (
           // VHV self-registration (must start as Pending)
-          (request.resource.data.role == 'VHV' && request.resource.data.status == 'Pending') ||
+          (
+            (request.resource.data.role in ['VHV', 'vhv', 'Vhv'] || request.resource.data.role.matches('(?i)^\\s*vhv\\s*$')) &&
+            (request.resource.data.status in ['Pending', 'pending', 'PENDING'] || request.resource.data.status.matches('(?i)^\\s*pending\\s*$'))
+          ) ||
           // Central Admin registration with secret code verification
-          (request.resource.data.role == 'ADMIN' && request.resource.data.status == 'Active' && isValidAdminSecretVerify(request.resource.data)) ||
+          (
+            (request.resource.data.role in ['ADMIN', 'admin', 'Admin'] || request.resource.data.role.matches('(?i)^\\s*admin\\s*$')) &&
+            (request.resource.data.status in ['Active', 'active', 'ACTIVE'] || request.resource.data.status.matches('(?i)^\\s*active\\s*$')) &&
+            isValidAdminSecretVerify(request.resource.data)
+          ) ||
           // Sub-Admin registration with secret code verification
-          (request.resource.data.role == 'SUB_ADMIN' && request.resource.data.status == 'Active' && isValidSubAdminSecretVerify(request.resource.data))
+          (
+            (request.resource.data.role in ['SUB_ADMIN', 'sub_admin', 'Sub_Admin'] || request.resource.data.role.matches('(?i)^\\s*sub_admin\\s*$')) &&
+            (request.resource.data.status in ['Active', 'active', 'ACTIVE'] || request.resource.data.status.matches('(?i)^\\s*active\\s*$')) &&
+            isValidSubAdminSecretVerify(request.resource.data)
+          )
         );
 
       allow update: if isAuthenticated() &&
@@ -683,9 +780,24 @@ service cloud.firestore {
           // Sub-Admin: approve/reject/manage VHV accounts only (cannot modify or promote to ADMIN/SUB_ADMIN)
           (
             isSubAdmin() &&
-            (!('role' in resource.data) || resource.data.role == null || (resource.data.role is string && resource.data.role in ['VHV', 'None'])) &&
-            (request.resource.data.role in ['VHV', 'None']) &&
-            (request.resource.data.status in ['Active', 'Pending', 'Rejected'])
+            (
+              !('role' in resource.data) || resource.data.role == null ||
+              (
+                resource.data.role is string &&
+                (
+                  resource.data.role in ['VHV', 'vhv', 'Vhv', 'None', 'none', 'NONE'] ||
+                  resource.data.role.matches('(?i)^\\s*(vhv|none)\\s*$')
+                )
+              )
+            ) &&
+            (
+              request.resource.data.role in ['VHV', 'vhv', 'Vhv', 'None', 'none', 'NONE'] ||
+              request.resource.data.role.matches('(?i)^\\s*(vhv|none)\\s*$')
+            ) &&
+            (
+              request.resource.data.status in ['Active', 'active', 'ACTIVE', 'Pending', 'pending', 'PENDING', 'Rejected', 'rejected', 'REJECTED'] ||
+              request.resource.data.status.matches('(?i)^\\s*(active|pending|rejected)\\s*$')
+            )
           ) ||
           // Self-profile edit (vhv_settings.html / admin_settings.html): strictly non-privilege profile fields
           (
@@ -725,11 +837,9 @@ service cloud.firestore {
     // 4. Patient Registry & Care Profiles
     match /Patients/{patientId} {
       allow read: if isApprovedUser();
-      allow create: if isValidPatient(request.resource.data) &&
-        (isStaff() || (isActiveVHV() && canVhvWritePatient()));
-      allow update: if isValidPatient(request.resource.data) &&
-        (isStaff() || (isActiveVHV() && canVhvWritePatient()));
-      allow delete: if isStaff() || isActiveVHV();
+      allow create: if isStaff() || (isActiveVHV() && isValidPatient(request.resource.data) && canVhvWritePatient());
+      allow update: if isStaff() || (isActiveVHV() && isValidPatient(request.resource.data) && canVhvWritePatient());
+      allow delete: if isStaff();
     }
 
     // 5. Patient Home & Profile Images

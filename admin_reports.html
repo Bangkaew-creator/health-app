@@ -1488,6 +1488,10 @@
             }
 
             try {
+                const resolved = await OrsomoCore.Auth.resolveLiffUid();
+                if (resolved && resolved.uid) {
+                    await OrsomoCore.Auth.bindAuthSession(db, resolved.uid, true);
+                }
                 let batch = db.batch();
                 let batchCount = 0;
                 let successCount = 0;
@@ -1591,6 +1595,10 @@
             }
 
             try {
+                const resolved = await OrsomoCore.Auth.resolveLiffUid();
+                if (resolved && resolved.uid) {
+                    await OrsomoCore.Auth.bindAuthSession(db, resolved.uid, true);
+                }
                 let batch = db.batch();
                 let batchCount = 0;
                 let successCount = 0;
@@ -1685,6 +1693,10 @@
             }
 
             try {
+                const resolved = await OrsomoCore.Auth.resolveLiffUid();
+                if (resolved && resolved.uid) {
+                    await OrsomoCore.Auth.bindAuthSession(db, resolved.uid, true);
+                }
                 let batch = db.batch();
                 let batchCount = 0;
                 let successCount = 0;
