@@ -235,7 +235,9 @@
                 loadResourceData();
             } catch (error) { 
                 console.error("Auth guard error:", error);
-                bounceToLogin(); 
+                if (error && (error.message === 'ROLE_FORBIDDEN' || error.message === 'UNAUTHENTICATED' || error.message === 'USER_NOT_ACTIVE')) {
+                    bounceToLogin(); 
+                }
             }
         }
 

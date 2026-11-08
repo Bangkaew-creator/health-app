@@ -259,11 +259,17 @@
                 db: db,
                 uid: uid,
                 user: userData,
+                name: userData.name || '',
+                nickname: userData.nickname || '',
                 role: roleUpper,
                 status: userData.status,
                 villageNo: villageNo,
                 assignedVillages: assignedVillages,
+                assigned_villages: assignedVillages,
                 hospitalName: hospitalName,
+                hospital_name: hospitalName,
+                profile_pic: userData.profile_pic || userData.photoURL || userData.pic_url || '',
+                photoURL: userData.photoURL || userData.profile_pic || '',
                 sysConfigs: sysConfigs
             };
         },
@@ -1211,6 +1217,24 @@
     // 7. ส่วนแสดงผลโปรไฟล์ ชื่อเล่น และเมนู Responsive รองรับ PC/iPad/มือถือ (UI)
     // ========================================================================
     const UI = {
+        resolveAvatar: function (userOrData, picEl, iconEl) {
+            if (!userOrData) return;
+            const data = (userOrData && userOrData.user) ? userOrData.user : userOrData;
+            const avatarUrl = String(data.profile_pic || data.photoURL || data.pic_url || '').trim();
+            const pEl = picEl || document.getElementById('header-profile-pic');
+            const iEl = iconEl || document.getElementById('header-profile-icon');
+            if (pEl) {
+                if (avatarUrl) {
+                    pEl.src = avatarUrl;
+                    pEl.classList.remove('hidden');
+                    if (iEl) iEl.classList.add('hidden');
+                } else {
+                    pEl.classList.add('hidden');
+                    if (iEl) iEl.classList.remove('hidden');
+                }
+            }
+        },
+
         formatVHVName: function (userOrName, optionalNickname) {
             if (!userOrName) return '-';
             if (typeof userOrName === 'object') {

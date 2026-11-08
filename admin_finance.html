@@ -330,7 +330,9 @@
                 initFinance();
             } catch (error) { 
                 console.error("Auth guard error:", error);
-                window.location.href = 'admin_dashboard.html'; 
+                if (error && (error.message === 'ROLE_FORBIDDEN' || error.message === 'UNAUTHENTICATED' || error.message === 'USER_NOT_ACTIVE')) {
+                    window.location.href = 'admin_dashboard.html'; 
+                }
             }
         }
 
@@ -690,7 +692,7 @@
                 const totalBannerCost = bannerPrice;
                 const grandTotal = Math.round((totalDiaperCost + totalPadCost + totalJellyCost + totalBannerCost) * 100) / 100;
 
-                const projectName = `โครงการสนับสนุนผ้าอ้อมผู้ใหญ่ แผ่นรองซับ และโภชนาการ กปท. (${diaperPatientCount} ราย)`;
+                const projectName = `โครงการสนับสนุนผ้าอ้อมผู้ใหญ่ แผ่นรองซับ และปิโตรเลียมเจลลี่ กปท. (${diaperPatientCount} ราย)`;
                 
                 // Pre-fill inputs
                 document.getElementById('proj-cat').value = '7'; // (7) สนับสนุนตามมติคณะกรรมการฯ
@@ -702,7 +704,7 @@
                     `- ผู้ป่วยที่ได้รับสิทธิ์: ${diaperPatientCount} ราย\n` +
                     `- ผ้าอ้อมทั้งปี (${totalDiaperPcs.toLocaleString()} ชิ้น): ${formatNum(totalDiaperCost)} บาท\n` +
                     `- แผ่นรองซับทั้งปี (${totalPadPcs.toLocaleString()} ชิ้น): ${formatNum(totalPadCost)} บาท\n` +
-                    `- เจลลี่โภชนาการ (${totalJellyPcs.toLocaleString()} ชิ้น): ${formatNum(totalJellyCost)} บาท\n` +
+                    `- ปิโตรเลียมเจลลี่ (${totalJellyPcs.toLocaleString()} กระปุก): ${formatNum(totalJellyCost)} บาท\n` +
                     `- ป้ายโครงการ: ${formatNum(totalBannerCost)} บาท\n` +
                     `---------------------------------------\n` +
                     `รวมเป็นเงินทั้งสิ้น: ${formatNum(grandTotal)} บาท\n\n` +

@@ -97,12 +97,12 @@
                     </div>
                 </div>
 
-                <!-- งบประมาณ Real-time (รวมผ้าอ้อม, แผ่นรอง, เจลลี่, ป้ายโครงการ) -->
+                <!-- งบประมาณ Real-time (รวมผ้าอ้อม, แผ่นรอง, ปิโตรเลียมเจลลี่, ป้ายโครงการ) -->
                 <div class="bg-white p-5 rounded-2xl shadow-sm border-t-4 border-navy mb-5">
                     <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-4 mb-4 border-b border-slate-100 pb-4">
                         <div>
                             <h3 class="text-sm font-bold text-navy flex items-center gap-2"><span class="material-symbols-outlined text-amber-500 text-[20px]">account_balance_wallet</span> คาดการณ์งบประมาณสำหรับผู้ป่วยที่เลือก (ครอบคลุมทุกหมวดโครงการ)</h3>
-                            <p class="text-[11px] text-slate-500 mt-1">คำนวณตามจำนวนคนที่คุณติ๊ก <strong class="text-blue-600">✓ เลือก</strong> ในตาราง รวมผ้าอ้อม แผ่นรอง เจลลี่โภชนาการ และป้ายโครงการ</p>
+                            <p class="text-[11px] text-slate-500 mt-1">คำนวณตามจำนวนคนที่คุณติ๊ก <strong class="text-blue-600">✓ เลือก</strong> ในตาราง รวมผ้าอ้อม แผ่นรอง ปิโตรเลียมเจลลี่ และป้ายโครงการ</p>
                         </div>
                         <div class="flex items-center gap-2 bg-slate-50 p-2 rounded-xl border border-slate-200">
                             <label class="text-xs font-bold text-slate-700 pl-2 whitespace-nowrap">ระยะเวลาคำนวณ</label>
@@ -128,13 +128,13 @@
                                 <div class="bg-white p-2 rounded-lg border border-slate-100"><span class="text-[10px] text-slate-400 block">ไซส์ L</span><span class="font-bold text-navy text-sm lg:text-base" id="sum-l">0</span></div>
                                 <div class="bg-white p-2 rounded-lg border border-slate-100"><span class="text-[10px] text-slate-400 block">ไซส์ XL</span><span class="font-bold text-navy text-sm lg:text-base" id="sum-xl">0</span></div>
                                 <div class="bg-white p-2 rounded-lg border border-emerald-100"><span class="text-[10px] text-emerald-600 font-bold block">แผ่นรอง</span><span class="font-bold text-emerald-700 text-sm lg:text-base" id="sum-pad">0</span></div>
-                                <div class="bg-white p-2 rounded-lg border border-purple-100"><span class="text-[10px] text-purple-600 font-bold block">เจลลี่</span><span class="font-bold text-purple-700 text-sm lg:text-base" id="sum-jelly">0</span></div>
+                                <div class="bg-white p-2 rounded-lg border border-purple-100"><span class="text-[10px] text-purple-600 font-bold block">ปิโตรเลียมเจลลี่</span><span class="font-bold text-purple-700 text-sm lg:text-base" id="sum-jelly">0</span></div>
                             </div>
                         </div>
                         <div class="bg-gradient-to-br from-amber-50 to-orange-50 p-3 lg:p-4 rounded-xl border border-amber-200 flex flex-col justify-center items-center text-center shadow-sm">
                             <p class="text-[11px] font-bold text-amber-800 uppercase tracking-wider mb-1">งบประมาณรวมทั้งสิ้น (THB)</p>
                             <h3 class="text-xl lg:text-2xl font-black text-amber-600 tracking-tight mt-1" id="sum-cost">0.00 <span class="text-sm text-amber-500 font-bold">฿</span></h3>
-                            <p class="text-[10px] text-slate-500 mt-1">รวมเจลลี่: <span id="sum-jelly-cost" class="font-bold text-slate-700">0.00</span> ฿ | ป้าย: <span id="sum-banner-cost" class="font-bold text-slate-700">0.00</span> ฿</p>
+                            <p class="text-[10px] text-slate-500 mt-1">รวมปิโตรเลียมเจลลี่: <span id="sum-jelly-cost" class="font-bold text-slate-700">0.00</span> ฿ | ป้าย: <span id="sum-banner-cost" class="font-bold text-slate-700">0.00</span> ฿</p>
                         </div>
                     </div>
                 </div>
@@ -405,7 +405,7 @@
                     <div class="p-3 bg-purple-50 rounded-xl border border-purple-100 text-xs text-purple-800 space-y-1">
                         <p class="font-bold flex items-center gap-1"><span class="material-symbols-outlined text-[15px]">description</span> รูปแบบเอกสารพิมพ์:</p>
                         <p>• มีช่องลงลายมือชื่อผู้รับมอบ/ญาติ และช่องลงชื่อ อสม. ผู้ส่งมอบ</p>
-                        <p>• แสดงรายละเอียดจำนวนผ้าอ้อม แผ่นรอง และเจลลี่โภชนาการครบถ้วน</p>
+                        <p>• แสดงรายละเอียดจำนวนผ้าอ้อม แผ่นรอง และปิโตรเลียมเจลลี่ครบถ้วน</p>
                     </div>
                 </div>
                 <div class="pt-3 border-t border-slate-100 flex gap-2 justify-end">
@@ -591,7 +591,9 @@
                 loadReportData();
             } catch (error) { 
                 console.error("Auth guard error:", error); 
-                window.location.href = 'index.html'; 
+                if (error && (error.message === 'ROLE_FORBIDDEN' || error.message === 'UNAUTHENTICATED' || error.message === 'USER_NOT_ACTIVE')) {
+                    window.location.href = 'index.html'; 
+                }
             }
         }
 
@@ -937,7 +939,7 @@
             document.getElementById('sum-xl').innerText = totalXL.toLocaleString();
             document.getElementById('sum-pad').innerText = totalPad.toLocaleString();
 
-            // Requirement 1.2 ก, 3.2 ข, 5.2: คำนวณเจลลี่โภชนาการ และป้ายโครงการ กปท.
+            // Requirement 1.2 ก, 3.2 ข, 5.2: คำนวณปิโตรเลียมเจลลี่ และป้ายโครงการ กปท.
             const totalJelly = diaperPatientsCount * (configJellyQty || 1);
             const jellyCost = totalJelly * (configJellyPrice || 30.00);
             const bannerCost = count > 0 ? (configBannerPrice || 500.00) : 0;
@@ -1035,7 +1037,7 @@
 
                 if (dpQty > 0) itemsDesc.push(`ผ้าอ้อม (${dpSize}) ${dpQty} ชิ้น`);
                 if (upQty > 0) itemsDesc.push(`แผ่นรองซับ ${upQty} ชิ้น`);
-                if (dpQty > 0) itemsDesc.push(`เจลลี่ ${configJellyQty || 1} ชิ้น`);
+                if (dpQty > 0) itemsDesc.push(`ปิโตรเลียมเจลลี่ ${configJellyQty || 1} กระปุก`);
 
                 const deliveryDate = h.delivery_date ? formatThaiDate(h.delivery_date) : '';
 
