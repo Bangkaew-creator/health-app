@@ -18,11 +18,15 @@
     let _dbInstance = null;
     let _persistenceInitialized = false;
     let _authSdkPromise = null;
+    let _lastAuthError = null;
 
     // ========================================================================
     // 1. ระบบเชื่อมต่อฐานข้อมูลและล็อกสิทธิ์ผู้ใช้งาน (Auth & Role Guard)
     // ========================================================================
     const Auth = {
+        getLastAuthError: function () {
+            return _lastAuthError;
+        },
         ensureFirebase: function () {
             if (typeof firebase === 'undefined') {
                 throw new Error('Firebase SDK is not loaded');
@@ -75,10 +79,12 @@
                 const auth = firebase.auth();
                 if (auth.currentUser) return auth.currentUser;
                 const cred = await auth.signInAnonymously();
+                _lastAuthError = null;
                 return cred ? cred.user : null;
             } catch (err) {
-                // กรณีที่ยังไม่ได้เปิดปุ่ม Anonymous Auth ใน Firebase Console จะยังคงทำงานต่อได้ไม่พัง
-                console.warn('Anonymous Auth info:', err && err.code ? err.code : err);
+                const code = err && err.code ? err.code : String(err);
+                _lastAuthError = code;
+                console.warn('Anonymous Auth info:', code);
                 return null;
             }
         },

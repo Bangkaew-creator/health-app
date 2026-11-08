@@ -259,7 +259,33 @@
                 }
             } catch (e) {
                 console.error("Login routing error:", e);
-                showToast("เชื่อมต่อฐานข้อมูลล้มเหลว กรุณาลองใหม่อีกครั้ง", "error");
+                const lastAuthErr = (window.OrsomoCore && OrsomoCore.Auth && OrsomoCore.Auth.getLastAuthError) ? OrsomoCore.Auth.getLastAuthError() : null;
+                const isPermDenied = (e && (e.code === 'permission-denied' || String(e).includes('insufficient permissions')));
+
+                if (lastAuthErr === 'auth/configuration-not-found' || isPermDenied) {
+                    showToast("กรุณาเปิดใช้งาน Anonymous Authentication ใน Firebase Console", "error");
+                    const loadingScreen = document.getElementById('loading-screen');
+                    if (loadingScreen) {
+                        loadingScreen.innerHTML = `
+                            <div class="text-center p-6 bg-amber-50 rounded-2xl border border-amber-200 max-w-md shadow-sm mx-4">
+                                <span class="material-symbols-outlined text-[48px] text-amber-500 mb-2">admin_panel_settings</span>
+                                <h2 class="font-bold text-base text-slate-800 mb-2">ต้องเปิดใช้งาน Anonymous Auth ใน Firebase</h2>
+                                <p class="text-xs text-slate-600 leading-relaxed mb-4 text-left">
+                                    เนื่องจากระบบมีระบบความปลอดภัยฐานข้อมูล <b>firestore.rules</b> เพื่อป้องกันข้อมูลผู้ป่วยรั่วไหล กรุณาเปิดใช้งานใน Firebase Console ดังนี้ครับ:<br><br>
+                                    1. เข้า <b>Firebase Console > Authentication</b><br>
+                                    2. เลือกแท็บ <b>Sign-in method</b><br>
+                                    3. คลิกที่ <b>Anonymous (ไม่ระบุตัวตน)</b> แล้วเปิด <b>Enable (เปิดใช้งาน)</b> จากนั้นกดบันทึก<br>
+                                    4. รีเฟรชหน้านี้ใหม่อีกครั้ง
+                                </p>
+                                <button onclick="location.reload()" class="px-5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold transition-all shadow-sm">
+                                    ลองใหม่อีกครั้ง (Refresh)
+                                </button>
+                            </div>
+                        `;
+                    }
+                } else {
+                    showToast("เชื่อมต่อฐานข้อมูลล้มเหลว กรุณาลองใหม่อีกครั้ง", "error");
+                }
             }
         }
 
