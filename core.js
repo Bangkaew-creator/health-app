@@ -1319,7 +1319,7 @@
                 eqLink.className = isActive
                     ? 'flex items-center gap-3 px-4 py-3 bg-[#00694a] text-white rounded-xl font-semibold text-sm transition-colors shadow-sm'
                     : 'flex items-center gap-3 px-4 py-3 text-slate-400 hover:bg-slate-800 hover:text-white rounded-xl font-medium text-sm transition-colors';
-                eqLink.innerHTML = '<span class="material-symbols-outlined text-[20px]">medical_services</span> ระบบยืม-คืนกายอุปกรณ์';
+                eqLink.innerHTML = '<span class="material-symbols-outlined text-[20px]">medical_services</span> ทะเบียนยืม-คืนอุปกรณ์';
 
                 const invLink = document.getElementById('nav-inventory') || nav.querySelector('a[href="admin_inventory.html"]');
                 const resLink = nav.querySelector('a[href="admin_resources.html"]');
