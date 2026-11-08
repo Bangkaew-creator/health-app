@@ -4,90 +4,19 @@
     <meta charset="utf-8"/>
     <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
     <title>ศูนย์ข้อมูลผู้ป่วย - จัดการระบบ</title>
-    <script src="https://cdn.tailwindcss.com">
-// ==================== ส่งออก CSV ====================
-function exportToCSV() {
-    if (!allPatients || allPatients.length === 0) {
-        alert("ไม่มีข้อมูลสำหรับส่งออก");
-        return;
-    }
-
-    const currentFilterStatus = document.getElementById('status-filter').value;
-    const filteredPatients = allPatients.filter(p => {
-        const pStatus = p.status || 'Active';
-        return currentFilterStatus === 'all' || pStatus === currentFilterStatus;
-    });
-
-    if (filteredPatients.length === 0) {
-        alert("ไม่มีข้อมูลในสถานะที่เลือก");
-        return;
-    }
-
-    // Define CSV Headers
-    let csvContent = "\uFEFF"; // BOM for UTF-8 Excel compatibility
-    csvContent += "เลขบัตรประชาชน,คำนำหน้า,ชื่อ,นามสกุล,วันเกิด,ที่อยู่,หมู่,รหัสไปรษณีย์,พิกัด,กลุ่มผู้ป่วย,ประเมิน ADL,สิทธิ์ผ้าอ้อม,ขนาดผ้าอ้อม,โรคประจำตัว,ยาที่ใช้,สถานะ,รหัสอสม.ที่ดูแล\n";
-
-    filteredPatients.forEach(p => {
-        const idcard = `"${p.id || ''}"`;
-        const prefix = `"${p.prefix || ''}"`;
-        const fname = `"${p.fname || p.name || ''}"`;
-        const lname = `"${p.lname || ''}"`;
-        const dob = `"${p.dob || ''}"`;
-        const house = `"${p.house_no || ''}"`;
-        const moo = `"${p.village_no || ''}"`;
-        const zip = `"${p.zipcode || ''}"`;
-        const coords = `"${p.lat ? p.lat + ',' + p.lng : ''}"`;
-        const group = `"${p.group || ''}"`;
-        const adl = `"${p.adl || ''}"`;
-        const diaper = `"${p.diaper_status || ''}"`;
-        const disease = `"${p.congenital_disease || ''}"`;
-        const meds = `"${p.medicines || ''}"`;
-        const status = `"${p.status || 'Active'}"`;
-        const vhv = `"${p.assigned_vhv_id || ''}"`;
-
-        let diaperSizeStr = '-';
-        if (p.diaper) {
-            try {
-                const dp = (typeof p.diaper === 'object') ? p.diaper : (cleanJSON(p.diaper) || {});
-                let sizes = [];
-                const hasDiaper = (dp.req_diaper === true || dp.req_diaper === 'true' || (dp.size && dp.size !== '-' && dp.size.trim() !== '') || (parseInt(dp.approved_diaper) > 0));
-                if (hasDiaper) {
-                    const sz = (dp.size && dp.size !== '-' && dp.size.trim() !== '') ? dp.size.trim() : 'ผ้าอ้อม';
-                    sizes.push(sz);
-                }
-                const hasUnderpad = (dp.req_underpad === true || dp.req_underpad === 'true' || (parseInt(dp.approved_underpad) > 0));
-                if (hasUnderpad) {
-                    sizes.push('แผ่นรองซับ');
-                }
-                if (sizes.length > 0) {
-                    diaperSizeStr = sizes.join(', ');
-                }
-            } catch(e) {}
-        }
-        const diaperSize = `"${diaperSizeStr}"`;
-
-        csvContent += `${idcard},${prefix},${fname},${lname},${dob},${house},${moo},${zip},${coords},${group},${adl},${diaper},${diaperSize},${disease},${meds},${status},${vhv}\n`;
-    });
-
-    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement("a");
-    link.setAttribute("href", url);
-    link.setAttribute("download", `patient_data_${new Date().toISOString().split('T')[0]}.csv`);
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-}
-
-</script>
+    
+    <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700&display=swap" rel="stylesheet"/>
     <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
     <script charset="utf-8" src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
     
+    <!-- 🌟 Firebase & Orsomo Core 🌟 -->
     <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore-compat.js"></script>
     <script src="config.js"></script>
+    <script src="core.js"></script>
     
     <style>
         body { font-family: 'Sarabun', sans-serif; background-color: #f4f7fa; }
@@ -116,17 +45,18 @@ function exportToCSV() {
         </div>
 
         <nav class="flex-1 px-4 py-6 space-y-2 overflow-y-auto">
-    <a href="admin_dashboard.html" class="flex items-center gap-3 px-4 py-3.5 text-slate-400 hover:bg-white/5 hover:text-white rounded-xl font-medium transition-all"><span class="material-symbols-outlined">dashboard</span> ภาพรวมระบบ</a>
-    <a href="admin_resources.html" class="flex items-center gap-3 px-4 py-3.5 text-slate-400 hover:bg-white/5 hover:text-white rounded-xl font-medium transition-all"><span class="material-symbols-outlined">inventory_2</span> บริหารทรัพยากร</a>
-    <a href="admin_inventory.html" id="nav-inventory" class="flex items-center gap-3 px-4 py-3.5 text-slate-400 hover:bg-white/5 hover:text-white rounded-xl font-medium transition-all"><span class="material-symbols-outlined">warehouse</span> ระบบคลังพัสดุ กปท.</a>
-    <a href="admin_datacenter.html" class="flex items-center gap-3 px-4 py-3.5 text-slate-400 hover:bg-white/5 hover:text-white rounded-xl font-medium transition-all"><span class="material-symbols-outlined">folder_shared</span> ศูนย์ข้อมูลผู้ป่วย</a>
-    <a href="admin_map.html" class="flex items-center gap-3 px-4 py-3.5 text-slate-400 hover:bg-white/5 hover:text-white rounded-xl font-medium transition-all"><span class="material-symbols-outlined">map</span> แผนที่พิกัดผู้ป่วย</a>
-    <a href="admin_delegation.html" class="flex items-center gap-3 px-4 py-3.5 text-slate-400 hover:bg-white/5 hover:text-white rounded-xl font-medium transition-all"><span class="material-symbols-outlined">assignment_ind</span> มอบหมายงาน อสม.</a>
-    <a href="admin_analytics.html" class="flex items-center gap-3 px-4 py-3.5 text-slate-400 hover:bg-white/5 hover:text-white rounded-xl font-medium transition-all"><span class="material-symbols-outlined">analytics</span> ศูนย์รายงาน (Export)</a>
-    <a href="admin_reports.html" id="nav-reports" class="flex items-center gap-3 px-4 py-3.5 text-slate-400 hover:bg-white/5 hover:text-white rounded-xl font-medium transition-all"><span class="material-symbols-outlined">gavel</span> บันทึกมติผ้าอ้อม</a>
-    <a href="admin_finance.html" id="nav-finance" class="flex items-center gap-3 px-4 py-3.5 text-slate-400 hover:bg-white/5 hover:text-white rounded-xl font-medium transition-all"><span class="material-symbols-outlined">account_balance_wallet</span> แผนการเงิน</a>
-    <a href="admin_settings.html" id="nav-settings" class="flex items-center gap-3 px-4 py-3.5 text-slate-400 hover:bg-white/5 hover:text-white rounded-xl font-medium transition-all"><span class="material-symbols-outlined">settings</span> ตั้งค่าระบบ</a>
-</nav>
+            <a href="admin_dashboard.html" class="flex items-center gap-3 px-4 py-3.5 text-slate-400 hover:bg-white/5 hover:text-white rounded-xl font-medium transition-all"><span class="material-symbols-outlined">dashboard</span> ภาพรวมระบบ</a>
+            <a href="admin_resources.html" class="flex items-center gap-3 px-4 py-3.5 text-slate-400 hover:bg-white/5 hover:text-white rounded-xl font-medium transition-all"><span class="material-symbols-outlined">inventory_2</span> บริหารทรัพยากร</a>
+            <a href="admin_inventory.html" id="nav-inventory" class="flex items-center gap-3 px-4 py-3.5 text-slate-400 hover:bg-white/5 hover:text-white rounded-xl font-medium transition-all"><span class="material-symbols-outlined">warehouse</span> ระบบคลังพัสดุ กปท.</a>
+            <a href="admin_equipment.html" id="nav-equipment" class="flex items-center gap-3 px-4 py-3.5 text-slate-400 hover:bg-white/5 hover:text-white rounded-xl font-medium transition-all"><span class="material-symbols-outlined">medical_services</span> ทะเบียนยืม-คืนอุปกรณ์</a>
+            <a href="admin_datacenter.html" class="flex items-center gap-3 px-4 py-3.5 bg-white/10 text-white rounded-xl font-bold transition-all"><span class="material-symbols-outlined">folder_shared</span> ศูนย์ข้อมูลผู้ป่วย</a>
+            <a href="admin_map.html" class="flex items-center gap-3 px-4 py-3.5 text-slate-400 hover:bg-white/5 hover:text-white rounded-xl font-medium transition-all"><span class="material-symbols-outlined">map</span> แผนที่พิกัดผู้ป่วย</a>
+            <a href="admin_delegation.html" class="flex items-center gap-3 px-4 py-3.5 text-slate-400 hover:bg-white/5 hover:text-white rounded-xl font-medium transition-all"><span class="material-symbols-outlined">assignment_ind</span> มอบหมายงาน อสม.</a>
+            <a href="admin_analytics.html" class="flex items-center gap-3 px-4 py-3.5 text-slate-400 hover:bg-white/5 hover:text-white rounded-xl font-medium transition-all"><span class="material-symbols-outlined">analytics</span> ศูนย์รายงาน (Export)</a>
+            <a href="admin_reports.html" id="nav-reports" class="flex items-center gap-3 px-4 py-3.5 text-slate-400 hover:bg-white/5 hover:text-white rounded-xl font-medium transition-all"><span class="material-symbols-outlined">gavel</span> บันทึกมติผ้าอ้อม</a>
+            <a href="admin_finance.html" id="nav-finance" class="flex items-center gap-3 px-4 py-3.5 text-slate-400 hover:bg-white/5 hover:text-white rounded-xl font-medium transition-all"><span class="material-symbols-outlined">account_balance_wallet</span> แผนการเงิน</a>
+            <a href="admin_settings.html" id="nav-settings" class="flex items-center gap-3 px-4 py-3.5 text-slate-400 hover:bg-white/5 hover:text-white rounded-xl font-medium transition-all"><span class="material-symbols-outlined">settings</span> ตั้งค่าระบบ</a>
+        </nav>
     </aside>
 
     <main class="flex-1 flex flex-col min-h-0 bg-slate-50">
@@ -138,6 +68,17 @@ function exportToCSV() {
                     <p id="header-hospital-name" class="text-[11px] lg:text-xs text-slate-400 font-medium mt-0.5">Master Data Center</p>
                 </div>
             </div>
+            
+            <div class="flex items-center gap-3 cursor-pointer" onclick="window.location.href='admin_settings.html'">
+                <div class="hidden md:block text-right">
+                    <p class="text-sm font-bold text-slate-700 leading-tight" id="header-user-name">กำลังโหลด...</p>
+                    <p class="text-[10px] text-slate-400">ไปที่ตั้งค่าข้อมูลส่วนตัว</p>
+                </div>
+                <div class="w-10 h-10 rounded-full bg-slate-200 border-2 border-white shadow-sm overflow-hidden flex items-center justify-center">
+                    <img id="header-profile-pic" src="" class="w-full h-full object-cover hidden">
+                    <span id="header-profile-icon" class="material-symbols-outlined text-slate-400">person</span>
+                </div>
+            </div>
         </header>
 
         <div class="p-4 lg:p-6 pb-4 z-10 flex-shrink-0 sticky top-0 bg-slate-50 shadow-sm border-b border-slate-200 space-y-3">
@@ -147,14 +88,17 @@ function exportToCSV() {
                     <input type="text" id="search-input" oninput="filterPatients()" class="w-full pl-12 pr-4 py-3 bg-white border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 shadow-sm" placeholder="ค้นหา เลขบัตร, ชื่อ-นามสกุล, หรือบ้านเลขที่...">
                 </div>
                 
-                <div class="flex gap-2">
-                    <button id="btn-merge-duplicates" onclick="openDuplicateManager()" class="hidden bg-amber-500 hover:bg-amber-600 text-white px-4 py-3 rounded-xl text-sm font-bold shadow-sm transition-all flex justify-center items-center gap-1.5 active:scale-95 whitespace-nowrap">
-                            <span class="material-symbols-outlined text-[18px]">call_merge</span> รวมข้อมูลซ้ำ (<span id="duplicate-badge-count">0</span>)
-                        </button>
-                        <button onclick="exportToCSV()" class="bg-emerald-50 text-emerald-700 hover:bg-emerald-100 px-4 py-3 rounded-xl text-sm font-bold shadow-sm transition-all border border-emerald-200 flex justify-center items-center gap-1.5 active:scale-95 whitespace-nowrap">
-                            <span class="material-symbols-outlined text-[18px]">download</span> ส่งออก CSV
-                        </button>
-                        <button onclick="openImportModal()" class="bg-blue-50 text-blue-700 hover:bg-blue-100 px-4 py-3 rounded-xl text-sm font-bold shadow-sm transition-all border border-blue-200 flex justify-center items-center gap-1.5 active:scale-95 whitespace-nowrap">
+                <div class="flex gap-2 flex-wrap">
+                    <button id="btn-merge-duplicates" onclick="openDuplicateManager()" class="hidden bg-amber-500 hover:bg-amber-600 text-white px-3.5 py-3 rounded-xl text-sm font-bold shadow-sm transition-all flex justify-center items-center gap-1.5 active:scale-95 whitespace-nowrap">
+                        <span class="material-symbols-outlined text-[18px]">call_merge</span> รวมข้อมูลซ้ำ (<span id="duplicate-badge-count">0</span>)
+                    </button>
+                    <button onclick="exportToExcel()" class="bg-emerald-600 hover:bg-emerald-700 text-white px-3.5 py-3 rounded-xl text-sm font-bold shadow-sm transition-all flex justify-center items-center gap-1.5 active:scale-95 whitespace-nowrap">
+                        <span class="material-symbols-outlined text-[18px]">table_view</span> ส่งออก Excel
+                    </button>
+                    <button onclick="exportToCSV()" class="bg-emerald-50 text-emerald-700 hover:bg-emerald-100 px-3.5 py-3 rounded-xl text-sm font-bold shadow-sm transition-all border border-emerald-200 flex justify-center items-center gap-1.5 active:scale-95 whitespace-nowrap">
+                        <span class="material-symbols-outlined text-[18px]">download</span> CSV
+                    </button>
+                    <button onclick="openImportModal()" class="bg-blue-50 text-blue-700 hover:bg-blue-100 px-3.5 py-3 rounded-xl text-sm font-bold shadow-sm transition-all border border-blue-200 flex justify-center items-center gap-1.5 active:scale-95 whitespace-nowrap">
                         <span class="material-symbols-outlined text-[18px]">upload_file</span> นำเข้าข้อมูล
                     </button>
                     <button onclick="addNewPatient()" class="bg-[#00694a] hover:bg-[#005239] text-white px-4 py-3 rounded-xl text-sm font-bold shadow-sm transition-all flex justify-center items-center gap-1.5 active:scale-95 whitespace-nowrap">
@@ -182,7 +126,7 @@ function exportToCSV() {
                 </select>
                 <select id="status-filter" onchange="filterPatients()" class="w-full px-4 py-2.5 bg-white border border-slate-200 rounded-xl text-sm font-bold text-slate-600 focus:ring-2 focus:ring-emerald-500 shadow-sm outline-none">
                     <option value="Active" selected>✓ สถานะ: กำลังดูแล (Active)</option>
-                    <option value="Inactive">✕ สถานะ: ยุติการดูแล (เสียชีวิต / ย้ายออก)</option>
+                    <option value="Inactive">✕ สถานะ: ยุติการดูแล (เสียชีวิต / ย้าย / เลิกติดตาม)</option>
                     <option value="all">ดูทุกสถานะ (ทั้งหมด)</option>
                 </select>
             </div>
@@ -209,7 +153,6 @@ function exportToCSV() {
                 <div class="loader-small mb-3"></div><p class="text-sm text-slate-400 animate-pulse">กำลังโหลดข้อมูลผู้ป่วยจากฐานข้อมูล...</p>
             </div>
             
-            
             <div class="bg-white border border-slate-200 rounded-[20px] shadow-sm w-full mt-6">
                 <div class="w-full overflow-x-auto rounded-[20px]">
                     <table class="w-full text-left border-collapse min-w-[1200px]">
@@ -232,7 +175,6 @@ function exportToCSV() {
                     </table>
                 </div>
             </div>
-
             
             <div id="empty-state" class="hidden text-center py-20 flex flex-col items-center justify-center">
                 <span class="material-symbols-outlined text-[60px] text-slate-300 mb-4">search_off</span>
@@ -259,53 +201,162 @@ function exportToCSV() {
                             - รองรับหัวคอลัมน์: ชื่อ, เลขบัตร, หมู่, ADL
                         </p>
                     </div>
-                    <div class="relative border-2 border-dashed border-blue-300 rounded-xl p-6 text-center hover:bg-blue-50 transition-colors cursor-pointer" onclick="document.getElementById('excel-file').click()">
-                        <span class="material-symbols-outlined text-blue-500 text-[40px] mb-2">note_add</span>
-                        <p class="text-sm font-bold text-blue-700">คลิกเพื่อเลือกไฟล์ Excel (.xlsx)</p>
-                        <p class="text-xs text-slate-400 mt-1" id="file-name-display">หรือลากไฟล์มาวางที่นี่</p>
-                        <input type="file" id="excel-file" accept=".xlsx, .xls" class="hidden" onchange="handleFileSelect(this)">
+                    <div>
+                        <input type="file" id="excel-file-input" accept=".xlsx, .xls" class="block w-full text-sm text-slate-500 file:mr-4 file:py-2.5 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-bold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 cursor-pointer border border-slate-200 rounded-xl p-2 bg-slate-50">
                     </div>
-                    <button onclick="processExcelImport()" id="btn-process-import" class="w-full bg-blue-600 text-white font-bold py-3.5 rounded-xl shadow-md hover:bg-blue-700 disabled:opacity-50 flex items-center justify-center gap-2" disabled>
-                        เริ่มนำเข้าข้อมูล
+                    <div class="pt-2 flex gap-2">
+                        <button onclick="closeImportModal()" class="flex-1 py-2.5 bg-slate-100 text-slate-600 font-bold text-xs rounded-xl hover:bg-slate-200">ยกเลิก</button>
+                        <button onclick="processExcelImport()" id="btn-process-import" class="flex-1 py-2.5 bg-blue-600 text-white font-bold text-xs rounded-xl hover:bg-blue-700 flex items-center justify-center">เริ่มนำเข้าข้อมูล</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </main>
+
+    <!-- Modal เปลี่ยนสถานะ / ลบข้อมูล -->
+    <div id="status-modal" class="fixed inset-0 bg-black/60 z-[100] hidden flex-col items-center justify-center opacity-0 transition-opacity duration-300 p-4">
+        <div id="status-modal-content" class="bg-white rounded-[24px] w-[90%] max-w-md p-6 transform scale-95 transition-transform duration-300 shadow-2xl">
+            <input type="hidden" id="status-patient-id" value="">
+            <h3 class="text-lg font-bold text-slate-800 mb-1 flex items-center gap-2">
+                <span class="material-symbols-outlined text-rose-600">manage_accounts</span> จัดการสถานะผู้ป่วย
+            </h3>
+            <p id="status-modal-desc" class="text-xs text-slate-500 mb-4">ระบุสถานะหรือดำเนินการกับข้อมูลผู้ป่วยรายนี้</p>
+            
+            <div class="space-y-2 mb-4">
+                <label class="flex items-center gap-3 p-3 border border-slate-200 rounded-xl cursor-pointer hover:bg-slate-50 transition-colors">
+                    <input type="radio" name="patient_status" value="Active" class="w-4 h-4 text-emerald-600 focus:ring-emerald-500">
+                    <div>
+                        <span class="text-sm font-bold text-slate-800 block">กำลังดูแล (Active)</span>
+                        <span class="text-[11px] text-slate-400">ผู้ป่วยยังอยู่ในความดูแลของ อสม. ตามปกติ</span>
+                    </div>
+                </label>
+                <label class="flex items-center gap-3 p-3 border border-rose-100 rounded-xl cursor-pointer hover:bg-rose-50/50 transition-colors">
+                    <input type="radio" name="patient_status" value="เสียชีวิต" class="w-4 h-4 text-rose-600 focus:ring-rose-500">
+                    <div>
+                        <span class="text-sm font-bold text-rose-700 block">เสียชีวิต (Deceased)</span>
+                        <span class="text-[11px] text-slate-400">ยุติการดูแลเนื่องจากผู้ป่วยเสียชีวิต</span>
+                    </div>
+                </label>
+                <label class="flex items-center gap-3 p-3 border border-amber-100 rounded-xl cursor-pointer hover:bg-amber-50/50 transition-colors">
+                    <input type="radio" name="patient_status" value="ย้ายที่อยู่" class="w-4 h-4 text-amber-500 focus:ring-amber-500">
+                    <div>
+                        <span class="text-sm font-bold text-amber-700 block">ย้ายที่อยู่ / ออกจากพื้นที่</span>
+                        <span class="text-[11px] text-slate-400">ผู้ป่วยย้ายไปอยู่นอกเขตรับผิดชอบ</span>
+                    </div>
+                </label>
+                <label class="flex items-center gap-3 p-3 border border-indigo-100 rounded-xl cursor-pointer hover:bg-indigo-50/50 transition-colors">
+                    <input type="radio" name="patient_status" value="เลิกติดตาม" class="w-4 h-4 text-indigo-500 focus:ring-indigo-500">
+                    <div>
+                        <span class="text-sm font-bold text-indigo-700 block">เลิกติดตาม (Discontinued)</span>
+                        <span class="text-[11px] text-slate-400">ยุติการติดตามชั่วคราว/หายเป็นปกติ</span>
+                    </div>
+                </label>
+                <label class="flex items-center gap-3 p-3 border border-red-200 bg-red-50/40 rounded-xl cursor-pointer hover:bg-red-50 transition-colors">
+                    <input type="radio" name="patient_status" value="DELETE" class="w-4 h-4 text-red-600 focus:ring-red-500">
+                    <div>
+                        <span class="text-sm font-bold text-red-600 flex items-center gap-1"><span class="material-symbols-outlined text-[16px]">delete_forever</span> ลบข้อมูลผู้ป่วยถาวร</span>
+                        <span class="text-[11px] text-red-500/80">ลบรายการนี้ออกจากฐานข้อมูล (ใช้กรณีข้อมูลซ้ำ / บันทึกผิด)</span>
+                    </div>
+                </label>
+            </div>
+
+            <!-- วันที่และเหตุผล -->
+            <div id="status-extra-fields" class="space-y-3 mb-5 p-3 bg-slate-50 border border-slate-200 rounded-xl">
+                <div>
+                    <label class="text-[11px] font-bold text-slate-600 block mb-1">วันที่ดำเนินการ / มีผล:</label>
+                    <input type="text" id="status-date-input" class="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg text-xs" placeholder="วว/ดด/ปปปป (พ.ศ.)">
+                </div>
+                <div>
+                    <label class="text-[11px] font-bold text-slate-600 block mb-1">หมายเหตุ / เหตุผลเพิ่มเติม:</label>
+                    <input type="text" id="status-reason-input" class="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg text-xs" placeholder="เช่น เสียชีวิตที่บ้าน, ย้ายไปอยู่ต่างจังหวัด">
+                </div>
+            </div>
+
+            <div class="flex gap-2.5">
+                <button onclick="closeStatusModal()" class="flex-1 py-3 bg-slate-100 text-slate-700 rounded-xl font-bold hover:bg-slate-200 text-sm transition-colors">ยกเลิก</button>
+                <button onclick="confirmStatusChange()" id="btn-save-status" class="flex-1 py-3 bg-[#00694a] text-white rounded-xl font-bold hover:bg-[#005239] text-sm shadow-md transition-all active:scale-95">บันทึก</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal รวมข้อมูลผู้ป่วยที่ซ้ำกัน (Merge Duplicates) -->
+    <div id="merge-modal" class="fixed inset-0 bg-black/60 z-[110] hidden flex-col items-center justify-center opacity-0 transition-opacity duration-300 p-2 sm:p-4">
+        <div id="merge-modal-content" class="bg-white rounded-[24px] w-full max-w-4xl max-h-[92vh] flex flex-col transform scale-95 transition-transform duration-300 shadow-2xl overflow-hidden">
+            <div class="p-5 border-b border-slate-200 bg-slate-50 flex items-center justify-between flex-shrink-0">
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-xl bg-amber-500 text-white flex items-center justify-center flex-shrink-0 shadow-sm">
+                        <span class="material-symbols-outlined text-[24px]">call_merge</span>
+                    </div>
+                    <div>
+                        <h3 class="text-base font-bold text-slate-800 flex items-center gap-2">
+                            รวมข้อมูลผู้ป่วยที่ซ้ำกัน (Merge Duplicates)
+                        </h3>
+                        <p class="text-xs text-slate-500" id="merge-modal-cid-text">เลขประจำตัวประชาชน: -</p>
+                    </div>
+                </div>
+                <div class="flex items-center gap-2">
+                    <div id="merge-group-pagination" class="flex items-center gap-1.5 text-xs font-bold text-slate-600 bg-white border border-slate-200 px-3 py-1.5 rounded-xl shadow-sm">
+                        <button onclick="prevMergeGroup()" id="btn-prev-merge" class="hover:text-blue-600 disabled:opacity-30 disabled:hover:text-slate-600">◀</button>
+                        <span id="merge-group-counter">1 / 1</span>
+                        <button onclick="nextMergeGroup()" id="btn-next-merge" class="hover:text-blue-600 disabled:opacity-30 disabled:hover:text-slate-600">▶</button>
+                    </div>
+                    <button onclick="closeMergeModal()" class="w-9 h-9 rounded-xl hover:bg-slate-200 text-slate-500 flex items-center justify-center transition-colors">
+                        <span class="material-symbols-outlined text-[20px]">close</span>
+                    </button>
+                </div>
+            </div>
+
+            <div class="bg-amber-50/70 border-b border-amber-200/60 px-5 py-2.5 text-xs text-amber-800 flex items-center gap-2 flex-shrink-0">
+                <span class="material-symbols-outlined text-[18px] text-amber-600 flex-shrink-0">info</span>
+                <span>คลิกเลือกข้อมูลที่คุณต้องการเก็บไว้ในแต่ละหัวข้อ โดยข้อมูลที่เลือกจะถูกบันทึกลงในรายการหลัก และระบบจะลบรายการที่ซ้ำออก พร้อมโอนย้ายประวัติการประเมินมาให้อัตโนมัติ</span>
+            </div>
+
+            <div class="flex-1 overflow-y-auto p-4 sm:p-6" id="merge-modal-body"></div>
+
+            <div class="p-4 border-t border-slate-200 bg-slate-50 flex items-center justify-between flex-shrink-0">
+                <div class="text-xs text-slate-500">
+                    <span class="font-bold text-slate-700">รายการหลักที่จะเก็บไว้:</span> <span id="merge-primary-doc-label" class="font-mono text-blue-600 font-bold">-</span>
+                </div>
+                <div class="flex gap-2.5">
+                    <button onclick="closeMergeModal()" class="px-5 py-2.5 bg-slate-200 hover:bg-slate-300 text-slate-700 rounded-xl text-xs font-bold transition-colors">ยกเลิก</button>
+                    <button onclick="executeMerge()" id="btn-execute-merge" class="px-6 py-2.5 bg-amber-600 hover:bg-amber-700 text-white rounded-xl text-xs font-bold shadow-md transition-all active:scale-95 flex items-center gap-1.5">
+                        <span class="material-symbols-outlined text-[16px]">call_merge</span> ยืนยันการรวมข้อมูล (Merge)
                     </button>
                 </div>
             </div>
         </div>
-    </main>
+    </div>
 
     <script>
         firebase.initializeApp(firebaseConfig);
         firebase.firestore().enablePersistence({ synchronizeTabs: true }).catch(err => console.warn('Offline persistence error:', err.code));
         const db = firebase.firestore();
 
-        let allPatients = []; 
         let currentUserRole = "ADMIN";
+        let currentUserName = "";
+        let currentUserUid = "";
         let assignedVillages = [];
+        let allPatients = []; 
         let selectedExcelFile = null;
 
         function toggleSidebar() { document.getElementById('sidebar').classList.toggle('-translate-x-full'); }
 
-        document.addEventListener("DOMContentLoaded", () => {
-            document.getElementById('sidebar-hospital-name').innerText = DEFAULT_CONFIGS.HOSPITAL_NAME;
-            document.getElementById('sidebar-system-name').innerText = DEFAULT_CONFIGS.SYSTEM_NAME;
-
-            liff.init({ liffId: LIFF_ID }).then(() => {
-                const mockUid = localStorage.getItem('dev_mock_uid');
-                const savedUid = localStorage.getItem('orsomo_uid');
-                if (mockUid) { verifyAdminAccess(mockUid); } 
-                else if (liff.isLoggedIn()) { liff.getProfile().then(p => { localStorage.setItem('orsomo_uid', p.userId); verifyAdminAccess(p.userId); }).catch(() => bounceToLogin()); } 
-                else if (savedUid) { verifyAdminAccess(savedUid); }
-                else { bounceToLogin(); }
-            }).catch(() => bounceToLogin());
-        });
-
-        function bounceToLogin() { window.location.href = 'index.html'; }
-
-        async function verifyAdminAccess(uid) {
+        document.addEventListener("DOMContentLoaded", async () => {
             try {
-                const userDoc = await db.collection('VHVs').doc(String(uid)).get();
-                let hasAccess = false;
-                let hospital = DEFAULT_CONFIGS.HOSPITAL_NAME;
+                const authCtx = await OrsomoCore.Auth.guardPage({
+                    allowedRoles: ['ADMIN', 'SUB_ADMIN'],
+                    autoAdminShell: false,
+                    currentPage: 'admin_datacenter.html'
+                });
+                if (!authCtx) return;
+
+                currentUserUid = authCtx.uid;
+                currentUserRole = authCtx.role;
+                currentUserName = (authCtx.user && authCtx.user.name) || 'ผู้ดูแลระบบ';
+                assignedVillages = (authCtx.user && authCtx.user.assigned_villages) || [];
+
+                let hospital = (authCtx.user && authCtx.user.hospital_name) || DEFAULT_CONFIGS.HOSPITAL_NAME;
                 let vCount = DEFAULT_CONFIGS.VILLAGE_COUNT;
 
                 try {
@@ -315,47 +366,160 @@ function exportToCSV() {
                     if(sysSnapVCount.exists) vCount = parseInt(sysSnapVCount.data().value) || vCount;
                 } catch(e) {}
 
-                if (userDoc.exists) {
-                const userData = userDoc.data();
-                const hName = document.getElementById('header-user-name');
-                if (hName) hName.innerText = userData.name || 'ผู้ดูแลระบบ';
-                const hPic = document.getElementById('header-profile-pic');
-                const hIcon = document.getElementById('header-profile-icon');
-                if (hPic && hIcon && userData.photoURL) {
-                    hPic.src = userData.photoURL;
-                    hPic.classList.remove('hidden');
-                    hIcon.classList.add('hidden');
-                }
-                    const role = String(userData.role || '').toUpperCase();
-                    if (role === 'ADMIN') {
-                        hasAccess = true; currentUserRole = 'ADMIN'; hospital = userData.hospital_name || hospital;
-                    } else if (role === 'SUB_ADMIN') {
-                        hasAccess = true; currentUserRole = 'SUB_ADMIN'; hospital = userData.hospital_name || hospital;
-                        assignedVillages = userData.assigned_villages || [];
-                    }
+                document.getElementById('sidebar-hospital-name').innerText = hospital;
+                document.getElementById('header-hospital-name').innerText = `Master Data Center: ${hospital}`;
+                document.getElementById('header-user-name').innerText = currentUserName;
+
+                if (authCtx.user && (authCtx.user.profile_pic || authCtx.user.photoURL)) {
+                    const pSrc = authCtx.user.profile_pic || authCtx.user.photoURL;
+                    document.getElementById('header-profile-pic').src = pSrc;
+                    document.getElementById('header-profile-pic').classList.remove('hidden');
+                    document.getElementById('header-profile-icon').classList.add('hidden');
                 }
 
-                if (hasAccess) {
-                    document.getElementById('sidebar-hospital-name').innerText = hospital;
-                    const villageSelect = document.getElementById('village-filter');
-                    
-                    if (currentUserRole === 'SUB_ADMIN') {
-                        const navSettings = document.getElementById('nav-settings');
-                        if (navSettings) navSettings.style.display = 'none';
-                        const navFinance = document.getElementById('nav-finance');
-                        if (navFinance) navFinance.style.display = 'none';
-                        const navInventory = document.getElementById('nav-inventory');
-                        if (navInventory) navInventory.style.display = 'none';
-                        const navReports = document.getElementById('nav-reports');
-                        if (navReports) navReports.style.display = 'none';
-                        
-                        assignedVillages.forEach(v => { villageSelect.insertAdjacentHTML('beforeend', `<option value="${v}">หมู่ที่ ${v}</option>`); });
-                    } else {
-                        for(let i=1; i<=vCount; i++){ villageSelect.insertAdjacentHTML('beforeend', `<option value="${i}">หมู่ที่ ${i}</option>`); }
-                    }
-                    loadPatientData(); 
-                } else window.location.href = 'dashboard.html'; 
-            } catch (error) { bounceToLogin(); }
+                const villageSelect = document.getElementById('village-filter');
+                if (currentUserRole === 'SUB_ADMIN') {
+                    ['nav-settings', 'nav-finance', 'nav-inventory', 'nav-reports'].forEach(id => {
+                        const el = document.getElementById(id);
+                        if (el) el.style.display = 'none';
+                    });
+                    assignedVillages.forEach(v => { villageSelect.insertAdjacentHTML('beforeend', `<option value="${v}">หมู่ที่ ${v}</option>`); });
+                } else {
+                    for(let i=1; i<=vCount; i++){ villageSelect.insertAdjacentHTML('beforeend', `<option value="${i}">หมู่ที่ ${i}</option>`); }
+                }
+
+                const fileInput = document.getElementById('excel-file-input');
+                if (fileInput) fileInput.addEventListener('change', (e) => { selectedExcelFile = e.target.files[0]; });
+
+                loadPatientData();
+
+            } catch (err) {
+                console.error("Data Center auth init error:", err);
+            }
+        });
+
+        // ==================== ส่งออก CSV & Excel ====================
+        function getExportPatientData() {
+            if (!allPatients || allPatients.length === 0) return null;
+
+            const currentFilterStatus = document.getElementById('status-filter').value;
+            const currentVillage = document.getElementById('village-filter').value;
+            const currentGroup = document.getElementById('group-filter').value;
+            const currentAlloc = document.getElementById('alloc-filter').value;
+
+            return allPatients.filter(p => {
+                const pStatus = String(p.status || 'Active').trim();
+                const isInactive = (pStatus === 'Inactive' || pStatus === 'inactive' || pStatus === 'เสียชีวิต' || pStatus === 'ย้ายที่อยู่' || pStatus === 'เลิกติดตาม');
+
+                if (currentFilterStatus === 'Active' && isInactive) return false;
+                if (currentFilterStatus === 'Inactive' && !isInactive) return false;
+                if (currentVillage !== '' && String(p.village_no) !== currentVillage) return false;
+                
+                const g = (p.group && p.group !== '-' && p.group !== 'ยังไม่ประเมิน') ? p.group : 'ยังไม่ประเมิน';
+                if (currentGroup !== '' && g !== currentGroup) return false;
+
+                const dp = OrsomoCore.DiaperAdapter.parse(p.diaper);
+                const hasAlloc = (Array.isArray(dp.allocations) && dp.allocations.length > 0);
+                if (currentAlloc === 'never' && hasAlloc) return false;
+                if (currentAlloc === 'ever' && !hasAlloc) return false;
+                if (currentAlloc !== 'all' && currentAlloc !== 'never' && currentAlloc !== 'ever' && currentAlloc !== '') {
+                    if (!hasAlloc || !dp.allocations.includes(currentAlloc)) return false;
+                }
+                return true;
+            });
+        }
+
+        function buildExportRows(patientList) {
+            const rows = [];
+            patientList.forEach(p => {
+                const dp = OrsomoCore.DiaperAdapter.parse(p.diaper);
+                let matList = [];
+                if (dp.size && dp.size !== '-' && dp.size.trim() !== '') matList.push(`ผ้าอ้อม ${dp.size.trim()}`);
+                if (dp.req_underpad === true || dp.req_underpad === 'true' || parseInt(dp.approved_underpad) > 0) matList.push('แผ่นรองซับ');
+                const materials = matList.length > 0 ? matList.join(', ') : '-';
+                const allocs = (dp.allocations && dp.allocations.length > 0) ? dp.allocations.join('; ') : '-';
+                const gps = (p.lat && p.lng) ? `${p.lat},${p.lng}` : (p.lat_long || '-');
+
+                rows.push([
+                    p.id_card || p.id || '',
+                    p.prefix || '',
+                    p.fname || p.name || '',
+                    p.lname || '',
+                    p.dob || '',
+                    p.age || '',
+                    p.house_no || '',
+                    p.village_no || '',
+                    gps,
+                    p.group || 'ยังไม่ประเมิน',
+                    p.adl || '-',
+                    p.dep_status || '-',
+                    dp.status || p.diaper_status || '-',
+                    materials,
+                    allocs,
+                    p.disease || p.congenital_disease || '-',
+                    p.medicines || '-',
+                    p.caregiver_phone || '-',
+                    p.status || 'Active',
+                    p.created_at || '-',
+                    p.assigned_vhv_name || p.assigned_vhv_id || '-'
+                ]);
+            });
+            return rows;
+        }
+
+        function exportToCSV() {
+            const data = getExportPatientData();
+            if (!data || data.length === 0) {
+                alert("ไม่มีข้อมูลสำหรับส่งออกตามตัวกรองที่เลือก");
+                return;
+            }
+
+            const headers = [
+                "เลขบัตรประชาชน", "คำนำหน้า", "ชื่อ", "นามสกุล", "วันเกิด", "อายุ",
+                "บ้านเลขที่", "หมู่ที่", "พิกัด GPS", "กลุ่มภาวะพึ่งพิง", "คะแนน ADL",
+                "ผลคัดกรอง 2Q/9Q", "สิทธิ์ผ้าอ้อม", "ขนาดและชนิดวัสดุ", "ประวัติรอบจัดสรร",
+                "โรคประจำตัว", "รายการยา", "เบอร์โทรญาติ", "สถานะ", "วันที่ขึ้นทะเบียน", "อสม.ผู้รับผิดชอบ"
+            ];
+
+            const rows = buildExportRows(data);
+            let csvContent = "\uFEFF"; // UTF-8 BOM
+            csvContent += headers.map(h => `"${h}"`).join(",") + "\n";
+
+            rows.forEach(row => {
+                csvContent += row.map(v => `"${String(v || '').replace(/"/g, '""')}"`).join(",") + "\n";
+            });
+
+            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement("a");
+            link.setAttribute("href", url);
+            link.setAttribute("download", `patient_data_${new Date().toISOString().split('T')[0]}.csv`);
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+
+        function exportToExcel() {
+            const data = getExportPatientData();
+            if (!data || data.length === 0) {
+                alert("ไม่มีข้อมูลสำหรับส่งออกตามตัวกรองที่เลือก");
+                return;
+            }
+
+            const headers = [
+                "เลขบัตรประชาชน", "คำนำหน้า", "ชื่อ", "นามสกุล", "วันเกิด", "อายุ",
+                "บ้านเลขที่", "หมู่ที่", "พิกัด GPS", "กลุ่มภาวะพึ่งพิง", "คะแนน ADL",
+                "ผลคัดกรอง 2Q/9Q", "สิทธิ์ผ้าอ้อม", "ขนาดและชนิดวัสดุ", "ประวัติรอบจัดสรร",
+                "โรคประจำตัว", "รายการยา", "เบอร์โทรญาติ", "สถานะ", "วันที่ขึ้นทะเบียน", "อสม.ผู้รับผิดชอบ"
+            ];
+
+            const rows = buildExportRows(data);
+            const worksheetData = [headers, ...rows];
+
+            const wb = XLSX.utils.book_new();
+            const ws = XLSX.utils.aoa_to_sheet(worksheetData);
+            XLSX.utils.book_append_sheet(wb, ws, "ข้อมูลผู้ป่วย");
+            XLSX.writeFile(wb, `patient_data_${new Date().toISOString().split('T')[0]}.xlsx`);
         }
 
         async function addNewPatient() {
@@ -364,23 +528,25 @@ function exportToCSV() {
             
             idCard = idCard.replace(/[^0-9]/g, ''); 
 
-            // ตรวจสอบเลขบัตรประชาชนซ้ำในระบบก่อนบันทึก
+            if (idCard.length > 0 && idCard.length !== 13) {
+                alert(`⚠️ เลขบัตรประชาชนต้องมี 13 หลัก (ท่านระบุมา ${idCard.length} หลัก)\nกรุณาตรวจสอบใหม่อีกครั้ง`);
+                return;
+            }
+
             if (idCard.length === 13) {
-                const existing = allPatients.find(p => p.id_card === idCard || p.id === idCard);
-                if (existing) {
-                    alert(`⚠️ เลขบัตรประชาชน ${idCard} มีบันทึกอยู่ในระบบแล้ว!\n\nผู้ป่วย: ${existing.prefix || ''}${existing.name || 'ไม่ระบุชื่อ'} (หมู่ที่ ${existing.village_no || '-'} บ้านเลขที่ ${existing.house_no || '-' })\n\nระบบจะพาไปยังแฟ้มประวัติของผู้ป่วยรายนี้ทันที`);
-                    window.location.href = `patient_profile.html?id=${existing.docId || existing.id}`;
-                    return;
-                }
-                try {
-                    const snap = await db.collection('Patients').where('id_card', '==', idCard).get();
-                    if (!snap.empty) {
-                        const found = snap.docs[0].data();
-                        alert(`⚠️ เลขบัตรประชาชน ${idCard} มีบันทึกอยู่ในระบบแล้ว!\n\nผู้ป่วย: ${found.prefix || ''}${found.name || 'ไม่ระบุชื่อ'} (หมู่ที่ ${found.village_no || '-'} บ้านเลขที่ ${found.house_no || '-' })\n\nระบบจะพาไปยังแฟ้มประวัติของผู้ป่วยรายนี้ทันที`);
-                        window.location.href = `patient_profile.html?id=${snap.docs[0].id}`;
+                if (!OrsomoCore.PatientValidator.validateThaiID(idCard)) {
+                    if (!confirm(`⚠️ รหัสบัตรประชาชน ${idCard} รูปแบบผลรวมตรวจสอบ (Checksum) ไม่ถูกต้อง\n\nคุณแน่ใจหรือไม่ว่าต้องการดำเนินการต่อด้วยเลขนี้?`)) {
                         return;
                     }
-                } catch(e) {}
+                }
+
+                const dupCheck = await OrsomoCore.PatientValidator.checkDuplicateIDCard(db, idCard);
+                if (dupCheck.isDuplicate) {
+                    const p = dupCheck.patient;
+                    alert(`⚠️ เลขบัตรประชาชน ${idCard} มีบันทึกอยู่ในระบบแล้ว!\n\nผู้ป่วย: ${p.prefix || ''}${p.name || 'ไม่ระบุชื่อ'} (หมู่ที่ ${p.village_no || '-'} บ้านเลขที่ ${p.house_no || '-' })\n\nระบบจะพาไปยังแฟ้มประวัติของผู้ป่วยรายนี้ทันที`);
+                    window.location.href = `patient_profile.html?id=${dupCheck.existingDocId}`;
+                    return;
+                }
             }
 
             let docId = idCard;
@@ -406,11 +572,17 @@ function exportToCSV() {
                     group: 'ยังไม่ประเมิน', 
                     adl: '-', 
                     dep_status: '-',
+                    created_at: OrsomoCore.DateUtils.toThaiDate(new Date()),
+                    creator_uid: currentUserUid || '',
+                    created_by: currentUserName || 'เจ้าหน้าที่',
                     timestamp: firebase.firestore.FieldValue.serverTimestamp()
                 });
                 
                 window.location.href = `patient_edit.html?id=${docId}`;
-            } catch (error) { showToast('ไม่สามารถสร้างข้อมูลได้', 'error'); }
+            } catch (error) { 
+                console.error("Create patient error:", error);
+                showToast('ไม่สามารถสร้างข้อมูลได้: ' + error.message, 'error'); 
+            }
         }
 
         function showToast(msg, type = 'info', redirectUrl = null) {
@@ -446,14 +618,6 @@ function exportToCSV() {
             }, redirectUrl ? 1500 : 3500);
         }
 
-        function cleanJSON(rawStr) {
-            if (!rawStr || String(rawStr).trim() === '') return null;
-            let cleanStr = String(rawStr).trim();
-            // Removed dangerous replace
-            if (cleanStr.startsWith('"') && cleanStr.endsWith('"')) cleanStr = cleanStr.substring(1, cleanStr.length - 1);
-            try { return JSON.parse(cleanStr); } catch(e) { return null; }
-        }
-
         async function loadPatientData() {
             try {
                 const snapshot = await db.collection('Patients').get();
@@ -468,8 +632,8 @@ function exportToCSV() {
                         data.docId = doc.id; 
                         tempPatients.push(data);
                         
-                        const d = cleanJSON(data.diaper);
-                        if(d && Array.isArray(d.allocations)) {
+                        const d = OrsomoCore.DiaperAdapter.parse(data.diaper);
+                        if(Array.isArray(d.allocations)) {
                             d.allocations.forEach(alloc => uniqueAllocations.add(alloc));
                         }
                     }
@@ -487,7 +651,10 @@ function exportToCSV() {
                 document.getElementById('patient-list').classList.remove('hidden');
                 filterPatients();
                 updateDuplicateUI();
-            } catch (error) { alert("ดึงฐานข้อมูลล้มเหลว"); }
+            } catch (error) { 
+                console.error("Load patients error:", error);
+                alert("ดึงฐานข้อมูลล้มเหลว"); 
+            }
         }
 
         function filterPatients() {
@@ -502,7 +669,6 @@ function exportToCSV() {
             container.innerHTML = '';
             let displayCount = 0;
 
-            // Map of CID duplicates
             const duplicateGroups = findDuplicateGroups();
             const duplicateCIDMap = {};
             duplicateGroups.forEach(g => {
@@ -511,19 +677,17 @@ function exportToCSV() {
 
             allPatients.forEach(p => {
                 const pStatus = String(p.status || 'Active').trim();
-                const isInactive = (pStatus === 'Inactive' || pStatus === 'inactive' || pStatus === 'เสียชีวิต' || pStatus === 'ย้ายที่อยู่');
+                const isInactive = (pStatus === 'Inactive' || pStatus === 'inactive' || pStatus === 'เสียชีวิต' || pStatus === 'ย้ายที่อยู่' || pStatus === 'เลิกติดตาม');
 
-                // จัดการตัวกรองสถานะ: กำลังดูแล vs ยุติการดูแล vs ทั้งหมด (ใช้กับทุกการค้นหา)
                 if (statusFilter === 'Active' && isInactive) return;
                 if (statusFilter === 'Inactive' && !isInactive) return;
-
                 if (villageFilter !== '' && String(p.village_no) !== villageFilter) return;
                 
                 const groupDisplay = (p.group && p.group !== '-' && p.group !== 'ยังไม่ประเมิน') ? p.group : 'ยังไม่ประเมิน';
                 if (groupFilter !== '' && groupDisplay !== groupFilter) return;
 
-                const d = cleanJSON(p.diaper);
-                const hasAllocations = (d && Array.isArray(d.allocations) && d.allocations.length > 0);
+                const d = OrsomoCore.DiaperAdapter.parse(p.diaper);
+                const hasAllocations = (Array.isArray(d.allocations) && d.allocations.length > 0);
                 if (allocFilter === 'never' && hasAllocations) return;
                 if (allocFilter === 'ever' && !hasAllocations) return;
                 if (allocFilter !== 'all' && allocFilter !== 'never' && allocFilter !== 'ever') {
@@ -548,55 +712,47 @@ function exportToCSV() {
                     avatarHtml = `<img src="${p.profile_pic}" class="w-10 h-10 rounded-full object-cover flex-shrink-0 border border-slate-200 shadow-sm mx-auto">`;
                 }
 
-                let allocBadge = '-';
-                if(hasAllocations) {
+                let statusBadge = '';
+                if (isInactive) {
+                    const statusText = p.status || 'ยุติการดูแล';
+                    statusBadge = `<span class="bg-red-100 text-red-700 text-[10px] font-bold px-2 py-0.5 rounded ml-1.5">${statusText}</span>`;
+                }
+
+                let allocBadge = '<span class="text-slate-300">-</span>';
+                if (hasAllocations) {
                     const latestAlloc = d.allocations[d.allocations.length - 1];
-                    allocBadge = `<span class="bg-blue-50 text-blue-600 border border-blue-200 text-[10px] font-bold px-2 py-1 rounded shadow-sm inline-flex items-center justify-center gap-1"><span class="material-symbols-outlined text-[12px]">inventory_2</span> รอบ ${latestAlloc}</span>`;
-                } else if (p.diaper) {
-                     if (d.status === 'approved') allocBadge = `<span class="bg-emerald-50 text-emerald-600 border border-emerald-100 px-2 py-1 rounded font-bold text-[10px] inline-flex items-center justify-center">อนุมัติ</span>`;
+                    allocBadge = `<span class="bg-blue-50 text-blue-700 border border-blue-200 px-2 py-0.5 rounded text-[11px] font-bold" title="ประวัติ: ${d.allocations.join(', ')}">รอบ ${latestAlloc}</span>`;
+                } else if (d.approve_status === 'อนุมัติแล้ว' || d.status === 'approved') {
+                    allocBadge = `<span class="bg-emerald-50 text-emerald-700 border border-emerald-200 px-2 py-0.5 rounded text-[11px] font-bold">ได้สิทธิ์ (รอจัดสรร)</span>`;
                 }
 
-                let remarkText = p.remark && p.remark !== '-' && p.remark.trim() !== '' ? p.remark : '-';
+                let diaperSizeBadge = '<span class="text-slate-300">-</span>';
+                let materialList = [];
+                if (d.size && d.size !== '-' && d.size.trim() !== '') materialList.push(`<span class="bg-indigo-50 text-indigo-700 border border-indigo-200 px-1.5 py-0.5 rounded font-bold">${d.size.trim()}</span>`);
+                if (d.req_underpad === true || d.req_underpad === 'true' || parseInt(d.approved_underpad) > 0) materialList.push(`<span class="bg-purple-50 text-purple-700 border border-purple-200 px-1.5 py-0.5 rounded font-bold">แผ่นรอง</span>`);
+                if (materialList.length > 0) diaperSizeBadge = materialList.join(' ');
+
+                const cid = String(p.id_card || '').trim().replace(/[^0-9]/g, '');
+                const isDuplicateCID = (cid && cid.length === 13 && duplicateCIDMap[cid] > 1);
+                let dupBadgeHtml = '';
+                if (isDuplicateCID) {
+                    dupBadgeHtml = `<button onclick="openMergeModalForCID('${cid}')" class="mt-1 inline-flex items-center gap-1 bg-amber-100 hover:bg-amber-200 text-amber-800 text-[10px] font-bold px-2 py-0.5 rounded-full border border-amber-300 transition-colors" title="คลิกเพื่อเปรียบเทียบและรวมข้อมูล"><span class="material-symbols-outlined text-[12px]">call_merge</span> ซ้ำ ${duplicateCIDMap[cid]} รายการ</button>`;
+                }
+
                 const pDocId = p.docId || p.id;
-                const cleanCID = String(p.id_card || '').replace(/[^0-9]/g, '');
-                const dupCount = duplicateCIDMap[cleanCID] || 0;
-
-                const dupBadgeHtml = dupCount > 1 
-                    ? `<button onclick="event.stopPropagation(); openMergeModalForCID('${cleanCID}')" class="text-[10px] bg-amber-50 text-amber-700 hover:bg-amber-600 hover:text-white border border-amber-300 px-2 py-0.5 rounded shadow-sm transition-all w-fit inline-flex items-center gap-1 font-bold"><span class="material-symbols-outlined text-[12px]">call_merge</span> ซ้ำ ${dupCount} รายการ (รวมข้อมูล)</button>`
-                    : '';
-
-                let diaperSizeStr = '-';
-                if (p.diaper) {
-                    try {
-                        const dp = (typeof p.diaper === 'object') ? p.diaper : (cleanJSON(p.diaper) || {});
-                        let sizes = [];
-                        const hasDiaper = (dp.req_diaper === true || dp.req_diaper === 'true' || (dp.size && dp.size !== '-' && dp.size.trim() !== '') || (parseInt(dp.approved_diaper) > 0));
-                        if (hasDiaper) {
-                            const sz = (dp.size && dp.size !== '-' && dp.size.trim() !== '') ? dp.size.trim() : 'ผ้าอ้อม';
-                            sizes.push(sz);
-                        }
-                        const hasUnderpad = (dp.req_underpad === true || dp.req_underpad === 'true' || (parseInt(dp.approved_underpad) > 0));
-                        if (hasUnderpad) {
-                            sizes.push('แผ่นรองซับ');
-                        }
-                        if (sizes.length > 0) {
-                            diaperSizeStr = sizes.join(', ');
-                        }
-                    } catch(e) {}
-                }
-                let diaperSizeBadge = `<span class="text-slate-400 font-medium">-</span>`;
-                if (diaperSizeStr !== '-') {
-                    diaperSizeBadge = `<span class="bg-indigo-50 text-indigo-700 border border-indigo-200 text-[11px] font-bold px-2.5 py-1 rounded-lg shadow-xs inline-flex items-center gap-1">${diaperSizeStr}</span>`;
-                }
+                const remarkText = p.remark || p.status_reason || '-';
 
                 container.insertAdjacentHTML('beforeend', `
-                    <tr class="hover:bg-slate-50 transition-colors cursor-pointer group" onclick="window.open('patient_profile.html?id=${pDocId}', '_blank')">
-                        <td class="p-3 whitespace-nowrap text-center">${avatarHtml}</td>
-                        <td class="p-3 whitespace-nowrap">
-                            <div class="flex flex-col gap-1 items-start">
-                                <span class="font-bold text-navy group-hover:text-blue-600 transition-colors">${p.prefix || ''}${p.name || 'ไม่ระบุชื่อ'}</span>
-                                <div class="flex flex-wrap items-center gap-1.5">
-                                    <button onclick="event.stopPropagation(); openStatusModal('${pDocId}', '${p.prefix || ''}${p.name || 'ไม่ระบุชื่อ'}')" class="text-[10px] ${isInactive ? 'bg-slate-100 text-slate-600 border-slate-300' : 'bg-rose-50 text-rose-600 border-rose-200'} border px-2 py-0.5 rounded shadow-sm hover:bg-rose-500 hover:text-white transition-colors w-fit inline-flex items-center gap-1"><span class="material-symbols-outlined text-[12px]">${isInactive ? 'info' : 'person_off'}</span>${isInactive ? pStatus + ' (แก้ไข/ลบ)' : 'เสียชีวิต / ย้าย / ลบ'}</button>
+                    <tr class="hover:bg-slate-50 border-b border-slate-100 transition-colors">
+                        <td class="p-3 text-center">${avatarHtml}</td>
+                        <td class="p-3">
+                            <div class="flex items-center justify-between">
+                                <div>
+                                    <a href="patient_profile.html?id=${pDocId}" class="font-bold text-slate-800 hover:text-emerald-700 transition-colors text-sm block">${p.prefix||''}${p.name||'ไม่ระบุชื่อ'}</a>
+                                    <div class="flex items-center gap-2 mt-0.5">
+                                        <button onclick="openStatusModal('${pDocId}', '${p.name || ''}')" class="text-[11px] text-slate-400 hover:text-rose-600 transition-colors flex items-center gap-0.5"><span class="material-symbols-outlined text-[13px]">tune</span> ปรับสถานะ</button>
+                                        ${statusBadge}
+                                    </div>
                                     ${dupBadgeHtml}
                                 </div>
                             </div>
@@ -625,18 +781,21 @@ function exportToCSV() {
             document.getElementById('status-patient-id').value = pDocId;
             document.getElementById('status-modal-desc').innerHTML = `ผู้ป่วย: <strong class="text-navy">${pName}</strong> (รหัส: ${pDocId})`;
             
-            // Set default radio
+            document.getElementById('status-date-input').value = OrsomoCore.DateUtils.toThaiDate(new Date());
+            document.getElementById('status-reason-input').value = p && p.status_reason ? p.status_reason : '';
+
             const radios = document.querySelectorAll('input[name="patient_status"]');
             radios.forEach(r => r.checked = false);
-            if (p && p.status === 'เสียชีวิต') {
-                const r = document.querySelector('input[name="patient_status"][value="เสียชีวิต"]');
+            if (p && p.status) {
+                const r = document.querySelector(`input[name="patient_status"][value="${p.status}"]`);
                 if (r) r.checked = true;
-            } else if (p && p.status === 'ย้ายที่อยู่') {
-                const r = document.querySelector('input[name="patient_status"][value="ย้ายที่อยู่"]');
-                if (r) r.checked = true;
+                else {
+                    const def = document.querySelector('input[name="patient_status"][value="Active"]');
+                    if (def) def.checked = true;
+                }
             } else {
-                const r = document.querySelector('input[name="patient_status"][value="เสียชีวิต"]');
-                if (r) r.checked = true;
+                const def = document.querySelector('input[name="patient_status"][value="Active"]');
+                if (def) def.checked = true;
             }
 
             const m = document.getElementById('status-modal');
@@ -665,13 +824,24 @@ function exportToCSV() {
             const p = allPatients.find(item => String(item.docId || item.id) === String(patientId));
             const targetDocId = p ? (p.docId || p.id) : patientId;
             const patientName = p ? `${p.prefix || ''}${p.name || ''}` : 'ผู้ป่วย';
+            const statusDate = document.getElementById('status-date-input').value.trim() || OrsomoCore.DateUtils.toThaiDate(new Date());
+            const statusReason = document.getElementById('status-reason-input').value.trim();
 
             const btn = document.getElementById('btn-save-status');
             btn.disabled = true;
             btn.innerHTML = `<span class="material-symbols-outlined text-[16px] animate-spin">sync</span> กำลังบันทึก...`;
 
             if (action === 'DELETE') {
-                if (!confirm(`⚠️ คำเตือน: ยืนยันการลบข้อมูลอย่างถาวร!\n\nคุณต้องการลบข้อมูลของ "${patientName}" (ID: ${targetDocId}) ออกจากฐานข้อมูลอย่างถาวรใช่หรือไม่?\n\n*การกระทำนี้ไม่สามารถย้อนกลับได้ (เหมาะสำหรับลบข้อมูลที่ซ้ำซ้อนหรือบันทึกผิด)`)) {
+                // ตรวจสอบสิทธิ์และพันธะผูกพันว่าลบถาวรได้หรือไม่
+                const deleteCheck = OrsomoCore.PatientValidator.canPermanentDelete(currentUserRole, p);
+                if (!deleteCheck.allowed) {
+                    alert(`⚠️ ไม่สามารถลบข้อมูลนี้ได้:\n\n${deleteCheck.reason}\n\nหากผู้ป่วยรายนี้ไม่ได้อยู่ในพื้นที่แล้ว กรุณาเลือกสถานะ "ย้ายที่อยู่", "เสียชีวิต" หรือ "เลิกติดตาม" แทน`);
+                    btn.disabled = false;
+                    btn.innerHTML = 'บันทึก';
+                    return;
+                }
+
+                if (!confirm(`⚠️ คำเตือน: ยืนยันการลบข้อมูลอย่างถาวร!\n\nคุณต้องการลบข้อมูลของ "${patientName}" (ID: ${targetDocId}) ออกจากฐานข้อมูลอย่างถาวรใช่หรือไม่?\n\n*การกระทำนี้ไม่สามารถย้อนกลับได้ (ใช้กรณีข้อมูลซ้ำหรือบันทึกผิดพลาด)`)) {
                     btn.disabled = false;
                     btn.innerHTML = 'บันทึก';
                     return;
@@ -692,8 +862,17 @@ function exportToCSV() {
                 }
             } else if (action === 'Active') {
                 try {
-                    await db.collection('Patients').doc(String(targetDocId)).update({ status: 'Active' });
-                    if (p) p.status = 'Active';
+                    await db.collection('Patients').doc(String(targetDocId)).update({ 
+                        status: 'Active',
+                        status_date: statusDate,
+                        status_reason: statusReason,
+                        updated_at: firebase.firestore.FieldValue.serverTimestamp()
+                    });
+                    if (p) {
+                        p.status = 'Active';
+                        p.status_date = statusDate;
+                        p.status_reason = statusReason;
+                    }
                     closeStatusModal();
                     showToast(`คืนสถานะกำลังดูแล (${patientName}) เรียบร้อยแล้ว`, 'success');
                     filterPatients();
@@ -704,15 +883,28 @@ function exportToCSV() {
                     btn.disabled = false;
                     btn.innerHTML = 'บันทึก';
                 }
-            } else { // 'เสียชีวิต' or 'ย้ายที่อยู่'
+            } else { // 'เสียชีวิต', 'ย้ายที่อยู่', 'เลิกติดตาม'
                 if (!confirm(`ยืนยันการตั้งสถานะของ "${patientName}" เป็น "${action}" ใช่หรือไม่?`)) {
                     btn.disabled = false;
                     btn.innerHTML = 'บันทึก';
                     return;
                 }
                 try {
-                    await db.collection('Patients').doc(String(targetDocId)).update({ status: action });
-                    if (p) p.status = action;
+                    await db.collection('Patients').doc(String(targetDocId)).update({ 
+                        status: action,
+                        status_date: statusDate,
+                        status_reason: statusReason,
+                        updated_at: firebase.firestore.FieldValue.serverTimestamp()
+                    });
+                    if (p) {
+                        p.status = action;
+                        p.status_date = statusDate;
+                        p.status_reason = statusReason;
+                    }
+
+                    // แจ้งเตือนการติดตามคืนอุปกรณ์การแพทย์หากผู้ป่วยมียืมค้างอยู่ (Requirement 5.3)
+                    await OrsomoCore.Alerts.checkAndNotifyEquipmentReturn(db, targetDocId, p, action);
+
                     closeStatusModal();
                     showToast(`อัปเดตสถานะเป็น "${action}" เรียบร้อยแล้ว`, 'success');
                     filterPatients();
@@ -822,6 +1014,14 @@ function exportToCSV() {
             }
         }
 
+        function pickBestValue(patients, field, validator) {
+            for (let p of patients) {
+                const val = p[field];
+                if (validator(val)) return val;
+            }
+            return patients[0][field] || '';
+        }
+
         function renderMergeModal() {
             const group = currentDuplicateGroups[currentMergeGroupIdx];
             if (!group) return closeMergeModal();
@@ -832,7 +1032,6 @@ function exportToCSV() {
             document.getElementById('btn-prev-merge').disabled = (currentMergeGroupIdx === 0);
             document.getElementById('btn-next-merge').disabled = (currentMergeGroupIdx >= currentDuplicateGroups.length - 1);
 
-            // Determine best primary doc (prefer doc whose ID is 13 digit CID)
             let primaryPatient = patients.find(p => String(p.docId || p.id) === String(group.cid)) || patients[0];
             let primaryDocId = primaryPatient.docId || primaryPatient.id;
             
@@ -842,7 +1041,6 @@ function exportToCSV() {
 
             document.getElementById('merge-primary-doc-label').innerText = `${selectedMergeData.primaryDocId}`;
 
-            // Initialize selected values with smart pre-selection if not already selected
             if (!selectedMergeData.initializedForCID || selectedMergeData.initializedForCID !== group.cid) {
                 selectedMergeData = {
                     initializedForCID: group.cid,
@@ -862,7 +1060,7 @@ function exportToCSV() {
                     dep_status: pickBestValue(patients, 'dep_status', v => v && v !== '-'),
                     disease: pickBestValue(patients, 'disease', v => v && v !== '-'),
                     diaper: pickBestValue(patients, 'diaper', v => {
-                        const d = cleanJSON(v);
+                        const d = OrsomoCore.DiaperAdapter.parse(v);
                         return d && (d.status === 'approved' || (d.allocations && d.allocations.length > 0));
                     }),
                     remark: pickBestValue(patients, 'remark', v => v && v !== '-' && v.trim() !== '')
@@ -872,7 +1070,6 @@ function exportToCSV() {
             const container = document.getElementById('merge-modal-body');
             container.innerHTML = '';
 
-            // Document selector
             let docSelectorHtml = `
                 <div class="mb-5 p-4 bg-slate-50 border border-slate-200 rounded-2xl">
                     <label class="text-xs font-bold text-slate-700 block mb-2">เลือกรหัสเอกสารหลักที่จะเก็บไว้ในระบบ (Primary ID):</label>
@@ -895,71 +1092,54 @@ function exportToCSV() {
             docSelectorHtml += `</div></div>`;
             container.insertAdjacentHTML('beforeend', docSelectorHtml);
 
-            // Comparison table
             let tableHtml = `
                 <div class="border border-slate-200 rounded-2xl overflow-hidden bg-white shadow-sm overflow-x-auto">
-                    <table class="w-full text-left border-collapse text-xs min-w-[650px]">
+                    <table class="w-full text-left text-xs border-collapse">
                         <thead>
-                            <tr class="bg-slate-100/90 border-b border-slate-200 text-slate-600 font-bold">
-                                <th class="p-3.5 w-40 bg-slate-100">หัวข้อข้อมูล</th>
+                            <tr class="bg-slate-100 text-slate-700 font-bold border-b border-slate-200">
+                                <th class="p-3 w-32 border-r border-slate-200">ข้อมูลที่ต้องเลือก</th>
             `;
             patients.forEach((p, idx) => {
-                tableHtml += `
-                    <th class="p-3.5 border-l border-slate-200">
-                        <div class="flex items-center justify-between gap-2">
-                            <span>รายการที่ ${idx + 1}</span>
-                            <button type="button" onclick="selectAllFromPatient(${idx})" class="text-[10px] bg-white hover:bg-blue-50 text-blue-600 border border-blue-200 px-2 py-0.5 rounded-lg shadow-xs transition-colors">
-                                ✓ เลือกทั้งหมด
-                            </button>
-                        </div>
-                    </th>
-                `;
+                const docId = p.docId || p.id;
+                tableHtml += `<th class="p-3 border-r border-slate-200 min-w-[200px]">รายการที่ ${idx + 1} (${docId})</th>`;
             });
             tableHtml += `</tr></thead><tbody class="divide-y divide-slate-100">`;
 
-            const fields = [
-                { key: 'profile_pic', label: 'รูปถ่ายโปรไฟล์', renderVal: (p) => {
-                    if (p.profile_pic && (p.profile_pic.startsWith('data:image') || p.profile_pic.startsWith('http'))) {
-                        return `<img src="${p.profile_pic}" class="w-12 h-12 rounded-full object-cover border border-slate-200 shadow-sm">`;
+            const compareFields = [
+                { key: 'name', label: 'ชื่อ-สกุล', format: (v, p) => `${p.prefix || ''}${p.name || '-'}` },
+                { key: 'village_no', label: 'หมู่ที่', format: v => v ? `หมู่ที่ ${v}` : '-' },
+                { key: 'house_no', label: 'บ้านเลขที่', format: v => v || '-' },
+                { key: 'caregiver_phone', label: 'เบอร์ติดต่อญาติ', format: v => v || '-' },
+                { key: 'group', label: 'กลุ่มสุขภาพ', format: v => v || '-' },
+                { key: 'adl', label: 'คะแนน ADL', format: v => v || '-' },
+                { key: 'dep_status', label: 'ผล 2Q/9Q', format: v => v || '-' },
+                { key: 'disease', label: 'โรคประจำตัว', format: v => v || '-' },
+                { 
+                    key: 'diaper', 
+                    label: 'สิทธิ์ผ้าอ้อม / รอบจัดสรร', 
+                    format: (v) => {
+                        const d = OrsomoCore.DiaperAdapter.parse(v);
+                        if (!d || (!d.status && (!d.allocations || d.allocations.length === 0))) return '-';
+                        return `สถานะ: ${d.status || d.approve_status || '-'} (รอบ: ${d.allocations ? d.allocations.join(', ') : '-'})`;
                     }
-                    return `<div class="w-12 h-12 rounded-full bg-slate-100 text-slate-400 font-bold flex items-center justify-center border border-slate-200 text-sm">${p.name ? p.name.substring(0,1) : '?'}</div>`;
-                }},
-                { key: 'name', label: 'คำนำหน้า + ชื่อ-สกุล', renderVal: (p) => `<b>${p.prefix || ''}${p.name || '-'}</b>` },
-                { key: 'dob', label: 'วันเกิด / อายุ', renderVal: (p) => `เกิด: ${p.dob || '-'} (อายุ ${p.age || '-'} ปี)` },
-                { key: 'house_no', label: 'บ้านเลขที่', renderVal: (p) => `${p.house_no || '-'}` },
-                { key: 'village_no', label: 'หมู่ที่', renderVal: (p) => `หมู่ ${p.village_no || '-'}` },
-                { key: 'caregiver_phone', label: 'เบอร์ติดต่อญาติ', renderVal: (p) => `${p.caregiver_phone || '-'}` },
-                { key: 'caregiver_name', label: 'ชื่อผู้ดูแล', renderVal: (p) => `${p.caregiver_name || '-'}` },
-                { key: 'group', label: 'กลุ่มสุขภาพ / ADL', renderVal: (p) => `<span class="font-bold">${p.group || 'ยังไม่ประเมิน'}</span> (ADL: ${p.adl || '-'})` },
-                { key: 'dep_status', label: 'ผลประเมิน 2Q/9Q', renderVal: (p) => `${p.dep_status || '-'}` },
-                { key: 'disease', label: 'โรคประจำตัว', renderVal: (p) => `<span class="text-slate-700 font-medium">${p.disease || '-'}</span>` },
-                { key: 'diaper', label: 'สิทธิ์ผ้าอ้อม', renderVal: (p) => {
-                    const d = cleanJSON(p.diaper);
-                    if (d && d.allocations && d.allocations.length > 0) {
-                        return `<span class="text-blue-600 font-bold">รอบ ${d.allocations.join(', ')}</span> (สถานะ: ${d.status || '-'})`;
-                    } else if (d && d.status === 'approved') {
-                        return `<span class="text-emerald-600 font-bold">อนุมัติแล้ว</span>`;
-                    }
-                    return `<span class="text-slate-400">ยังไม่เคยได้รับ</span>`;
-                }},
-                { key: 'lat_long', label: 'พิกัด GPS', renderVal: (p) => `${p.lat_long || '-'}` },
-                { key: 'remark', label: 'หมายเหตุ', renderVal: (p) => `${p.remark || '-'}` }
+                },
+                { key: 'remark', label: 'หมายเหตุ', format: v => v || '-' }
             ];
 
-            fields.forEach(f => {
-                tableHtml += `<tr class="hover:bg-slate-50/50 transition-colors">
-                    <td class="p-3 font-bold text-slate-700 bg-slate-50/50 border-r border-slate-100">${f.label}</td>
+            compareFields.forEach(field => {
+                tableHtml += `
+                    <tr class="hover:bg-slate-50/60 transition-colors">
+                        <td class="p-3 font-bold text-slate-700 bg-slate-50 border-r border-slate-200">${field.label}</td>
                 `;
-
-                patients.forEach((p, idx) => {
-                    const isChecked = isFieldSelected(f.key, p);
+                patients.forEach(p => {
+                    const rawVal = p[field.key];
+                    const displayVal = field.format(rawVal, p);
+                    const isSelected = JSON.stringify(selectedMergeData[field.key]) === JSON.stringify(rawVal);
                     tableHtml += `
-                        <td class="p-3 border-l border-slate-100 ${isChecked ? 'bg-blue-50/40' : ''}">
-                            <label class="flex items-start gap-2.5 cursor-pointer">
-                                <input type="radio" name="merge_field_${f.key}" value="${idx}" ${isChecked ? 'checked' : ''} onchange="onFieldOptionChange('${f.key}', ${idx})" class="mt-0.5 text-blue-600 focus:ring-blue-500 w-4 h-4">
-                                <div class="min-w-0 flex-1 text-slate-800">
-                                    ${f.renderVal(p)}
-                                </div>
+                        <td class="p-3 border-r border-slate-200 ${isSelected ? 'bg-blue-50/50' : ''}">
+                            <label class="flex items-start gap-2 cursor-pointer">
+                                <input type="radio" name="merge_${field.key}" ${isSelected ? 'checked' : ''} onchange="onMergeFieldChange('${field.key}', ${JSON.stringify(rawVal).replace(/"/g, '&quot;')})" class="mt-0.5 text-blue-600 focus:ring-blue-500 w-4 h-4">
+                                <span class="text-slate-800 break-words ${isSelected ? 'font-bold text-blue-900' : ''}">${displayVal}</span>
                             </label>
                         </td>
                     `;
@@ -971,38 +1151,13 @@ function exportToCSV() {
             container.insertAdjacentHTML('beforeend', tableHtml);
         }
 
-        function pickBestValue(patients, key, validator) {
-            for (let p of patients) {
-                if (validator(p[key])) return p[key];
-            }
-            return patients[0][key] || '';
+        function onPrimaryDocChange(newDocId) {
+            selectedMergeData.primaryDocId = newDocId;
+            document.getElementById('merge-primary-doc-label').innerText = `${newDocId}`;
         }
 
-        function isFieldSelected(key, patient) {
-            const currentVal = selectedMergeData[key];
-            return String(currentVal || '') === String(patient[key] || '');
-        }
-
-        function onPrimaryDocChange(docId) {
-            selectedMergeData.primaryDocId = docId;
-            document.getElementById('merge-primary-doc-label').innerText = docId;
-        }
-
-        function onFieldOptionChange(key, patientIdx) {
-            const group = currentDuplicateGroups[currentMergeGroupIdx];
-            const p = group.patients[patientIdx];
-            selectedMergeData[key] = p[key] || '';
-            renderMergeModal();
-        }
-
-        function selectAllFromPatient(patientIdx) {
-            const group = currentDuplicateGroups[currentMergeGroupIdx];
-            const p = group.patients[patientIdx];
-            if (!p) return;
-            const keys = ['profile_pic', 'prefix', 'name', 'dob', 'age', 'house_no', 'village_no', 'lat_long', 'caregiver_name', 'caregiver_phone', 'group', 'adl', 'dep_status', 'disease', 'diaper', 'remark'];
-            keys.forEach(k => {
-                selectedMergeData[k] = p[k] || '';
-            });
+        function onMergeFieldChange(fieldKey, value) {
+            selectedMergeData[fieldKey] = value;
             renderMergeModal();
         }
 
@@ -1010,12 +1165,11 @@ function exportToCSV() {
             const group = currentDuplicateGroups[currentMergeGroupIdx];
             if (!group) return;
 
-            const primaryDocId = selectedMergeData.primaryDocId || (group.patients[0].docId || group.patients[0].id);
-            const secondaryDocIds = group.patients
-                .map(p => p.docId || p.id)
-                .filter(id => String(id) !== String(primaryDocId));
+            const patients = group.patients;
+            const primaryDocId = selectedMergeData.primaryDocId;
+            const duplicateDocs = patients.filter(p => (p.docId || p.id) !== primaryDocId);
 
-            if (!confirm(`ยืนยันการรวมข้อมูลผู้ป่วย CID: ${group.cid} ?\n\n- ข้อมูลที่เลือกจะถูกบันทึกไปยังรหัสหลัก: ${primaryDocId}\n- ระบบจะย้ายประวัติการประเมินและสัญญาณชีพจากรายการที่ซ้ำมายังรหัสหลัก\n- รายการซ้ำอีก ${secondaryDocIds.length} รายการจะถูกลบออกจากระบบถาวร\n\nต้องการดำเนินการต่อหรือไม่?`)) {
+            if (!confirm(`ยืนยันการรวมข้อมูลผู้ป่วยเลขบัตร ${group.cid} ใช่หรือไม่?\n\n- บันทึกข้อมูลที่เลือกลงในเอกสารหลัก: ${primaryDocId}\n- ลบเอกสารที่ซ้ำซ้อน: ${duplicateDocs.map(d => d.docId || d.id).join(', ')}\n\n*การกระทำนี้จะลบเอกสารที่ซ้ำซ้อนออกจากระบบอย่างถาวร*`)) {
                 return;
             }
 
@@ -1024,82 +1178,32 @@ function exportToCSV() {
             btn.innerHTML = `<span class="material-symbols-outlined text-[16px] animate-spin">sync</span> กำลังรวมข้อมูล...`;
 
             try {
-                // 1. Prepare merged patient data
-                const mergedData = {
+                const primaryRef = db.collection('Patients').doc(String(primaryDocId));
+
+                const mergedPayload = {
                     id: primaryDocId,
                     id_card: group.cid,
-                    profile_pic: selectedMergeData.profile_pic || '',
-                    prefix: selectedMergeData.prefix || '',
-                    name: selectedMergeData.name || '',
-                    dob: selectedMergeData.dob || '',
-                    age: selectedMergeData.age || '',
-                    house_no: selectedMergeData.house_no || '',
-                    village_no: selectedMergeData.village_no || '',
-                    lat_long: selectedMergeData.lat_long || '',
-                    caregiver_name: selectedMergeData.caregiver_name || '',
-                    caregiver_phone: selectedMergeData.caregiver_phone || '',
-                    group: selectedMergeData.group || 'ยังไม่ประเมิน',
-                    adl: selectedMergeData.adl || '-',
-                    dep_status: selectedMergeData.dep_status || '-',
-                    disease: selectedMergeData.disease || '-',
-                    diaper: selectedMergeData.diaper || '',
-                    remark: selectedMergeData.remark || '',
-                    status: 'Active',
                     updated_at: firebase.firestore.FieldValue.serverTimestamp()
                 };
 
-                // 2. Save merged data to primary doc
-                await db.collection('Patients').doc(String(primaryDocId)).set(mergedData, { merge: true });
-
-                // 3. Relink Assessments and Vitals, and delete secondary documents
-                for (let secId of secondaryDocIds) {
-                    try {
-                        const aSnap = await db.collection('Assessments').where('patient_id', '==', String(secId)).get();
-                        if (!aSnap.empty) {
-                            const aBatch = db.batch();
-                            aSnap.forEach(d => aBatch.update(d.ref, { patient_id: String(primaryDocId) }));
-                            await aBatch.commit();
-                        }
-                    } catch(errA) { console.warn("Relink Assessments warning:", errA); }
-
-                    try {
-                        const vSnap = await db.collection('Vitals').where('patient_id', '==', String(secId)).get();
-                        if (!vSnap.empty) {
-                            const vBatch = db.batch();
-                            vSnap.forEach(d => vBatch.update(d.ref, { patient_id: String(primaryDocId) }));
-                            await vBatch.commit();
-                        }
-                    } catch(errV) { console.warn("Relink Vitals warning:", errV); }
-
-                    // Delete the secondary patient doc
-                    await db.collection('Patients').doc(String(secId)).delete();
-                }
-
-                // 4. Update memory cache allPatients
-                allPatients = allPatients.filter(p => !secondaryDocIds.includes(String(p.docId || p.id)));
-                const pIdx = allPatients.findIndex(p => String(p.docId || p.id) === String(primaryDocId));
-                if (pIdx > -1) {
-                    allPatients[pIdx] = { ...allPatients[pIdx], ...mergedData };
-                }
-
-                showToast(`รวมข้อมูลผู้ป่วย CID: ${group.cid} สำเร็จแล้ว!`, 'success');
-
-                // 5. Re-check duplicate groups
-                currentDuplicateGroups = findDuplicateGroups();
-                updateDuplicateUI();
-                filterPatients();
-
-                if (currentDuplicateGroups.length > 0) {
-                    if (currentMergeGroupIdx >= currentDuplicateGroups.length) {
-                        currentMergeGroupIdx = currentDuplicateGroups.length - 1;
+                ['profile_pic', 'prefix', 'name', 'dob', 'age', 'house_no', 'village_no', 'lat_long', 'caregiver_name', 'caregiver_phone', 'group', 'adl', 'dep_status', 'disease', 'diaper', 'remark'].forEach(k => {
+                    if (selectedMergeData[k] !== undefined && selectedMergeData[k] !== null) {
+                        mergedPayload[k] = selectedMergeData[k];
                     }
-                    renderMergeModal();
-                } else {
-                    closeMergeModal();
-                    showToast('🎉 จัดการรวมข้อมูลที่ซ้ำกันครบทั้งหมดเรียบร้อยแล้ว!', 'success');
+                });
+
+                await primaryRef.set(mergedPayload, { merge: true });
+
+                for (let dup of duplicateDocs) {
+                    const dupId = dup.docId || dup.id;
+                    await db.collection('Patients').doc(String(dupId)).delete();
                 }
 
-            } catch(err) {
+                showToast(`รวมข้อมูลเลขบัตร ${group.cid} สำเร็จแล้ว!`, 'success');
+                closeMergeModal();
+                loadPatientData();
+
+            } catch (err) {
                 console.error("Execute merge error:", err);
                 alert("เกิดข้อผิดพลาดในการรวมข้อมูล: " + err.message);
             } finally {
@@ -1108,49 +1212,30 @@ function exportToCSV() {
             }
         }
 
+        // ==================== Import Excel Functions ====================
         function openImportModal() {
             const m = document.getElementById('import-modal');
             const c = document.getElementById('import-modal-content');
-            m.classList.remove('hidden'); setTimeout(() => { m.classList.remove('opacity-0'); c.classList.remove('scale-95'); }, 10);
+            m.classList.remove('hidden');
+            setTimeout(() => { m.classList.remove('opacity-0'); c.classList.remove('scale-95'); }, 10);
         }
+
         function closeImportModal() {
             const m = document.getElementById('import-modal');
             const c = document.getElementById('import-modal-content');
             m.classList.add('opacity-0'); c.classList.add('scale-95');
             setTimeout(() => { m.classList.add('hidden'); }, 300);
-            document.getElementById('excel-file').value = "";
-            document.getElementById('file-name-display').innerText = "หรือลากไฟล์มาวางที่นี่";
-            document.getElementById('btn-process-import').disabled = true;
-        }
-
-        function handleFileSelect(input) {
-            const file = input.files[0];
-            if (file) {
-                selectedExcelFile = file;
-                document.getElementById('file-name-display').innerHTML = `<span class="text-blue-600 font-bold">${file.name}</span>`;
-                document.getElementById('btn-process-import').disabled = false;
-            }
         }
 
         function getNormalizedValue(row, possibleKeys) {
             const cleanObj = {};
             for (let k in row) {
-                let cleanK = String(k).replace(/[^a-zA-Z0-9ก-๙]/g, '').toLowerCase();
-                cleanObj[cleanK] = row[k];
+                cleanObj[String(k).replace(/\s+/g, '').toLowerCase()] = row[k];
             }
-            for (let pk of possibleKeys) {
-                let cleanPK = String(pk).replace(/[^a-zA-Z0-9ก-๙]/g, '').toLowerCase();
-                if (cleanObj[cleanPK] !== undefined && cleanObj[cleanPK] !== null && cleanObj[cleanPK] !== "") return cleanObj[cleanPK];
-                if (cleanObj[cleanPK] === 0 || cleanObj[cleanPK] === "0") return 0;
-            }
-            for (let cleanK in cleanObj) {
-                for (let pk of possibleKeys) {
-                    let cleanPK = String(pk).replace(/[^a-zA-Z0-9ก-๙]/g, '').toLowerCase();
-                    if (cleanPK.length > 0 && cleanK.includes(cleanPK)) {
-                        let val = cleanObj[cleanK];
-                        if (val !== undefined && val !== null && val !== "") return val;
-                        if (val === 0 || val === "0") return 0;
-                    }
+            for (let targetKey of possibleKeys) {
+                const cleanTarget = String(targetKey).replace(/\s+/g, '').toLowerCase();
+                if (cleanObj[cleanTarget] !== undefined && cleanObj[cleanTarget] !== null && cleanObj[cleanTarget] !== "") {
+                    return cleanObj[cleanTarget];
                 }
             }
             return '';
@@ -1221,6 +1306,7 @@ function exportToCSV() {
                             group: group,
                             status: 'Active',
                             disease: String(getNormalizedValue(row, ['โรคประจำตัว', 'โรคเรื้อรัง', 'โรค'])).trim() || '-',
+                            created_at: OrsomoCore.DateUtils.toThaiDate(new Date()),
                             updated_at: firebase.firestore.FieldValue.serverTimestamp()
                         };
 
@@ -1250,107 +1336,5 @@ function exportToCSV() {
             reader.readAsArrayBuffer(selectedExcelFile);
         }
     </script>
-
-    <!-- Modal เปลี่ยนสถานะ / ลบข้อมูล -->
-    <div id="status-modal" class="fixed inset-0 bg-black/60 z-[100] hidden flex-col items-center justify-center opacity-0 transition-opacity duration-300 p-4">
-        <div id="status-modal-content" class="bg-white rounded-[24px] w-[90%] max-w-sm p-6 transform scale-95 transition-transform duration-300 shadow-2xl">
-            <input type="hidden" id="status-patient-id" value="">
-            <h3 class="text-lg font-bold text-slate-800 mb-1 flex items-center gap-2">
-                <span class="material-symbols-outlined text-rose-600">manage_accounts</span> จัดการสถานะผู้ป่วย
-            </h3>
-            <p id="status-modal-desc" class="text-xs text-slate-500 mb-4">ระบุสถานะหรือดำเนินการกับข้อมูลผู้ป่วยรายนี้</p>
-            
-            <div class="space-y-2.5 mb-6">
-                <label class="flex items-center gap-3 p-3 border border-slate-200 rounded-xl cursor-pointer hover:bg-slate-50 transition-colors">
-                    <input type="radio" name="patient_status" value="Active" class="w-4 h-4 text-emerald-600 focus:ring-emerald-500">
-                    <div>
-                        <span class="text-sm font-bold text-slate-800 block">กำลังดูแล (Active)</span>
-                        <span class="text-[11px] text-slate-400">ผู้ป่วยยังอยู่ในความดูแลของ อสม. ตามปกติ</span>
-                    </div>
-                </label>
-                <label class="flex items-center gap-3 p-3 border border-rose-100 rounded-xl cursor-pointer hover:bg-rose-50/50 transition-colors">
-                    <input type="radio" name="patient_status" value="เสียชีวิต" class="w-4 h-4 text-rose-600 focus:ring-rose-500">
-                    <div>
-                        <span class="text-sm font-bold text-rose-700 block">เสียชีวิต (Deceased)</span>
-                        <span class="text-[11px] text-slate-400">ยุติการดูแลเนื่องจากผู้ป่วยเสียชีวิต</span>
-                    </div>
-                </label>
-                <label class="flex items-center gap-3 p-3 border border-amber-100 rounded-xl cursor-pointer hover:bg-amber-50/50 transition-colors">
-                    <input type="radio" name="patient_status" value="ย้ายที่อยู่" class="w-4 h-4 text-amber-500 focus:ring-amber-500">
-                    <div>
-                        <span class="text-sm font-bold text-amber-700 block">ย้ายที่อยู่ / ออกจากพื้นที่</span>
-                        <span class="text-[11px] text-slate-400">ผู้ป่วยย้ายไปอยู่นอกเขตรับผิดชอบ</span>
-                    </div>
-                </label>
-                <label class="flex items-center gap-3 p-3 border border-red-200 bg-red-50/40 rounded-xl cursor-pointer hover:bg-red-50 transition-colors">
-                    <input type="radio" name="patient_status" value="DELETE" class="w-4 h-4 text-red-600 focus:ring-red-500">
-                    <div>
-                        <span class="text-sm font-bold text-red-600 flex items-center gap-1"><span class="material-symbols-outlined text-[16px]">delete_forever</span> ลบข้อมูลผู้ป่วยถาวร</span>
-                        <span class="text-[11px] text-red-500/80">ลบรายการนี้ออกจากฐานข้อมูล (ใช้กรณีข้อมูลซ้ำ / บันทึกผิด)</span>
-                    </div>
-                </label>
-            </div>
-
-            <div class="flex gap-2.5">
-                <button onclick="closeStatusModal()" class="flex-1 py-3 bg-slate-100 text-slate-700 rounded-xl font-bold hover:bg-slate-200 text-sm transition-colors">ยกเลิก</button>
-                <button onclick="confirmStatusChange()" id="btn-save-status" class="flex-1 py-3 bg-[#00694a] text-white rounded-xl font-bold hover:bg-[#005239] text-sm shadow-md transition-all active:scale-95">บันทึก</button>
-            </div>
-        </div>
-    </div>
-
-    <!-- Modal รวมข้อมูลผู้ป่วยที่ซ้ำกัน (Merge Duplicates) -->
-    <div id="merge-modal" class="fixed inset-0 bg-black/60 z-[110] hidden flex-col items-center justify-center opacity-0 transition-opacity duration-300 p-2 sm:p-4">
-        <div id="merge-modal-content" class="bg-white rounded-[24px] w-full max-w-4xl max-h-[92vh] flex flex-col transform scale-95 transition-transform duration-300 shadow-2xl overflow-hidden">
-            <!-- Modal Header -->
-            <div class="p-5 border-b border-slate-200 bg-slate-50 flex items-center justify-between flex-shrink-0">
-                <div class="flex items-center gap-3">
-                    <div class="w-10 h-10 rounded-xl bg-amber-500 text-white flex items-center justify-center flex-shrink-0 shadow-sm">
-                        <span class="material-symbols-outlined text-[24px]">call_merge</span>
-                    </div>
-                    <div>
-                        <h3 class="text-base font-bold text-slate-800 flex items-center gap-2">
-                            รวมข้อมูลผู้ป่วยที่ซ้ำกัน (Merge Duplicates)
-                        </h3>
-                        <p class="text-xs text-slate-500" id="merge-modal-cid-text">เลขประจำตัวประชาชน: -</p>
-                    </div>
-                </div>
-                <div class="flex items-center gap-2">
-                    <div id="merge-group-pagination" class="flex items-center gap-1.5 text-xs font-bold text-slate-600 bg-white border border-slate-200 px-3 py-1.5 rounded-xl shadow-sm">
-                        <button onclick="prevMergeGroup()" id="btn-prev-merge" class="hover:text-blue-600 disabled:opacity-30 disabled:hover:text-slate-600">◀</button>
-                        <span id="merge-group-counter">1 / 1</span>
-                        <button onclick="nextMergeGroup()" id="btn-next-merge" class="hover:text-blue-600 disabled:opacity-30 disabled:hover:text-slate-600">▶</button>
-                    </div>
-                    <button onclick="closeMergeModal()" class="w-9 h-9 rounded-xl hover:bg-slate-200 text-slate-500 flex items-center justify-center transition-colors">
-                        <span class="material-symbols-outlined text-[20px]">close</span>
-                    </button>
-                </div>
-            </div>
-
-            <!-- Modal Info Note -->
-            <div class="bg-amber-50/70 border-b border-amber-200/60 px-5 py-2.5 text-xs text-amber-800 flex items-center gap-2 flex-shrink-0">
-                <span class="material-symbols-outlined text-[18px] text-amber-600 flex-shrink-0">info</span>
-                <span>คลิกเลือกข้อมูลที่คุณต้องการเก็บไว้ในแต่ละหัวข้อ โดยข้อมูลที่เลือกจะถูกบันทึกลงในรายการหลัก และระบบจะลบรายการที่ซ้ำออก พร้อมโอนย้ายประวัติการประเมินมาให้อัตโนมัติ</span>
-            </div>
-
-            <!-- Modal Body (Comparison Table) -->
-            <div class="flex-1 overflow-y-auto p-4 sm:p-6" id="merge-modal-body">
-                <!-- Dynamically rendered comparison UI -->
-            </div>
-
-            <!-- Modal Footer -->
-            <div class="p-4 border-t border-slate-200 bg-slate-50 flex items-center justify-between flex-shrink-0">
-                <div class="text-xs text-slate-500">
-                    <span class="font-bold text-slate-700">รายการหลักที่จะเก็บไว้:</span> <span id="merge-primary-doc-label" class="font-mono text-blue-600 font-bold">-</span>
-                </div>
-                <div class="flex gap-2.5">
-                    <button onclick="closeMergeModal()" class="px-5 py-2.5 bg-slate-200 hover:bg-slate-300 text-slate-700 rounded-xl text-xs font-bold transition-colors">ยกเลิก</button>
-                    <button onclick="executeMerge()" id="btn-execute-merge" class="px-6 py-2.5 bg-amber-600 hover:bg-amber-700 text-white rounded-xl text-xs font-bold shadow-md transition-all active:scale-95 flex items-center gap-1.5">
-                        <span class="material-symbols-outlined text-[16px]">call_merge</span> ยืนยันการรวมข้อมูล (Merge)
-                    </button>
-                </div>
-            </div>
-        </div>
-    </div>
-
 </body>
 </html>

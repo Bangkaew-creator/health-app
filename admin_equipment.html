@@ -1,0 +1,989 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="utf-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title>ทะเบียนยืม-คืนอุปกรณ์การแพทย์ - จัดการระบบ</title>
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700&display=swap" rel="stylesheet"/>
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+    <script charset="utf-8" src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
+    
+    <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore-compat.js"></script>
+    <script src="config.js"></script>
+    <script src="core.js"></script>
+    
+    <style>
+        body { font-family: 'Sarabun', sans-serif; background-color: #f8fafc; }
+        .material-symbols-outlined { font-variation-settings: 'FILL' 1, 'wght' 400, 'GRAD' 0, 'opsz' 24; }
+        .bg-navy { background-color: #0f172a; } .text-navy { color: #0f172a; }
+        .loader-small { border: 2px solid #f3f3f3; border-bottom-color: #00694a; border-radius: 50%; width: 24px; height: 24px; animation: spin 1s linear infinite; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        
+        .tab-btn {
+            padding: 10px 16px;
+            font-weight: bold;
+            font-size: 13px;
+            border-radius: 12px;
+            color: #64748b;
+            background-color: transparent;
+            transition: all 0.2s;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .tab-btn:hover { background-color: #f1f5f9; color: #334155; }
+        .tab-btn.active {
+            color: #00694a;
+            background-color: #ecfdf5;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+        }
+    </style>
+</head>
+<body class="flex h-[100dvh] overflow-hidden text-slate-800 relative">
+
+    <div id="sidebar-overlay" class="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-40 hidden lg:hidden" onclick="toggleSidebar()"></div>
+
+    <aside id="sidebar" class="fixed inset-y-0 left-0 w-72 bg-navy text-white flex flex-col z-50 transform -translate-x-full lg:translate-x-0 lg:static transition-transform duration-300 ease-in-out">
+        <div class="p-6 flex items-center justify-between border-b border-slate-700/40">
+            <div class="flex items-center gap-3">
+                <div class="w-11 h-11 rounded-xl bg-white/10 flex items-center justify-center border border-amber-400/30">
+                    <span class="material-symbols-outlined text-amber-400 text-[26px]">local_hospital</span>
+                </div>
+                <div>
+                    <h1 id="sidebar-hospital-name" class="font-bold text-[15px] tracking-wide text-white">กำลังโหลด...</h1>
+                    <p id="sidebar-system-name" class="text-[10px] text-amber-400 font-medium">ระบบบริหารจัดการ</p>
+                </div>
+            </div>
+            <button onclick="toggleSidebar()" class="lg:hidden text-slate-400 p-1"><span class="material-symbols-outlined">close</span></button>
+        </div>
+
+        <nav class="flex-1 px-4 py-6 space-y-2 overflow-y-auto">
+            <a href="admin_dashboard.html" class="flex items-center gap-3 px-4 py-3.5 text-slate-400 hover:bg-white/5 hover:text-white rounded-xl font-medium transition-all"><span class="material-symbols-outlined">dashboard</span> ภาพรวมระบบ</a>
+            <a href="admin_resources.html" class="flex items-center gap-3 px-4 py-3.5 text-slate-400 hover:bg-white/5 hover:text-white rounded-xl font-medium transition-all"><span class="material-symbols-outlined">inventory_2</span> บริหารทรัพยากร</a>
+            <a href="admin_inventory.html" id="nav-inventory" class="flex items-center gap-3 px-4 py-3.5 text-slate-400 hover:bg-white/5 hover:text-white rounded-xl font-medium transition-all"><span class="material-symbols-outlined">warehouse</span> ระบบคลังพัสดุ กปท.</a>
+            <a href="admin_equipment.html" id="nav-equipment" class="flex items-center gap-3 px-4 py-3.5 bg-white/10 text-white rounded-xl font-bold transition-all"><span class="material-symbols-outlined">medical_services</span> ทะเบียนยืม-คืนอุปกรณ์</a>
+            <a href="admin_datacenter.html" class="flex items-center gap-3 px-4 py-3.5 text-slate-400 hover:bg-white/5 hover:text-white rounded-xl font-medium transition-all"><span class="material-symbols-outlined">folder_shared</span> ศูนย์ข้อมูลผู้ป่วย</a>
+            <a href="admin_map.html" class="flex items-center gap-3 px-4 py-3.5 text-slate-400 hover:bg-white/5 hover:text-white rounded-xl font-medium transition-all"><span class="material-symbols-outlined">map</span> แผนที่พิกัดผู้ป่วย</a>
+            <a href="admin_delegation.html" class="flex items-center gap-3 px-4 py-3.5 text-slate-400 hover:bg-white/5 hover:text-white rounded-xl font-medium transition-all"><span class="material-symbols-outlined">assignment_ind</span> มอบหมายงาน อสม.</a>
+            <a href="admin_analytics.html" class="flex items-center gap-3 px-4 py-3.5 text-slate-400 hover:bg-white/5 hover:text-white rounded-xl font-medium transition-all"><span class="material-symbols-outlined">analytics</span> ศูนย์รายงาน (Export)</a>
+            <a href="admin_reports.html" id="nav-reports" class="flex items-center gap-3 px-4 py-3.5 text-slate-400 hover:bg-white/5 hover:text-white rounded-xl font-medium transition-all"><span class="material-symbols-outlined">gavel</span> บันทึกมติผ้าอ้อม</a>
+            <a href="admin_finance.html" id="nav-finance" class="flex items-center gap-3 px-4 py-3.5 text-slate-400 hover:bg-white/5 hover:text-white rounded-xl font-medium transition-all"><span class="material-symbols-outlined">account_balance_wallet</span> แผนการเงิน</a>
+            <a href="admin_settings.html" id="nav-settings" class="flex items-center gap-3 px-4 py-3.5 text-slate-400 hover:bg-white/5 hover:text-white rounded-xl font-medium transition-all"><span class="material-symbols-outlined">settings</span> ตั้งค่าระบบ</a>
+        </nav>
+    </aside>
+
+    <main class="flex-1 flex flex-col min-h-0 bg-slate-50">
+        <header class="h-20 min-h-[80px] bg-white shadow-sm flex items-center justify-between px-6 lg:px-8 z-10 flex-shrink-0 border-b border-slate-100">
+            <div class="flex items-center">
+                <button onclick="toggleSidebar()" class="lg:hidden p-2.5 -ml-2 mr-3 text-slate-600 hover:bg-slate-100 rounded-xl transition-colors"><span class="material-symbols-outlined text-[26px]">menu</span></button>
+                <div>
+                    <h2 class="text-base lg:text-lg font-bold text-slate-900 leading-tight">ทะเบียนยืม-คืนอุปกรณ์การแพทย์</h2>
+                    <p id="header-hospital-name" class="text-[11px] lg:text-xs text-slate-400 font-medium mt-0.5">Medical Equipment Loan Registry (กปท. / รพ.สต.)</p>
+                </div>
+            </div>
+            
+            <div class="flex items-center gap-3 cursor-pointer" onclick="window.location.href='admin_settings.html'">
+                <div class="hidden md:block text-right">
+                    <p class="text-sm font-bold text-slate-700 leading-tight" id="header-user-name">กำลังโหลด...</p>
+                    <p class="text-[10px] text-slate-400">ไปที่ตั้งค่าข้อมูลส่วนตัว</p>
+                </div>
+                <div class="w-10 h-10 rounded-full bg-slate-200 border-2 border-white shadow-sm overflow-hidden flex items-center justify-center">
+                    <img id="header-profile-pic" src="" class="w-full h-full object-cover hidden">
+                    <span id="header-profile-icon" class="material-symbols-outlined text-slate-400">person</span>
+                </div>
+            </div>
+        </header>
+
+        <!-- Navigation Tabs -->
+        <div class="bg-white px-6 py-2.5 border-b border-slate-200 flex justify-between items-center flex-wrap gap-2 shadow-sm z-10">
+            <div class="flex gap-2 bg-slate-100 p-1 rounded-xl">
+                <button onclick="switchTab('loans')" id="tab-loans" class="tab-btn active">
+                    <span class="material-symbols-outlined text-[18px]">assignment_turned_in</span> รายการยืม-คืนปัจจุบัน
+                </button>
+                <button onclick="switchTab('items')" id="tab-items" class="tab-btn">
+                    <span class="material-symbols-outlined text-[18px]">inventory_2</span> ทะเบียนครุภัณฑ์/อุปกรณ์
+                </button>
+            </div>
+
+            <div class="flex gap-2">
+                <button onclick="openNewLoanModal()" class="bg-[#00694a] hover:bg-[#005239] text-white px-4 py-2 rounded-xl text-xs sm:text-sm font-bold shadow-sm transition-all flex items-center gap-1.5 active:scale-95">
+                    <span class="material-symbols-outlined text-[18px]">add_circle</span> ทำรายการยืมใหม่
+                </button>
+                <button onclick="openNewItemModal()" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-xl text-xs sm:text-sm font-bold shadow-sm transition-all flex items-center gap-1.5 active:scale-95">
+                    <span class="material-symbols-outlined text-[18px]">add_box</span> เพิ่มอุปกรณ์ในสต็อก
+                </button>
+            </div>
+        </div>
+
+        <div class="flex-1 overflow-y-auto p-4 lg:p-6 relative">
+            <div id="loading-state" class="absolute inset-0 flex flex-col items-center justify-center bg-slate-50 z-20">
+                <div class="loader-small mb-3"></div><p class="text-sm text-slate-400 animate-pulse">กำลังโหลดข้อมูลอุปกรณ์การแพทย์...</p>
+            </div>
+
+            <!-- ================= TAB 1: รายการยืม-คืน ================= -->
+            <div id="view-loans" class="space-y-4">
+                <!-- Summary Stats -->
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                    <div class="bg-white rounded-2xl p-4 shadow-sm border border-slate-200 flex items-center justify-between">
+                        <div>
+                            <p class="text-xs text-slate-500 font-bold">กำลังยืมใช้งาน</p>
+                            <h3 class="text-2xl font-black text-amber-600 mt-1" id="stat-active-loans">0</h3>
+                        </div>
+                        <div class="w-10 h-10 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center">
+                            <span class="material-symbols-outlined">pending_actions</span>
+                        </div>
+                    </div>
+                    <div class="bg-white rounded-2xl p-4 shadow-sm border border-red-200 flex items-center justify-between">
+                        <div>
+                            <p class="text-xs text-red-600 font-bold flex items-center gap-1">
+                                <span class="material-symbols-outlined text-[14px]">warning</span> ติดตามคืนด่วน (ย้าย/เสียชีวิต)
+                            </p>
+                            <h3 class="text-2xl font-black text-red-600 mt-1" id="stat-urgent-returns">0</h3>
+                        </div>
+                        <div class="w-10 h-10 rounded-xl bg-red-50 text-red-600 flex items-center justify-center">
+                            <span class="material-symbols-outlined">priority_high</span>
+                        </div>
+                    </div>
+                    <div class="bg-white rounded-2xl p-4 shadow-sm border border-slate-200 flex items-center justify-between">
+                        <div>
+                            <p class="text-xs text-slate-500 font-bold">ส่งคืนเรียบร้อยแล้ว</p>
+                            <h3 class="text-2xl font-black text-emerald-600 mt-1" id="stat-returned-loans">0</h3>
+                        </div>
+                        <div class="w-10 h-10 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center">
+                            <span class="material-symbols-outlined">task_alt</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Filters & Toolbar -->
+                <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm flex flex-col md:flex-row gap-3 items-stretch md:items-center justify-between">
+                    <div class="flex-1 relative">
+                        <span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-[18px]">search</span>
+                        <input type="text" id="loan-search-input" oninput="renderLoans()" class="w-full pl-9 pr-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-emerald-500" placeholder="ค้นหาชื่อผู้ป่วย, ชื่ออุปกรณ์, หรือเบอร์โทรผู้ยืม...">
+                    </div>
+                    <div class="flex gap-2 flex-wrap">
+                        <select id="loan-status-filter" onchange="renderLoans()" class="px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-700">
+                            <option value="ALL">สถานะทั้งหมด</option>
+                            <option value="BORROWED" selected>กำลังยืม (ยังไม่คืน)</option>
+                            <option value="URGENT">⚠️ ติดตามด่วน (ผู้ป่วยย้าย/เสียชีวิต)</option>
+                            <option value="RETURNED">คืนแล้ว</option>
+                        </select>
+                        <button onclick="exportLoansToExcel()" class="bg-slate-100 hover:bg-slate-200 text-slate-700 px-3 py-2 rounded-xl text-xs font-bold transition-colors flex items-center gap-1">
+                            <span class="material-symbols-outlined text-[16px]">download</span> ส่งออก Excel
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Loans Table -->
+                <div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left text-xs border-collapse min-w-[850px]">
+                            <thead>
+                                <tr class="bg-slate-50 border-b border-slate-200 text-slate-500 font-bold">
+                                    <th class="p-3 w-12 text-center">#</th>
+                                    <th class="p-3">อุปกรณ์ที่ยืม</th>
+                                    <th class="p-3">ผู้ป่วย (ผู้ใช้สิทธิ์)</th>
+                                    <th class="p-3">ผู้มายืม / เบอร์ติดต่อ</th>
+                                    <th class="p-3 text-center">วันที่ยืม</th>
+                                    <th class="p-3 text-center">สถานะ</th>
+                                    <th class="p-3 text-center">การจัดการ</th>
+                                </tr>
+                            </thead>
+                            <tbody id="loans-tbody" class="divide-y divide-slate-100 text-slate-700">
+                            </tbody>
+                        </table>
+                    </div>
+                    <div id="loans-empty" class="hidden text-center py-16 text-slate-400">
+                        <span class="material-symbols-outlined text-[48px] text-slate-300 mb-2">folder_off</span>
+                        <p class="text-sm">ไม่พบรายการยืม-คืนตามเงื่อนไขที่เลือก</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ================= TAB 2: สต็อกครุภัณฑ์ ================= -->
+            <div id="view-items" class="space-y-4 hidden">
+                <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm flex flex-col md:flex-row gap-3 items-stretch md:items-center justify-between">
+                    <div class="flex-1 relative">
+                        <span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-[18px]">search</span>
+                        <input type="text" id="item-search-input" oninput="renderItems()" class="w-full pl-9 pr-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-emerald-500" placeholder="ค้นหาชื่ออุปกรณ์, รหัสครุภัณฑ์, หรือหมวดหมู่...">
+                    </div>
+                    <div class="flex gap-2">
+                        <select id="item-category-filter" onchange="renderItems()" class="px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-700">
+                            <option value="ALL">ทุกหมวดหมู่อุปกรณ์</option>
+                            <option value="เตียงผู้ป่วย">เตียงผู้ป่วย</option>
+                            <option value="รถเข็นวีลแชร์">รถเข็นวีลแชร์</option>
+                            <option value="ถังและเครื่องผลิตออกซิเจน">ถัง/เครื่องผลิตออกซิเจน</option>
+                            <option value="ที่นอนลม">ที่นอนลม</option>
+                            <option value="อุปกรณ์ช่วยเดิน">อุปกรณ์ช่วยเดิน (วอล์กเกอร์/ไม้เท้า)</option>
+                            <option value="อื่นๆ">อื่นๆ</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Items Cards Grid -->
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4" id="items-grid"></div>
+                <div id="items-empty" class="hidden text-center py-16 text-slate-400 bg-white rounded-2xl border border-slate-200">
+                    <span class="material-symbols-outlined text-[48px] text-slate-300 mb-2">inventory</span>
+                    <p class="text-sm">ยังไม่มีรายการอุปกรณ์ในระบบ คลิกปุ่ม "+ เพิ่มอุปกรณ์ในสต็อก" ด้านบนเพื่อเริ่มลงทะเบียน</p>
+                </div>
+            </div>
+        </div>
+
+    </main>
+
+    <!-- Modal: ทำรายการยืมใหม่ -->
+    <div id="modal-loan" class="fixed inset-0 bg-black/60 z-[100] hidden flex items-center justify-center p-4 opacity-0 transition-opacity duration-300">
+        <div id="modal-loan-content" class="bg-white rounded-[24px] w-full max-w-lg p-6 transform scale-95 transition-transform duration-300 shadow-2xl overflow-y-auto max-h-[90vh]">
+            <div class="flex justify-between items-center pb-3 border-b border-slate-100 mb-4">
+                <h3 class="text-base font-bold text-slate-800 flex items-center gap-2">
+                    <span class="material-symbols-outlined text-emerald-600">assignment_add</span> บันทึกการยืมอุปกรณ์การแพทย์
+                </h3>
+                <button onclick="closeModal('modal-loan')" class="text-slate-400 hover:text-slate-600"><span class="material-symbols-outlined">close</span></button>
+            </div>
+
+            <form onsubmit="handleSaveLoan(event)" class="space-y-3.5 text-xs">
+                <div>
+                    <label class="font-bold text-slate-700 block mb-1">เลือกอุปกรณ์ที่ต้องการยืม *</label>
+                    <select id="loan-item-select" required class="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-emerald-500">
+                        <option value="">-- กรุณาเลือกอุปกรณ์ (เฉพาะที่พร้อมให้ยืม) --</option>
+                    </select>
+                </div>
+
+                <div>
+                    <label class="font-bold text-slate-700 block mb-1">ค้นหาและเลือกผู้ป่วย *</label>
+                    <select id="loan-patient-select" required class="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-emerald-500">
+                        <option value="">-- เลือกผู้ป่วยในพื้นที่ --</option>
+                    </select>
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div>
+                        <label class="font-bold text-slate-700 block mb-1">ชื่อผู้มายืม / ผู้ติดต่อ *</label>
+                        <input type="text" id="loan-borrower-name" required class="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl" placeholder="เช่น นายสมชาย ใจดี (บุตร)">
+                    </div>
+                    <div>
+                        <label class="font-bold text-slate-700 block mb-1">เบอร์โทรศัพท์ผู้ยืม *</label>
+                        <input type="tel" id="loan-borrower-phone" required class="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl" placeholder="เช่น 081-234-5678">
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div>
+                        <label class="font-bold text-slate-700 block mb-1">วันที่ยืม *</label>
+                        <input type="text" id="loan-date" required class="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl" placeholder="วว/ดด/ปปปป">
+                    </div>
+                    <div>
+                        <label class="font-bold text-slate-700 block mb-1">กำหนดส่งคืน (โดยประมาณ)</label>
+                        <input type="text" id="loan-due-date" class="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl" placeholder="วว/ดด/ปปปป (ถ้ามี)">
+                    </div>
+                </div>
+
+                <div>
+                    <label class="font-bold text-slate-700 block mb-1">หมายเหตุเพิ่มเติม</label>
+                    <textarea id="loan-note" rows="2" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl" placeholder="ระบุรายละเอียดสภาพตอนยืม หรือเงื่อนไขเพิ่มเติม..."></textarea>
+                </div>
+
+                <div class="pt-3 border-t border-slate-100 flex gap-2 justify-end">
+                    <button type="button" onclick="closeModal('modal-loan')" class="px-4 py-2.5 bg-slate-100 text-slate-600 rounded-xl font-bold">ยกเลิก</button>
+                    <button type="submit" id="btn-save-loan" class="px-5 py-2.5 bg-[#00694a] text-white rounded-xl font-bold hover:bg-[#005239] shadow-sm">บันทึกการยืม</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal: บันทึกรับคืนอุปกรณ์ -->
+    <div id="modal-return" class="fixed inset-0 bg-black/60 z-[100] hidden flex items-center justify-center p-4 opacity-0 transition-opacity duration-300">
+        <div id="modal-return-content" class="bg-white rounded-[24px] w-full max-w-md p-6 transform scale-95 transition-transform duration-300 shadow-2xl">
+            <input type="hidden" id="return-loan-id" value="">
+            <input type="hidden" id="return-item-id" value="">
+            
+            <div class="flex justify-between items-center pb-3 border-b border-slate-100 mb-4">
+                <h3 class="text-base font-bold text-slate-800 flex items-center gap-2">
+                    <span class="material-symbols-outlined text-blue-600">assignment_return</span> บันทึกรับคืนอุปกรณ์
+                </h3>
+                <button onclick="closeModal('modal-return')" class="text-slate-400 hover:text-slate-600"><span class="material-symbols-outlined">close</span></button>
+            </div>
+
+            <div class="bg-slate-50 p-3 rounded-xl border border-slate-200 mb-4 text-xs space-y-1">
+                <p><span class="font-bold text-slate-500">อุปกรณ์:</span> <span id="return-info-equip" class="font-bold text-slate-800">-</span></p>
+                <p><span class="font-bold text-slate-500">ผู้ป่วย:</span> <span id="return-info-patient" class="font-bold text-slate-800">-</span></p>
+                <p><span class="font-bold text-slate-500">วันที่ยืมไป:</span> <span id="return-info-loandate" class="text-slate-600">-</span></p>
+            </div>
+
+            <form onsubmit="handleConfirmReturn(event)" class="space-y-3.5 text-xs">
+                <div>
+                    <label class="font-bold text-slate-700 block mb-1">วันที่ส่งคืนจริง *</label>
+                    <input type="text" id="return-date" required class="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl" placeholder="วว/ดด/ปปปป">
+                </div>
+
+                <div>
+                    <label class="font-bold text-slate-700 block mb-1">สภาพอุปกรณ์ตอนรับคืน *</label>
+                    <select id="return-condition" required class="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl">
+                        <option value="ปกติพร้อมใช้งาน" selected>✅ สภาพปกติ พร้อมใช้งานต่อ</option>
+                        <option value="ชำรุดรอซ่อม">⚠️ ชำรุด ต้องส่งซ่อม</option>
+                        <option value="ชำรุดเสียหายสิ้นเชิง">❌ เสียหายใช้งานไม่ได้ (แทงจำหน่าย)</option>
+                    </select>
+                </div>
+
+                <div>
+                    <label class="font-bold text-slate-700 block mb-1">บันทึกเพิ่มเติม / หมายเหตุ</label>
+                    <input type="text" id="return-note" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl" placeholder="เช่น ทำความสะอาดเรียบร้อย, นำส่งคืนโดยญาติ">
+                </div>
+
+                <div class="pt-3 border-t border-slate-100 flex gap-2 justify-end">
+                    <button type="button" onclick="closeModal('modal-return')" class="px-4 py-2.5 bg-slate-100 text-slate-600 rounded-xl font-bold">ยกเลิก</button>
+                    <button type="submit" id="btn-save-return" class="px-5 py-2.5 bg-blue-600 text-white rounded-xl font-bold hover:bg-blue-700 shadow-sm">ยืนยันรับคืนอุปกรณ์</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal: เพิ่มอุปกรณ์ใหม่ในสต็อก -->
+    <div id="modal-item" class="fixed inset-0 bg-black/60 z-[100] hidden flex items-center justify-center p-4 opacity-0 transition-opacity duration-300">
+        <div id="modal-item-content" class="bg-white rounded-[24px] w-full max-w-lg p-6 transform scale-95 transition-transform duration-300 shadow-2xl overflow-y-auto max-h-[90vh]">
+            <div class="flex justify-between items-center pb-3 border-b border-slate-100 mb-4">
+                <h3 class="text-base font-bold text-slate-800 flex items-center gap-2">
+                    <span class="material-symbols-outlined text-blue-600">add_box</span> ลงทะเบียนอุปกรณ์การแพทย์ใหม่
+                </h3>
+                <button onclick="closeModal('modal-item')" class="text-slate-400 hover:text-slate-600"><span class="material-symbols-outlined">close</span></button>
+            </div>
+
+            <form onsubmit="handleSaveItem(event)" class="space-y-3.5 text-xs">
+                <div>
+                    <label class="font-bold text-slate-700 block mb-1">ชื่ออุปกรณ์ / รายการ *</label>
+                    <input type="text" id="item-name" required class="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl" placeholder="เช่น เตียงผู้ป่วย 2 ไกร์, รถเข็นวีลแชร์แบบพับได้">
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div>
+                        <label class="font-bold text-slate-700 block mb-1">รหัสครุภัณฑ์ / บาร์โค้ด</label>
+                        <input type="text" id="item-asset-code" class="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl" placeholder="เช่น EQP-2569-001">
+                    </div>
+                    <div>
+                        <label class="font-bold text-slate-700 block mb-1">หมวดหมู่อุปกรณ์ *</label>
+                        <select id="item-category" required class="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl">
+                            <option value="เตียงผู้ป่วย">เตียงผู้ป่วย</option>
+                            <option value="รถเข็นวีลแชร์">รถเข็นวีลแชร์</option>
+                            <option value="ถังและเครื่องผลิตออกซิเจน">ถังและเครื่องผลิตออกซิเจน</option>
+                            <option value="ที่นอนลม">ที่นอนลมป้องกันแผลกดทับ</option>
+                            <option value="อุปกรณ์ช่วยเดิน">อุปกรณ์ช่วยเดิน (วอล์กเกอร์/ไม้เท้า)</option>
+                            <option value="อื่นๆ">อื่นๆ</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div>
+                        <label class="font-bold text-slate-700 block mb-1">จำนวนทั้งหมด (ชิ้น) *</label>
+                        <input type="number" min="1" id="item-total-qty" value="1" required class="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl">
+                    </div>
+                    <div>
+                        <label class="font-bold text-slate-700 block mb-1">สภาพอุปกรณ์</label>
+                        <select id="item-condition" class="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl">
+                            <option value="พร้อมใช้งาน" selected>พร้อมใช้งาน</option>
+                            <option value="ชำรุดรอซ่อม">ชำรุดรอซ่อม</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div>
+                    <label class="font-bold text-slate-700 block mb-1">หมายเหตุ / แหล่งที่มา</label>
+                    <input type="text" id="item-note" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl" placeholder="เช่น งบกองทุน กปท. ประจำปี 2569 หรือ รับบริจาค">
+                </div>
+
+                <div class="pt-3 border-t border-slate-100 flex gap-2 justify-end">
+                    <button type="button" onclick="closeModal('modal-item')" class="px-4 py-2.5 bg-slate-100 text-slate-600 rounded-xl font-bold">ยกเลิก</button>
+                    <button type="submit" id="btn-save-item" class="px-5 py-2.5 bg-blue-600 text-white rounded-xl font-bold hover:bg-blue-700 shadow-sm">บันทึกอุปกรณ์</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        firebase.initializeApp(firebaseConfig);
+        firebase.firestore().enablePersistence({ synchronizeTabs: true }).catch(err => console.warn('Offline persistence error:', err.code));
+        const db = firebase.firestore();
+
+        let currentUserRole = "ADMIN";
+        let currentUserUid = "";
+        let currentUserName = "";
+        let currentHospital = DEFAULT_CONFIGS.HOSPITAL_NAME;
+        let assignedVillages = [];
+
+        let allEquipmentItems = [];
+        let allEquipmentLoans = [];
+        let allPatientsMap = {}; 
+        let allPatientsList = [];
+
+        function toggleSidebar() { document.getElementById('sidebar').classList.toggle('-translate-x-full'); }
+
+        function showToast(msg, type = 'info') {
+            let toast = document.getElementById('global-floating-toast');
+            if (!toast) {
+                toast = document.createElement('div');
+                toast.id = 'global-floating-toast';
+                document.body.appendChild(toast);
+            }
+            let bg = type === 'error' ? 'bg-rose-600 text-white' : 'bg-emerald-600 text-white';
+            toast.className = `fixed bottom-6 right-6 z-[9999] px-4 py-3 rounded-2xl shadow-xl font-bold text-xs sm:text-sm flex items-center gap-2 transition-all duration-300 ${bg}`;
+            toast.innerHTML = `<span>${msg}</span>`;
+            if (toast.timer) clearTimeout(toast.timer);
+            toast.timer = setTimeout(() => { toast.remove(); }, 3000);
+        }
+
+        function switchTab(tab) {
+            ['loans', 'items'].forEach(t => {
+                const btn = document.getElementById(`tab-${t}`);
+                const view = document.getElementById(`view-${t}`);
+                if (btn) btn.classList.remove('active');
+                if (view) view.classList.add('hidden');
+            });
+            document.getElementById(`tab-${tab}`).classList.add('active');
+            document.getElementById(`view-${tab}`).classList.remove('hidden');
+        }
+
+        function openModal(modalId) {
+            const m = document.getElementById(modalId);
+            const c = document.getElementById(`${modalId}-content`);
+            if (!m || !c) return;
+            m.classList.remove('hidden');
+            setTimeout(() => { m.classList.remove('opacity-0'); c.classList.remove('scale-95'); }, 10);
+        }
+
+        function closeModal(modalId) {
+            const m = document.getElementById(modalId);
+            const c = document.getElementById(`${modalId}-content`);
+            if (!m || !c) return;
+            m.classList.add('opacity-0'); c.classList.add('scale-95');
+            setTimeout(() => { m.classList.add('hidden'); }, 300);
+        }
+
+        document.addEventListener("DOMContentLoaded", async () => {
+            try {
+                const authCtx = await OrsomoCore.Auth.guardPage({
+                    allowedRoles: ['ADMIN', 'SUB_ADMIN'],
+                    autoAdminShell: false,
+                    currentPage: 'admin_equipment.html'
+                });
+                if (!authCtx) return;
+
+                currentUserUid = authCtx.uid;
+                currentUserRole = authCtx.role;
+                currentUserName = (authCtx.user && authCtx.user.name) || 'เจ้าหน้าที่';
+                assignedVillages = (authCtx.user && authCtx.user.assigned_villages) || [];
+                currentHospital = (authCtx.user && authCtx.user.hospital_name) || DEFAULT_CONFIGS.HOSPITAL_NAME;
+
+                document.getElementById('sidebar-hospital-name').innerText = currentHospital;
+                document.getElementById('header-hospital-name').innerText = `ระบบยืม-คืนอุปกรณ์การแพทย์: ${currentHospital}`;
+                document.getElementById('header-user-name').innerText = currentUserName;
+
+                if (authCtx.user && (authCtx.user.profile_pic || authCtx.user.photoURL)) {
+                    const pSrc = authCtx.user.profile_pic || authCtx.user.photoURL;
+                    document.getElementById('header-profile-pic').src = pSrc;
+                    document.getElementById('header-profile-pic').classList.remove('hidden');
+                    document.getElementById('header-profile-icon').classList.add('hidden');
+                }
+
+                if (currentUserRole === 'SUB_ADMIN') {
+                    ['nav-settings', 'nav-finance', 'nav-inventory', 'nav-reports'].forEach(id => {
+                        const el = document.getElementById(id);
+                        if (el) el.style.display = 'none';
+                    });
+                }
+
+                await loadData();
+
+            } catch (err) {
+                console.error("Equipment page init error:", err);
+            }
+        });
+
+        async function loadData() {
+            try {
+                // 1. โหลดข้อมูลผู้ป่วยทั้งหมด
+                const pSnap = await db.collection('Patients').get();
+                allPatientsMap = {};
+                allPatientsList = [];
+                pSnap.forEach(d => {
+                    const data = d.data();
+                    data.docId = d.id;
+                    if (!data.id) data.id = d.id;
+                    allPatientsMap[d.id] = data;
+                    allPatientsMap[data.id] = data;
+                    allPatientsList.push(data);
+                });
+
+                // 2. โหลดครุภัณฑ์
+                const itemSnap = await db.collection('Equipment_Items').get();
+                allEquipmentItems = [];
+                itemSnap.forEach(d => {
+                    const data = d.data();
+                    data.docId = d.id;
+                    if (!data.id) data.id = d.id;
+                    if (currentUserRole === 'ADMIN' || !data.hospital_name || data.hospital_name === currentHospital) {
+                        allEquipmentItems.push(data);
+                    }
+                });
+
+                // 3. โหลดรายการยืม-คืน
+                const loanSnap = await db.collection('Equipment_Loans').get();
+                allEquipmentLoans = [];
+                loanSnap.forEach(d => {
+                    const data = d.data();
+                    data.docId = d.id;
+                    if (!data.id) data.id = d.id;
+                    if (currentUserRole === 'ADMIN' || !data.hospital_name || data.hospital_name === currentHospital) {
+                        allEquipmentLoans.push(data);
+                    }
+                });
+
+                document.getElementById('loading-state').classList.add('hidden');
+
+                populatePatientSelect();
+                populateItemSelect();
+                renderLoans();
+                renderItems();
+
+            } catch (err) {
+                console.error("Load equipment data error:", err);
+                showToast("ดึงฐานข้อมูลล้มเหลว", "error");
+            }
+        }
+
+        function populatePatientSelect() {
+            const select = document.getElementById('loan-patient-select');
+            select.innerHTML = '<option value="">-- เลือกผู้ป่วยในพื้นที่ --</option>';
+
+            const sorted = [...allPatientsList].sort((a,b) => {
+                const va = parseInt(a.village_no) || 999;
+                const vb = parseInt(b.village_no) || 999;
+                return va - vb;
+            });
+
+            sorted.forEach(p => {
+                if (currentUserRole === 'SUB_ADMIN' && !assignedVillages.includes(String(p.village_no).trim())) return;
+                const pId = p.docId || p.id;
+                const pName = `${p.prefix || ''}${p.name || 'ไม่ระบุชื่อ'}`;
+                const pMoo = p.village_no ? `ม.${p.village_no}` : '-';
+                const pStatus = p.status || 'Active';
+                select.insertAdjacentHTML('beforeend', `<option value="${pId}">${pName} (${pMoo}, บ้านเลขที่ ${p.house_no || '-'}) [${pStatus}]</option>`);
+            });
+        }
+
+        function populateItemSelect() {
+            const select = document.getElementById('loan-item-select');
+            select.innerHTML = '<option value="">-- กรุณาเลือกอุปกรณ์ (เฉพาะที่พร้อมให้ยืม) --</option>';
+
+            allEquipmentItems.forEach(item => {
+                const avail = parseInt(item.available_qty) || 0;
+                if (avail > 0 && item.condition !== 'ชำรุดรอซ่อม' && item.condition !== 'ชำรุดเสียหายสิ้นเชิง') {
+                    select.insertAdjacentHTML('beforeend', `<option value="${item.docId}">${item.name} (${item.asset_code || '-'}) [ว่าง: ${avail} ชิ้น]</option>`);
+                }
+            });
+        }
+
+        function renderLoans() {
+            const tbody = document.getElementById('loans-tbody');
+            const emptyEl = document.getElementById('loans-empty');
+            tbody.innerHTML = '';
+
+            const search = document.getElementById('loan-search-input').value.trim().toLowerCase();
+            const filter = document.getElementById('loan-status-filter').value;
+
+            let cActive = 0, cUrgent = 0, cReturned = 0;
+
+            const filtered = allEquipmentLoans.filter(l => {
+                const pData = allPatientsMap[l.patient_id] || {};
+                const pStatus = pData.status || 'Active';
+                const isDeceasedOrMoved = (pStatus === 'เสียชีวิต' || pStatus === 'ย้ายที่อยู่' || pStatus === 'เลิกติดตาม');
+                const isBorrowed = (l.status === 'BORROWED');
+
+                if (isBorrowed) cActive++;
+                if (isBorrowed && isDeceasedOrMoved) cUrgent++;
+                if (l.status === 'RETURNED') cReturned++;
+
+                if (filter === 'BORROWED' && !isBorrowed) return false;
+                if (filter === 'RETURNED' && l.status !== 'RETURNED') return false;
+                if (filter === 'URGENT' && (!isBorrowed || !isDeceasedOrMoved)) return false;
+
+                if (search) {
+                    const matchEquip = l.equipment_name && l.equipment_name.toLowerCase().includes(search);
+                    const matchPatient = l.patient_name && l.patient_name.toLowerCase().includes(search);
+                    const matchBorrower = l.borrower_name && l.borrower_name.toLowerCase().includes(search);
+                    const matchPhone = l.borrower_phone && l.borrower_phone.includes(search);
+                    if (!matchEquip && !matchPatient && !matchBorrower && !matchPhone) return false;
+                }
+
+                return true;
+            });
+
+            document.getElementById('stat-active-loans').innerText = cActive;
+            document.getElementById('stat-urgent-returns').innerText = cUrgent;
+            document.getElementById('stat-returned-loans').innerText = cReturned;
+
+            if (filtered.length === 0) {
+                emptyEl.classList.remove('hidden');
+                return;
+            }
+            emptyEl.classList.add('hidden');
+
+            filtered.sort((a,b) => (b.created_timestamp || 0) - (a.created_timestamp || 0));
+
+            filtered.forEach((l, idx) => {
+                const pData = allPatientsMap[l.patient_id] || {};
+                const pStatus = pData.status || 'Active';
+                const isDeceasedOrMoved = (pStatus === 'เสียชีวิต' || pStatus === 'ย้ายที่อยู่' || pStatus === 'เลิกติดตาม');
+                const isBorrowed = (l.status === 'BORROWED');
+
+                let statusBadge = '';
+                if (isBorrowed && isDeceasedOrMoved) {
+                    statusBadge = `<span class="bg-red-100 text-red-700 border border-red-200 px-2.5 py-1 rounded-full font-bold flex items-center justify-center gap-1 mx-auto w-max"><span class="material-symbols-outlined text-[13px]">warning</span> ติดตามคืนด่วน (${pStatus})</span>`;
+                } else if (isBorrowed) {
+                    statusBadge = `<span class="bg-amber-100 text-amber-800 border border-amber-200 px-2.5 py-1 rounded-full font-bold mx-auto block w-max">กำลังยืม</span>`;
+                } else {
+                    statusBadge = `<span class="bg-emerald-100 text-emerald-800 border border-emerald-200 px-2.5 py-1 rounded-full font-bold mx-auto block w-max">คืนแล้ว (${l.return_date || '-'})</span>`;
+                }
+
+                let actionBtn = '';
+                if (isBorrowed) {
+                    actionBtn = `
+                        <button onclick="openReturnModal('${l.docId}')" class="bg-blue-600 hover:bg-blue-700 text-white font-bold px-3 py-1.5 rounded-xl text-[11px] shadow-sm transition-all flex items-center gap-1 mx-auto active:scale-95">
+                            <span class="material-symbols-outlined text-[14px]">assignment_return</span> บันทึกรับคืน
+                        </button>
+                    `;
+                } else {
+                    actionBtn = `<span class="text-slate-400 text-[11px]">เรียบร้อย</span>`;
+                }
+
+                tbody.insertAdjacentHTML('beforeend', `
+                    <tr class="hover:bg-slate-50 border-b border-slate-100 transition-colors">
+                        <td class="p-3 text-center text-slate-400 font-mono">${idx + 1}</td>
+                        <td class="p-3">
+                            <p class="font-bold text-slate-800">${l.equipment_name || '-'}</p>
+                            <p class="text-[10px] text-slate-400 font-mono">รหัส: ${l.asset_code || '-'}</p>
+                        </td>
+                        <td class="p-3">
+                            <a href="patient_profile.html?id=${l.patient_id}" class="font-bold text-blue-600 hover:underline block">${l.patient_name || '-'}</a>
+                            <p class="text-[10px] text-slate-500">หมู่ที่ ${l.village_no || '-'} | สถานะ: <span class="${isDeceasedOrMoved ? 'text-red-600 font-bold' : 'text-slate-600'}">${pStatus}</span></p>
+                        </td>
+                        <td class="p-3">
+                            <p class="font-bold text-slate-700">${l.borrower_name || '-'}</p>
+                            <a href="tel:${l.borrower_phone}" class="text-[11px] text-slate-500 hover:text-emerald-700 flex items-center gap-0.5"><span class="material-symbols-outlined text-[12px]">call</span> ${l.borrower_phone || '-'}</a>
+                        </td>
+                        <td class="p-3 text-center text-slate-600 whitespace-nowrap">
+                            ${l.loan_date || '-'}
+                            ${l.due_date ? `<br><span class="text-[10px] text-slate-400">กำหนด: ${l.due_date}</span>` : ''}
+                        </td>
+                        <td class="p-3 text-center">${statusBadge}</td>
+                        <td class="p-3 text-center">${actionBtn}</td>
+                    </tr>
+                `);
+            });
+        }
+
+        function renderItems() {
+            const grid = document.getElementById('items-grid');
+            const emptyEl = document.getElementById('items-empty');
+            grid.innerHTML = '';
+
+            const search = document.getElementById('item-search-input').value.trim().toLowerCase();
+            const cat = document.getElementById('item-category-filter').value;
+
+            const filtered = allEquipmentItems.filter(item => {
+                if (cat !== 'ALL' && item.category !== cat) return false;
+                if (search) {
+                    const matchName = item.name && item.name.toLowerCase().includes(search);
+                    const matchCode = item.asset_code && item.asset_code.toLowerCase().includes(search);
+                    const matchCat = item.category && item.category.toLowerCase().includes(search);
+                    if (!matchName && !matchCode && !matchCat) return false;
+                }
+                return true;
+            });
+
+            if (filtered.length === 0) {
+                emptyEl.classList.remove('hidden');
+                return;
+            }
+            emptyEl.classList.add('hidden');
+
+            filtered.forEach(item => {
+                const total = parseInt(item.total_qty) || 0;
+                const avail = parseInt(item.available_qty) || 0;
+                const borrowed = Math.max(0, total - avail);
+
+                let badgeColor = 'bg-emerald-50 text-emerald-700 border-emerald-200';
+                if (avail === 0) badgeColor = 'bg-rose-50 text-rose-700 border-rose-200';
+
+                grid.insertAdjacentHTML('beforeend', `
+                    <div class="bg-white rounded-2xl p-5 border border-slate-200 shadow-sm flex flex-col justify-between hover:shadow-md transition-all">
+                        <div>
+                            <div class="flex items-start justify-between gap-2 mb-2">
+                                <span class="text-[10px] font-bold px-2.5 py-0.5 rounded-full border ${badgeColor}">
+                                    ${avail > 0 ? `พร้อมให้ยืม ${avail} ชิ้น` : 'ถูกยืมหมดแล้ว'}
+                                </span>
+                                <span class="text-[10px] text-slate-400 font-mono">${item.asset_code || '-'}</span>
+                            </div>
+                            <h3 class="font-bold text-slate-800 text-sm mb-1">${item.name}</h3>
+                            <p class="text-[11px] text-slate-500 mb-3"><span class="font-semibold text-slate-600">หมวดหมู่:</span> ${item.category || '-'}</p>
+
+                            <div class="grid grid-cols-3 gap-2 bg-slate-50 p-2.5 rounded-xl text-center border border-slate-100 mb-3">
+                                <div><p class="text-[10px] text-slate-400">ทั้งหมด</p><p class="font-bold text-slate-800 text-sm">${total}</p></div>
+                                <div><p class="text-[10px] text-slate-400">กำลังยืม</p><p class="font-bold text-amber-600 text-sm">${borrowed}</p></div>
+                                <div><p class="text-[10px] text-slate-400">คงเหลือ</p><p class="font-bold text-emerald-600 text-sm">${avail}</p></div>
+                            </div>
+                        </div>
+
+                        <div class="flex gap-2 pt-3 border-t border-slate-100">
+                            <button onclick="quickBorrow('${item.docId}')" ${avail === 0 ? 'disabled' : ''} class="flex-1 py-2 bg-[#00694a] disabled:bg-slate-200 disabled:text-slate-400 text-white font-bold rounded-xl text-xs hover:bg-[#005239] transition-colors shadow-sm">
+                                ยืมอุปกรณ์นี้
+                            </button>
+                        </div>
+                    </div>
+                `);
+            });
+        }
+
+        function quickBorrow(itemId) {
+            openNewLoanModal();
+            const select = document.getElementById('loan-item-select');
+            if (select) select.value = itemId;
+        }
+
+        function openNewLoanModal() {
+            document.getElementById('loan-date').value = OrsomoCore.DateUtils.toThaiDate(new Date());
+            openModal('modal-loan');
+        }
+
+        function openNewItemModal() {
+            openModal('modal-item');
+        }
+
+        function openReturnModal(loanId) {
+            const loan = allEquipmentLoans.find(l => l.docId === loanId);
+            if (!loan) return;
+
+            document.getElementById('return-loan-id').value = loan.docId;
+            document.getElementById('return-item-id').value = loan.item_id || '';
+            document.getElementById('return-info-equip').innerText = `${loan.equipment_name} (${loan.asset_code || '-'})`;
+            document.getElementById('return-info-patient').innerText = `${loan.patient_name || '-'} (หมู่ ${loan.village_no || '-'})`;
+            document.getElementById('return-info-loandate').innerText = loan.loan_date || '-';
+            document.getElementById('return-date').value = OrsomoCore.DateUtils.toThaiDate(new Date());
+
+            openModal('modal-return');
+        }
+
+        async function handleSaveLoan(e) {
+            e.preventDefault();
+            const itemId = document.getElementById('loan-item-select').value;
+            const patientId = document.getElementById('loan-patient-select').value;
+            const borrowerName = document.getElementById('loan-borrower-name').value.trim();
+            const borrowerPhone = document.getElementById('loan-borrower-phone').value.trim();
+            const loanDate = document.getElementById('loan-date').value.trim();
+            const dueDate = document.getElementById('loan-due-date').value.trim();
+            const note = document.getElementById('loan-note').value.trim();
+
+            if (!itemId || !patientId || !borrowerName || !borrowerPhone || !loanDate) {
+                showToast("กรุณากรอกข้อมูลให้ครบถ้วน", "error");
+                return;
+            }
+
+            const item = allEquipmentItems.find(i => i.docId === itemId);
+            const patient = allPatientsMap[patientId] || {};
+
+            const btn = document.getElementById('btn-save-loan');
+            btn.disabled = true;
+            btn.innerText = "กำลังบันทึก...";
+
+            try {
+                // 1. สร้าง Record การยืม
+                const loanData = {
+                    item_id: itemId,
+                    equipment_name: item ? item.name : 'อุปกรณ์การแพทย์',
+                    asset_code: item ? (item.asset_code || '') : '',
+                    patient_id: patientId,
+                    patient_name: patient ? `${patient.prefix||''}${patient.name||'ไม่ระบุชื่อ'}` : 'ผู้ป่วย',
+                    village_no: patient ? (patient.village_no || '-') : '-',
+                    borrower_name: borrowerName,
+                    borrower_phone: borrowerPhone,
+                    loan_date: loanDate,
+                    due_date: dueDate,
+                    return_date: null,
+                    status: 'BORROWED',
+                    hospital_name: currentHospital,
+                    staff_name: currentUserName,
+                    staff_uid: currentUserUid,
+                    note: note,
+                    created_timestamp: Date.now(),
+                    created_at: firebase.firestore.FieldValue.serverTimestamp()
+                };
+
+                await db.collection('Equipment_Loans').add(loanData);
+
+                // 2. ลดสต็อก available_qty ลง 1
+                if (item) {
+                    const currentAvail = Math.max(0, (parseInt(item.available_qty) || 0) - 1);
+                    await db.collection('Equipment_Items').doc(itemId).update({
+                        available_qty: currentAvail,
+                        updated_at: firebase.firestore.FieldValue.serverTimestamp()
+                    });
+                }
+
+                showToast("บันทึกการยืมอุปกรณ์เรียบร้อยแล้ว!", "success");
+                closeModal('modal-loan');
+                await loadData();
+
+            } catch (err) {
+                console.error("Save loan error:", err);
+                showToast("เกิดข้อผิดพลาดในการบันทึก: " + err.message, "error");
+            } finally {
+                btn.disabled = false;
+                btn.innerText = "บันทึกการยืม";
+            }
+        }
+
+        async function handleConfirmReturn(e) {
+            e.preventDefault();
+            const loanId = document.getElementById('return-loan-id').value;
+            const itemId = document.getElementById('return-item-id').value;
+            const returnDate = document.getElementById('return-date').value.trim();
+            const condition = document.getElementById('return-condition').value;
+            const returnNote = document.getElementById('return-note').value.trim();
+
+            if (!loanId || !returnDate) {
+                showToast("กรุณากรอกวันที่ส่งคืน", "error");
+                return;
+            }
+
+            const btn = document.getElementById('btn-save-return');
+            btn.disabled = true;
+            btn.innerText = "กำลังบันทึก...";
+
+            try {
+                // 1. อัปเดตสถานะการยืมเป็น RETURNED
+                await db.collection('Equipment_Loans').doc(loanId).update({
+                    status: 'RETURNED',
+                    return_date: returnDate,
+                    return_condition: condition,
+                    return_note: returnNote,
+                    return_staff_name: currentUserName,
+                    return_staff_uid: currentUserUid,
+                    updated_at: firebase.firestore.FieldValue.serverTimestamp()
+                });
+
+                // 2. ถ้าสภาพปกติ ให้เพิ่มสต็อก available_qty กลับคืน +1
+                if (itemId && condition === 'ปกติพร้อมใช้งาน') {
+                    const itemDoc = await db.collection('Equipment_Items').doc(itemId).get();
+                    if (itemDoc.exists) {
+                        const iData = itemDoc.data();
+                        const newAvail = Math.min(parseInt(iData.total_qty) || 1, (parseInt(iData.available_qty) || 0) + 1);
+                        await db.collection('Equipment_Items').doc(itemId).update({
+                            available_qty: newAvail,
+                            updated_at: firebase.firestore.FieldValue.serverTimestamp()
+                        });
+                    }
+                }
+
+                showToast("บันทึกรับคืนอุปกรณ์เรียบร้อยแล้ว!", "success");
+                closeModal('modal-return');
+                await loadData();
+
+            } catch (err) {
+                console.error("Return loan error:", err);
+                showToast("เกิดข้อผิดพลาด: " + err.message, "error");
+            } finally {
+                btn.disabled = false;
+                btn.innerText = "ยืนยันรับคืนอุปกรณ์";
+            }
+        }
+
+        async function handleSaveItem(e) {
+            e.preventDefault();
+            const name = document.getElementById('item-name').value.trim();
+            const code = document.getElementById('item-asset-code').value.trim();
+            const cat = document.getElementById('item-category').value;
+            const total = parseInt(document.getElementById('item-total-qty').value) || 1;
+            const cond = document.getElementById('item-condition').value;
+            const note = document.getElementById('item-note').value.trim();
+
+            if (!name || total < 1) {
+                showToast("กรุณาระบุชื่อและจำนวนอุปกรณ์ให้ถูกต้อง", "error");
+                return;
+            }
+
+            const btn = document.getElementById('btn-save-item');
+            btn.disabled = true;
+            btn.innerText = "กำลังบันทึก...";
+
+            try {
+                const itemData = {
+                    name: name,
+                    asset_code: code || `EQP-${Date.now().toString().slice(-4)}`,
+                    category: cat,
+                    total_qty: total,
+                    available_qty: total,
+                    condition: cond,
+                    hospital_name: currentHospital,
+                    staff_uid: currentUserUid,
+                    staff_name: currentUserName,
+                    note: note,
+                    created_at: firebase.firestore.FieldValue.serverTimestamp()
+                };
+
+                await db.collection('Equipment_Items').add(itemData);
+
+                showToast("เพิ่มอุปกรณ์ในสต็อกเรียบร้อยแล้ว!", "success");
+                closeModal('modal-item');
+                await loadData();
+
+            } catch (err) {
+                console.error("Save item error:", err);
+                showToast("เกิดข้อผิดพลาด: " + err.message, "error");
+            } finally {
+                btn.disabled = false;
+                btn.innerText = "บันทึกอุปกรณ์";
+            }
+        }
+
+        function exportLoansToExcel() {
+            if (allEquipmentLoans.length === 0) {
+                alert("ไม่มีข้อมูลการยืม-คืนสำหรับส่งออก");
+                return;
+            }
+
+            const headers = [
+                "ลำดับ", "ชื่ออุปกรณ์", "รหัสครุภัณฑ์", "ผู้ป่วย (ผู้ใช้สิทธิ์)", "หมู่ที่",
+                "ชื่อผู้มายืม", "เบอร์โทรผู้ยืม", "วันที่ยืม", "กำหนดคืน", "วันที่คืนจริง",
+                "สถานะการยืม", "สภาพอุปกรณ์ตอนคืน", "เจ้าหน้าที่ผู้บันทึก", "หมายเหตุ"
+            ];
+
+            const rows = allEquipmentLoans.map((l, idx) => [
+                idx + 1,
+                l.equipment_name || '-',
+                l.asset_code || '-',
+                l.patient_name || '-',
+                l.village_no || '-',
+                l.borrower_name || '-',
+                l.borrower_phone || '-',
+                l.loan_date || '-',
+                l.due_date || '-',
+                l.return_date || '-',
+                l.status === 'BORROWED' ? 'กำลังยืม' : 'คืนแล้ว',
+                l.return_condition || '-',
+                l.staff_name || '-',
+                l.note || '-'
+            ]);
+
+            const wb = XLSX.utils.book_new();
+            const ws = XLSX.utils.aoa_to_sheet([headers, ...rows]);
+            XLSX.utils.book_append_sheet(wb, ws, "ทะเบียนยืมคืนอุปกรณ์");
+            XLSX.writeFile(wb, `equipment_loans_${new Date().toISOString().split('T')[0]}.xlsx`);
+        }
+    </script>
+</body>
+</html>

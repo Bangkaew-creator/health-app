@@ -15,9 +15,11 @@
     <link rel="apple-touch-icon" href="https://cdn-icons-png.flaticon.com/512/3063/3063116.png">
     
     <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-messaging-compat.js"></script>
     <script src="config.js"></script>
+    <script src="core.js"></script>
     
     <style>
         body { font-family: 'Sarabun', sans-serif; background-color: #f8fafc; }
@@ -53,17 +55,18 @@
         </div>
 
         <nav class="flex-1 px-4 py-6 space-y-2 overflow-y-auto">
-    <a href="admin_dashboard.html" class="flex items-center gap-3 px-4 py-3.5 text-slate-400 hover:bg-white/5 hover:text-white rounded-xl font-medium transition-all"><span class="material-symbols-outlined">dashboard</span> ภาพรวมระบบ</a>
-    <a href="admin_resources.html" class="flex items-center gap-3 px-4 py-3.5 text-slate-400 hover:bg-white/5 hover:text-white rounded-xl font-medium transition-all"><span class="material-symbols-outlined">inventory_2</span> บริหารทรัพยากร</a>
-    <a href="admin_inventory.html" id="nav-inventory" class="flex items-center gap-3 px-4 py-3.5 text-slate-400 hover:bg-white/5 hover:text-white rounded-xl font-medium transition-all"><span class="material-symbols-outlined">warehouse</span> ระบบคลังพัสดุ กปท.</a>
-    <a href="admin_datacenter.html" class="flex items-center gap-3 px-4 py-3.5 text-slate-400 hover:bg-white/5 hover:text-white rounded-xl font-medium transition-all"><span class="material-symbols-outlined">folder_shared</span> ศูนย์ข้อมูลผู้ป่วย</a>
-    <a href="admin_map.html" class="flex items-center gap-3 px-4 py-3.5 text-slate-400 hover:bg-white/5 hover:text-white rounded-xl font-medium transition-all"><span class="material-symbols-outlined">map</span> แผนที่พิกัดผู้ป่วย</a>
-    <a href="admin_delegation.html" class="flex items-center gap-3 px-4 py-3.5 text-slate-400 hover:bg-white/5 hover:text-white rounded-xl font-medium transition-all"><span class="material-symbols-outlined">assignment_ind</span> มอบหมายงาน อสม.</a>
-    <a href="admin_analytics.html" class="flex items-center gap-3 px-4 py-3.5 text-slate-400 hover:bg-white/5 hover:text-white rounded-xl font-medium transition-all"><span class="material-symbols-outlined">analytics</span> ศูนย์รายงาน (Export)</a>
-    <a href="admin_reports.html" id="nav-reports" class="flex items-center gap-3 px-4 py-3.5 text-slate-400 hover:bg-white/5 hover:text-white rounded-xl font-medium transition-all"><span class="material-symbols-outlined">gavel</span> บันทึกมติผ้าอ้อม</a>
-    <a href="admin_finance.html" id="nav-finance" class="flex items-center gap-3 px-4 py-3.5 text-slate-400 hover:bg-white/5 hover:text-white rounded-xl font-medium transition-all"><span class="material-symbols-outlined">account_balance_wallet</span> แผนการเงิน</a>
-    <a href="admin_settings.html" id="nav-settings" class="flex items-center gap-3 px-4 py-3.5 text-slate-400 hover:bg-white/5 hover:text-white rounded-xl font-medium transition-all"><span class="material-symbols-outlined">settings</span> ตั้งค่าระบบ</a>
-</nav>
+            <a href="admin_dashboard.html" class="flex items-center gap-3 px-4 py-3.5 text-slate-400 hover:bg-white/5 hover:text-white rounded-xl font-medium transition-all"><span class="material-symbols-outlined">dashboard</span> ภาพรวมระบบ</a>
+            <a href="admin_resources.html" class="flex items-center gap-3 px-4 py-3.5 text-slate-400 hover:bg-white/5 hover:text-white rounded-xl font-medium transition-all"><span class="material-symbols-outlined">inventory_2</span> บริหารทรัพยากร</a>
+            <a href="admin_equipment.html" id="nav-equipment" class="flex items-center gap-3 px-4 py-3.5 text-slate-400 hover:bg-white/5 hover:text-white rounded-xl font-medium transition-all"><span class="material-symbols-outlined">accessible</span> ระบบยืม-คืนอุปกรณ์</a>
+            <a href="admin_inventory.html" id="nav-inventory" class="flex items-center gap-3 px-4 py-3.5 text-slate-400 hover:bg-white/5 hover:text-white rounded-xl font-medium transition-all"><span class="material-symbols-outlined">warehouse</span> ระบบคลังพัสดุ กปท.</a>
+            <a href="admin_datacenter.html" class="flex items-center gap-3 px-4 py-3.5 text-slate-400 hover:bg-white/5 hover:text-white rounded-xl font-medium transition-all"><span class="material-symbols-outlined">folder_shared</span> ศูนย์ข้อมูลผู้ป่วย</a>
+            <a href="admin_map.html" class="flex items-center gap-3 px-4 py-3.5 text-slate-400 hover:bg-white/5 hover:text-white rounded-xl font-medium transition-all"><span class="material-symbols-outlined">map</span> แผนที่พิกัดผู้ป่วย</a>
+            <a href="admin_delegation.html" class="flex items-center gap-3 px-4 py-3.5 text-slate-400 hover:bg-white/5 hover:text-white rounded-xl font-medium transition-all"><span class="material-symbols-outlined">assignment_ind</span> มอบหมายงาน อสม.</a>
+            <a href="admin_analytics.html" class="flex items-center gap-3 px-4 py-3.5 text-white bg-white/10 rounded-xl font-medium transition-all"><span class="material-symbols-outlined text-amber-400">analytics</span> ศูนย์รายงาน (Export)</a>
+            <a href="admin_reports.html" id="nav-reports" class="flex items-center gap-3 px-4 py-3.5 text-slate-400 hover:bg-white/5 hover:text-white rounded-xl font-medium transition-all"><span class="material-symbols-outlined">gavel</span> บันทึกมติผ้าอ้อม</a>
+            <a href="admin_finance.html" id="nav-finance" class="flex items-center gap-3 px-4 py-3.5 text-slate-400 hover:bg-white/5 hover:text-white rounded-xl font-medium transition-all"><span class="material-symbols-outlined">account_balance_wallet</span> แผนการเงิน</a>
+            <a href="admin_settings.html" id="nav-settings" class="flex items-center gap-3 px-4 py-3.5 text-slate-400 hover:bg-white/5 hover:text-white rounded-xl font-medium transition-all"><span class="material-symbols-outlined">settings</span> ตั้งค่าระบบ</a>
+        </nav>
     </aside>
 
     <main class="flex-1 flex flex-col min-h-0 bg-slate-50">
@@ -381,8 +384,11 @@
                             <p class="text-xs text-slate-500 mt-0.5">สรุปจำนวนผ้าอ้อมและแผ่นรองซับที่ส่งมอบตามรอบ/ปีงบประมาณ พร้อมสถิติผู้ป่วยที่เสียชีวิต</p>
                         </div>
                         <div class="flex flex-wrap items-center gap-2">
+                            <button onclick="openAddPatientToRoundModal()" class="bg-amber-500 hover:bg-amber-600 text-white px-4 py-2.5 rounded-xl text-xs font-bold shadow-md flex items-center gap-1.5 transition-all active:scale-95">
+                                <span class="material-symbols-outlined text-[18px]">person_add</span> เพิ่มรายชื่อผู้ป่วยเข้าในรอบ
+                            </button>
                             <button onclick="openRecordQuantityModal()" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2.5 rounded-xl text-xs font-bold shadow-md flex items-center gap-1.5 transition-all active:scale-95">
-                                <span class="material-symbols-outlined text-[18px]">edit_calendar</span> กำหนดและบันทึกจำนวนในรอบนี้
+                                <span class="material-symbols-outlined text-[18px]">edit_calendar</span> จัดการรอบ / บันทึกจำนวนทั้งรอบ
                             </button>
                             <button onclick="exportDiaperDeliveryExcel()" class="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2.5 rounded-xl text-xs font-bold shadow-sm flex items-center gap-1.5 transition-all active:scale-95">
                                 <span class="material-symbols-outlined text-[18px]">download</span> โหลดตาราง Excel
@@ -448,7 +454,8 @@
                             </div>
                         </div>
                         <div class="text-2xl font-black text-navy" id="kpi-diaper-total">0 ชิ้น</div>
-                        <p class="text-[11px] text-slate-500 mt-1" id="kpi-diaper-sizes">S: 0 | M: 0 | L: 0 | XL: 0 | XXL: 0</p>
+                        <!-- Requirement 4.2.2: ผ้าอ้อมมีเฉพาะ S, M, L, XL (ไม่มี XXL) -->
+                        <p class="text-[11px] text-slate-500 mt-1" id="kpi-diaper-sizes">S: 0 | M: 0 | L: 0 | XL: 0</p>
                     </div>
 
                     <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200">
@@ -547,7 +554,7 @@
                         <h4 class="text-sm font-bold text-slate-800 flex items-center gap-1.5">
                             <span class="material-symbols-outlined text-blue-600 text-[18px]">list_alt</span> รายชื่อผู้ป่วยที่ได้รับจัดสรรในรอบที่เลือก
                         </h4>
-                        <p class="text-[11px] text-slate-500">สามารถค้นหาชื่อ แก้ไขขนาด/ชนิด และจำนวนชิ้นได้ต่อเนื่อง (ข้อมูลที่แก้ไว้จะไม่สูญหายเมื่อค้นหาชื่อใหม่)</p>
+                        <p class="text-[11px] text-slate-500">สามารถค้นหาชื่อ แก้ไข <b>รอบที่ได้รับ</b>, <b>วันที่ส่งมอบ</b>, <b>ขนาด/ชนิด</b>, <b>จำนวนชิ้น</b> หรือ <b>เพิ่ม/ลบรอบ</b> ได้ในตารางนี้โดยตรง (ข้อมูลเชื่อมโยงกันทุกหน้าอัตโนมัติ)</p>
                     </div>
                     <div class="flex items-center gap-2">
                         <span id="pending-edits-badge" class="hidden text-xs font-bold text-amber-700 bg-amber-50 border border-amber-200 px-3 py-1.5 rounded-xl flex items-center gap-1.5">
@@ -555,7 +562,7 @@
                             <span id="pending-edits-count">มีรายการรอคลิกบันทึก 0 คน</span>
                         </span>
                         <button onclick="saveRoundDeliveryQuantities()" id="btn-save-table-quantities" class="bg-[#00694a] hover:bg-[#005239] text-white px-4 py-2 rounded-xl text-xs font-bold shadow-sm flex items-center justify-center gap-1.5 active:scale-95 transition-all whitespace-nowrap">
-                            <span class="material-symbols-outlined text-[16px]">save</span> บันทึกจำนวนที่แก้ไขในตาราง
+                            <span class="material-symbols-outlined text-[16px]">save</span> บันทึกข้อมูลที่แก้ไขในตาราง
                         </button>
                     </div>
                 </div>
@@ -612,84 +619,78 @@
     let assignedVillages = [];
     let vCount = 15;
 
+    let allVitals = [];
+
     document.addEventListener("DOMContentLoaded", () => {
         document.getElementById('sidebar-hospital-name').innerText = DEFAULT_CONFIGS.HOSPITAL_NAME;
-        liff.init({ liffId: LIFF_ID }).then(() => {
-            const mockUid = localStorage.getItem('dev_mock_uid');
-            const savedUid = localStorage.getItem('orsomo_uid');
-            if (mockUid) {
-                verifyAdminAccess(mockUid);
-            } else if (liff.isLoggedIn()) { 
-                liff.getProfile().then(p => { localStorage.setItem('orsomo_uid', p.userId); verifyAdminAccess(p.userId); }).catch(() => bounceToLogin());
-            } else if (savedUid) {
-                verifyAdminAccess(savedUid);
-            } else { bounceToLogin(); }
-        }).catch(err => {
-            const savedUid = localStorage.getItem('orsomo_uid');
-            if (savedUid) verifyAdminAccess(savedUid);
-            else bounceToLogin();
-        });
+        verifyAdminAccess();
     });
 
-    async function verifyAdminAccess(uid) {
+    async function verifyAdminAccess() {
         try {
-            const userDoc = await db.collection('VHVs').doc(String(uid)).get();
-            let hasAccess = false; 
+            const user = await OrsomoCore.Auth.guardPage({ allowedRoles: ['ADMIN', 'SUB_ADMIN'] });
+            currentUserRole = user.role || 'ADMIN';
+            assignedVillages = user.assigned_villages || [];
+
+            const hName = document.getElementById('header-user-name');
+            if (hName) hName.innerText = user.name || 'ผู้ดูแลระบบ';
+            const hRole = document.getElementById('header-user-role');
+            if (hRole) hRole.innerText = user.role === 'ADMIN' ? 'ผู้ดูแลระบบ (ADMIN)' : 'ผู้ช่วยผู้ดูแล (SUB-ADMIN)';
+
+            const hPic = document.getElementById('header-profile-pic');
+            const hIcon = document.getElementById('header-profile-icon');
+            if (hPic && hIcon) {
+                OrsomoCore.UI.resolveAvatar(user, hPic, hIcon);
+            }
+
+            let hospitalName = user.hospital_name || DEFAULT_CONFIGS.HOSPITAL_NAME;
 
             try {
                 const sysSnap = await db.collection('SystemConfig').doc('HOSPITAL_NAME').get();
-                if(sysSnap.exists) hospital = sysSnap.data().value || hospital;
+                if(sysSnap.exists) hospitalName = sysSnap.data().value || hospitalName;
                 const sysCountSnap = await db.collection('SystemConfig').doc('VILLAGE_COUNT').get();
                 if(sysCountSnap.exists) vCount = parseInt(sysCountSnap.data().value) || vCount;
             } catch(e) {}
 
-            if (userDoc.exists) {
-                const userData = userDoc.data();
-                const hName = document.getElementById('header-user-name');
-                if (hName) hName.innerText = userData.name || 'ผู้ดูแลระบบ';
-                const hPic = document.getElementById('header-profile-pic');
-                const hIcon = document.getElementById('header-profile-icon');
-                if (hPic && hIcon && userData.photoURL) {
-                    hPic.src = userData.photoURL;
-                    hPic.classList.remove('hidden');
-                    hIcon.classList.add('hidden');
-                }
-                const role = String(userData.role || '').toUpperCase();
-                if (role === 'ADMIN') {
-                    hasAccess = true; currentUserRole = 'ADMIN'; hospital = userData.hospital_name || hospital;
-                } else if (role === 'SUB_ADMIN') {
-                    hasAccess = true; currentUserRole = 'SUB_ADMIN'; hospital = userData.hospital_name || hospital;
-                    assignedVillages = userData.assigned_villages || [];
-                }
+            hospital = hospitalName;
+            document.getElementById('sidebar-hospital-name').innerText = hospital;
+            
+            if (currentUserRole === 'SUB_ADMIN') {
+                const navSettings = document.getElementById('nav-settings');
+                if (navSettings) navSettings.style.display = 'none';
+                const navFinance = document.getElementById('nav-finance');
+                if (navFinance) navFinance.style.display = 'none';
+                const navInventory = document.getElementById('nav-inventory');
+                if (navInventory) navInventory.style.display = 'none';
+                const navReports = document.getElementById('nav-reports');
+                if (navReports) navReports.style.display = 'none';
+
+                // 🌟 หัวข้อ 3 ข้อ 3: SUB_ADMIN ซ่อนปุ่มเพิ่ม/แก้รอบส่งมอบผ้าอ้อม (แท็บ 6) 🌟
+                const btnAdd = document.querySelector('button[onclick="openAddPatientToRoundModal()"]');
+                if (btnAdd) btnAdd.style.display = 'none';
+                const btnManage = document.querySelector('button[onclick="openRecordQuantityModal()"]');
+                if (btnManage) btnManage.style.display = 'none';
+                const btnSave = document.getElementById('btn-save-round-quantities');
+                if (btnSave) btnSave.style.display = 'none';
+                const btnSaveTable = document.getElementById('btn-save-table-quantities');
+                if (btnSaveTable) btnSaveTable.style.display = 'none';
             }
 
-            if (hasAccess) {
-                document.getElementById('sidebar-hospital-name').innerText = hospital;
-                
+            const villageFilters = document.querySelectorAll('.global-village-filter');
+            villageFilters.forEach(select => {
                 if (currentUserRole === 'SUB_ADMIN') {
-                    const navSettings = document.getElementById('nav-settings');
-                    if (navSettings) navSettings.style.display = 'none';
-                        const navFinance = document.getElementById('nav-finance');
-                        if (navFinance) navFinance.style.display = 'none';
-                    const navInventory = document.getElementById('nav-inventory');
-                    if (navInventory) navInventory.style.display = 'none';
-                    const navReports = document.getElementById('nav-reports');
-                    if (navReports) navReports.style.display = 'none';
+                    assignedVillages.forEach(v => { select.insertAdjacentHTML('beforeend', `<option value="${v}">หมู่ที่ ${v}</option>`); });
+                } else {
+                    for(let i=1; i<=vCount; i++){ select.insertAdjacentHTML('beforeend', `<option value="${i}">หมู่ที่ ${i}</option>`); }
                 }
+            });
 
-                const villageFilters = document.querySelectorAll('.global-village-filter');
-                villageFilters.forEach(select => {
-                    if (currentUserRole === 'SUB_ADMIN') {
-                        assignedVillages.forEach(v => { select.insertAdjacentHTML('beforeend', `<option value="${v}">หมู่ที่ ${v}</option>`); });
-                    } else {
-                        for(let i=1; i<=vCount; i++){ select.insertAdjacentHTML('beforeend', `<option value="${i}">หมู่ที่ ${i}</option>`); }
-                    }
-                });
-
-                await loadVHVs();
-                loadReportData();
-            } else { window.location.href = 'dashboard.html'; }
-        } catch (error) { window.location.href = 'index.html'; }
+            await loadVHVs();
+            loadReportData();
+        } catch (error) { 
+            console.error("Auth guard error:", error);
+            window.location.href = 'index.html'; 
+        }
     }
 
     async function loadVHVs() {
@@ -709,7 +710,22 @@
 
     function formatThaiDate(d) {
         if(!d) return '-';
-        return `${String(d.getDate()).padStart(2,'0')}/${String(d.getMonth()+1).padStart(2,'0')}/${d.getFullYear()+543}`;
+        if (typeof d === 'string') {
+            const clean = d.trim();
+            if (!clean) return '-';
+            if (clean.includes('-')) {
+                const parts = clean.split('T')[0].split('-');
+                if (parts.length === 3) {
+                    const y = parseInt(parts[0]) > 2400 ? parseInt(parts[0]) : parseInt(parts[0]) + 543;
+                    return `${parts[2]}/${parts[1]}/${y}`;
+                }
+            }
+            return clean;
+        }
+        if (typeof d.getDate === 'function') {
+            return `${String(d.getDate()).padStart(2,'0')}/${String(d.getMonth()+1).padStart(2,'0')}/${d.getFullYear()+543}`;
+        }
+        return String(d);
     }
 
     async function loadReportData() {
@@ -861,7 +877,7 @@
         const vil = document.getElementById('in-village').value;
         const filtered = allInactive.filter(p => {
             if(vil && String(p.village_no) !== String(vil)) return false;
-            let pDate = p.updated_at && p.updated_at.toDate ? p.updated_at.toDate() : new Date();
+            let pDate = p.updated_at && p.updated_at.toDate ? p.updated_at.toDate() : (parseThaiDate(p.status_date) || new Date());
             return isBetween(pDate, startStr, endStr);
         });
         
@@ -871,12 +887,20 @@
             tbody.innerHTML = '<tr><td colspan="6" class="p-8 text-center text-slate-400 font-medium">ไม่พบข้อมูลในช่วงเวลาที่เลือก</td></tr>'; 
         } else {
             filtered.forEach(p => {
-                let pDateStr = p.updated_at && p.updated_at.toDate ? formatThaiDate(p.updated_at.toDate()) : '-';
+                let pDateStr = p.status_date || (p.updated_at && p.updated_at.toDate ? formatThaiDate(p.updated_at.toDate()) : '-');
                 let stHtml = ``;
-                if(p.status === 'ย้ายที่อยู่') { stHtml = `<span class="bg-orange-50 text-orange-600 border border-orange-100 px-2 py-1 rounded font-bold text-xs">ย้ายที่อยู่</span>`; cMove++; }
-                else { stHtml = `<span class="bg-red-50 text-red-600 border border-red-100 px-2 py-1 rounded font-bold text-xs">เสียชีวิต</span>`; cDead++; }
+                const st = String(p.status || p.status_reason || '').trim();
+                if(st === 'ย้ายที่อยู่' || st.includes('ย้าย')) { 
+                    stHtml = `<span class="bg-orange-50 text-orange-600 border border-orange-100 px-2 py-1 rounded font-bold text-xs">ย้ายที่อยู่</span>`; 
+                    cMove++; 
+                } else if(st === 'เสียชีวิต' || st.includes('เสียชีวิต')) { 
+                    stHtml = `<span class="bg-red-50 text-red-600 border border-red-100 px-2 py-1 rounded font-bold text-xs">เสียชีวิต</span>`; 
+                    cDead++; 
+                } else {
+                    stHtml = `<span class="bg-slate-100 text-slate-700 border border-slate-200 px-2 py-1 rounded font-bold text-xs">${st || 'ยุติการดูแล'}</span>`;
+                }
                 const tr = document.createElement('tr');
-                tr.innerHTML = `<td class="p-4 whitespace-nowrap">${pDateStr}</td><td class="p-4 whitespace-nowrap font-medium text-navy">${p.prefix||""}${p.name||""}</td><td class="p-4 whitespace-nowrap">${p.id_card||'-'}</td><td class="p-4 whitespace-nowrap text-center">${stHtml}</td><td class="p-4 whitespace-nowrap">บ้านเลขที่ ${p.house_no||'-'} หมู่ ${p.village_no||'-'}</td><td class="p-4 whitespace-nowrap">${p.caregiver_phone||'-'}</td>`;
+                tr.innerHTML = `<td class="p-4 whitespace-nowrap text-slate-600 text-xs">${pDateStr}</td><td class="p-4 whitespace-nowrap font-medium text-navy">${p.prefix||""}${p.name||""}</td><td class="p-4 whitespace-nowrap text-xs">${p.id_card||'-'}</td><td class="p-4 whitespace-nowrap text-center">${stHtml}</td><td class="p-4 whitespace-nowrap text-xs">บ้านเลขที่ ${p.house_no||'-'} หมู่ ${p.village_no||'-'}</td><td class="p-4 whitespace-nowrap text-xs">${p.caregiver_phone||p.phone||'-'}</td>`;
                 tbody.appendChild(tr);
             });
         }
@@ -916,25 +940,27 @@
             
             if (p.diaper) {
                 try {
-                    let d = typeof p.diaper === 'string' ? JSON.parse(p.diaper) : p.diaper;
-                    
-                    if (d.allocations && Array.isArray(d.allocations) && d.allocations.length > 0) {
-                        diaperStatus = 'รอบ ' + d.allocations[d.allocations.length - 1];
-                    } else if (d.status === 'approved') {
-                        diaperStatus = 'อนุมัติแล้ว';
+                    let d = cleanJSON(p.diaper);
+                    if (d) {
+                        if (d.allocations && Array.isArray(d.allocations) && d.allocations.length > 0) {
+                            diaperStatus = 'รอบ ' + d.allocations[d.allocations.length - 1];
+                        } else if (d.status === 'approved' || d.approve_status === 'อนุมัติแล้ว') {
+                            diaperStatus = 'อนุมัติแล้ว';
+                        }
+                        
+                        let sizes = [];
+                        const hasDiaper = (d.req_diaper === true || d.req_diaper === 'true' || (d.size && d.size !== '-' && d.size.trim() !== '') || (parseInt(d.approved_diaper) > 0));
+                        if (hasDiaper) {
+                            sizes.push((d.size && d.size !== '-' && d.size.trim() !== '') ? d.size.trim() : 'L');
+                        }
+                        const hasUnderpad = (d.req_underpad === true || d.req_underpad === 'true' || (parseInt(d.approved_underpad) > 0));
+                        if (hasUnderpad) {
+                            sizes.push('แผ่นรองซับ');
+                        }
+                        if (sizes.length > 0) {
+                            diaperSizeStr = sizes.join(', ');
+                        }
                     }
-                    
-                    let sizes = [];
-                    if (d.req_diaper && parseInt(d.approved_diaper) > 0 && d.size && d.size !== '-') {
-                        sizes.push(d.size);
-                    }
-                    if (d.req_underpad && parseInt(d.approved_underpad) > 0) {
-                        sizes.push('แผ่นรองซับ');
-                    }
-                    if (sizes.length > 0) {
-                        diaperSizeStr = sizes.join(', ');
-                    }
-
                 } catch(e) {}
             }
 
@@ -969,11 +995,29 @@
         if(filterVillage) displayVHVs = allVHVs.filter(v => String(v.village_no) === String(filterVillage));
 
         displayVHVs.forEach(vhv => {
-            const vhvPatients = allPatients.filter(p => String(p.vhv_uid) === String(vhv.uid) && p.status === 'Active');
+            const vhvPatients = allPatients.filter(p => 
+                (String(p.assigned_vhv_id) === String(vhv.uid) || String(p.vhv_uid) === String(vhv.uid)) && 
+                String(p.status || 'Active').toLowerCase() === 'active'
+            );
+            
             let adlCount = 0;
+            let depCount = 0;
+            let vitalsCount = 0;
 
             vhvPatients.forEach(p => {
-                if(allAssessments.some(a => String(a.patient_id) === String(p.id) && isBetween(a.parsedDate, startStr, endStr))) adlCount++;
+                const ptId = String(p.docId || p.id);
+                // ADL
+                if(allAssessments.some(a => String(a.patient_id) === ptId && a.type === 'ADL' && isBetween(a.parsedDate, startStr, endStr))) {
+                    adlCount++;
+                }
+                // 2Q/9Q (Requirement 4.1.5, 4.3.1)
+                if(allAssessments.some(a => String(a.patient_id) === ptId && (a.type === '2Q_9Q' || a.type === 'DEP' || a.type === '2Q9Q') && isBetween(a.parsedDate, startStr, endStr))) {
+                    depCount++;
+                }
+                // Vitals / ข้อมูลสุขภาพ
+                if (allVitals && allVitals.some(v => (String(v.patient_id) === ptId || String(v.assessor_uid) === String(vhv.uid)) && isBetween(parseThaiDate(v.date || v.created_at), startStr, endStr))) {
+                    vitalsCount++;
+                }
             });
 
             const tr = document.createElement('tr');
@@ -982,13 +1026,13 @@
                 <td class="p-4 text-center text-slate-400 font-medium">${index++}</td>
                 <td class="p-4 whitespace-nowrap font-bold text-navy flex items-center gap-3">
                     <img src="${vhv.photoURL || 'https://ui-avatars.com/api/?name=' + encodeURIComponent(vhv.name||'VHV') + '&background=0f172a&color=fff'}" class="w-8 h-8 rounded-full object-cover border border-slate-200">
-                    ${vhv.name||'ไม่ระบุชื่อ'} ${vhv.nickname ? `<span class="text-slate-500 font-medium text-[11px]">(${vhv.nickname})</span>` : ""}
+                    <span>${vhv.name||'ไม่ระบุชื่อ'} ${vhv.nickname ? `<span class="text-amber-700 font-bold text-xs bg-amber-50 px-1.5 py-0.5 rounded border border-amber-200">(${vhv.nickname})</span>` : ""}</span>
                 </td>
                 <td class="p-4 whitespace-nowrap text-center font-bold">${vhv.village_no||'-'}</td>
                 <td class="p-4 whitespace-nowrap text-center font-bold text-blue-600">${vhvPatients.length}</td>
                 <td class="p-4 whitespace-nowrap text-center font-bold text-emerald-600">${adlCount}</td>
-                <td class="p-4 whitespace-nowrap text-center font-bold text-amber-600">0</td>
-                <td class="p-4 whitespace-nowrap text-center font-bold text-rose-600">0</td>
+                <td class="p-4 whitespace-nowrap text-center font-bold text-amber-600">${depCount}</td>
+                <td class="p-4 whitespace-nowrap text-center font-bold text-rose-600">${vitalsCount}</td>
             `;
             tbody.appendChild(tr);
         });
@@ -1107,6 +1151,88 @@
 
     let currentDeliveryTableData = [];
     const pendingDeliveryEdits = new Map(); // Persistent In-Memory Store for user edits across searches
+    const addRoundSelectedPatients = new Set(); // Persistent selection for adding patients to a round
+
+    // Helper to sort rounds chronologically (by FY then Round number)
+    function sortRoundsList(roundsArr) {
+        return Array.from(new Set((roundsArr || []).map(r => String(r).trim()).filter(Boolean))).sort((a, b) => {
+            const pa = parseRoundString(a);
+            const pb = parseRoundString(b);
+            if (pa.fy !== pb.fy) return String(pa.fy).localeCompare(String(pb.fy), undefined, { numeric: true });
+            return String(pa.round).localeCompare(String(pb.round), undefined, { numeric: true });
+        });
+    }
+
+    // Helper to keep all diaper fields 100% synchronized across all pages in the system
+    function syncDiaperObjectConsistency(d) {
+        if (!d || typeof d !== 'object') d = {};
+        if (!Array.isArray(d.allocations)) d.allocations = [];
+        d.allocations = sortRoundsList(d.allocations);
+        if (!d.alloc_history || typeof d.alloc_history !== 'object') d.alloc_history = {};
+
+        if (d.allocations.length > 0) {
+            d.committee_status = 'จัดสรรแล้ว';
+            if (!d.approve_status || d.approve_status === 'รออนุมัติ') {
+                d.approve_status = 'อนุมัติแล้ว';
+            }
+            if (!d.status) d.status = 'approved';
+            const latestAlloc = d.allocations[d.allocations.length - 1];
+            const parsed = parseRoundString(latestAlloc);
+            if (parsed.round && parsed.round !== '-') d.round = parsed.round;
+            if (parsed.fy && parsed.fy !== '-' && parsed.fy !== 'อื่นๆ') d.fy = parsed.fy;
+
+            // Sync latest round's size & monthly rate to profile so Data Center, Reports, Resource & Inventory all match
+            const latestHist = d.alloc_history[latestAlloc];
+            if (latestHist) {
+                const s = String(latestHist.size || '').trim();
+                if (s === 'แผ่นรองซับ') {
+                    d.req_underpad = true;
+                    d.req_diaper = false;
+                } else if (s && s !== '-') {
+                    d.req_diaper = true;
+                    let baseSize = 'L';
+                    const up = s.toUpperCase();
+                    // Requirement 4.2.2: ผ้าอ้อมมีเฉพาะ S, M, L, XL (ไม่มี XXL)
+                    if (up.includes('XXL') || up.includes('XL')) baseSize = 'XL';
+                    else if (up.includes('S')) baseSize = 'S';
+                    else if (up.includes('M')) baseSize = 'M';
+                    else if (up.includes('L')) baseSize = 'L';
+                    d.size = baseSize;
+                    d.req_underpad = s.includes('แผ่นรองซับ');
+                }
+                const allocMonths = Math.max(1, Math.round((parseInt(d.alloc_days) || 90) / 30));
+                if (latestHist.diaper_qty !== undefined) {
+                    const dq = parseInt(latestHist.diaper_qty) || 0;
+                    if (dq > 0) {
+                        d.req_diaper = true;
+                        d.approved_diaper = Math.round(dq / allocMonths);
+                    } else if (!d.req_diaper) {
+                        d.approved_diaper = 0;
+                    }
+                }
+                if (latestHist.underpad_qty !== undefined) {
+                    const pq = parseInt(latestHist.underpad_qty) || 0;
+                    if (pq > 0) {
+                        d.req_underpad = true;
+                        d.approved_underpad = Math.round(pq / allocMonths);
+                    } else if (!d.req_underpad) {
+                        d.approved_underpad = 0;
+                    }
+                }
+            }
+        } else {
+            d.committee_status = 'รออนุมัติ';
+            d.round = '';
+            d.fy = '';
+        }
+        return d;
+    }
+
+    function refreshAllRelatedViews() {
+        populateDeliveryFilters();
+        renderDiaperDeliveryReport();
+        renderRegistryTable();
+    }
 
     let delivSearchDebounceTimer = null;
     function onDeliverySearchInput() {
@@ -1138,7 +1264,7 @@
         const count = Array.from(pendingDeliveryEdits.values()).filter(v => v.isModified).length;
         if (count > 0) {
             badge.classList.remove('hidden');
-            countEl.textContent = `มีรายการรอคลิกบันทึก ${count} คน`;
+            countEl.textContent = `มีรายการรอคลิกบันทึก ${count} รายการ`;
         } else {
             badge.classList.add('hidden');
         }
@@ -1159,11 +1285,12 @@
 
         let totalDiaperQty = 0;
         let totalPadQty = 0;
-        let sizeCounts = { S: 0, M: 0, L: 0, XL: 0, XXL: 0, other: 0 };
+        let sizeCounts = { S: 0, M: 0, L: 0, XL: 0, other: 0 };
         let uniqueRecipients = new Set();
         let deceasedRecipients = [];
 
         allPatients.forEach(p => {
+            if (currentUserRole === 'SUB_ADMIN' && !assignedVillages.includes(String(p.village_no).trim())) return;
             const d = cleanJSON(p.diaper);
             if (!d || !Array.isArray(d.allocations) || d.allocations.length === 0) return;
 
@@ -1223,14 +1350,11 @@
                 let diaperSizeStr = sizes.length > 0 ? sizes.join(', ') : '-';
                 const uniqueRowKey = `${p.docId || p.id}_${r.replace(/[^a-zA-Z0-9]/g, '_')}`;
 
-                // Determine Quantity & Size:
-                // Priority 1: In-memory pending edit (persists across searches/filters)
-                // Priority 2: Database alloc_history
-                // Priority 3: Default computation
                 let dQty = 0;
                 let pQty = 0;
                 let isRecorded = false;
                 let isPendingEdit = false;
+                let displayRound = r;
 
                 let deliveredAt = '';
                 if (d.alloc_history && d.alloc_history[r] && d.alloc_history[r].delivered_at) {
@@ -1244,6 +1368,12 @@
                     if (ped.size && ped.size !== '-') {
                         diaperSizeStr = ped.size;
                         cleanSize = ped.size;
+                    }
+                    if (ped.newRound) {
+                        displayRound = ped.newRound;
+                    }
+                    if (ped.deliveredAt !== undefined) {
+                        deliveredAt = ped.deliveredAt;
                     }
                     isPendingEdit = true;
                     isRecorded = false;
@@ -1271,8 +1401,8 @@
                 if (dQty > 0) {
                     let baseSize = 'L';
                     const upSize = (cleanSize || '').toUpperCase();
-                    if (upSize.includes('XXL')) baseSize = 'XXL';
-                    else if (upSize.includes('XL')) baseSize = 'XL';
+                    // Requirement 4.2.2: ผ้าอ้อมมีเฉพาะ S, M, L, XL (ไม่มี XXL)
+                    if (upSize.includes('XXL') || upSize.includes('XL')) baseSize = 'XL';
                     else if (upSize.includes('S')) baseSize = 'S';
                     else if (upSize.includes('M')) baseSize = 'M';
                     else if (upSize.includes('L')) baseSize = 'L';
@@ -1291,7 +1421,9 @@
                     status: pStatus,
                     isDeceased: isDeceased,
                     lastRound: latestRoundOfPatient,
+                    allRounds: d.allocations || [],
                     round: r,
+                    displayRound: displayRound,
                     size: cleanSize,
                     diaperSizeStr: diaperSizeStr,
                     hasDiaper: hasDiaper,
@@ -1309,7 +1441,7 @@
         const kpiDiaperTotal = document.getElementById('kpi-diaper-total');
         if (kpiDiaperTotal) kpiDiaperTotal.innerText = `${totalDiaperQty.toLocaleString()} ชิ้น`;
         const kpiDiaperSizes = document.getElementById('kpi-diaper-sizes');
-        if (kpiDiaperSizes) kpiDiaperSizes.innerText = `S: ${sizeCounts.S.toLocaleString()} | M: ${sizeCounts.M.toLocaleString()} | L: ${sizeCounts.L.toLocaleString()} | XL: ${sizeCounts.XL.toLocaleString()} | XXL: ${sizeCounts.XXL.toLocaleString()}`;
+        if (kpiDiaperSizes) kpiDiaperSizes.innerText = `S: ${sizeCounts.S.toLocaleString()} | M: ${sizeCounts.M.toLocaleString()} | L: ${sizeCounts.L.toLocaleString()} | XL: ${sizeCounts.XL.toLocaleString()}`;
         const kpiPadTotal = document.getElementById('kpi-pad-total');
         if (kpiPadTotal) kpiPadTotal.innerText = `${totalPadQty.toLocaleString()} ชิ้น`;
         const kpiRecipients = document.getElementById('kpi-recipients-count');
@@ -1336,7 +1468,6 @@
             if (deceasedListEl) deceasedListEl.innerHTML = '';
             
             deceasedRecipients.forEach(dec => {
-                // Compute total pieces this deceased patient got in this filter view
                 const patientRows = currentDeliveryTableData.filter(row => row.patientId === dec.id);
                 const sumD = patientRows.reduce((acc, r) => acc + r.diaperQty, 0);
                 const sumP = patientRows.reduce((acc, r) => acc + r.padQty, 0);
@@ -1359,7 +1490,7 @@
                     </div>
                 `);
             });
-        } else {
+        } else if (deceasedBox) {
             deceasedBox.classList.add('hidden');
         }
 
@@ -1401,11 +1532,14 @@
 
             const uniqueRowKey = `${row.patientId}_${row.round.replace(/[^a-zA-Z0-9]/g, '_')}`;
 
-            // Build Diaper Size Select Dropdown
+            const isSubAdmin = currentUserRole === 'SUB_ADMIN';
+            const disabledAttr = isSubAdmin ? 'disabled' : '';
+
+            // Build Diaper Size Select Dropdown (Requirement 4.2.2: ไม่มีไซส์ XXL)
             const standardSizes = [
-                'S', 'M', 'L', 'XL', 'XXL',
+                'S', 'M', 'L', 'XL',
                 'แผ่นรองซับ',
-                'S, แผ่นรองซับ', 'M, แผ่นรองซับ', 'L, แผ่นรองซับ', 'XL, แผ่นรองซับ', 'XXL, แผ่นรองซับ'
+                'S, แผ่นรองซับ', 'M, แผ่นรองซับ', 'L, แผ่นรองซับ', 'XL, แผ่นรองซับ'
             ];
 
             let sizeOptions = [...standardSizes];
@@ -1413,7 +1547,7 @@
                 sizeOptions.unshift(row.diaperSizeStr);
             }
 
-            let sizeSelectHtml = `<select class="sel-deliv-size text-xs font-bold text-indigo-700 bg-indigo-50/70 hover:bg-indigo-100/60 border border-indigo-200 rounded-lg px-2 py-1 outline-none focus:ring-2 focus:ring-indigo-500 focus:bg-white cursor-pointer transition-colors" data-patient-id="${row.patientId}" data-round="${row.round}" data-row-key="${uniqueRowKey}" onchange="onDeliverySizeChange(this)">`;
+            let sizeSelectHtml = `<select ${disabledAttr} class="sel-deliv-size text-xs font-bold text-indigo-700 bg-indigo-50/70 hover:bg-indigo-100/60 border border-indigo-200 rounded-lg px-2 py-1 outline-none focus:ring-2 focus:ring-indigo-500 focus:bg-white ${isSubAdmin ? 'cursor-not-allowed opacity-80' : 'cursor-pointer'} transition-colors" data-patient-id="${row.patientId}" data-round="${row.round}" data-row-key="${uniqueRowKey}" onchange="onDeliverySizeChange(this)">`;
             if (!row.diaperSizeStr || row.diaperSizeStr === '-') {
                 sizeSelectHtml += `<option value="-" selected>- ระบุไซส์ -</option>`;
             }
@@ -1423,28 +1557,52 @@
             });
             sizeSelectHtml += `</select>`;
 
+            const safePatientName = `${row.prefix}${row.name}`.replace(/'/g, "\\'");
+
             tr.innerHTML = `
                 <td class="p-3.5 text-center text-slate-400 font-medium">${idx + 1}</td>
-                <td class="p-3.5 whitespace-nowrap font-bold text-navy">${row.prefix}${row.name}</td>
+                <td class="p-3.5 whitespace-nowrap">
+                    <div class="font-bold text-navy">${row.prefix}${row.name}</div>
+                    <div class="text-[10px] text-slate-400 flex items-center gap-1 mt-0.5">
+                        <span>ได้รับรวม ${row.allRounds.length} รอบ</span>
+                        ${!isSubAdmin ? `
+                        <button type="button" onclick="openPatientRoundManagerModal('${row.patientId}')" class="text-blue-600 hover:text-blue-800 underline font-bold flex items-center gap-0.5">
+                            <span class="material-symbols-outlined text-[12px]">edit_note</span>จัดการทุกรอบ
+                        </button>` : ''}
+                    </div>
+                </td>
                 <td class="p-3.5 whitespace-nowrap font-medium text-slate-600" t="s" style="mso-number-format:'\\@';">${row.id_card}</td>
                 <td class="p-3.5 whitespace-nowrap text-center font-bold text-blue-600">${row.village_no}</td>
                 <td class="p-3.5 whitespace-nowrap text-slate-600">${row.house_no}</td>
                 <td class="p-3.5 whitespace-nowrap text-center">${statusBadge}</td>
                 <td class="p-3.5 whitespace-nowrap text-center">
-                    <span class="bg-blue-50 text-blue-700 border border-blue-200 px-2 py-0.5 rounded font-bold text-xs">${row.round}</span>
-                    ${row.deliveredAt ? `<div class="text-[10px] text-slate-500 font-medium mt-0.5 flex items-center justify-center gap-0.5"><span class="material-symbols-outlined text-[11px] text-blue-500">calendar_today</span>${formatThaiDate(row.deliveredAt)}</div>` : ''}
+                    <div class="flex flex-col items-center gap-1">
+                        <div class="flex items-center gap-1">
+                            <input ${disabledAttr} type="text" value="${row.displayRound}" onchange="onDeliveryRoundOrDateChange('${uniqueRowKey}')" class="inp-deliv-round w-20 px-2 py-0.5 bg-blue-50 hover:bg-white focus:bg-white border border-blue-200 rounded-lg text-center font-bold text-xs text-blue-700 outline-none focus:ring-2 focus:ring-blue-500" title="ชื่อรอบ" data-patient-id="${row.patientId}" data-round="${row.round}" data-row-key="${uniqueRowKey}">
+                            ${!isSubAdmin ? `
+                            <button type="button" onclick="openPatientRoundManagerModal('${row.patientId}', '${row.round}')" class="w-6 h-6 rounded-lg bg-amber-50 hover:bg-amber-100 text-amber-700 border border-amber-200 flex items-center justify-center transition-colors" title="เพิ่มรอบใหม่ให้ผู้ป่วยรายนี้">
+                                <span class="material-symbols-outlined text-[14px]">add</span>
+                            </button>
+                            <button type="button" onclick="deleteSinglePatientRound('${row.patientId}', '${row.round}', '${safePatientName}')" class="w-6 h-6 rounded-lg bg-rose-50 hover:bg-rose-100 text-rose-600 border border-rose-200 flex items-center justify-center transition-colors" title="ตัดลด/ลบรอบนี้ออก">
+                                <span class="material-symbols-outlined text-[14px]">delete</span>
+                            </button>` : ''}
+                        </div>
+                        <input ${disabledAttr} type="date" value="${row.deliveredAt || ''}" onchange="onDeliveryRoundOrDateChange('${uniqueRowKey}')" class="inp-deliv-date text-[10px] px-1.5 py-0.5 bg-slate-50 hover:bg-white focus:bg-white border border-slate-200 rounded text-slate-600 font-medium outline-none focus:ring-1 focus:ring-blue-400" title="วันที่ส่งมอบผ้าอ้อม" data-patient-id="${row.patientId}" data-round="${row.round}" data-row-key="${uniqueRowKey}">
+                    </div>
                 </td>
                 <td class="p-3.5 whitespace-nowrap text-center">${sizeSelectHtml}</td>
                 <td class="p-3.5 whitespace-nowrap text-center">
-                    <input type="number" min="0" value="${row.diaperQty}" onchange="onDeliveryQtyChange(this)" class="inp-deliv-diaper w-16 px-2 py-1 bg-slate-50 border border-slate-300 rounded-lg text-center font-bold text-blue-700 focus:bg-white focus:ring-2 focus:ring-blue-500 outline-none" data-patient-id="${row.patientId}" data-round="${row.round}" data-row-key="${uniqueRowKey}">
+                    <input ${disabledAttr} type="number" min="0" value="${row.diaperQty}" onchange="onDeliveryQtyChange(this)" class="inp-deliv-diaper w-16 px-2 py-1 bg-slate-50 border border-slate-300 rounded-lg text-center font-bold text-blue-700 focus:bg-white focus:ring-2 focus:ring-blue-500 outline-none" data-patient-id="${row.patientId}" data-round="${row.round}" data-row-key="${uniqueRowKey}">
                 </td>
                 <td class="p-3.5 whitespace-nowrap text-center">
-                    <input type="number" min="0" value="${row.padQty}" onchange="onDeliveryQtyChange(this)" class="inp-deliv-pad w-16 px-2 py-1 bg-slate-50 border border-slate-300 rounded-lg text-center font-bold text-emerald-700 focus:bg-white focus:ring-2 focus:ring-emerald-500 outline-none" data-patient-id="${row.patientId}" data-round="${row.round}" data-row-key="${uniqueRowKey}">
+                    <input ${disabledAttr} type="number" min="0" value="${row.padQty}" onchange="onDeliveryQtyChange(this)" class="inp-deliv-pad w-16 px-2 py-1 bg-slate-50 border border-slate-300 rounded-lg text-center font-bold text-emerald-700 focus:bg-white focus:ring-2 focus:ring-emerald-500 outline-none" data-patient-id="${row.patientId}" data-round="${row.round}" data-row-key="${uniqueRowKey}">
                 </td>
                 <td class="p-3.5 whitespace-nowrap text-center font-black text-navy" id="total-deliv-${uniqueRowKey}">
                     ${row.diaperQty + row.padQty}
                 </td>
                 <td class="p-3.5 whitespace-nowrap text-center" id="badge-deliv-${uniqueRowKey}">
+                    ${recordBadge}
+                </td>
                     ${recordBadge}
                 </td>
             `;
@@ -1457,10 +1615,61 @@
         if (panel) panel.classList.toggle('hidden');
     }
 
+    function captureRowStateIntoPending(rowKey) {
+        const dInp = document.querySelector(`.inp-deliv-diaper[data-row-key="${rowKey}"]`);
+        const pInp = document.querySelector(`.inp-deliv-pad[data-row-key="${rowKey}"]`);
+        const sSel = document.querySelector(`.sel-deliv-size[data-row-key="${rowKey}"]`);
+        const rInp = document.querySelector(`.inp-deliv-round[data-row-key="${rowKey}"]`);
+        const dtInp = document.querySelector(`.inp-deliv-date[data-row-key="${rowKey}"]`);
+
+        if (!dInp) return;
+        const patientId = dInp.dataset.patientId;
+        const oldRound = dInp.dataset.round;
+        const newRound = rInp ? (rInp.value.trim() || oldRound) : oldRound;
+        const delivDate = dtInp ? dtInp.value : '';
+        const sizeVal = sSel ? sSel.value : 'L';
+        const dVal = parseInt(dInp.value) || 0;
+        const pVal = pInp ? (parseInt(pInp.value) || 0) : 0;
+
+        const totalEl = document.getElementById(`total-deliv-${rowKey}`);
+        if (totalEl) totalEl.innerText = (dVal + pVal);
+
+        pendingDeliveryEdits.set(rowKey, {
+            patientId: patientId,
+            round: oldRound,
+            newRound: newRound,
+            deliveredAt: delivDate,
+            size: sizeVal,
+            diaperQty: dVal,
+            padQty: pVal,
+            isModified: true
+        });
+
+        const rowData = currentDeliveryTableData.find(r => `${r.patientId}_${r.round.replace(/[^a-zA-Z0-9]/g, '_')}` === rowKey);
+        if (rowData) {
+            rowData.displayRound = newRound;
+            rowData.deliveredAt = delivDate;
+            rowData.diaperSizeStr = sizeVal;
+            rowData.size = sizeVal;
+            rowData.diaperQty = dVal;
+            rowData.padQty = pVal;
+            rowData.isPendingEdit = true;
+        }
+
+        const badgeEl = document.getElementById(`badge-deliv-${rowKey}`);
+        if (badgeEl) {
+            badgeEl.innerHTML = `<span class="text-blue-600 font-bold text-[11px] flex items-center justify-center gap-1"><span class="material-symbols-outlined text-[13px]">pending</span> รอคลิกบันทึก</span>`;
+        }
+
+        updatePendingEditsBadge();
+    }
+
+    function onDeliveryRoundOrDateChange(rowKey) {
+        captureRowStateIntoPending(rowKey);
+    }
+
     function onDeliverySizeChange(selectEl) {
         const rowKey = selectEl.dataset.rowKey;
-        const patientId = selectEl.dataset.patientId;
-        const round = selectEl.dataset.round;
         const selectedVal = selectEl.value;
 
         const dInp = document.querySelector(`.inp-deliv-diaper[data-row-key="${rowKey}"]`);
@@ -1478,80 +1687,12 @@
             if (pInp) pInp.value = 0;
         }
 
-        const dVal = dInp ? (parseInt(dInp.value) || 0) : 0;
-        const pVal = pInp ? (parseInt(pInp.value) || 0) : 0;
-
-        const totalEl = document.getElementById(`total-deliv-${rowKey}`);
-        if (totalEl) totalEl.innerText = (dVal + pVal);
-
-        // Save into persistent in-memory edits map!
-        pendingDeliveryEdits.set(rowKey, {
-            patientId: patientId,
-            round: round,
-            size: selectedVal,
-            diaperQty: dVal,
-            padQty: pVal,
-            isModified: true
-        });
-
-        const rowData = currentDeliveryTableData.find(r => `${r.patientId}_${r.round.replace(/[^a-zA-Z0-9]/g, '_')}` === rowKey);
-        if (rowData) {
-            rowData.diaperSizeStr = selectedVal;
-            rowData.size = selectedVal;
-            rowData.diaperQty = dVal;
-            rowData.padQty = pVal;
-            rowData.isPendingEdit = true;
-        }
-
-        const badgeEl = document.getElementById(`badge-deliv-${rowKey}`);
-        if (badgeEl) {
-            badgeEl.innerHTML = `<span class="text-blue-600 font-bold text-[11px] flex items-center justify-center gap-1"><span class="material-symbols-outlined text-[13px]">pending</span> รอคลิกบันทึก</span>`;
-        }
-
-        updatePendingEditsBadge();
+        captureRowStateIntoPending(rowKey);
     }
 
     function onDeliveryQtyChange(input) {
         const rowKey = input.dataset.rowKey;
-        const patientId = input.dataset.patientId;
-        const round = input.dataset.round;
-
-        const dInp = document.querySelector(`.inp-deliv-diaper[data-row-key="${rowKey}"]`);
-        const pInp = document.querySelector(`.inp-deliv-pad[data-row-key="${rowKey}"]`);
-        const sSel = document.querySelector(`.sel-deliv-size[data-row-key="${rowKey}"]`);
-        
-        const dVal = dInp ? (parseInt(dInp.value) || 0) : 0;
-        const pVal = pInp ? (parseInt(pInp.value) || 0) : 0;
-        const sizeVal = sSel ? sSel.value : 'L';
-        
-        const totalEl = document.getElementById(`total-deliv-${rowKey}`);
-        if (totalEl) totalEl.innerText = (dVal + pVal);
-
-        // Save into persistent in-memory edits map!
-        pendingDeliveryEdits.set(rowKey, {
-            patientId: patientId,
-            round: round,
-            size: sizeVal,
-            diaperQty: dVal,
-            padQty: pVal,
-            isModified: true
-        });
-
-        const rowData = currentDeliveryTableData.find(r => `${r.patientId}_${r.round.replace(/[^a-zA-Z0-9]/g, '_')}` === rowKey);
-        if (rowData) {
-            rowData.diaperSizeStr = sizeVal;
-            rowData.size = sizeVal;
-            rowData.diaperQty = dVal;
-            rowData.padQty = pVal;
-            rowData.isPendingEdit = true;
-        }
-
-        const badgeEl = document.getElementById(`badge-deliv-${rowKey}`);
-        if (badgeEl) {
-            badgeEl.innerHTML = `<span class="text-blue-600 font-bold text-[11px] flex items-center justify-center gap-1"><span class="material-symbols-outlined text-[13px]">pending</span> รอคลิกบันทึก</span>`;
-        }
-
-        updatePendingEditsBadge();
+        captureRowStateIntoPending(rowKey);
     }
 
     function applyQuickQuantitiesToAll() {
@@ -1561,11 +1702,10 @@
         document.querySelectorAll('.inp-deliv-diaper').forEach(inp => {
             const rowKey = inp.dataset.rowKey;
             const rowData = currentDeliveryTableData.find(r => `${r.patientId}_${r.round.replace(/[^a-zA-Z0-9]/g, '_')}` === rowKey);
-            // Apply only if patient actually requests diaper or unconditionally
             if (rowData && rowData.hasDiaper) {
                 inp.value = qD;
             } else if (rowData && !rowData.hasDiaper && qD > 0) {
-                inp.value = 0; // Don't give diapers to underpad-only patients
+                inp.value = 0;
             } else {
                 inp.value = qD;
             }
@@ -1578,34 +1718,42 @@
             if (rowData && rowData.hasUnderpad) {
                 inp.value = qP;
             } else if (rowData && !rowData.hasUnderpad && qP > 0) {
-                inp.value = 0; // Don't give pads to diaper-only patients
+                inp.value = 0;
             } else {
                 inp.value = qP;
             }
             onDeliveryQtyChange(inp);
         });
 
-        showToast('ปรับใช้จำนวนมาตรฐานเรียบร้อยแล้ว กรุณากด "บันทึกจำนวนลงฐานข้อมูล"', 'info');
+        showToast('ปรับใช้จำนวนมาตรฐานเรียบร้อยแล้ว กรุณากด "บันทึกข้อมูลที่แก้ไขในตาราง"', 'info');
     }
 
     async function saveRoundDeliveryQuantities() {
+        if (currentUserRole === 'SUB_ADMIN') {
+            return showToast('เฉพาะผู้ดูแลระบบ (ADMIN) เท่านั้นที่สามารถบันทึกแก้ไขจำนวนได้', 'error');
+        }
         // 1. Gather all currently visible inputs in the DOM into pendingDeliveryEdits
         document.querySelectorAll('.inp-deliv-diaper').forEach(dInp => {
             const rowKey = dInp.dataset.rowKey;
-            const patientId = dInp.dataset.patientId;
-            const round = dInp.dataset.round;
-            const pInp = document.querySelector(`.inp-deliv-pad[data-row-key="${rowKey}"]`);
-            const sSel = document.querySelector(`.sel-deliv-size[data-row-key="${rowKey}"]`);
-
-            const dQty = parseInt(dInp.value) || 0;
-            const pQty = pInp ? (parseInt(pInp.value) || 0) : 0;
-            const sizeVal = sSel ? sSel.value : 'L';
-
-            // If not already in pendingDeliveryEdits, add it
             if (!pendingDeliveryEdits.has(rowKey)) {
+                const patientId = dInp.dataset.patientId;
+                const oldRound = dInp.dataset.round;
+                const pInp = document.querySelector(`.inp-deliv-pad[data-row-key="${rowKey}"]`);
+                const sSel = document.querySelector(`.sel-deliv-size[data-row-key="${rowKey}"]`);
+                const rInp = document.querySelector(`.inp-deliv-round[data-row-key="${rowKey}"]`);
+                const dtInp = document.querySelector(`.inp-deliv-date[data-row-key="${rowKey}"]`);
+
+                const dQty = parseInt(dInp.value) || 0;
+                const pQty = pInp ? (parseInt(pInp.value) || 0) : 0;
+                const sizeVal = sSel ? sSel.value : 'L';
+                const newRound = rInp ? (rInp.value.trim() || oldRound) : oldRound;
+                const delivDate = dtInp ? dtInp.value : '';
+
                 pendingDeliveryEdits.set(rowKey, {
                     patientId: patientId,
-                    round: round,
+                    round: oldRound,
+                    newRound: newRound,
+                    deliveredAt: delivDate,
                     size: sizeVal,
                     diaperQty: dQty,
                     padQty: pQty,
@@ -1628,19 +1776,15 @@
         }
 
         try {
-            // Group updates by patientId from pendingDeliveryEdits (includes all searches/filters)
+            // Group updates by patientId from pendingDeliveryEdits
             const updatesByPatient = {};
             for (const [rowKey, item] of pendingDeliveryEdits.entries()) {
-                if (!updatesByPatient[item.patientId]) updatesByPatient[item.patientId] = {};
-                updatesByPatient[item.patientId][item.round] = {
-                    diaper_qty: item.diaperQty,
-                    underpad_qty: item.padQty,
-                    size: item.size
-                };
+                if (!updatesByPatient[item.patientId]) updatesByPatient[item.patientId] = [];
+                updatesByPatient[item.patientId].push(item);
             }
 
             const patientIds = Object.keys(updatesByPatient);
-            const batch = db.batch();
+            let batch = db.batch();
             let batchCount = 0;
             let successCount = 0;
             const nowISO = new Date().toISOString();
@@ -1650,38 +1794,33 @@
                 if (!p) continue;
 
                 let d = cleanJSON(p.diaper) || {};
-                if (!d.alloc_history) d.alloc_history = {};
+                if (!Array.isArray(d.allocations)) d.allocations = [];
+                if (!d.alloc_history || typeof d.alloc_history !== 'object') d.alloc_history = {};
 
-                for (const r in updatesByPatient[pId]) {
-                    const u = updatesByPatient[pId][r];
-                    d.alloc_history[r] = {
-                        diaper_qty: u.diaper_qty,
-                        underpad_qty: u.underpad_qty,
-                        size: u.size || 'L',
+                for (const u of updatesByPatient[pId]) {
+                    const oldR = String(u.round || '').trim();
+                    const newR = String(u.newRound || oldR).trim();
+                    const prevHist = d.alloc_history[oldR] || {};
+
+                    // If round name was edited (e.g., 1/2569 -> 2/2569)
+                    if (oldR && newR && oldR !== newR) {
+                        d.allocations = d.allocations.map(x => String(x).trim() === oldR ? newR : String(x).trim());
+                        delete d.alloc_history[oldR];
+                    } else if (newR && !d.allocations.includes(newR)) {
+                        d.allocations.push(newR);
+                    }
+
+                    d.alloc_history[newR] = {
+                        diaper_qty: u.diaperQty,
+                        underpad_qty: u.padQty,
+                        size: u.size || prevHist.size || d.size || 'L',
+                        delivered_at: u.deliveredAt !== undefined && u.deliveredAt !== '' ? u.deliveredAt : (prevHist.delivered_at || ''),
                         recorded_at: nowISO
                     };
-
-                    // Sync latest preference to patient diaper profile
-                    const s = u.size || '';
-                    if (s === 'แผ่นรองซับ') {
-                        d.req_underpad = true;
-                        d.req_diaper = false;
-                    } else if (s && s !== '-') {
-                        d.req_diaper = true;
-                        let baseSize = 'L';
-                        if (s.includes('XXL')) baseSize = 'XXL';
-                        else if (s.includes('XL')) baseSize = 'XL';
-                        else if (s.includes('S')) baseSize = 'S';
-                        else if (s.includes('M')) baseSize = 'M';
-                        else if (s.includes('L')) baseSize = 'L';
-                        d.size = baseSize;
-                        if (s.includes('แผ่นรองซับ')) {
-                            d.req_underpad = true;
-                        } else {
-                            d.req_underpad = false;
-                        }
-                    }
                 }
+
+                // Synchronize all related fields across the whole system
+                d = syncDiaperObjectConsistency(d);
 
                 p.diaper = JSON.stringify(d);
                 const ref = db.collection('Patients').doc(String(p.docId || p.id));
@@ -1691,6 +1830,7 @@
 
                 if (batchCount === 450) {
                     await batch.commit();
+                    batch = db.batch();
                     batchCount = 0;
                 }
             }
@@ -1699,12 +1839,11 @@
                 await batch.commit();
             }
 
-            // Successfully committed! Clear in-memory pending edits map
             pendingDeliveryEdits.clear();
             updatePendingEditsBadge();
 
-            showToast(`บันทึกข้อมูลเรียบร้อยแล้ว (${successCount} คน)`, 'success');
-            renderDiaperDeliveryReport();
+            showToast(`บันทึกข้อมูลและอัปเดตทุกหน้าเรียบร้อยแล้ว (${successCount} คน)`, 'success');
+            refreshAllRelatedViews();
 
         } catch(err) {
             console.error("Save round delivery error:", err);
@@ -1712,11 +1851,503 @@
         } finally {
             if (btn1) {
                 btn1.disabled = false;
-                btn1.innerHTML = '<span class="material-symbols-outlined text-[16px]">save</span> บันทึกจำนวนลงฐานข้อมูล';
+                btn1.innerHTML = '<span class="material-symbols-outlined text-[16px]">save</span> บันทึกจำนวนลงฐานข้อมูล (<span id="save-qty-count">0</span> คน)';
             }
             if (btn2) {
                 btn2.disabled = false;
-                btn2.innerHTML = '<span class="material-symbols-outlined text-[16px]">save</span> บันทึกจำนวนที่แก้ไขในตาราง';
+                btn2.innerHTML = '<span class="material-symbols-outlined text-[16px]">save</span> บันทึกข้อมูลที่แก้ไขในตาราง';
+            }
+            renderDiaperDeliveryReport();
+        }
+    }
+
+    // --- Delete Single Patient's Round Directly from Table ---
+    async function deleteSinglePatientRound(patientId, roundStr, patientName) {
+        if (currentUserRole === 'SUB_ADMIN') {
+            return showToast('เฉพาะผู้ดูแลระบบ (ADMIN) เท่านั้นที่สามารถลบรอบจัดสรรได้', 'error');
+        }
+        if (!confirm(`ยืนยันการตัดลด/ลบรอบ "${roundStr}" ของ "${patientName}" ออกจากระบบใช่หรือไม่?\n(ข้อมูลจะถูกอัปเดตเชื่อมโยงทุกหน้าทันที)`)) {
+            return;
+        }
+        try {
+            const p = allPatients.find(item => String(item.docId || item.id) === String(patientId));
+            if (!p) return showToast('ไม่พบข้อมูลผู้ป่วย', 'error');
+
+            let d = cleanJSON(p.diaper) || {};
+            if (Array.isArray(d.allocations)) {
+                d.allocations = d.allocations.filter(r => String(r).trim() !== String(roundStr).trim());
+            }
+            if (d.alloc_history && d.alloc_history[roundStr]) {
+                delete d.alloc_history[roundStr];
+            }
+
+            d = syncDiaperObjectConsistency(d);
+            p.diaper = JSON.stringify(d);
+
+            const uniqueRowKey = `${patientId}_${String(roundStr).replace(/[^a-zA-Z0-9]/g, '_')}`;
+            pendingDeliveryEdits.delete(uniqueRowKey);
+
+            await db.collection('Patients').doc(String(p.docId || p.id)).update({
+                diaper: JSON.stringify(d)
+            });
+
+            showToast(`ลบรอบ ${roundStr} ของ ${patientName} เรียบร้อยแล้ว`, 'success');
+            refreshAllRelatedViews();
+        } catch (err) {
+            console.error(err);
+            showToast('ลบข้อมูลไม่สำเร็จ: ' + err.message, 'error');
+        }
+    }
+
+    // =========================================================
+    // 🌟 Modal จัดการรอบรายบุคคล (เพิ่ม/แก้ไข/ลบรอบของผู้ป่วยในหน้าเดียว) 🌟
+    // =========================================================
+    let currentManagingPatientId = null;
+
+    function openPatientRoundManagerModal(patientId, prefillRound = '') {
+        if (currentUserRole === 'SUB_ADMIN') {
+            return showToast('เฉพาะผู้ดูแลระบบ (ADMIN) เท่านั้นที่สามารถจัดการรอบผ้าอ้อมได้', 'error');
+        }
+        const p = allPatients.find(item => String(item.docId || item.id) === String(patientId));
+        if (!p) return showToast('ไม่พบข้อมูลผู้ป่วย', 'error');
+
+        currentManagingPatientId = String(p.docId || p.id);
+        const modal = document.getElementById('patient-round-manager-modal');
+        if (!modal) return;
+
+        document.getElementById('prm-patient-name').innerText = `${p.prefix || ''}${p.name || 'ไม่ระบุชื่อ'} (หมู่ ${p.village_no || '-'} บ้านเลขที่ ${p.house_no || '-'})`;
+
+        // Default inputs for adding/updating a round for this patient
+        const d = cleanJSON(p.diaper) || {};
+        const todayStr = new Date().toISOString().split('T')[0];
+        document.getElementById('prm-new-round').value = prefillRound ? '' : `1/${new Date().getFullYear() + 543}`;
+        document.getElementById('prm-new-date').value = todayStr;
+
+        let defaultSize = 'L';
+        const hasDiaper = (d.req_diaper === true || d.req_diaper === 'true' || (d.size && d.size !== '-' && d.size.trim() !== '') || (parseInt(d.approved_diaper) > 0));
+        const hasUnderpad = (d.req_underpad === true || d.req_underpad === 'true' || (parseInt(d.approved_underpad) > 0));
+        if (hasDiaper && hasUnderpad) defaultSize = `${(d.size && d.size !== '-') ? d.size.trim().toUpperCase() : 'L'}, แผ่นรองซับ`;
+        else if (hasUnderpad) defaultSize = 'แผ่นรองซับ';
+        else if (hasDiaper) defaultSize = (d.size && d.size !== '-') ? d.size.trim().toUpperCase() : 'L';
+
+        document.getElementById('prm-new-size').value = defaultSize;
+        document.getElementById('prm-new-diaper-qty').value = hasDiaper ? 90 : 0;
+        document.getElementById('prm-new-pad-qty').value = hasUnderpad ? 90 : 0;
+
+        renderPatientRoundManagerList();
+
+        modal.classList.remove('hidden');
+        modal.classList.add('flex');
+        setTimeout(() => {
+            modal.classList.remove('opacity-0');
+            document.getElementById('patient-round-manager-content')?.classList.remove('scale-95');
+        }, 10);
+    }
+
+    function closePatientRoundManagerModal() {
+        const modal = document.getElementById('patient-round-manager-modal');
+        if (!modal) return;
+        modal.classList.add('opacity-0');
+        document.getElementById('patient-round-manager-content')?.classList.add('scale-95');
+        setTimeout(() => {
+            modal.classList.add('hidden');
+            modal.classList.remove('flex');
+        }, 250);
+    }
+
+    function onPRMNewSizeChange(sel) {
+        const val = sel.value;
+        const dInp = document.getElementById('prm-new-diaper-qty');
+        const pInp = document.getElementById('prm-new-pad-qty');
+        if (val === 'แผ่นรองซับ') {
+            if (dInp) dInp.value = 0;
+            if (pInp && parseInt(pInp.value) === 0) pInp.value = 90;
+        } else if (val.includes('แผ่นรองซับ')) {
+            if (dInp && parseInt(dInp.value) === 0) dInp.value = 90;
+            if (pInp && parseInt(pInp.value) === 0) pInp.value = 90;
+        } else {
+            if (dInp && parseInt(dInp.value) === 0) dInp.value = 90;
+            if (pInp) pInp.value = 0;
+        }
+    }
+
+    function renderPatientRoundManagerList() {
+        const container = document.getElementById('prm-rounds-list');
+        if (!container || !currentManagingPatientId) return;
+
+        const p = allPatients.find(item => String(item.docId || item.id) === String(currentManagingPatientId));
+        if (!p) return;
+
+        const d = cleanJSON(p.diaper) || {};
+        const allocations = Array.isArray(d.allocations) ? d.allocations : [];
+        const history = d.alloc_history || {};
+
+        if (allocations.length === 0) {
+            container.innerHTML = '<div class="p-4 text-center text-xs text-slate-400 bg-slate-50 rounded-xl border border-slate-200">ยังไม่มีประวัติรอบที่ได้รับ</div>';
+            return;
+        }
+
+        // Requirement 4.2.2: ไม่มีไซส์ XXL
+        const standardSizes = [
+            'S', 'M', 'L', 'XL',
+            'แผ่นรองซับ',
+            'S, แผ่นรองซับ', 'M, แผ่นรองซับ', 'L, แผ่นรองซับ', 'XL, แผ่นรองซับ'
+        ];
+
+        container.innerHTML = allocations.map((r, i) => {
+            const h = history[r] || {};
+            const dq = h.diaper_qty !== undefined ? h.diaper_qty : (d.req_diaper ? 90 : 0);
+            const pq = h.underpad_qty !== undefined ? h.underpad_qty : (d.req_underpad ? 90 : 0);
+            const sz = h.size || d.size || 'L';
+            const dt = h.delivered_at || '';
+
+            let sizeOpts = standardSizes.map(opt => `<option value="${opt}" ${sz === opt ? 'selected' : ''}>${opt}</option>`).join('');
+            return `
+                <div class="prm-round-item bg-slate-50 p-3 rounded-xl border border-slate-200 flex flex-wrap sm:flex-nowrap items-center gap-2" data-old-round="${r}">
+                    <div class="w-full sm:w-28">
+                        <label class="block text-[10px] font-bold text-slate-500">รอบที่ได้รับ</label>
+                        <input type="text" value="${r}" class="prm-item-round w-full px-2 py-1 bg-white border border-blue-200 rounded-lg text-xs font-bold text-blue-700">
+                    </div>
+                    <div class="w-1/2 sm:w-32">
+                        <label class="block text-[10px] font-bold text-slate-500">วันที่ส่งมอบ</label>
+                        <input type="date" value="${dt}" class="prm-item-date w-full px-2 py-1 bg-white border border-slate-200 rounded-lg text-xs text-slate-700">
+                    </div>
+                    <div class="w-1/2 sm:w-32">
+                        <label class="block text-[10px] font-bold text-slate-500">ขนาด/ชนิด</label>
+                        <select class="prm-item-size w-full px-2 py-1 bg-white border border-indigo-200 rounded-lg text-xs font-bold text-indigo-700">${sizeOpts}</select>
+                    </div>
+                    <div class="w-1/3 sm:w-20">
+                        <label class="block text-[10px] font-bold text-blue-700">ผ้าอ้อม</label>
+                        <input type="number" min="0" value="${dq}" class="prm-item-diaper w-full px-2 py-1 bg-white border border-slate-200 rounded-lg text-center text-xs font-bold text-blue-700">
+                    </div>
+                    <div class="w-1/3 sm:w-20">
+                        <label class="block text-[10px] font-bold text-emerald-700">แผ่นรอง</label>
+                        <input type="number" min="0" value="${pq}" class="prm-item-pad w-full px-2 py-1 bg-white border border-slate-200 rounded-lg text-center text-xs font-bold text-emerald-700">
+                    </div>
+                    <div class="w-auto pt-3 ml-auto">
+                        <button type="button" onclick="this.closest('.prm-round-item').remove()" class="p-1.5 bg-rose-50 hover:bg-rose-100 text-rose-600 rounded-lg border border-rose-200 transition-colors" title="ลบรอบนี้">
+                            <span class="material-symbols-outlined text-[16px]">delete</span>
+                        </button>
+                    </div>
+                </div>
+            `;
+        }).join('');
+    }
+
+    function addRoundToPRMList() {
+        const newR = document.getElementById('prm-new-round').value.trim();
+        if (!newR) return showToast('กรุณาระบุชื่อรอบ เช่น 2/2569', 'error');
+        const newDt = document.getElementById('prm-new-date').value;
+        const newSz = document.getElementById('prm-new-size').value;
+        const newDq = parseInt(document.getElementById('prm-new-diaper-qty').value) || 0;
+        const newPq = parseInt(document.getElementById('prm-new-pad-qty').value) || 0;
+
+        const p = allPatients.find(item => String(item.docId || item.id) === String(currentManagingPatientId));
+        if (!p) return;
+
+        let d = cleanJSON(p.diaper) || {};
+        if (!Array.isArray(d.allocations)) d.allocations = [];
+        if (!d.alloc_history) d.alloc_history = {};
+
+        // First sync any existing rows in the modal DOM
+        syncDOMRoundsIntoDiaperObj(d);
+
+        if (!d.allocations.includes(newR)) d.allocations.push(newR);
+        d.alloc_history[newR] = {
+            diaper_qty: newDq,
+            underpad_qty: newPq,
+            size: newSz,
+            delivered_at: newDt,
+            recorded_at: new Date().toISOString()
+        };
+        d = syncDiaperObjectConsistency(d);
+        p.diaper = JSON.stringify(d);
+
+        document.getElementById('prm-new-round').value = '';
+        renderPatientRoundManagerList();
+        showToast(`เพิ่มรอบ ${newR} ในรายการแล้ว กรุณากดยืนยันบันทึก`, 'info');
+    }
+
+    function syncDOMRoundsIntoDiaperObj(d) {
+        const rows = document.querySelectorAll('#prm-rounds-list .prm-round-item');
+        const newAllocations = [];
+        const newHistory = {};
+        const nowISO = new Date().toISOString();
+
+        rows.forEach(rowEl => {
+            const rVal = rowEl.querySelector('.prm-item-round')?.value.trim();
+            if (!rVal) return;
+            const dtVal = rowEl.querySelector('.prm-item-date')?.value || '';
+            const szVal = rowEl.querySelector('.prm-item-size')?.value || 'L';
+            const dqVal = parseInt(rowEl.querySelector('.prm-item-diaper')?.value) || 0;
+            const pqVal = parseInt(rowEl.querySelector('.prm-item-pad')?.value) || 0;
+
+            if (!newAllocations.includes(rVal)) newAllocations.push(rVal);
+            newHistory[rVal] = {
+                diaper_qty: dqVal,
+                underpad_qty: pqVal,
+                size: szVal,
+                delivered_at: dtVal,
+                recorded_at: nowISO
+            };
+        });
+
+        d.allocations = newAllocations;
+        d.alloc_history = newHistory;
+        return d;
+    }
+
+    async function savePatientRoundManager() {
+        if (!currentManagingPatientId) return;
+        const p = allPatients.find(item => String(item.docId || item.id) === String(currentManagingPatientId));
+        if (!p) return;
+
+        const btn = document.getElementById('btn-save-prm');
+        if (btn) {
+            btn.disabled = true;
+            btn.innerHTML = '<span class="material-symbols-outlined text-[16px] animate-spin">sync</span> กำลังบันทึก...';
+        }
+
+        try {
+            let d = cleanJSON(p.diaper) || {};
+            d = syncDOMRoundsIntoDiaperObj(d);
+
+            // Also check if user typed a new round in the top quick-add input without clicking "+ เพิ่มรอบ"
+            const pendingNewR = document.getElementById('prm-new-round')?.value.trim();
+            if (pendingNewR && !d.allocations.includes(pendingNewR)) {
+                d.allocations.push(pendingNewR);
+                d.alloc_history[pendingNewR] = {
+                    diaper_qty: parseInt(document.getElementById('prm-new-diaper-qty')?.value) || 0,
+                    underpad_qty: parseInt(document.getElementById('prm-new-pad-qty')?.value) || 0,
+                    size: document.getElementById('prm-new-size')?.value || 'L',
+                    delivered_at: document.getElementById('prm-new-date')?.value || '',
+                    recorded_at: new Date().toISOString()
+                };
+            }
+
+            d = syncDiaperObjectConsistency(d);
+            p.diaper = JSON.stringify(d);
+
+            await db.collection('Patients').doc(String(p.docId || p.id)).update({
+                diaper: JSON.stringify(d)
+            });
+
+            closePatientRoundManagerModal();
+            showToast('บันทึกประวัติรอบส่งมอบและอัปเดตทุกหน้าเรียบร้อยแล้ว', 'success');
+            refreshAllRelatedViews();
+        } catch (err) {
+            console.error(err);
+            showToast('บันทึกไม่สำเร็จ: ' + err.message, 'error');
+        } finally {
+            if (btn) {
+                btn.disabled = false;
+                btn.innerHTML = '<span class="material-symbols-outlined text-[16px]">save</span> บันทึกการเปลี่ยนแปลง';
+            }
+        }
+    }
+
+    // =========================================================
+    // 🌟 Modal เพิ่มรายชื่อผู้ป่วยเข้าในรอบจัดสรร/ส่งมอบ (ทำที่หน้าศูนย์รายงานได้เลย) 🌟
+    // =========================================================
+    function openAddPatientToRoundModal() {
+        if (currentUserRole === 'SUB_ADMIN') {
+            return showToast('เฉพาะผู้ดูแลระบบ (ADMIN) เท่านั้นที่สามารถเพิ่มรอบจัดสรรได้', 'error');
+        }
+        const modal = document.getElementById('add-patient-round-modal');
+        if (!modal) return;
+
+        addRoundSelectedPatients.clear();
+        const curRound = document.getElementById('deliv-round')?.value || '';
+        const curFY = document.getElementById('deliv-fy')?.value || String(new Date().getFullYear() + 543);
+
+        if (curRound && curRound.includes('/')) {
+            const parts = curRound.split('/');
+            document.getElementById('apr-round').value = parts[0];
+            document.getElementById('apr-fy').value = parts[1];
+        } else {
+            document.getElementById('apr-round').value = '1';
+            document.getElementById('apr-fy').value = curFY;
+        }
+
+        document.getElementById('apr-date').value = new Date().toISOString().split('T')[0];
+        document.getElementById('apr-search').value = '';
+
+        // Populate village filter in modal
+        const vSel = document.getElementById('apr-village');
+        if (vSel) {
+            vSel.innerHTML = '<option value="all">ดูทุกหมู่ (ทั้งหมด)</option>';
+            for (let i = 1; i <= vCount; i++) {
+                vSel.insertAdjacentHTML('beforeend', `<option value="${i}">หมู่ที่ ${i}</option>`);
+            }
+        }
+
+        renderAddPatientToRoundList();
+
+        modal.classList.remove('hidden');
+        modal.classList.add('flex');
+        setTimeout(() => {
+            modal.classList.remove('opacity-0');
+            document.getElementById('add-patient-round-content')?.classList.remove('scale-95');
+        }, 10);
+    }
+
+    function closeAddPatientToRoundModal() {
+        const modal = document.getElementById('add-patient-round-modal');
+        if (!modal) return;
+        modal.classList.add('opacity-0');
+        document.getElementById('add-patient-round-content')?.classList.add('scale-95');
+        setTimeout(() => {
+            modal.classList.add('hidden');
+            modal.classList.remove('flex');
+        }, 250);
+    }
+
+    function toggleAPRPatient(cb) {
+        const pid = String(cb.value);
+        if (cb.checked) addRoundSelectedPatients.add(pid);
+        else addRoundSelectedPatients.delete(pid);
+        updateAPRSelectedUI();
+    }
+
+    function updateAPRSelectedUI() {
+        const countEl = document.getElementById('apr-selected-count');
+        if (countEl) countEl.innerText = addRoundSelectedPatients.size;
+    }
+
+    function renderAddPatientToRoundList() {
+        const tbody = document.getElementById('apr-patient-tbody');
+        if (!tbody) return;
+        tbody.innerHTML = '';
+
+        const q = (document.getElementById('apr-search')?.value || '').trim().toLowerCase();
+        const vFilter = document.getElementById('apr-village')?.value || 'all';
+        const rNum = (document.getElementById('apr-round')?.value || '').trim();
+        const fyNum = (document.getElementById('apr-fy')?.value || '').trim();
+        const targetAlloc = (rNum && fyNum) ? `${rNum}/${fyNum}` : '';
+
+        allPatients.forEach(p => {
+            if (String(p.status || 'Active').trim().toLowerCase() !== 'active') return;
+            if (vFilter !== 'all' && String(p.village_no || '').trim() !== String(vFilter)) return;
+
+            const fullName = `${p.prefix || ''}${p.name || ''}`.toLowerCase();
+            const cid = String(p.id_card || '').toLowerCase();
+            if (q && !fullName.includes(q) && !cid.includes(q)) return;
+
+            const pid = String(p.docId || p.id);
+            const isChecked = addRoundSelectedPatients.has(pid);
+            const d = cleanJSON(p.diaper) || {};
+            const alreadyInRound = targetAlloc && Array.isArray(d.allocations) && d.allocations.includes(targetAlloc);
+
+            let needBadge = '-';
+            const hasDiaper = (d.req_diaper === true || d.req_diaper === 'true' || (d.size && d.size !== '-' && d.size.trim() !== '') || (parseInt(d.approved_diaper) > 0));
+            const hasUnderpad = (d.req_underpad === true || d.req_underpad === 'true' || (parseInt(d.approved_underpad) > 0));
+            let parts = [];
+            if (hasDiaper) parts.push(`ผ้าอ้อม ${d.size || 'L'}`);
+            if (hasUnderpad) parts.push('แผ่นรองซับ');
+            if (parts.length > 0) needBadge = parts.join(', ');
+
+            const tr = document.createElement('tr');
+            tr.className = "border-b border-slate-100 hover:bg-slate-50 transition-colors" + (isChecked ? " bg-amber-50/60" : "");
+            tr.innerHTML = `
+                <td class="p-2.5 text-center">
+                    <input type="checkbox" value="${pid}" ${isChecked ? 'checked' : ''} onchange="toggleAPRPatient(this)" class="w-4 h-4 accent-amber-600 rounded cursor-pointer">
+                </td>
+                <td class="p-2.5 font-bold text-slate-800 text-xs">${p.prefix || ''}${p.name || '-'}</td>
+                <td class="p-2.5 text-center font-bold text-blue-600 text-xs">หมู่ ${p.village_no || '-'}</td>
+                <td class="p-2.5 text-xs text-indigo-700 font-bold">${needBadge}</td>
+                <td class="p-2.5 text-center text-[11px]">
+                    ${alreadyInRound ? `<span class="bg-emerald-50 text-emerald-700 border border-emerald-200 px-2 py-0.5 rounded font-bold">อยู่ในรอบ ${targetAlloc} แล้ว</span>` : `<span class="text-slate-400">${(d.allocations && d.allocations.length > 0) ? 'ล่าสุด: ' + d.allocations[d.allocations.length - 1] : 'ยังไม่เคยได้รับ'}</span>`}
+                </td>
+            `;
+            tbody.appendChild(tr);
+        });
+        updateAPRSelectedUI();
+    }
+
+    async function confirmAddPatientsToRound() {
+        if (addRoundSelectedPatients.size === 0) return showToast('กรุณาติ๊กเลือกผู้ป่วยอย่างน้อย 1 คน', 'error');
+        const rNum = (document.getElementById('apr-round')?.value || '').trim();
+        const fyNum = (document.getElementById('apr-fy')?.value || '').trim();
+        if (!rNum || !fyNum) return showToast('กรุณาระบุรอบที่และปีงบประมาณ', 'error');
+
+        const allocStr = `${rNum}/${fyNum}`;
+        const delivDate = document.getElementById('apr-date')?.value || new Date().toISOString().split('T')[0];
+        const targetDQty = parseInt(document.getElementById('apr-diaper-qty')?.value) || 0;
+        const targetPQty = parseInt(document.getElementById('apr-pad-qty')?.value) || 0;
+
+        const btn = document.getElementById('btn-confirm-apr');
+        if (btn) {
+            btn.disabled = true;
+            btn.innerHTML = '<span class="material-symbols-outlined text-[16px] animate-spin">sync</span> กำลังบันทึก...';
+        }
+
+        try {
+            let batch = db.batch();
+            let batchCount = 0;
+            let count = 0;
+            const nowISO = new Date().toISOString();
+
+            for (const pid of addRoundSelectedPatients) {
+                const p = allPatients.find(item => String(item.docId || item.id) === String(pid));
+                if (!p) continue;
+
+                let d = cleanJSON(p.diaper) || {};
+                if (!Array.isArray(d.allocations)) d.allocations = [];
+                if (!d.allocations.includes(allocStr)) d.allocations.push(allocStr);
+                if (!d.alloc_history) d.alloc_history = {};
+
+                const hasDiaper = (d.req_diaper === true || d.req_diaper === 'true' || (d.size && d.size !== '-' && d.size.trim() !== '') || (parseInt(d.approved_diaper) > 0));
+                const hasUnderpad = (d.req_underpad === true || d.req_underpad === 'true' || (parseInt(d.approved_underpad) > 0));
+
+                let dQty = targetDQty;
+                let pQty = targetPQty;
+                if (hasDiaper && !hasUnderpad) { dQty = targetDQty; pQty = 0; }
+                else if (!hasDiaper && hasUnderpad) { dQty = 0; pQty = targetPQty; }
+
+                let sizeStr = (d.size && d.size !== '-') ? d.size.trim().toUpperCase() : 'L';
+                if (hasDiaper && hasUnderpad) sizeStr = `${sizeStr}, แผ่นรองซับ`;
+                else if (!hasDiaper && hasUnderpad) sizeStr = 'แผ่นรองซับ';
+
+                d.alloc_history[allocStr] = {
+                    diaper_qty: dQty,
+                    underpad_qty: pQty,
+                    size: sizeStr,
+                    delivered_at: delivDate,
+                    recorded_at: nowISO
+                };
+
+                d = syncDiaperObjectConsistency(d);
+                p.diaper = JSON.stringify(d);
+
+                const ref = db.collection('Patients').doc(String(p.docId || p.id));
+                batch.update(ref, { diaper: JSON.stringify(d) });
+                batchCount++;
+                count++;
+
+                if (batchCount === 450) {
+                    await batch.commit();
+                    batch = db.batch();
+                    batchCount = 0;
+                }
+            }
+
+            if (batchCount > 0) await batch.commit();
+
+            closeAddPatientToRoundModal();
+            showToast(`เพิ่มผู้ป่วยเข้ารอบ ${allocStr} และอัปเดตทุกหน้าเรียบร้อยแล้ว (${count} คน)`, 'success');
+            refreshAllRelatedViews();
+            const roundSel = document.getElementById('deliv-round');
+            if (roundSel) {
+                roundSel.value = allocStr;
+                renderDiaperDeliveryReport();
+            }
+        } catch (err) {
+            console.error(err);
+            showToast('บันทึกไม่สำเร็จ: ' + err.message, 'error');
+        } finally {
+            if (btn) {
+                btn.disabled = false;
+                btn.innerHTML = '<span class="material-symbols-outlined text-[16px]">save</span> ยืนยันเพิ่มเข้ารอบส่งมอบ';
             }
         }
     }
@@ -1735,17 +2366,25 @@
             const sSel = document.querySelector(`.sel-deliv-size[data-row-key="${uniqueRowKey}"]`);
             const dInp = document.querySelector(`.inp-deliv-diaper[data-row-key="${uniqueRowKey}"]`);
             const pInp = document.querySelector(`.inp-deliv-pad[data-row-key="${uniqueRowKey}"]`);
+            const rInp = document.querySelector(`.inp-deliv-round[data-row-key="${uniqueRowKey}"]`);
+            const dtInp = document.querySelector(`.inp-deliv-date[data-row-key="${uniqueRowKey}"]`);
 
+            let actualRound = row.displayRound || row.round;
+            let actualDelivAt = row.deliveredAt || '';
             let actualSize = row.diaperSizeStr;
             let actualDQty = row.diaperQty;
             let actualPQty = row.padQty;
 
             if (pendingDeliveryEdits.has(uniqueRowKey)) {
                 const ped = pendingDeliveryEdits.get(uniqueRowKey);
+                actualRound = ped.newRound || ped.round;
+                actualDelivAt = ped.deliveredAt || '';
                 actualSize = ped.size;
                 actualDQty = ped.diaperQty;
                 actualPQty = ped.padQty;
             } else {
+                if (rInp) actualRound = rInp.value.trim() || actualRound;
+                if (dtInp) actualDelivAt = dtInp.value || actualDelivAt;
                 if (sSel) actualSize = sSel.value;
                 if (dInp) actualDQty = parseInt(dInp.value) || 0;
                 if (pInp) actualPQty = parseInt(pInp.value) || 0;
@@ -1759,8 +2398,8 @@
                 "ข้อมูลผู้เสียชีวิต": deceasedNote,
                 "หมู่ที่": row.village_no,
                 "บ้านเลขที่": row.house_no,
-                "รอบที่ได้รับ": row.round,
-                "วันที่ได้รับ/ส่งมอบ": row.deliveredAt ? formatThaiDate(row.deliveredAt) : '-',
+                "รอบที่ได้รับ": actualRound,
+                "วันที่ได้รับ/ส่งมอบ": actualDelivAt ? formatThaiDate(actualDelivAt) : '-',
                 "ขนาดผ้าอ้อม": actualSize,
                 "จำนวนผ้าอ้อม (ชิ้น)": actualDQty,
                 "จำนวนแผ่นรองซับ (ชิ้น)": actualPQty,
@@ -1779,6 +2418,7 @@
             { wch: 8 },  // หมู่ที่
             { wch: 12 }, // บ้านเลขที่
             { wch: 14 }, // รอบที่ได้รับ
+            { wch: 16 }, // วันที่ได้รับ/ส่งมอบ
             { wch: 16 }, // ขนาดผ้าอ้อม
             { wch: 18 }, // จำนวนผ้าอ้อม
             { wch: 20 }, // จำนวนแผ่นรองซับ
@@ -1843,8 +2483,11 @@
         }
     }
 
-    // --- Modal กำหนดและบันทึกจำนวนที่ได้รับในรอบนี้ ---
+    // --- Modal จัดการรอบ / กำหนดจำนวนและเปลี่ยนชื่อรอบทั้งรอบ ---
     function openRecordQuantityModal() {
+        if (currentUserRole === 'SUB_ADMIN') {
+            return showToast('เฉพาะผู้ดูแลระบบ (ADMIN) เท่านั้นที่สามารถจัดการรอบจัดสรรได้', 'error');
+        }
         const modal = document.getElementById('record-qty-modal');
         if (!modal) return;
 
@@ -1910,18 +2553,28 @@
         const roundSel = document.getElementById('modal-round-select');
         const targetRound = roundSel ? roundSel.value : '';
         const countBadge = document.getElementById('modal-round-patient-count');
+        const renameInp = document.getElementById('modal-rename-round');
+        if (renameInp) renameInp.value = targetRound;
+
         if (!targetRound) {
             if (countBadge) countBadge.textContent = '0 คน';
             return;
         }
 
         let count = 0;
+        let sampleDate = '';
         (allPatients || []).forEach(p => {
             const d = cleanJSON(p.diaper);
             if (d && Array.isArray(d.allocations) && d.allocations.includes(targetRound)) {
                 count++;
+                if (!sampleDate && d.alloc_history && d.alloc_history[targetRound] && d.alloc_history[targetRound].delivered_at) {
+                    sampleDate = d.alloc_history[targetRound].delivered_at;
+                }
             }
         });
+
+        const delivDateInp = document.getElementById('modal-delivery-date');
+        if (delivDateInp) delivDateInp.value = sampleDate || new Date().toISOString().split('T')[0];
 
         if (countBadge) {
             countBadge.textContent = count + ' คน';
@@ -1935,6 +2588,9 @@
             return showToast('กรุณาเลือกรอบการจัดสรรที่จะบันทึก', 'error');
         }
 
+        const renameInp = document.getElementById('modal-rename-round');
+        const newRoundName = (renameInp && renameInp.value.trim()) ? renameInp.value.trim() : targetRound;
+
         const dQtyInput = parseInt(document.getElementById('modal-diaper-qty').value);
         const pQtyInput = parseInt(document.getElementById('modal-pad-qty').value);
         const dQty = isNaN(dQtyInput) ? 90 : Math.max(0, dQtyInput);
@@ -1947,7 +2603,6 @@
         }
 
         try {
-            // Find target patients who have targetRound in d.allocations
             const targetPatients = (allPatients || []).filter(p => {
                 const d = cleanJSON(p.diaper);
                 return d && Array.isArray(d.allocations) && d.allocations.includes(targetRound);
@@ -1958,7 +2613,7 @@
                 return;
             }
 
-            const batch = db.batch();
+            let batch = db.batch();
             let batchCount = 0;
             let successCount = 0;
             const nowISO = new Date().toISOString();
@@ -1967,21 +2622,28 @@
 
             for (const p of targetPatients) {
                 let d = cleanJSON(p.diaper) || {};
+                if (!Array.isArray(d.allocations)) d.allocations = [];
                 if (!d.alloc_history) d.alloc_history = {};
 
+                const prevHist = d.alloc_history[targetRound] || {};
+                if (newRoundName !== targetRound) {
+                    d.allocations = d.allocations.map(r => String(r).trim() === targetRound ? newRoundName : String(r).trim());
+                    delete d.alloc_history[targetRound];
+                }
+
                 const hasDiaper = (d.req_diaper === true || d.req_diaper === 'true' || (d.size && d.size !== '-' && d.size.trim() !== '') || (parseInt(d.approved_diaper) > 0));
-                let cleanSize = (d.size && d.size !== '-' && d.size.trim() !== '') ? d.size.trim().toUpperCase() : 'L';
+                let cleanSize = prevHist.size || ((d.size && d.size !== '-' && d.size.trim() !== '') ? d.size.trim().toUpperCase() : 'L');
                 const hasUnderpad = (d.req_underpad === true || d.req_underpad === 'true' || (parseInt(d.approved_underpad) > 0));
 
-                d.alloc_history[targetRound] = {
+                d.alloc_history[newRoundName] = {
                     diaper_qty: hasDiaper ? dQty : 0,
                     underpad_qty: hasUnderpad ? pQty : 0,
                     size: cleanSize,
-                    delivered_at: targetDelivDate || (d.alloc_history[targetRound] ? d.alloc_history[targetRound].delivered_at : ''),
+                    delivered_at: targetDelivDate || prevHist.delivered_at || '',
                     recorded_at: nowISO
                 };
 
-                // Update in-memory
+                d = syncDiaperObjectConsistency(d);
                 p.diaper = JSON.stringify(d);
 
                 const ref = db.collection('Patients').doc(String(p.docId || p.id));
@@ -1991,6 +2653,7 @@
 
                 if (batchCount === 450) {
                     await batch.commit();
+                    batch = db.batch();
                     batchCount = 0;
                 }
             }
@@ -2000,15 +2663,14 @@
             }
 
             closeRecordQuantityModal();
-            showToast('บันทึกจำนวนการส่งมอบรอบ ' + targetRound + ' เรียบร้อยแล้ว (' + successCount + ' คน)', 'success');
+            showToast('บันทึกข้อมูลรอบ ' + newRoundName + ' และอัปเดตทุกหน้าเรียบร้อยแล้ว (' + successCount + ' คน)', 'success');
 
-            // Select this round in filter if available
+            refreshAllRelatedViews();
             const delivRoundSel = document.getElementById('deliv-round');
             if (delivRoundSel) {
-                delivRoundSel.value = targetRound;
+                delivRoundSel.value = newRoundName;
+                renderDiaperDeliveryReport();
             }
-
-            renderDiaperDeliveryReport();
 
         } catch (err) {
             console.error("confirmModalSaveQuantities error:", err);
@@ -2020,10 +2682,9 @@
             }
         }
     }
-
 </script>
 
-    <!-- Modal กำหนดและบันทึกจำนวนผ้าอ้อมในแต่ละรอบ (ตามคำขอ) -->
+    <!-- Modal กำหนดและบันทึกจำนวนผ้าอ้อมในแต่ละรอบ + แก้ไขชื่อรอบทั้งรอบ -->
     <div id="record-qty-modal" class="fixed inset-0 bg-black/60 z-[120] hidden flex-col items-center justify-center opacity-0 transition-opacity duration-300 p-4">
         <div id="record-qty-modal-content" class="bg-white rounded-[24px] w-full max-w-lg p-6 transform scale-95 transition-transform duration-300 shadow-2xl overflow-hidden">
             <div class="flex items-center justify-between pb-3 mb-4 border-b border-slate-100">
@@ -2032,8 +2693,8 @@
                         <span class="material-symbols-outlined text-[24px]">edit_calendar</span>
                     </div>
                     <div>
-                        <h3 class="text-base font-bold text-slate-900">กำหนดและบันทึกจำนวนที่ได้รับในรอบนี้</h3>
-                        <p class="text-xs text-slate-500">บันทึกจำนวนผ้าอ้อม/แผ่นรองซับมาตรฐานลงฐานข้อมูล</p>
+                        <h3 class="text-base font-bold text-slate-900">จัดการรอบ / กำหนดจำนวนในรอบนี้</h3>
+                        <p class="text-xs text-slate-500">แก้ไขชื่อรอบ วันที่ส่งมอบ และจำนวนชิ้นมาตรฐานทั้งรอบในครั้งเดียว</p>
                     </div>
                 </div>
                 <button onclick="closeRecordQuantityModal()" class="w-8 h-8 rounded-full hover:bg-slate-100 text-slate-400 hover:text-slate-600 flex items-center justify-center transition-colors">
@@ -2042,10 +2703,16 @@
             </div>
 
             <div class="space-y-4">
-                <div>
-                    <label class="block text-xs font-bold text-slate-700 mb-1">เลือกรอบการจัดสรรที่จะบันทึก <span class="text-red-500">*</span></label>
-                    <select id="modal-round-select" onchange="onModalRoundChange()" class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold text-blue-700 outline-none focus:ring-2 focus:ring-blue-500">
-                    </select>
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 mb-1">เลือกรอบที่ต้องการจัดการ <span class="text-red-500">*</span></label>
+                        <select id="modal-round-select" onchange="onModalRoundChange()" class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold text-blue-700 outline-none focus:ring-2 focus:ring-blue-500">
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 mb-1">แก้ไขชื่อรอบ (หากต้องการเปลี่ยน)</label>
+                        <input type="text" id="modal-rename-round" placeholder="เช่น 1/2569" class="w-full px-3.5 py-2.5 bg-blue-50/50 border border-blue-200 rounded-xl text-sm font-bold text-navy outline-none focus:ring-2 focus:ring-blue-500">
+                    </div>
                 </div>
 
                 <div class="bg-blue-50/70 p-3.5 rounded-xl border border-blue-100 flex items-center justify-between text-xs text-blue-900">
@@ -2082,7 +2749,7 @@
 
                 <div class="bg-amber-50 p-3 rounded-xl border border-amber-200 text-[11px] text-amber-800 flex items-start gap-2">
                     <span class="material-symbols-outlined text-[16px] text-amber-600 flex-shrink-0 mt-0.5">info</span>
-                    <span>ระบบจะบันทึกจำนวนชิ้นดังกล่าวเข้าสู่แฟ้มประวัติของผู้ป่วยทุกคนที่ได้รับในรอบนี้ และคำนวณยอดสรุปให้อัตโนมัติ</span>
+                    <span>การบันทึกจะอัปเดตเชื่อมโยงกันทุกหน้าทันที (ศูนย์ข้อมูลผู้ป่วย, บันทึกมติผ้าอ้อม, คลังพัสดุ กปท., บริหารทรัพยากร และแฟ้มประวัติผู้ป่วย)</span>
                 </div>
             </div>
 
@@ -2091,6 +2758,165 @@
                 <button type="button" onclick="confirmModalSaveQuantities()" id="btn-modal-save-qty" class="flex-1 py-2.5 bg-[#00694a] hover:bg-[#005239] text-white rounded-xl text-xs font-bold shadow-md flex items-center justify-center gap-1.5 transition-all active:scale-95">
                     <span class="material-symbols-outlined text-[16px]">save</span> ยืนยันบันทึกลงฐานข้อมูล
                 </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal จัดการรอบส่งมอบรายบุคคล (เพิ่ม/แก้ไข/ลบรอบของผู้ป่วยแต่ละคน) -->
+    <div id="patient-round-manager-modal" class="fixed inset-0 bg-black/60 z-[130] hidden flex-col items-center justify-center opacity-0 transition-opacity duration-300 p-4">
+        <div id="patient-round-manager-content" class="bg-white rounded-[24px] w-full max-w-2xl p-6 transform scale-95 transition-transform duration-300 shadow-2xl max-h-[90vh] flex flex-col">
+            <div class="flex items-center justify-between pb-3 mb-4 border-b border-slate-100">
+                <div class="flex items-center gap-2.5">
+                    <div class="w-10 h-10 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center flex-shrink-0">
+                        <span class="material-symbols-outlined text-[24px]">history_edu</span>
+                    </div>
+                    <div>
+                        <h3 class="text-base font-bold text-slate-900">จัดการประวัติรอบที่ได้รับ (รายบุคคล)</h3>
+                        <p class="text-xs font-bold text-blue-600" id="prm-patient-name">-</p>
+                    </div>
+                </div>
+                <button onclick="closePatientRoundManagerModal()" class="w-8 h-8 rounded-full hover:bg-slate-100 text-slate-400 hover:text-slate-600 flex items-center justify-center">
+                    <span class="material-symbols-outlined text-[20px]">close</span>
+                </button>
+            </div>
+
+            <div class="overflow-y-auto flex-1 space-y-4 pr-1">
+                <!-- ส่วนเพิ่มรอบใหม่ให้ผู้ป่วยคนนี้ -->
+                <div class="bg-amber-50/70 border border-amber-200 rounded-2xl p-3.5">
+                    <h4 class="text-xs font-bold text-amber-900 mb-2 flex items-center gap-1">
+                        <span class="material-symbols-outlined text-[16px] text-amber-600">add_circle</span> เพิ่มรอบการส่งมอบใหม่ให้ผู้ป่วยรายนี้
+                    </h4>
+                    <div class="grid grid-cols-2 sm:grid-cols-6 gap-2 items-end">
+                        <div class="col-span-1">
+                            <label class="block text-[10px] font-bold text-slate-600 mb-0.5">รอบ/ปีงบ (เช่น 2/2569)</label>
+                            <input type="text" id="prm-new-round" placeholder="เช่น 2/2569" class="w-full px-2.5 py-1.5 bg-white border border-amber-300 rounded-lg text-xs font-bold text-navy">
+                        </div>
+                        <div class="col-span-1">
+                            <label class="block text-[10px] font-bold text-slate-600 mb-0.5">วันที่ส่งมอบ</label>
+                            <input type="date" id="prm-new-date" class="w-full px-2 py-1.5 bg-white border border-slate-200 rounded-lg text-xs">
+                        </div>
+                        <div class="col-span-2 sm:col-span-1">
+                            <label class="block text-[10px] font-bold text-slate-600 mb-0.5">ขนาด/ชนิด</label>
+                            <select id="prm-new-size" onchange="onPRMNewSizeChange(this)" class="w-full px-2 py-1.5 bg-white border border-indigo-200 rounded-lg text-xs font-bold text-indigo-700">
+                                <option value="S">S</option>
+                                <option value="M">M</option>
+                                <option value="L">L</option>
+                                <option value="XL">XL</option>
+                                <option value="แผ่นรองซับ">แผ่นรองซับ</option>
+                                <option value="S, แผ่นรองซับ">S, แผ่นรองซับ</option>
+                                <option value="M, แผ่นรองซับ">M, แผ่นรองซับ</option>
+                                <option value="L, แผ่นรองซับ">L, แผ่นรองซับ</option>
+                                <option value="XL, แผ่นรองซับ">XL, แผ่นรองซับ</option>
+                            </select>
+                        </div>
+                        <div class="col-span-1">
+                            <label class="block text-[10px] font-bold text-blue-700 mb-0.5">ผ้าอ้อม (ชิ้น)</label>
+                            <input type="number" id="prm-new-diaper-qty" value="90" min="0" class="w-full px-2 py-1.5 bg-white border border-slate-200 rounded-lg text-center text-xs font-bold text-blue-700">
+                        </div>
+                        <div class="col-span-1">
+                            <label class="block text-[10px] font-bold text-emerald-700 mb-0.5">แผ่นรอง (ชิ้น)</label>
+                            <input type="number" id="prm-new-pad-qty" value="0" min="0" class="w-full px-2 py-1.5 bg-white border border-slate-200 rounded-lg text-center text-xs font-bold text-emerald-700">
+                        </div>
+                        <div class="col-span-2 sm:col-span-1">
+                            <button type="button" onclick="addRoundToPRMList()" class="w-full py-1.5 bg-amber-500 hover:bg-amber-600 text-white rounded-lg text-xs font-bold shadow-xs flex items-center justify-center gap-1">
+                                <span class="material-symbols-outlined text-[15px]">add</span> เพิ่มรอบ
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- รายการรอบที่ได้รับทั้งหมดของผู้ป่วยรายนี้ -->
+                <div>
+                    <h4 class="text-xs font-bold text-slate-700 mb-2 flex items-center justify-between">
+                        <span>ประวัติรอบที่ได้รับทั้งหมด (สามารถแก้ไขชื่อรอบ วันที่ ขนาด จำนวน หรือกดลบได้)</span>
+                    </h4>
+                    <div id="prm-rounds-list" class="space-y-2"></div>
+                </div>
+            </div>
+
+            <div class="flex gap-2.5 mt-5 pt-3 border-t border-slate-100">
+                <button type="button" onclick="closePatientRoundManagerModal()" class="flex-1 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-bold">ยกเลิก</button>
+                <button type="button" id="btn-save-prm" onclick="savePatientRoundManager()" class="flex-1 py-2.5 bg-[#00694a] hover:bg-[#005239] text-white rounded-xl text-xs font-bold shadow-md flex items-center justify-center gap-1.5">
+                    <span class="material-symbols-outlined text-[16px]">save</span> บันทึกการเปลี่ยนแปลง
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal เพิ่มรายชื่อผู้ป่วยเข้าในรอบส่งมอบ (แบบเลือกหลายคนในหน้าศูนย์รายงาน) -->
+    <div id="add-patient-round-modal" class="fixed inset-0 bg-black/60 z-[130] hidden flex-col items-center justify-center opacity-0 transition-opacity duration-300 p-4">
+        <div id="add-patient-round-content" class="bg-white rounded-[24px] w-full max-w-3xl p-6 transform scale-95 transition-transform duration-300 shadow-2xl max-h-[90vh] flex flex-col">
+            <div class="flex items-center justify-between pb-3 mb-3 border-b border-slate-100">
+                <div class="flex items-center gap-2.5">
+                    <div class="w-10 h-10 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center flex-shrink-0">
+                        <span class="material-symbols-outlined text-[24px]">person_add</span>
+                    </div>
+                    <div>
+                        <h3 class="text-base font-bold text-slate-900">เพิ่มรายชื่อผู้ป่วยเข้าในรอบส่งมอบ/มติผ้าอ้อม</h3>
+                        <p class="text-xs text-slate-500">เลือกผู้ป่วยเพื่อบันทึกรอบที่ได้รับ วันที่ส่งมอบ และจำนวนชิ้น (เชื่อมโยงกับหน้าบันทึกมติและทุกหน้าอัตโนมัติ)</p>
+                    </div>
+                </div>
+                <button onclick="closeAddPatientToRoundModal()" class="w-8 h-8 rounded-full hover:bg-slate-100 text-slate-400 hover:text-slate-600 flex items-center justify-center">
+                    <span class="material-symbols-outlined text-[20px]">close</span>
+                </button>
+            </div>
+
+            <div class="grid grid-cols-2 sm:grid-cols-5 gap-2.5 bg-amber-50/60 p-3.5 rounded-2xl border border-amber-200 mb-3">
+                <div>
+                    <label class="block text-[11px] font-bold text-slate-700 mb-1">รอบที่ <span class="text-red-500">*</span></label>
+                    <input type="text" id="apr-round" value="1" oninput="renderAddPatientToRoundList()" class="w-full px-3 py-1.5 bg-white border border-slate-200 rounded-xl text-xs font-bold text-navy">
+                </div>
+                <div>
+                    <label class="block text-[11px] font-bold text-slate-700 mb-1">ปีงบประมาณ <span class="text-red-500">*</span></label>
+                    <input type="text" id="apr-fy" value="2569" oninput="renderAddPatientToRoundList()" class="w-full px-3 py-1.5 bg-white border border-slate-200 rounded-xl text-xs font-bold text-navy">
+                </div>
+                <div>
+                    <label class="block text-[11px] font-bold text-slate-700 mb-1">วันที่ส่งมอบ</label>
+                    <input type="date" id="apr-date" class="w-full px-2.5 py-1.5 bg-white border border-slate-200 rounded-xl text-xs font-bold text-slate-700">
+                </div>
+                <div>
+                    <label class="block text-[11px] font-bold text-blue-800 mb-1">ผ้าอ้อม (ชิ้น)</label>
+                    <input type="number" id="apr-diaper-qty" value="90" min="0" class="w-full px-2.5 py-1.5 bg-white border border-blue-200 rounded-xl text-center text-xs font-bold text-blue-700">
+                </div>
+                <div>
+                    <label class="block text-[11px] font-bold text-emerald-800 mb-1">แผ่นรองซับ (ชิ้น)</label>
+                    <input type="number" id="apr-pad-qty" value="90" min="0" class="w-full px-2.5 py-1.5 bg-white border border-emerald-200 rounded-xl text-center text-xs font-bold text-emerald-700">
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-2 mb-3">
+                <div class="sm:col-span-2 relative">
+                    <span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-[18px]">search</span>
+                    <input type="text" id="apr-search" oninput="renderAddPatientToRoundList()" placeholder="ค้นหาชื่อ, นามสกุล, เลขบัตร (ติ๊กแล้วค้นหาคนต่อไปได้ไม่หาย)..." class="w-full pl-9 pr-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-700 outline-none focus:ring-2 focus:ring-amber-500">
+                </div>
+                <select id="apr-village" onchange="renderAddPatientToRoundList()" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-700 outline-none focus:ring-2 focus:ring-amber-500">
+                    <option value="all">ดูทุกหมู่ (ทั้งหมด)</option>
+                </select>
+            </div>
+
+            <div class="flex-1 overflow-y-auto border border-slate-200 rounded-xl">
+                <table class="w-full text-left border-collapse">
+                    <thead class="bg-slate-100 text-slate-600 text-[11px] sticky top-0">
+                        <tr>
+                            <th class="p-2.5 w-10 text-center">เลือก</th>
+                            <th class="p-2.5">ชื่อ-สกุล</th>
+                            <th class="p-2.5 text-center">หมู่ที่</th>
+                            <th class="p-2.5">ความต้องการ</th>
+                            <th class="p-2.5 text-center">สถานะรอบนี้</th>
+                        </tr>
+                    </thead>
+                    <tbody id="apr-patient-tbody" class="divide-y divide-slate-100"></tbody>
+                </table>
+            </div>
+
+            <div class="flex items-center justify-between gap-3 mt-4 pt-3 border-t border-slate-100">
+                <span class="text-xs font-bold text-slate-600">เลือกไว้ <strong id="apr-selected-count" class="text-amber-600 text-sm">0</strong> คน</span>
+                <div class="flex gap-2">
+                    <button type="button" onclick="closeAddPatientToRoundModal()" class="px-5 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-bold">ยกเลิก</button>
+                    <button type="button" id="btn-confirm-apr" onclick="confirmAddPatientsToRound()" class="px-5 py-2.5 bg-amber-500 hover:bg-amber-600 text-white rounded-xl text-xs font-bold shadow-md flex items-center gap-1.5">
+                        <span class="material-symbols-outlined text-[16px]">save</span> ยืนยันเพิ่มเข้ารอบส่งมอบ
+                    </button>
+                </div>
             </div>
         </div>
     </div>

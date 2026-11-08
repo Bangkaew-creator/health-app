@@ -11,156 +11,375 @@
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
 
+    <script charset="utf-8" src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore-compat.js"></script>
     <script src="config.js"></script>
+    <script src="core.js"></script>
 
     <style>
-        body { font-family: 'Sarabun', sans-serif; background-color: #f8fafc; -webkit-tap-highlight-color: transparent;}
+        body { font-family: 'Sarabun', sans-serif; background-color: #f8fafc; -webkit-tap-highlight-color: transparent; }
         .material-symbols-outlined { font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24; }
         #map { height: calc(100dvh - 64px); width: 100%; z-index: 1; }
-        .custom-popup .leaflet-popup-content-wrapper { border-radius: 16px; padding: 4px; box-shadow: 0 4px 20px rgba(0,0,0,0.08); }
-        .custom-popup .leaflet-popup-content { margin: 8px 12px; }
+        .custom-popup .leaflet-popup-content-wrapper { border-radius: 16px; padding: 4px; box-shadow: 0 8px 25px rgba(0,0,0,0.12); }
+        .custom-popup .leaflet-popup-content { margin: 10px 14px; min-width: 210px; }
+        .scope-btn.active { background-color: #00694a; color: #ffffff; box-shadow: 0 2px 8px rgba(0,105,74,0.25); }
+        .group-chip.active { ring: 2px; border-color: #00694a; background-color: #ecfdf5; color: #00694a; }
     </style>
 </head>
 <body class="text-[#111c2d] overflow-hidden">
 
-    <header class="bg-[#00694a] shadow-md flex items-center w-full px-4 h-16 text-white gap-3 sticky top-0 z-50">
-        <button onclick="window.history.back()" class="w-10 h-10 flex items-center justify-center rounded-full hover:bg-white/20 transition-colors">
-            <span class="material-symbols-outlined">arrow_back</span>
-        </button>
-        <div class="flex-1">
-            <h1 class="text-base font-bold leading-tight">แผนที่พิกัดผู้ป่วย</h1>
-            <p class="text-[10px] text-white/80 font-medium">ภาพรวมการกระจายตัวในชุมชน</p>
+    <header class="bg-[#00694a] shadow-md flex items-center justify-between w-full px-4 h-16 text-white gap-3 sticky top-0 z-50">
+        <div class="flex items-center gap-2.5 min-w-0">
+            <button onclick="goBackSafe()" class="w-10 h-10 flex items-center justify-center rounded-full hover:bg-white/20 transition-colors shrink-0">
+                <span class="material-symbols-outlined">arrow_back</span>
+            </button>
+            <div class="min-w-0">
+                <h1 class="text-base font-bold leading-tight truncate">แผนที่พิกัดผู้ป่วย</h1>
+                <p id="map-subtitle" class="text-[11px] text-white/85 font-medium truncate">กำลังตรวจสอบสิทธิ์การเข้าถึง...</p>
+            </div>
         </div>
+        <button type="button" onclick="locateMyPosition()" class="bg-white/15 hover:bg-white/25 active:scale-95 text-white px-3 py-1.5 rounded-xl text-xs font-bold flex items-center gap-1 transition-all shrink-0">
+            <span class="material-symbols-outlined text-[16px]">my_location</span> ตำแหน่งฉัน
+        </button>
     </header>
 
     <div class="relative w-full h-full">
         <div id="map"></div>
 
-        <div class="absolute top-4 right-4 bg-white/95 backdrop-blur-sm px-4 py-2 rounded-[16px] shadow-md border border-gray-100 z-[1000] text-xs font-bold text-gray-700 flex items-center gap-2">
-            <span class="material-symbols-outlined text-[18px] text-[#00694a]">my_location</span>
-            แสดงหมุด <span id="coord-count" class="text-[#00694a] text-sm">0/0</span>
+        <!-- แถบสลับขอบเขตสำหรับ อสม. (เฉพาะที่ฉันดูแล vs ทั้งหมู่บ้านของฉัน) + ตัวนับหมุด -->
+        <div class="absolute top-3 left-3 right-3 z-[1000] flex flex-wrap items-center justify-between gap-2 pointer-events-none">
+            <div id="vhv-scope-bar" class="hidden pointer-events-auto bg-white/95 backdrop-blur-sm p-1 rounded-2xl shadow-md border border-gray-100 flex items-center gap-1 text-xs font-bold">
+                <button type="button" id="scope-assigned" onclick="setScopeMode('assigned')" class="scope-btn px-3 py-1.5 rounded-xl text-gray-600 transition-all flex items-center gap-1">
+                    <span class="material-symbols-outlined text-[15px]">person_pin_circle</span>
+                    ที่ฉันดูแล (<span id="count-scope-assigned">0</span>)
+                </button>
+                <button type="button" id="scope-village" onclick="setScopeMode('village')" class="scope-btn px-3 py-1.5 rounded-xl text-gray-600 transition-all flex items-center gap-1">
+                    <span class="material-symbols-outlined text-[15px]">holiday_village</span>
+                    ทั้งหมู่ <span id="label-scope-village">-</span> (<span id="count-scope-village">0</span>)
+                </button>
+            </div>
+
+            <div class="pointer-events-auto bg-white/95 backdrop-blur-sm px-3.5 py-2 rounded-2xl shadow-md border border-gray-100 text-xs font-bold text-gray-700 flex items-center gap-1.5 ml-auto">
+                <span class="material-symbols-outlined text-[17px] text-[#00694a]">pin_drop</span>
+                พิกัด <span id="coord-count" class="text-[#00694a] text-sm">0/0</span>
+            </div>
         </div>
 
-        <div class="absolute bottom-24 right-4 bg-white/95 backdrop-blur-sm p-4 rounded-2xl shadow-lg border border-gray-100 z-[1000] space-y-2.5 text-xs max-w-[180px]">
-            <p class="font-bold text-gray-700 border-b pb-1.5 flex items-center gap-1">
-                <span class="material-symbols-outlined text-sm text-[#00694a]">layers</span> กลุ่มผู้ป่วย
-            </p>
-            <div class="flex items-center gap-2">
-                <span class="w-3.5 h-3.5 rounded-full bg-[#00694a] border-2 border-white shadow-sm inline-block"></span>
-                <span class="font-medium text-gray-600">ติดสังคม</span>
+        <!-- กล่องกรองกลุ่มผู้ป่วย / คำอธิบายสีหมุด -->
+        <div class="absolute bottom-6 right-3 bg-white/95 backdrop-blur-sm p-3.5 rounded-2xl shadow-lg border border-gray-100 z-[1000] space-y-2 text-xs max-w-[190px]">
+            <div class="flex items-center justify-between border-b border-gray-100 pb-1.5 gap-2">
+                <p class="font-bold text-gray-700 flex items-center gap-1">
+                    <span class="material-symbols-outlined text-sm text-[#00694a]">layers</span> กลุ่มผู้ป่วย
+                </p>
+                <button type="button" id="btn-reset-group" onclick="setGroupFilter('ALL')" class="text-[10px] font-bold text-[#00694a] hidden hover:underline">ดูทั้งหมด</button>
             </div>
-            <div class="flex items-center gap-2">
-                <span class="w-3.5 h-3.5 rounded-full bg-[#f59e0b] border-2 border-white shadow-sm inline-block"></span>
-                <span class="font-medium text-gray-600">ติดบ้าน</span>
-            </div>
-            <div class="flex items-center gap-2">
-                <span class="w-3.5 h-3.5 rounded-full bg-[#dc2626] border-2 border-white shadow-sm inline-block"></span>
-                <span class="font-medium text-gray-600">ติดเตียง</span>
-            </div>
-            <div class="flex items-center gap-2">
-                <span class="w-3.5 h-3.5 rounded-full bg-gray-400 border-2 border-white shadow-sm inline-block"></span>
-                <span class="font-medium text-gray-400">ยังไม่ประเมิน</span>
-            </div>
+            <button type="button" onclick="setGroupFilter('ติดเตียง')" data-group="ติดเตียง" class="group-chip w-full flex items-center justify-between px-2 py-1 rounded-lg border border-transparent hover:bg-gray-50 transition-all">
+                <span class="flex items-center gap-2">
+                    <span class="w-3.5 h-3.5 rounded-full bg-[#dc2626] border-2 border-white shadow-sm inline-block"></span>
+                    <span class="font-medium text-gray-700">ติดเตียง</span>
+                </span>
+                <span id="cnt-bed" class="text-[11px] font-bold text-gray-500">0</span>
+            </button>
+            <button type="button" onclick="setGroupFilter('ติดบ้าน')" data-group="ติดบ้าน" class="group-chip w-full flex items-center justify-between px-2 py-1 rounded-lg border border-transparent hover:bg-gray-50 transition-all">
+                <span class="flex items-center gap-2">
+                    <span class="w-3.5 h-3.5 rounded-full bg-[#f59e0b] border-2 border-white shadow-sm inline-block"></span>
+                    <span class="font-medium text-gray-700">ติดบ้าน</span>
+                </span>
+                <span id="cnt-home" class="text-[11px] font-bold text-gray-500">0</span>
+            </button>
+            <button type="button" onclick="setGroupFilter('ติดสังคม')" data-group="ติดสังคม" class="group-chip w-full flex items-center justify-between px-2 py-1 rounded-lg border border-transparent hover:bg-gray-50 transition-all">
+                <span class="flex items-center gap-2">
+                    <span class="w-3.5 h-3.5 rounded-full bg-[#00694a] border-2 border-white shadow-sm inline-block"></span>
+                    <span class="font-medium text-gray-700">ติดสังคม</span>
+                </span>
+                <span id="cnt-social" class="text-[11px] font-bold text-gray-500">0</span>
+            </button>
+            <button type="button" onclick="setGroupFilter('NONE')" data-group="NONE" class="group-chip w-full flex items-center justify-between px-2 py-1 rounded-lg border border-transparent hover:bg-gray-50 transition-all">
+                <span class="flex items-center gap-2">
+                    <span class="w-3.5 h-3.5 rounded-full bg-gray-400 border-2 border-white shadow-sm inline-block"></span>
+                    <span class="font-medium text-gray-500">ยังไม่ประเมิน</span>
+                </span>
+                <span id="cnt-none" class="text-[11px] font-bold text-gray-400">0</span>
+            </button>
         </div>
     </div>
 
     <script>
-        // เริ่มต้นการใช้งาน Firebase
-        firebase.initializeApp(firebaseConfig);
-        firebase.firestore().enablePersistence({ synchronizeTabs: true }).catch(err => console.warn('Offline persistence error:', err.code));
-        const db = firebase.firestore();
+        let authCtx = null;
+        let db = null;
+        let map = null;
+        let markersGroup = null;
+        let myLocationMarker = null;
 
-        let map;
-        let markersGroup;
+        let permittedActivePatients = [];
+        let currentScope = sessionStorage.getItem('vhv_scope_mode') || '';
+        let currentGroupFilter = 'ALL';
+        let hasAlertedNoCoords = false;
+
+        function escapeHtml(str) {
+            return String(str === undefined || str === null ? '' : str)
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#39;');
+        }
+
+        function goBackSafe() {
+            if (window.history.length > 1) {
+                window.history.back();
+            } else {
+                window.location.href = (authCtx && authCtx.role !== 'VHV') ? 'admin_dashboard.html' : 'dashboard.html';
+            }
+        }
 
         function initMap() {
-            // ตั้งค่าพิกัดศูนย์กลางเบื้องต้น (เช่น กรุงเทพฯ / สมุทรปราการ)
-            map = L.map('map', { zoomControl: false }).setView([13.6375, 100.6750], 14); 
-            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution: '&copy; OpenStreetMap' }).addTo(map);
+            map = L.map('map', { zoomControl: false }).setView([13.6375, 100.6750], 14);
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                attribution: '&copy; OpenStreetMap'
+            }).addTo(map);
             L.control.zoom({ position: 'bottomleft' }).addTo(map);
             markersGroup = L.featureGroup().addTo(map);
         }
 
-        async function loadMarkers() {
+        function locateMyPosition() {
+            if (!navigator.geolocation) {
+                showToast('อุปกรณ์ของคุณไม่รองรับการระบุพิกัด GPS', 'error');
+                return;
+            }
+            navigator.geolocation.getCurrentPosition(
+                function (pos) {
+                    const lat = pos.coords.latitude;
+                    const lng = pos.coords.longitude;
+                    if (myLocationMarker) {
+                        map.removeLayer(myLocationMarker);
+                    }
+                    myLocationMarker = L.circleMarker([lat, lng], {
+                        radius: 8,
+                        fillColor: '#2563eb',
+                        color: '#ffffff',
+                        weight: 3,
+                        opacity: 1,
+                        fillOpacity: 1
+                    }).addTo(map).bindPopup('<div class="text-xs font-bold text-blue-700">ตำแหน่งปัจจุบันของคุณ</div>');
+                    map.setView([lat, lng], 16);
+                    myLocationMarker.openPopup();
+                },
+                function () {
+                    showToast('ไม่สามารถดึงพิกัดปัจจุบันได้ กรุณาเปิดอนุญาต GPS', 'error');
+                },
+                { enableHighAccuracy: true, timeout: 10000 }
+            );
+        }
+
+        document.addEventListener('DOMContentLoaded', async function () {
+            initMap();
             try {
-                // เปลี่ยนไปดึงข้อมูลผู้ป่วยจาก Firebase Firestore แทน
+                // ล็อกสิทธิ์ผู้ไม่ล็อกอิน / Pending / Rejected 100% ก่อนโหลดข้อมูลพิกัด
+                authCtx = await OrsomoCore.Auth.guardPage({
+                    allowedRoles: ['VHV', 'SUB_ADMIN', 'ADMIN'],
+                    loginUrl: 'index.html'
+                });
+                db = authCtx.db;
+                await fetchPermittedPatients();
+            } catch (err) {
+                console.warn('Map access blocked:', err && err.message ? err.message : err);
+            }
+        });
+
+        async function fetchPermittedPatients() {
+            try {
                 const snapshot = await db.collection('Patients').get();
-                const patients = [];
-                snapshot.forEach(doc => patients.push(doc.data()));
-                
-                let validCoordsCount = 0;
-                let activePatientsCount = 0;
-
-                patients.forEach(p => {
-                    // กรองเฉพาะเคสที่ยัง Active
-                    if (String(p.status || 'Active').trim().toLowerCase() !== 'active') return;
-                    activePatientsCount++;
-
-                    // ตรวจสอบว่ามีพิกัด GPS ที่สมบูรณ์หรือไม่
-                    if (!p.lat_long || !p.lat_long.includes(',')) return;
-
-                    const coords = p.lat_long.split(',');
-                    const lat = parseFloat(coords[0].trim());
-                    const lng = parseFloat(coords[1].trim());
-
-                    if (isNaN(lat) || isNaN(lng)) return;
-
-                    validCoordsCount++;
-
-                    // เลือกสีหมุดตามกลุ่มการประเมิน
-                    let markerColor = '#94a3b8'; // สีเทา (ยังไม่ประเมิน)
-                    if (p.group === 'ติดสังคม') markerColor = '#00694a';
-                    else if (p.group === 'ติดบ้าน') markerColor = '#f59e0b';
-                    else if (p.group === 'ติดเตียง') markerColor = '#dc2626';
-
-                    // วาดหมุดลงแผนที่
-                    const marker = L.circleMarker([lat, lng], { 
-                        radius: 9, 
-                        fillColor: markerColor, 
-                        color: '#ffffff', 
-                        weight: 2, 
-                        opacity: 1, 
-                        fillOpacity: 0.9 
-                    });
-
-                    // สร้างหน้าต่าง Popup เมื่อกดที่หมุด
-                    const popupContent = `
-                        <div class="custom-popup space-y-1">
-                            <h4 class="font-bold text-sm text-gray-900">${p.name || 'ไม่ระบุชื่อ'}</h4>
-                            <p class="text-[11px] text-gray-500">บ้านเลขที่ ${p.house_no || '-'} หมู่ ${p.village_no || '-'}</p>
-                            <p class="text-[11px] font-semibold mt-1" style="color: ${markerColor}">สถานะ: ${p.group || 'ยังไม่ประเมิน'}</p>
-                            <div class="pt-2 border-t border-gray-100 mt-1.5 flex justify-end">
-                                <button onclick="window.location.href='patient_profile.html?id=${p.id}'" class="bg-[#00694a] text-white text-[10px] font-bold px-3 py-1.5 rounded-lg flex items-center gap-0.5 shadow-sm">
-                                    เปิดแฟ้มประวัติ <span class="material-symbols-outlined text-[12px]">chevron_right</span>
-                                </button>
-                            </div>
-                        </div>
-                    `;
-
-                    marker.bindPopup(popupContent, { className: 'custom-popup', closeButton: false });
-                    markersGroup.addLayer(marker);
+                const allRaw = [];
+                snapshot.forEach(function (doc) {
+                    const d = doc.data() || {};
+                    allRaw.push(Object.assign({}, d, { docId: doc.id }));
                 });
 
-                // อัปเดตป้ายตัวเลขบอกจำนวนหมุด
-                document.getElementById('coord-count').innerText = `${validCoordsCount}/${activePatientsCount}`;
+                // กรองเฉพาะผู้ป่วยสถานะ Active และอยู่ในขอบเขตสิทธิ์ของผู้ใช้งานเท่านั้น
+                permittedActivePatients = allRaw.filter(function (p) {
+                    if (!OrsomoCore.PatientValidator.isActiveStatus(p.status)) return false;
+                    if (authCtx.role === 'ADMIN') return true;
+                    if (authCtx.role === 'SUB_ADMIN') {
+                        return authCtx.assignedVillages.includes(String(p.village_no || '').trim());
+                    }
+                    // สำหรับ VHV: เห็นได้เฉพาะในหมู่บ้านตนเอง หรือเคสที่ได้รับมอบหมายตรง (ไม่เห็นหมู่บ้านอื่นเด็ดขาด)
+                    const inMyVillage = authCtx.villageNo !== '' && String(p.village_no || '').trim() === authCtx.villageNo;
+                    const isAssignedToMe = String(p.assigned_vhv_id || '').trim() === authCtx.uid;
+                    return inMyVillage || isAssignedToMe;
+                });
 
-                // แจ้งเตือนกรณีไม่มีพิกัด และซูมแผนที่ให้พอดีกับหมุดที่มีอยู่
-                if (validCoordsCount === 0 && activePatientsCount > 0) {
-                    alert("📍 ไม่พบข้อมูลพิกัดในระบบ\n\nคุณยังไม่ได้บันทึกพิกัด GPS ให้ผู้ป่วยเลยครับ กรุณาไปที่ 'แฟ้มประวัติ > แก้ไข' แล้วกดปุ่มเข็มทิศเพื่อบันทึกพิกัดก่อนครับ");
-                } else if (validCoordsCount > 0) {
-                    map.fitBounds(markersGroup.getBounds(), { padding: [40, 40] });
+                if (authCtx.role === 'VHV') {
+                    const assignedList = permittedActivePatients.filter(function (p) {
+                        return String(p.assigned_vhv_id || '').trim() === authCtx.uid;
+                    });
+                    const villageList = permittedActivePatients.filter(function (p) {
+                        return authCtx.villageNo !== '' && String(p.village_no || '').trim() === authCtx.villageNo;
+                    });
+
+                    document.getElementById('vhv-scope-bar').classList.remove('hidden');
+                    document.getElementById('label-scope-village').innerText = authCtx.villageNo || '-';
+                    document.getElementById('count-scope-assigned').innerText = assignedList.length;
+                    document.getElementById('count-scope-village').innerText = villageList.length;
+
+                    if (!currentScope) {
+                        currentScope = assignedList.length > 0 ? 'assigned' : 'village';
+                    }
+                } else if (authCtx.role === 'SUB_ADMIN') {
+                    document.getElementById('map-subtitle').innerText =
+                        'เขตรับผิดชอบ ' + authCtx.hospitalName + ' (หมู่ ' + (authCtx.assignedVillages.join(', ') || '-') + ')';
+                } else {
+                    document.getElementById('map-subtitle').innerText = 'ภาพรวมทั้งพื้นที่ ' + authCtx.hospitalName;
                 }
 
+                renderScopedMarkers(true);
             } catch (error) {
                 console.error(error);
-                alert("ไม่สามารถเชื่อมต่อฐานข้อมูล Firebase เพื่อดึงพิกัดได้");
+                showToast('ไม่สามารถดึงข้อมูลพิกัดผู้ป่วยได้', 'error');
             }
         }
 
-        initMap();
-        loadMarkers();
+        function setScopeMode(mode) {
+            currentScope = mode;
+            sessionStorage.setItem('vhv_scope_mode', mode);
+            renderScopedMarkers(true);
+        }
+
+        function setGroupFilter(groupName) {
+            if (currentGroupFilter === groupName && groupName !== 'ALL') {
+                currentGroupFilter = 'ALL';
+            } else {
+                currentGroupFilter = groupName;
+            }
+            document.querySelectorAll('.group-chip').forEach(function (btn) {
+                if (btn.getAttribute('data-group') === currentGroupFilter) {
+                    btn.classList.add('active');
+                } else {
+                    btn.classList.remove('active');
+                }
+            });
+            const resetBtn = document.getElementById('btn-reset-group');
+            if (currentGroupFilter === 'ALL') resetBtn.classList.add('hidden');
+            else resetBtn.classList.remove('hidden');
+
+            renderScopedMarkers(false);
+        }
+
+        function getScopedPatients() {
+            if (!authCtx) return [];
+            if (authCtx.role !== 'VHV') return permittedActivePatients;
+
+            const btnAssigned = document.getElementById('scope-assigned');
+            const btnVillage = document.getElementById('scope-village');
+
+            if (currentScope === 'assigned') {
+                btnAssigned.classList.add('active');
+                btnVillage.classList.remove('active');
+                document.getElementById('map-subtitle').innerText =
+                    'หมู่ที่ ' + (authCtx.villageNo || '-') + ' | เฉพาะเคสที่ฉันดูแล';
+                return permittedActivePatients.filter(function (p) {
+                    return String(p.assigned_vhv_id || '').trim() === authCtx.uid;
+                });
+            } else {
+                btnVillage.classList.add('active');
+                btnAssigned.classList.remove('active');
+                document.getElementById('map-subtitle').innerText =
+                    'หมู่ที่ ' + (authCtx.villageNo || '-') + ' | ทั้งหมดในหมู่บ้านของฉัน';
+                return permittedActivePatients.filter(function (p) {
+                    return authCtx.villageNo !== '' && String(p.village_no || '').trim() === authCtx.villageNo;
+                });
+            }
+        }
+
+        function renderScopedMarkers(shouldFitBounds) {
+            markersGroup.clearLayers();
+            const baseList = getScopedPatients();
+
+            // นับจำนวนผู้ป่วยแยกตามกลุ่มในขอบเขตปัจจุบัน (เฉพาะที่มีพิกัดสมบูรณ์)
+            let cntBed = 0, cntHome = 0, cntSocial = 0, cntNone = 0;
+            let validCoordsCount = 0;
+            const totalActive = baseList.length;
+
+            baseList.forEach(function (p) {
+                if (!p.lat_long || !String(p.lat_long).includes(',')) return;
+                const coords = String(p.lat_long).split(',');
+                const lat = parseFloat(coords[0].trim());
+                const lng = parseFloat(coords[1].trim());
+                if (isNaN(lat) || isNaN(lng)) return;
+
+                if (p.group === 'ติดเตียง') cntBed++;
+                else if (p.group === 'ติดบ้าน') cntHome++;
+                else if (p.group === 'ติดสังคม') cntSocial++;
+                else cntNone++;
+
+                if (currentGroupFilter !== 'ALL') {
+                    if (currentGroupFilter === 'NONE') {
+                        if (p.group === 'ติดเตียง' || p.group === 'ติดบ้าน' || p.group === 'ติดสังคม') return;
+                    } else if (p.group !== currentGroupFilter) {
+                        return;
+                    }
+                }
+
+                validCoordsCount++;
+
+                let markerColor = '#94a3b8';
+                if (p.group === 'ติดสังคม') markerColor = '#00694a';
+                else if (p.group === 'ติดบ้าน') markerColor = '#f59e0b';
+                else if (p.group === 'ติดเตียง') markerColor = '#dc2626';
+
+                const isMyCase = authCtx && authCtx.role === 'VHV' && String(p.assigned_vhv_id || '').trim() === authCtx.uid;
+                const marker = L.circleMarker([lat, lng], {
+                    radius: isMyCase ? 10 : 8.5,
+                    fillColor: markerColor,
+                    color: '#ffffff',
+                    weight: isMyCase ? 2.5 : 2,
+                    opacity: 1,
+                    fillOpacity: 0.92
+                });
+
+                const fullName = ((p.prefix ? p.prefix : '') + (p.name || 'ไม่ระบุชื่อ')).trim();
+                const ageText = OrsomoCore.DateUtils.calculateAge(p.dob, p.age);
+                const profileUrl = 'patient_profile.html?id=' + encodeURIComponent(p.docId);
+                const navUrl = 'https://www.google.com/maps/dir/?api=1&destination=' + encodeURIComponent(lat + ',' + lng);
+
+                const popupContent = `
+                    <div class="custom-popup space-y-1.5">
+                        <div class="flex items-start justify-between gap-2">
+                            <h4 class="font-bold text-sm text-gray-900 leading-snug">${escapeHtml(fullName)}</h4>
+                            ${isMyCase ? '<span class="shrink-0 bg-emerald-50 text-[#00694a] text-[9px] font-bold px-1.5 py-0.5 rounded-md border border-emerald-200">ฉันดูแล</span>' : ''}
+                        </div>
+                        <p class="text-[11px] text-gray-500">อายุ ${escapeHtml(ageText)} ปี • บ้านเลขที่ ${escapeHtml(p.house_no || '-')} หมู่ ${escapeHtml(p.village_no || '-')}</p>
+                        <p class="text-[11px] font-bold" style="color: ${markerColor}">กลุ่ม: ${escapeHtml(p.group || 'ยังไม่ประเมิน')}</p>
+                        <div class="pt-2 border-t border-gray-100 mt-1.5 flex items-center justify-between gap-1.5">
+                            <a href="${navUrl}" target="_blank" rel="noopener noreferrer" class="bg-blue-50 hover:bg-blue-100 text-blue-700 text-[10px] font-bold px-2.5 py-1.5 rounded-lg flex items-center gap-1 transition-colors">
+                                <span class="material-symbols-outlined text-[13px]">directions</span> นำทาง
+                            </a>
+                            <a href="${profileUrl}" class="bg-[#00694a] hover:bg-[#005239] text-white text-[10px] font-bold px-3 py-1.5 rounded-lg flex items-center gap-0.5 shadow-sm transition-colors">
+                                เปิดแฟ้มประวัติ <span class="material-symbols-outlined text-[13px]">chevron_right</span>
+                            </a>
+                        </div>
+                    </div>
+                `;
+
+                marker.bindPopup(popupContent, { className: 'custom-popup', closeButton: false });
+                markersGroup.addLayer(marker);
+            });
+
+            document.getElementById('cnt-bed').innerText = cntBed;
+            document.getElementById('cnt-home').innerText = cntHome;
+            document.getElementById('cnt-social').innerText = cntSocial;
+            document.getElementById('cnt-none').innerText = cntNone;
+            document.getElementById('coord-count').innerText = validCoordsCount + '/' + totalActive;
+
+            if (validCoordsCount > 0 && shouldFitBounds) {
+                map.fitBounds(markersGroup.getBounds(), { padding: [55, 55], maxZoom: 17 });
+            } else if (validCoordsCount === 0 && totalActive > 0 && !hasAlertedNoCoords && currentGroupFilter === 'ALL') {
+                hasAlertedNoCoords = true;
+                showToast('ยังไม่มีพิกัด GPS ในขอบเขตที่เลือก สามารถปักหมุดได้ที่ แฟ้มผู้ป่วย > แก้ไขข้อมูล', 'info');
+            }
+        }
     </script>
 </body>
 </html>

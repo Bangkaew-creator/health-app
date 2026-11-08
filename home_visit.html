@@ -1,0 +1,417 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="utf-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
+    <title>สมุดบันทึกการเยี่ยมบ้าน & Care Plan - อสม.สามารถ</title>
+    <script src="https://cdn.tailwindcss.com?plugins=forms"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700&display=swap" rel="stylesheet"/>
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+    <script charset="utf-8" src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+
+    <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore-compat.js"></script>
+    <script src="config.js"></script>
+    <script src="core.js"></script>
+
+    <style>
+        body { font-family: 'Sarabun', sans-serif; background-color: #f8fafc; padding-bottom: 100px; -webkit-tap-highlight-color: transparent; }
+        .material-symbols-outlined { font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24; }
+        .loader-small { border: 2px solid #d8e3fb; border-bottom-color: #00694a; border-radius: 50%; width: 20px; height: 20px; animation: spin 1s linear infinite; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        .task-chip input:checked + span { background-color: #ecfdf5; border-color: #00694a; color: #00694a; font-weight: 700; }
+    </style>
+</head>
+<body class="text-slate-800">
+
+    <header class="bg-[#00694a] sticky top-0 z-50 shadow-md flex justify-between items-center w-full px-4 h-16 text-white">
+        <div class="flex items-center gap-3 min-w-0">
+            <button type="button" onclick="goBack()" class="w-10 h-10 flex items-center justify-center rounded-full hover:bg-white/20 transition-colors shrink-0">
+                <span class="material-symbols-outlined text-[24px]">arrow_back</span>
+            </button>
+            <div class="min-w-0">
+                <h1 class="text-base font-bold leading-tight truncate">สมุดบันทึกการเยี่ยมบ้านทั่วไป</h1>
+                <p class="text-[11px] text-emerald-100 font-medium truncate">บันทึกอาการ การดูแล และแผนดูแลต่อเนื่อง (Care Plan)</p>
+            </div>
+        </div>
+    </header>
+
+    <main class="max-w-2xl mx-auto p-4 space-y-5">
+
+        <!-- ข้อมูลผู้ป่วย -->
+        <div class="bg-white rounded-[20px] p-4 shadow-sm border border-slate-200 flex items-center gap-3.5">
+            <div class="w-13 h-13 w-12 h-12 rounded-full bg-emerald-50 text-[#00694a] border border-emerald-100 flex items-center justify-center font-bold text-lg shrink-0 overflow-hidden" id="patient-initial">?</div>
+            <div class="flex-1 min-w-0">
+                <h2 class="text-base font-bold text-slate-800 truncate" id="patient-name">กำลังโหลด...</h2>
+                <p class="text-xs text-slate-500 truncate mt-0.5">หมู่ที่ <span id="patient-village">-</span> • บ้านเลขที่ <span id="patient-house">-</span> • อายุ <span id="patient-age">-</span> ปี</p>
+            </div>
+        </div>
+
+        <!-- ฟอร์มบันทึกการเยี่ยมบ้าน -->
+        <form id="visit-form" onsubmit="saveHomeVisit(event)" class="bg-white rounded-[22px] p-5 shadow-sm border border-slate-200 space-y-4">
+            <div class="flex items-center justify-between pb-3 border-b border-slate-100">
+                <h3 class="font-bold text-[#00694a] flex items-center gap-2 text-sm">
+                    <span class="material-symbols-outlined text-[20px]">home_health</span> บันทึกการลงเยี่ยมครั้งใหม่
+                </h3>
+                <input type="date" id="visit-date" required class="px-3 py-1.5 border border-slate-200 rounded-xl text-sm font-semibold text-slate-700 focus:ring-2 focus:ring-[#00694a] outline-none">
+            </div>
+
+            <div>
+                <label class="block text-xs font-bold text-slate-600 mb-2">กิจกรรมการดูแลที่ปฏิบัติ (เลือกได้หลายข้อ)</label>
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-2" id="care-tasks-grid">
+                    <label class="task-chip cursor-pointer block">
+                        <input type="checkbox" name="visit_tasks" value="พูดคุยให้กำลังใจ/ประเมินจิตใจ" class="sr-only" checked>
+                        <span class="block px-3 py-2.5 rounded-xl border border-slate-200 text-xs text-slate-600 transition-all">💬 พูดคุยให้กำลังใจ / ประเมินจิตใจ</span>
+                    </label>
+                    <label class="task-chip cursor-pointer block">
+                        <input type="checkbox" name="visit_tasks" value="ตรวจเช็กการกินยาตามแพทย์สั่ง" class="sr-only">
+                        <span class="block px-3 py-2.5 rounded-xl border border-slate-200 text-xs text-slate-600 transition-all">💊 ตรวจเช็กการกินยาตามแพทย์สั่ง</span>
+                    </label>
+                    <label class="task-chip cursor-pointer block">
+                        <input type="checkbox" name="visit_tasks" value="ดูแลความสะอาด/แผลกดทับ" class="sr-only">
+                        <span class="block px-3 py-2.5 rounded-xl border border-slate-200 text-xs text-slate-600 transition-all">🩹 ดูแลความสะอาด / แผลกดทับ</span>
+                    </label>
+                    <label class="task-chip cursor-pointer block">
+                        <input type="checkbox" name="visit_tasks" value="กายภาพบำบัดเบื้องต้น/พลิกตะแคงตัว" class="sr-only">
+                        <span class="block px-3 py-2.5 rounded-xl border border-slate-200 text-xs text-slate-600 transition-all">🏃 กายภาพบำบัด / พลิกตะแคงตัว</span>
+                    </label>
+                    <label class="task-chip cursor-pointer block">
+                        <input type="checkbox" name="visit_tasks" value="จัดสภาพแวดล้อม/ป้องกันหกล้ม" class="sr-only">
+                        <span class="block px-3 py-2.5 rounded-xl border border-slate-200 text-xs text-slate-600 transition-all">🏠 จัดสภาพแวดล้อม / ป้องกันหกล้ม</span>
+                    </label>
+                    <label class="task-chip cursor-pointer block">
+                        <input type="checkbox" name="visit_tasks" value="ติดตามการใช้ผ้าอ้อม/กายอุปกรณ์" class="sr-only">
+                        <span class="block px-3 py-2.5 rounded-xl border border-slate-200 text-xs text-slate-600 transition-all">♿ ติดตามผ้าอ้อม / กายอุปกรณ์</span>
+                    </label>
+                </div>
+            </div>
+
+            <div>
+                <label class="block text-xs font-bold text-slate-600 mb-1" for="visit-symptoms">อาการ / สภาพทั่วไปที่พบในวันนี้ <span class="text-red-500">*</span></label>
+                <textarea id="visit-symptoms" required rows="2" maxlength="2000" class="w-full rounded-xl border border-slate-200 p-3 text-sm focus:ring-2 focus:ring-[#00694a] outline-none" placeholder="เช่น ผู้ป่วยรู้สึกตัวดี พูดคุยโต้ตอบได้ รับประทานอาหารได้ดี ไม่มีแผลกดทับ..."></textarea>
+            </div>
+
+            <div>
+                <label class="block text-xs font-bold text-slate-600 mb-1" for="visit-care">การดูแลช่วยเหลือที่ให้ในครั้งนี้</label>
+                <textarea id="visit-care" rows="2" maxlength="2000" class="w-full rounded-xl border border-slate-200 p-3 text-sm focus:ring-2 focus:ring-[#00694a] outline-none" placeholder="เช่น จัดเรียงซองยา แนะนำญาติเรื่องการพลิกตัวทุก 2 ชั่วโมง..."></textarea>
+            </div>
+
+            <div>
+                <label class="block text-xs font-bold text-[#00694a] mb-1" for="visit-plan">แผนการดูแลต่อเนื่อง (Care Plan) / นัดหมายครั้งถัดไป</label>
+                <textarea id="visit-plan" rows="2" maxlength="2000" class="w-full rounded-xl border border-emerald-200 bg-emerald-50/40 p-3 text-sm focus:ring-2 focus:ring-[#00694a] outline-none" placeholder="เช่น ติดตามวัดความดันซ้ำสัปดาห์หน้า, ประสาน รพ.สต. ขอชุดทำแผล..."></textarea>
+            </div>
+
+            <!-- แนบรูปภาพ & พิกัด GPS (ทางเลือก) -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
+                <div>
+                    <input type="file" id="visit-photo-input" accept="image/*" class="hidden" onchange="handleVisitPhoto(this)">
+                    <textarea id="visit-photo-b64" class="hidden"></textarea>
+                    <div class="border border-dashed border-slate-300 rounded-xl p-2.5 flex items-center gap-3 bg-slate-50">
+                        <div onclick="document.getElementById('visit-photo-input').click()" class="w-14 h-14 rounded-lg bg-white border border-slate-200 flex items-center justify-center overflow-hidden cursor-pointer shrink-0">
+                            <span id="visit-photo-icon" class="material-symbols-outlined text-slate-400">add_a_photo</span>
+                            <img id="visit-photo-preview" src="" alt="visit" class="w-full h-full object-cover hidden">
+                        </div>
+                        <div class="flex-1 min-w-0">
+                            <p class="text-xs font-bold text-slate-700">รูปภาพการเยี่ยมบ้าน</p>
+                            <p class="text-[10px] text-slate-500">ไม่บังคับ (ย่อรูปอัตโนมัติ)</p>
+                            <button type="button" id="btn-clear-photo" onclick="clearVisitPhoto()" class="hidden text-[10px] font-bold text-red-600 mt-0.5 hover:underline">ลบรูปภาพ</button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="flex flex-col justify-center">
+                    <input type="hidden" id="visit-gps" value="">
+                    <button type="button" id="btn-visit-gps" onclick="captureVisitGPS()" class="h-full min-h-[68px] px-3 py-2.5 rounded-xl border border-slate-200 bg-slate-50 hover:bg-sky-50 text-slate-600 text-xs font-bold flex items-center justify-center gap-2 transition-colors">
+                        <span class="material-symbols-outlined text-[18px] text-sky-600">my_location</span>
+                        <span id="visit-gps-label">แนบพิกัด GPS จุดเยี่ยมบ้าน</span>
+                    </button>
+                </div>
+            </div>
+
+            <button type="submit" id="btn-save-visit" class="w-full bg-[#00694a] hover:bg-[#005239] text-white py-3.5 rounded-xl font-bold shadow-md active:scale-95 transition-all flex items-center justify-center gap-2 text-base mt-2">
+                <span class="material-symbols-outlined">save</span> บันทึกการเยี่ยมบ้าน
+            </button>
+        </form>
+
+        <!-- ประวัติการเยี่ยมบ้านย้อนหลัง -->
+        <div class="bg-white rounded-[22px] p-5 shadow-sm border border-slate-200 space-y-3">
+            <h3 class="font-bold text-slate-800 flex items-center gap-2 text-sm border-b border-slate-100 pb-2.5">
+                <span class="material-symbols-outlined text-[19px] text-[#00694a]">history</span> ประวัติการเยี่ยมบ้านย้อนหลัง (<span id="visit-count">0</span> ครั้ง)
+            </h3>
+            <div id="visit-history-list" class="space-y-3">
+                <p class="text-xs text-slate-400 text-center py-6">กำลังโหลดประวัติการเยี่ยมบ้าน...</p>
+            </div>
+        </div>
+
+    </main>
+
+    <!-- Modal ขยายรูป -->
+    <div id="img-modal" onclick="this.classList.add('hidden')" class="fixed inset-0 bg-black/85 z-[110] hidden flex items-center justify-center p-4">
+        <img id="img-modal-src" src="" alt="zoom" class="max-w-full max-h-[88vh] rounded-xl object-contain">
+    </div>
+
+    <script>
+        let authCtx = null;
+        let db = null;
+        const urlParams = new URLSearchParams(window.location.search);
+        const patientId = urlParams.get('id');
+        let currentPatientData = null;
+
+        function escapeHtml(str) {
+            return String(str === undefined || str === null ? '' : str)
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#39;');
+        }
+
+        function goBack() {
+            if (patientId) window.location.href = `patient_profile.html?id=${encodeURIComponent(patientId)}`;
+            else window.location.href = 'dashboard.html';
+        }
+
+        document.addEventListener('DOMContentLoaded', async function () {
+            document.getElementById('visit-date').value = OrsomoCore.DateUtils.toInputDateISO(new Date());
+            if (!patientId) {
+                goBack();
+                return;
+            }
+            try {
+                authCtx = await OrsomoCore.Auth.guardPage({
+                    allowedRoles: ['VHV', 'SUB_ADMIN', 'ADMIN'],
+                    loginUrl: 'index.html'
+                });
+                db = authCtx.db;
+                await loadPatientAndVisits();
+            } catch (err) {
+                console.warn('Home visit guard stopped:', err && err.message ? err.message : err);
+            }
+        });
+
+        async function loadPatientAndVisits() {
+            try {
+                const pSnap = await db.collection('Patients').doc(String(patientId)).get();
+                if (!pSnap.exists) {
+                    showToast('ไม่พบข้อมูลผู้ป่วยในระบบ', 'error', 'dashboard.html');
+                    return;
+                }
+                currentPatientData = pSnap.data() || {};
+                if (!OrsomoCore.Auth.canAccessPatient(authCtx, currentPatientData, 'village')) {
+                    showToast('คุณไม่มีสิทธิ์เข้าถึงแฟ้มผู้ป่วยนอกเขตรับผิดชอบ', 'error', 'dashboard.html');
+                    return;
+                }
+
+                document.getElementById('patient-name').innerText =
+                    (currentPatientData.prefix || '') + (currentPatientData.name || '-');
+                document.getElementById('patient-village').innerText = currentPatientData.village_no || '-';
+                document.getElementById('patient-house').innerText = currentPatientData.house_no || '-';
+                document.getElementById('patient-age').innerText =
+                    OrsomoCore.DateUtils.calculateAge(currentPatientData.dob, currentPatientData.age);
+
+                const avatarEl = document.getElementById('patient-initial');
+                const avatarSrc = OrsomoCore.ImageStore.resolveImageUrl(currentPatientData.profile_thumb || currentPatientData.profile_pic || '');
+                if (avatarSrc) {
+                    avatarEl.innerHTML = `<img src="${avatarSrc}" alt="avatar" class="w-full h-full object-cover">`;
+                } else {
+                    avatarEl.innerText = currentPatientData.name ? String(currentPatientData.name).trim().charAt(0) : '?';
+                }
+
+                await renderVisitHistory();
+            } catch (err) {
+                console.error(err);
+                showToast('โหลดข้อมูลผู้ป่วยล้มเหลว', 'error');
+            }
+        }
+
+        async function renderVisitHistory() {
+            const listEl = document.getElementById('visit-history-list');
+            try {
+                const vSnap = await db.collection('Home_Visits').where('patient_id', '==', String(patientId)).get();
+                const visits = [];
+                vSnap.forEach(function (doc) {
+                    visits.push(Object.assign({ docId: doc.id }, doc.data() || {}));
+                });
+
+                visits.sort(function (a, b) {
+                    const ta = OrsomoCore.DateUtils.toTimestampMs(a.timestamp || a.visit_date || a.date);
+                    const tb = OrsomoCore.DateUtils.toTimestampMs(b.timestamp || b.visit_date || b.date);
+                    return tb - ta;
+                });
+
+                document.getElementById('visit-count').innerText = visits.length;
+
+                if (visits.length === 0) {
+                    listEl.innerHTML = '<p class="text-xs text-slate-400 text-center py-6">ยังไม่มีประวัติการบันทึกเยี่ยมบ้าน</p>';
+                    return;
+                }
+
+                listEl.innerHTML = visits.map(function (v) {
+                    const tasksHtml = Array.isArray(v.tasks) && v.tasks.length > 0
+                        ? `<div class="flex flex-wrap gap-1 mt-1.5">${v.tasks.map(function (t) {
+                            return `<span class="text-[10px] bg-emerald-50 text-[#00694a] border border-emerald-200 px-2 py-0.5 rounded-md font-semibold">${escapeHtml(t)}</span>`;
+                        }).join('')}</div>`
+                        : '';
+                    const picSrc = v.visit_pic || v.photo || '';
+                    const picHtml = picSrc
+                        ? `<img src="${picSrc.replace(/"/g, '&quot;')}" onclick="zoomVisitImg(this.src)" class="mt-2 w-24 h-24 rounded-xl object-cover border border-slate-200 cursor-pointer hover:opacity-90">`
+                        : '';
+                    const canDelete = authCtx.role === 'ADMIN' || authCtx.role === 'SUB_ADMIN' || v.assessor_uid === authCtx.uid;
+
+                    return `
+                        <div class="p-4 rounded-2xl bg-slate-50 border border-slate-200/80 space-y-1.5">
+                            <div class="flex items-center justify-between gap-2">
+                                <span class="text-xs font-bold text-[#00694a] bg-white px-2.5 py-1 rounded-lg border border-emerald-100">📅 ${escapeHtml(v.date || '-')}</span>
+                                <div class="flex items-center gap-2">
+                                    <span class="text-[11px] text-slate-500 font-medium">ผู้เยี่ยม: ${escapeHtml(v.assessor_name || v.visitor_name || '-')}</span>
+                                    ${canDelete ? `<button type="button" onclick="deleteVisit('${escapeHtml(v.docId)}')" class="text-red-500 hover:text-red-700 text-xs font-bold">ลบ</button>` : ''}
+                                </div>
+                            </div>
+                            ${tasksHtml}
+                            <p class="text-xs text-slate-700 pt-1"><b>อาการที่พบ:</b> ${escapeHtml(v.symptoms || v.note || '-')}</p>
+                            ${v.care_provided ? `<p class="text-xs text-slate-700"><b>การดูแลช่วยเหลือ:</b> ${escapeHtml(v.care_provided)}</p>` : ''}
+                            ${v.recommendations ? `<p class="text-xs text-emerald-800 bg-emerald-50/70 p-2 rounded-lg border border-emerald-100"><b>Care Plan / แผนต่อเนื่อง:</b> ${escapeHtml(v.recommendations)}</p>` : ''}
+                            ${picHtml}
+                        </div>
+                    `;
+                }).join('');
+            } catch (err) {
+                console.error(err);
+                listEl.innerHTML = '<p class="text-xs text-red-500 text-center py-4">โหลดประวัติการเยี่ยมบ้านไม่สำเร็จ</p>';
+            }
+        }
+
+        function zoomVisitImg(src) {
+            document.getElementById('img-modal-src').src = src;
+            document.getElementById('img-modal').classList.remove('hidden');
+        }
+
+        async function handleVisitPhoto(input) {
+            const file = input && input.files ? input.files[0] : null;
+            if (!file) return;
+            try {
+                const compressed = await OrsomoCore.ImageStore.compressImage(file, {
+                    maxWidth: 800,
+                    maxHeight: 800,
+                    quality: 0.68,
+                    mimeType: 'image/jpeg'
+                });
+                document.getElementById('visit-photo-b64').value = compressed;
+                document.getElementById('visit-photo-preview').src = compressed;
+                document.getElementById('visit-photo-preview').classList.remove('hidden');
+                document.getElementById('visit-photo-icon').classList.add('hidden');
+                document.getElementById('btn-clear-photo').classList.remove('hidden');
+            } catch (e) {
+                showToast('ย่อรูปภาพไม่สำเร็จ กรุณาลองใหม่', 'error');
+            } finally {
+                input.value = '';
+            }
+        }
+
+        function clearVisitPhoto() {
+            document.getElementById('visit-photo-b64').value = '';
+            document.getElementById('visit-photo-preview').src = '';
+            document.getElementById('visit-photo-preview').classList.add('hidden');
+            document.getElementById('visit-photo-icon').classList.remove('hidden');
+            document.getElementById('btn-clear-photo').classList.add('hidden');
+        }
+
+        function captureVisitGPS() {
+            if (!navigator.geolocation) {
+                showToast('อุปกรณ์ไม่รองรับ GPS', 'error');
+                return;
+            }
+            const labelEl = document.getElementById('visit-gps-label');
+            labelEl.innerText = 'กำลังดึงพิกัด...';
+            navigator.geolocation.getCurrentPosition(
+                function (pos) {
+                    const coord = `${pos.coords.latitude.toFixed(6)}, ${pos.coords.longitude.toFixed(6)}`;
+                    document.getElementById('visit-gps').value = coord;
+                    labelEl.innerText = `พิกัด: ${pos.coords.latitude.toFixed(4)}, ${pos.coords.longitude.toFixed(4)}`;
+                    document.getElementById('btn-visit-gps').className =
+                        'h-full min-h-[68px] px-3 py-2.5 rounded-xl border border-emerald-300 bg-emerald-50 text-[#00694a] text-xs font-bold flex items-center justify-center gap-2';
+                },
+                function () {
+                    labelEl.innerText = 'ดึงพิกัดไม่สำเร็จ (กดลองใหม่)';
+                    showToast('กรุณาเปิดอนุญาตตำแหน่ง GPS', 'error');
+                },
+                { enableHighAccuracy: true, timeout: 10000 }
+            );
+        }
+
+        async function saveHomeVisit(e) {
+            e.preventDefault();
+            if (!authCtx || !db) return;
+
+            const visitDateIso = document.getElementById('visit-date').value;
+            const formattedThaiDate = OrsomoCore.DateUtils.toThaiDate(visitDateIso || new Date());
+            const symptoms = document.getElementById('visit-symptoms').value.trim();
+            const careProvided = document.getElementById('visit-care').value.trim();
+            const carePlan = document.getElementById('visit-plan').value.trim();
+            const checkedTasks = Array.from(document.querySelectorAll('input[name="visit_tasks"]:checked')).map(function (cb) { return cb.value; });
+            const gps = document.getElementById('visit-gps').value.trim();
+            const photoB64 = document.getElementById('visit-photo-b64').value.trim();
+            const visitorName = OrsomoCore.UI.formatVHVName(authCtx.user);
+
+            if (!symptoms) {
+                showToast('กรุณาระบุอาการหรือสภาพทั่วไปที่พบ', 'error');
+                return;
+            }
+
+            const btn = document.getElementById('btn-save-visit');
+            const oldHtml = btn.innerHTML;
+            btn.disabled = true;
+            btn.innerHTML = '<div class="loader-small" style="border-bottom-color:#fff;"></div> กำลังบันทึก...';
+
+            try {
+                const batch = db.batch();
+                const visitRef = db.collection('Home_Visits').doc();
+                batch.set(visitRef, {
+                    patient_id: String(patientId),
+                    date: formattedThaiDate,
+                    visit_date: visitDateIso || OrsomoCore.DateUtils.toInputDateISO(new Date()),
+                    tasks: checkedTasks,
+                    symptoms: symptoms,
+                    care_provided: careProvided,
+                    recommendations: carePlan,
+                    note: symptoms,
+                    lat_long: gps,
+                    visit_pic: photoB64,
+                    assessor_uid: authCtx.uid,
+                    assessor_name: visitorName,
+                    visitor_uid: authCtx.uid,
+                    visitor_name: visitorName,
+                    timestamp: firebase.firestore.FieldValue.serverTimestamp()
+                });
+
+                const patientRef = db.collection('Patients').doc(String(patientId));
+                batch.update(patientRef, {
+                    last_visit_date: formattedThaiDate,
+                    updated_at: firebase.firestore.FieldValue.serverTimestamp()
+                });
+
+                await batch.commit();
+                showToast('บันทึกสมุดเยี่ยมบ้านเรียบร้อยแล้ว', 'success', `patient_profile.html?id=${encodeURIComponent(patientId)}`);
+            } catch (err) {
+                console.error(err);
+                showToast('บันทึกข้อมูลไม่สำเร็จ กรุณาลองใหม่', 'error');
+                btn.disabled = false;
+                btn.innerHTML = oldHtml;
+            }
+        }
+
+        async function deleteVisit(visitDocId) {
+            if (!confirm('ยืนยันการลบบันทึกการเยี่ยมบ้านรายการนี้ใช่หรือไม่?')) return;
+            try {
+                await db.collection('Home_Visits').doc(String(visitDocId)).delete();
+                showToast('ลบรายการเยี่ยมบ้านแล้ว', 'success');
+                await renderVisitHistory();
+            } catch (err) {
+                console.error(err);
+                showToast('ไม่สามารถลบรายการได้', 'error');
+            }
+        }
+    </script>
+</body>
+</html>

@@ -10,13 +10,15 @@
     
     <script charset="utf-8" src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore-compat.js"></script>
     <script src="config.js"></script>
+    <script src="core.js"></script>
 
     <style>
-        body { font-family: 'Sarabun', sans-serif; background-color: #f8fafc; padding-bottom: 100px; -webkit-tap-highlight-color: transparent;}
+        body { font-family: 'Sarabun', sans-serif; background-color: #f8fafc; padding-bottom: 165px; -webkit-tap-highlight-color: transparent; }
         .material-symbols-outlined { font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24; }
-        .input-field { width: 100%; border: 1px solid #e2e8f0; border-radius: 14px; padding: 14px; font-size: 15px; outline: none; transition: all 0.2s; background-color: #f8fafc; }
+        .input-field { width: 100%; border: 1px solid #e2e8f0; border-radius: 14px; padding: 13px 14px; font-size: 15px; outline: none; transition: all 0.2s; background-color: #f8fafc; }
         .input-field:focus { border-color: #00694a; box-shadow: 0 0 0 3px rgba(0,105,74,0.1); background-color: #ffffff; }
         .loader-small { border: 2px solid #d8e3fb; border-bottom-color: #00694a; border-radius: 50%; width: 20px; height: 20px; animation: spin 1s linear infinite; }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
@@ -24,69 +26,108 @@
 </head>
 <body class="text-[#111c2d]">
 
-    <header class="bg-white sticky top-0 z-50 shadow-sm flex items-center w-full px-4 h-16 border-b border-gray-100 gap-3">
-        <button onclick="window.location.href='dashboard.html'" class="w-10 h-10 flex items-center justify-center rounded-full bg-gray-50 text-[#00694a] hover:bg-gray-100 transition-colors">
-            <span class="material-symbols-outlined">arrow_back</span>
-        </button>
-        <h1 class="text-base font-bold text-[#00694a]">ตั้งค่าโปรไฟล์</h1>
+    <header class="bg-white sticky top-0 z-50 shadow-sm flex items-center justify-between w-full px-4 h-16 border-b border-gray-100 gap-3">
+        <div class="flex items-center gap-3">
+            <button onclick="window.location.href='dashboard.html'" class="w-10 h-10 flex items-center justify-center rounded-full bg-gray-50 text-[#00694a] hover:bg-gray-100 transition-colors">
+                <span class="material-symbols-outlined">arrow_back</span>
+            </button>
+            <div>
+                <h1 class="text-base font-bold text-[#00694a] leading-tight">ตั้งค่าโปรไฟล์</h1>
+                <p id="header-vhv-name" class="text-[11px] text-gray-500 font-medium">ข้อมูลผู้ใช้งาน</p>
+            </div>
+        </div>
+        <div id="header-profile-pic" class="w-9 h-9 rounded-full bg-[#eef2ff] text-[#00694a] font-bold text-sm flex items-center justify-center overflow-hidden border border-emerald-100 shrink-0">
+            อ
+        </div>
     </header>
 
-    <main class="max-w-2xl mx-auto p-4 pt-6 space-y-6">
+    <main class="max-w-2xl mx-auto p-4 pt-5 space-y-5">
         
-        <div id="loading-overlay" class="bg-[#f0fdf4] border border-[#bbf7d0] p-3 rounded-xl flex items-center justify-center gap-2 mb-2 text-[#15803d] text-sm font-bold">
-            <div class="loader-small" style="width:16px; height:16px; border-width:2px; border-bottom-color:#15803d;"></div> กำลังดึงข้อมูลจากฐานข้อมูล...
+        <div id="loading-overlay" class="bg-[#f0fdf4] border border-[#bbf7d0] p-3.5 rounded-xl flex items-center justify-center gap-2 text-[#15803d] text-sm font-bold">
+            <div class="loader-small" style="width:16px; height:16px; border-width:2px; border-bottom-color:#15803d;"></div> กำลังตรวจสอบสิทธิ์และโหลดข้อมูลโปรไฟล์...
         </div>
 
-        <form id="profile-form" class="space-y-6 hidden">
+        <form id="profile-form" class="space-y-5 hidden">
             <input type="hidden" id="vhv_uid">
             <input type="hidden" id="pic_url" value="">
+            <input type="file" id="avatar-file-input" accept="image/*" class="hidden" onchange="handleAvatarFile(event)">
 
+            <!-- การ์ดรูปโปรไฟล์และสังกัด -->
             <div class="bg-white rounded-[22px] p-6 shadow-sm border border-gray-100 flex flex-col items-center justify-center relative">
                 <div class="relative w-28 h-28 mb-3">
                     <div id="profile-preview" class="w-full h-full rounded-full bg-[#eef2ff] border-4 border-white shadow-md flex items-center justify-center text-[#00694a] font-bold text-3xl overflow-hidden">
                         อส
                     </div>
+                    <button type="button" onclick="document.getElementById('avatar-file-input').click()" title="เลือกรูปโปรไฟล์จากเครื่อง" class="absolute bottom-0 right-0 w-9 h-9 rounded-full bg-[#00694a] text-white shadow-md flex items-center justify-center border-2 border-white active:scale-95 transition-transform">
+                        <span class="material-symbols-outlined text-[18px]">photo_camera</span>
+                    </button>
                 </div>
-                <h2 class="font-bold text-[16px] text-[#111c2d]" id="display-name">...</h2>
-                <p class="text-xs text-[#00694a] mt-0.5 bg-[#f0fdf4] px-2 py-0.5 rounded-md font-bold mb-4" id="display-village">พื้นที่: ...</p>
+
+                <h2 class="font-bold text-[17px] text-[#111c2d] text-center" id="display-name">...</h2>
+                <p class="text-xs text-[#00694a] mt-1 bg-[#f0fdf4] px-3 py-1 rounded-full font-bold border border-emerald-100" id="display-village">พื้นที่: ...</p>
+                <p class="text-[11px] text-gray-500 mt-1" id="display-hospital"></p>
                 
-                <button type="button" onclick="syncLineProfile()" class="text-xs font-bold text-[#00b900] bg-[#00b900]/10 px-4 py-2 rounded-xl hover:bg-[#00b900]/20 transition-colors flex items-center justify-center gap-1.5 active:scale-95">
-                    <span class="material-symbols-outlined text-[16px]">sync</span> อัปเดตรูปจากแอป LINE
-                </button>
+                <div class="flex flex-wrap items-center justify-center gap-2 mt-4">
+                    <button type="button" onclick="syncLineProfile()" class="text-xs font-bold text-[#00b900] bg-[#00b900]/10 px-3.5 py-2 rounded-xl hover:bg-[#00b900]/20 transition-colors flex items-center justify-center gap-1.5 active:scale-95">
+                        <span class="material-symbols-outlined text-[16px]">sync</span> ดึงรูปจาก LINE
+                    </button>
+                    <button type="button" onclick="document.getElementById('avatar-file-input').click()" class="text-xs font-bold text-slate-600 bg-slate-100 px-3.5 py-2 rounded-xl hover:bg-slate-200 transition-colors flex items-center justify-center gap-1.5 active:scale-95">
+                        <span class="material-symbols-outlined text-[16px]">upload</span> เลือกรูปจากเครื่อง
+                    </button>
+                </div>
+
+                <a id="admin-console-link" href="admin_dashboard.html" class="hidden mt-3 text-xs font-bold text-indigo-700 bg-indigo-50 border border-indigo-100 px-4 py-2 rounded-xl flex items-center gap-1.5 hover:bg-indigo-100 transition-colors">
+                    <span class="material-symbols-outlined text-[16px]">admin_panel_settings</span> เข้าสู่ศูนย์บัญชาการแอดมิน / รพ.สต.
+                </a>
             </div>
 
+            <!-- ข้อมูลส่วนบุคคล -->
             <div class="bg-white rounded-[22px] p-6 shadow-sm border border-gray-100 space-y-4">
-                <h3 class="font-bold text-[#00694a] flex items-center gap-2 border-b pb-3 mb-2">
+                <h3 class="font-bold text-[#00694a] flex items-center gap-2 border-b border-gray-100 pb-3 mb-2">
                     <span class="material-symbols-outlined text-[20px]">manage_accounts</span> ข้อมูลส่วนบุคคล
                 </h3>
                 
                 <div class="space-y-1.5">
-                    <label class="text-xs font-bold text-[#526069]">ชื่อ - นามสกุล อสม.</label>
-                    <input type="text" id="vhv_name" class="input-field" placeholder="ระบุชื่อ-นามสกุล" required>
+                    <label class="text-xs font-bold text-[#526069]" for="vhv_name">ชื่อ - นามสกุล <span class="text-red-500">*</span></label>
+                    <input type="text" id="vhv_name" maxlength="200" class="input-field" placeholder="ระบุคำนำหน้า ชื่อ-นามสกุล" required>
                 </div>
 
-                <div class="space-y-1.5">
-                    <label class="text-xs font-bold text-[#526069]">เบอร์โทรศัพท์ติดต่อ</label>
-                    <input type="tel" id="vhv_phone" class="input-field" placeholder="เช่น 0812345678">
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div class="space-y-1.5">
+                        <label class="text-xs font-bold text-[#526069]" for="vhv_nickname">ชื่อเล่น (แสดงในหน้ามอบหมายงาน/รายงาน)</label>
+                        <input type="text" id="vhv_nickname" maxlength="100" class="input-field" placeholder="เช่น พี่ศรี, น้องเมย์">
+                    </div>
+
+                    <div class="space-y-1.5">
+                        <label class="text-xs font-bold text-[#526069]" for="vhv_phone">เบอร์โทรศัพท์ติดต่อ</label>
+                        <input type="tel" id="vhv_phone" maxlength="50" class="input-field" placeholder="เช่น 0812345678">
+                    </div>
                 </div>
 
-                <!-- 🌟 แก้ไข: ล็อก Select และเพิ่มข้อความแจ้งเตือน 🌟 -->
-                <div class="space-y-1.5 pt-2">
-                    <label class="text-xs font-bold text-[#526069]">พื้นที่รับผิดชอบ (หมู่ที่)</label>
-                    <select id="vhv_village" class="input-field bg-slate-100 text-slate-500 cursor-not-allowed border-slate-200" disabled required>
+                <!-- ล็อกเขตพื้นที่รับผิดชอบ ป้องกันการเปลี่ยนหมู่เอง -->
+                <div class="space-y-1.5 pt-1">
+                    <label class="text-xs font-bold text-[#526069]" for="vhv_village">พื้นที่ / สิทธิ์ความรับผิดชอบ</label>
+                    <select id="vhv_village" class="input-field bg-slate-100 text-slate-500 cursor-not-allowed border-slate-200" disabled>
                         <option value="" disabled selected>โหลดข้อมูล...</option>
                     </select>
                     <p class="text-[11px] text-amber-600 font-medium mt-1 flex items-center gap-1">
-                        <span class="material-symbols-outlined text-[14px]">info</span> หากต้องการเปลี่ยนพื้นที่รับผิดชอบ กรุณาติดต่อเจ้าหน้าที่ รพ.สต. หรือแอดมินส่วนกลาง
+                        <span class="material-symbols-outlined text-[14px]">info</span> หากต้องการเปลี่ยนหมู่บ้านรับผิดชอบ กรุณาติดต่อเจ้าหน้าที่ รพ.สต. หรือแอดมินส่วนกลาง
                     </p>
                 </div>
             </div>
 
-            <div class="fixed bottom-[85px] left-0 w-full px-4 z-40">
+            <!-- ปุ่มออกจากระบบ -->
+            <div class="bg-white rounded-[22px] p-4 shadow-sm border border-gray-100">
+                <button type="button" onclick="confirmLogout()" class="w-full py-3 rounded-xl text-sm font-bold text-red-600 bg-red-50 hover:bg-red-100 active:scale-[0.99] transition-all flex items-center justify-center gap-2">
+                    <span class="material-symbols-outlined text-[19px]">logout</span> ออกจากระบบ
+                </button>
+            </div>
+
+            <div class="fixed bottom-[82px] left-0 w-full px-4 z-40">
                 <div class="max-w-2xl mx-auto">
                     <button type="submit" id="btn-save-profile" class="w-full bg-[#00694a] text-white py-4 rounded-[16px] font-bold shadow-lg hover:bg-[#005239] active:scale-95 transition-all flex items-center justify-center gap-2 text-[15px]">
                         <span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">save</span>
-                        บันทึกการอัปเดต
+                        บันทึกการอัปเดตโปรไฟล์
                     </button>
                 </div>
             </div>
@@ -113,130 +154,187 @@
     </nav>
 
     <script>
-        firebase.initializeApp(firebaseConfig);
-        firebase.firestore().enablePersistence({ synchronizeTabs: true }).catch(err => console.warn('Offline persistence error:', err.code));
-        const db = firebase.firestore();
+        let authCtx = null;
+        let db = null;
 
-        document.addEventListener("DOMContentLoaded", () => {
-            liff.init({ liffId: LIFF_ID }).then(() => {
-                const mockUid = localStorage.getItem('dev_mock_uid');
-                const savedUid = localStorage.getItem('orsomo_uid');
-                if (mockUid) {
-                    document.getElementById('vhv_uid').value = mockUid;
-                    fetchVHVData(mockUid);
-                } else if (liff.isLoggedIn()) {
-                    liff.getProfile().then(profile => {
-                        localStorage.setItem('orsomo_uid', profile.userId);
-                        document.getElementById('vhv_uid').value = profile.userId;
-                        fetchVHVData(profile.userId); 
-                    });
-                } else if (savedUid) {
-                    document.getElementById('vhv_uid').value = savedUid;
-                    fetchVHVData(savedUid);
-                } else { window.location.href = 'index.html'; }
-            }).catch(() => { window.location.href = 'index.html'; });
+        function renderAvatarPreview(picUrl, fallbackName) {
+            const previewEl = document.getElementById('profile-preview');
+            const initial = (fallbackName ? String(fallbackName).trim().charAt(0) : 'อ');
+            if (picUrl) {
+                previewEl.innerHTML = '';
+                const img = document.createElement('img');
+                img.src = picUrl;
+                img.alt = 'profile';
+                img.className = 'w-full h-full object-cover';
+                img.onerror = function () {
+                    previewEl.innerText = initial;
+                };
+                previewEl.appendChild(img);
+            } else {
+                previewEl.innerText = initial;
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', async function () {
+            try {
+                authCtx = await OrsomoCore.Auth.guardPage({
+                    allowedRoles: ['VHV', 'SUB_ADMIN', 'ADMIN'],
+                    loginUrl: 'index.html'
+                });
+                db = authCtx.db;
+                document.getElementById('vhv_uid').value = authCtx.uid;
+                populateFormFromContext();
+            } catch (err) {
+                console.warn('Settings guard stopped:', err && err.message ? err.message : err);
+            }
         });
 
-        async function fetchVHVData(uid) {
-            try {
-                let vCount = DEFAULT_CONFIGS.VILLAGE_COUNT;
-                try {
-                    const sysSnap = await db.collection('SystemConfig').doc('VILLAGE_COUNT').get();
-                    if(sysSnap.exists) vCount = parseInt(sysSnap.data().value) || DEFAULT_CONFIGS.VILLAGE_COUNT;
-                } catch(e) {}
+        function populateFormFromContext() {
+            const data = authCtx.user || {};
+            const vCount = (authCtx.sysConfigs && authCtx.sysConfigs.VILLAGE_COUNT) || DEFAULT_CONFIGS.VILLAGE_COUNT;
 
-                // ดึงข้อมูลส่วนตัวของ อสม. จาก Firebase
-                const docSnap = await db.collection('VHVs').doc(String(uid)).get();
-
-                if (docSnap.exists) {
-                    const data = docSnap.data();
-
-                    const villageSelect = document.getElementById('vhv_village');
-                    villageSelect.innerHTML = '<option value="" disabled selected>เลือกหมู่ที่ดูแล...</option>';
-                    for (let i = 1; i <= vCount; i++) {
-                        villageSelect.insertAdjacentHTML('beforeend', `<option value="${i}">หมู่ที่ ${i}</option>`);
-                    }
-
-                    document.getElementById('vhv_name').value = data.name || '';
-                    document.getElementById('vhv_phone').value = data.phone || '';
-                    document.getElementById('display-name').innerText = data.name || 'ไม่ระบุชื่อ';
-                    
-                    if (String(data.role).toUpperCase() === 'ADMIN') {
-                        document.getElementById('display-village').innerText = 'สิทธิ์ใช้งาน: แอดมิน (ADMIN)';
-                        const adminOption = document.createElement('option');
-                        adminOption.value = 'ADMIN'; adminOption.innerText = 'เจ้าหน้าที่สาธารณสุข (ADMIN)';
-                        villageSelect.appendChild(adminOption);
-                        villageSelect.value = 'ADMIN';
-                    } else {
-                        const vNum = data.village_no || data.village;
-                        document.getElementById('vhv_village').value = vNum || '';
-                        document.getElementById('display-village').innerText = 'พื้นที่: หมู่ ' + (vNum || '-');
-                    }
-                    
-                    const actualPicUrl = data.profile_pic || data.pic_url;
-                    if (actualPicUrl) {
-                        document.getElementById('pic_url').value = actualPicUrl;
-                        document.getElementById('profile-preview').innerHTML = `<img src="${actualPicUrl}" class="w-full h-full object-cover">`;
-                    }
-
-                    document.getElementById('loading-overlay').classList.add('hidden');
-                    document.getElementById('profile-form').classList.remove('hidden');
-
-                } else {
-                    document.getElementById('loading-overlay').innerHTML = "ไม่พบข้อมูลผู้ใช้งานในระบบ โปรดลงทะเบียนใหม่";
-                }
-
-            } catch (error) {
-                console.error(error);
-                document.getElementById('loading-overlay').innerHTML = "โหลดข้อมูลโปรไฟล์ผิดพลาด";
+            const villageSelect = document.getElementById('vhv_village');
+            villageSelect.innerHTML = '<option value="" disabled>เลือกหมู่ที่ดูแล...</option>';
+            for (let i = 1; i <= vCount; i++) {
+                villageSelect.insertAdjacentHTML('beforeend', `<option value="${i}">หมู่ที่ ${i}</option>`);
             }
+
+            document.getElementById('vhv_name').value = data.name || '';
+            document.getElementById('vhv_nickname').value = data.nickname || '';
+            document.getElementById('vhv_phone').value = data.phone || '';
+            document.getElementById('display-name').innerText = OrsomoCore.UI.formatVHVName(data);
+            document.getElementById('display-hospital').innerText = 'หน่วยงาน: ' + (authCtx.hospitalName || '-');
+
+            if (authCtx.role === 'ADMIN') {
+                document.getElementById('display-village').innerText = 'สิทธิ์ใช้งาน: แอดมินส่วนกลาง (ADMIN)';
+                const adminOption = document.createElement('option');
+                adminOption.value = 'ADMIN';
+                adminOption.innerText = 'เจ้าหน้าที่ส่วนกลาง (ADMIN)';
+                villageSelect.appendChild(adminOption);
+                villageSelect.value = 'ADMIN';
+                document.getElementById('admin-console-link').classList.remove('hidden');
+            } else if (authCtx.role === 'SUB_ADMIN') {
+                const vText = authCtx.assignedVillages.length > 0 ? ('หมู่ ' + authCtx.assignedVillages.join(', ')) : '-';
+                document.getElementById('display-village').innerText = 'เจ้าหน้าที่ รพ.สต. (' + vText + ')';
+                const subOption = document.createElement('option');
+                subOption.value = 'SUB_ADMIN';
+                subOption.innerText = 'เจ้าหน้าที่ รพ.สต. (' + vText + ')';
+                villageSelect.appendChild(subOption);
+                villageSelect.value = 'SUB_ADMIN';
+                document.getElementById('admin-console-link').classList.remove('hidden');
+            } else {
+                const vNum = authCtx.villageNo || data.village || '';
+                villageSelect.value = vNum;
+                document.getElementById('display-village').innerText = 'พื้นที่รับผิดชอบ: หมู่ที่ ' + (vNum || '-');
+            }
+
+            const actualPicUrl = String(data.profile_pic || data.pic_url || data.photoURL || '').trim();
+            document.getElementById('pic_url').value = actualPicUrl;
+            renderAvatarPreview(actualPicUrl, data.name);
+
+            document.getElementById('loading-overlay').classList.add('hidden');
+            document.getElementById('profile-form').classList.remove('hidden');
         }
 
         async function syncLineProfile() {
             try {
+                if (typeof liff === 'undefined' || !liff.isLoggedIn || !liff.isLoggedIn()) {
+                    showToast('กรุณาเปิดผ่านแอป LINE หรือเลือกอัปโหลดรูปจากเครื่องแทน', 'info');
+                    return;
+                }
                 const profile = await liff.getProfile();
-                const picUrl = profile.pictureUrl;
-                if(picUrl) {
+                const picUrl = profile && profile.pictureUrl ? profile.pictureUrl : '';
+                if (picUrl) {
                     document.getElementById('pic_url').value = picUrl;
-                    document.getElementById('profile-preview').innerHTML = `<img src="${picUrl}" class="w-full h-full object-cover">`;
-                    alert('ดึงรูปโปรไฟล์จากแอป LINE เรียบร้อยแล้ว (อย่าลืมกดปุ่มบันทึกด้านล่างนะครับ)');
-                } else alert('บัญชี LINE ของคุณไม่มีรูปโปรไฟล์ครับ');
-            } catch (error) { alert('ไม่สามารถดึงรูปจาก LINE ได้'); }
+                    renderAvatarPreview(picUrl, document.getElementById('vhv_name').value);
+                    showToast('ดึงรูปโปรไฟล์จาก LINE แล้ว กรุณากดปุ่มบันทึกด้านล่าง', 'success');
+                } else {
+                    showToast('บัญชี LINE ของคุณยังไม่ได้ตั้งรูปโปรไฟล์', 'info');
+                }
+            } catch (error) {
+                console.warn(error);
+                showToast('ไม่สามารถดึงรูปจาก LINE ได้ สามารถเลือกรูปจากเครื่องแทนได้ครับ', 'error');
+            }
         }
 
-        document.getElementById('profile-form').addEventListener('submit', async function(e) {
+        async function handleAvatarFile(event) {
+            const file = event && event.target && event.target.files ? event.target.files[0] : null;
+            if (!file) return;
+            try {
+                const compressedDataUrl = await OrsomoCore.ImageStore.compressImage(file, {
+                    maxWidth: 280,
+                    maxHeight: 280,
+                    quality: 0.72,
+                    mimeType: 'image/jpeg'
+                });
+                document.getElementById('pic_url').value = compressedDataUrl;
+                renderAvatarPreview(compressedDataUrl, document.getElementById('vhv_name').value);
+                showToast('ย่อขนาดรูปโปรไฟล์เรียบร้อยแล้ว กรุณากดบันทึกด้านล่าง', 'success');
+            } catch (err) {
+                console.error(err);
+                showToast('ไม่สามารถอ่านไฟล์รูปภาพได้ กรุณาลองใหม่อีกครั้ง', 'error');
+            } finally {
+                event.target.value = '';
+            }
+        }
+
+        function confirmLogout() {
+            if (confirm('คุณต้องการออกจากระบบใช่หรือไม่?')) {
+                OrsomoCore.Auth.logout('index.html');
+            }
+        }
+
+        document.getElementById('profile-form').addEventListener('submit', async function (e) {
             e.preventDefault();
+            const name = document.getElementById('vhv_name').value.trim();
+            const nickname = document.getElementById('vhv_nickname').value.trim();
+            const phone = document.getElementById('vhv_phone').value.trim();
+            const picUrl = document.getElementById('pic_url').value.trim();
+            const uid = document.getElementById('vhv_uid').value.trim();
+
+            if (!name) {
+                showToast('กรุณาระบุชื่อ-นามสกุล', 'error');
+                return;
+            }
+
             const btn = document.getElementById('btn-save-profile');
             btn.innerHTML = `<div class="loader-small" style="border-bottom-color:#fff;"></div> กำลังบันทึก...`;
             btn.disabled = true;
 
-            const uid = document.getElementById('vhv_uid').value;
-            const name = document.getElementById('vhv_name').value.trim();
-            const phone = document.getElementById('vhv_phone').value.trim();
-            const picUrl = document.getElementById('pic_url').value;
-
             try {
-                // 🌟 แก้ไข: ลบการส่งค่า village_no ออก ป้องกันการอัปเดตทับ 🌟
+                // อัปเดตเฉพาะฟิลด์โปรไฟล์ส่วนบุคคลตามที่อนุญาตใน firestore.rules (ไม่แก้ไข role/status/village_no)
                 await db.collection('VHVs').doc(String(uid)).update({
                     name: name,
+                    nickname: nickname,
+                    phone: phone,
+                    profile_pic: picUrl,
+                    updated_at: firebase.firestore.FieldValue.serverTimestamp()
+                });
+
+                const updatedUser = Object.assign({}, authCtx.user, {
+                    name: name,
+                    nickname: nickname,
                     phone: phone,
                     profile_pic: picUrl
                 });
+                authCtx.user = updatedUser;
 
-                document.getElementById('display-name').innerText = name;
-                
+                document.getElementById('display-name').innerText = OrsomoCore.UI.formatVHVName(updatedUser);
+                OrsomoCore.UI.renderHeaderProfile(updatedUser, authCtx.hospitalName);
+
+                showToast('บันทึกข้อมูลโปรไฟล์เรียบร้อยแล้ว', 'success');
                 btn.innerHTML = `<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">check_circle</span> บันทึกสำเร็จ`;
                 btn.classList.replace('bg-[#00694a]', 'bg-[#22c55e]');
-                
-                setTimeout(() => {
-                    btn.innerHTML = `<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">save</span> บันทึกการอัปเดต`;
+
+                setTimeout(function () {
+                    btn.innerHTML = `<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">save</span> บันทึกการอัปเดตโปรไฟล์`;
                     btn.classList.replace('bg-[#22c55e]', 'bg-[#00694a]');
                     btn.disabled = false;
-                }, 2000);
-
+                }, 1800);
             } catch (error) {
-                alert("เชื่อมต่อฐานข้อมูลล้มเหลว กรุณาลองใหม่");
-                btn.innerHTML = `<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">save</span> บันทึกการอัปเดต`;
+                console.error(error);
+                showToast('บันทึกข้อมูลไม่สำเร็จ กรุณาลองใหม่อีกครั้ง', 'error');
+                btn.innerHTML = `<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">save</span> บันทึกการอัปเดตโปรไฟล์`;
                 btn.disabled = false;
             }
         });

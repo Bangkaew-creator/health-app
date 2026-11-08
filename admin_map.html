@@ -9,13 +9,15 @@
     <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
     <script charset="utf-8" src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
     
-    <!-- นำเข้า Leaflet CSS และ JS สำหรับวาดแผนที่ -->
+    <!-- Leaflet CSS & JS -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
     <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore-compat.js"></script>
     <script src="config.js"></script>
+    <script src="core.js"></script>
     
     <style>
         body { font-family: 'Sarabun', sans-serif; background-color: #f4f7fa; }
@@ -25,14 +27,12 @@
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
         #map { height: 100%; width: 100%; border-radius: 20px; z-index: 10; }
         
-        /* สไตล์สำหรับหมุดสีต่างๆ */
         .custom-marker { display: flex; justify-content: center; align-items: center; border-radius: 50%; border: 3px solid white; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.3); font-weight: bold; color: white; text-shadow: 1px 1px 2px rgba(0,0,0,0.3);}
         .marker-red { background-color: #ef4444; }
         .marker-yellow { background-color: #f59e0b; }
         .marker-green { background-color: #10b981; }
         .marker-gray { background-color: #94a3b8; }
         
-        /* สไตล์สำหรับป๊อปอัปแผนที่ */
         .leaflet-popup-content-wrapper { border-radius: 12px; font-family: 'Sarabun'; padding: 0; overflow: hidden;}
         .leaflet-popup-content { margin: 0; width: 220px !important;}
     
@@ -64,17 +64,18 @@
         </div>
 
         <nav class="flex-1 px-4 py-6 space-y-2 overflow-y-auto">
-    <a href="admin_dashboard.html" class="flex items-center gap-3 px-4 py-3.5 text-slate-400 hover:bg-white/5 hover:text-white rounded-xl font-medium transition-all"><span class="material-symbols-outlined">dashboard</span> ภาพรวมระบบ</a>
-    <a href="admin_resources.html" class="flex items-center gap-3 px-4 py-3.5 text-slate-400 hover:bg-white/5 hover:text-white rounded-xl font-medium transition-all"><span class="material-symbols-outlined">inventory_2</span> บริหารทรัพยากร</a>
-    <a href="admin_inventory.html" id="nav-inventory" class="flex items-center gap-3 px-4 py-3.5 text-slate-400 hover:bg-white/5 hover:text-white rounded-xl font-medium transition-all"><span class="material-symbols-outlined">warehouse</span> ระบบคลังพัสดุ กปท.</a>
-    <a href="admin_datacenter.html" class="flex items-center gap-3 px-4 py-3.5 text-slate-400 hover:bg-white/5 hover:text-white rounded-xl font-medium transition-all"><span class="material-symbols-outlined">folder_shared</span> ศูนย์ข้อมูลผู้ป่วย</a>
-    <a href="admin_map.html" class="flex items-center gap-3 px-4 py-3.5 text-slate-400 hover:bg-white/5 hover:text-white rounded-xl font-medium transition-all"><span class="material-symbols-outlined">map</span> แผนที่พิกัดผู้ป่วย</a>
-    <a href="admin_delegation.html" class="flex items-center gap-3 px-4 py-3.5 text-slate-400 hover:bg-white/5 hover:text-white rounded-xl font-medium transition-all"><span class="material-symbols-outlined">assignment_ind</span> มอบหมายงาน อสม.</a>
-    <a href="admin_analytics.html" class="flex items-center gap-3 px-4 py-3.5 text-slate-400 hover:bg-white/5 hover:text-white rounded-xl font-medium transition-all"><span class="material-symbols-outlined">analytics</span> ศูนย์รายงาน (Export)</a>
-    <a href="admin_reports.html" id="nav-reports" class="flex items-center gap-3 px-4 py-3.5 text-slate-400 hover:bg-white/5 hover:text-white rounded-xl font-medium transition-all"><span class="material-symbols-outlined">gavel</span> บันทึกมติผ้าอ้อม</a>
-    <a href="admin_finance.html" id="nav-finance" class="flex items-center gap-3 px-4 py-3.5 text-slate-400 hover:bg-white/5 hover:text-white rounded-xl font-medium transition-all"><span class="material-symbols-outlined">account_balance_wallet</span> แผนการเงิน</a>
-    <a href="admin_settings.html" id="nav-settings" class="flex items-center gap-3 px-4 py-3.5 text-slate-400 hover:bg-white/5 hover:text-white rounded-xl font-medium transition-all"><span class="material-symbols-outlined">settings</span> ตั้งค่าระบบ</a>
-</nav>
+            <a href="admin_dashboard.html" class="flex items-center gap-3 px-4 py-3.5 text-slate-400 hover:bg-white/5 hover:text-white rounded-xl font-medium transition-all"><span class="material-symbols-outlined">dashboard</span> ภาพรวมระบบ</a>
+            <a href="admin_resources.html" class="flex items-center gap-3 px-4 py-3.5 text-slate-400 hover:bg-white/5 hover:text-white rounded-xl font-medium transition-all"><span class="material-symbols-outlined">inventory_2</span> บริหารทรัพยากร</a>
+            <a href="admin_inventory.html" id="nav-inventory" class="flex items-center gap-3 px-4 py-3.5 text-slate-400 hover:bg-white/5 hover:text-white rounded-xl font-medium transition-all"><span class="material-symbols-outlined">warehouse</span> ระบบคลังพัสดุ กปท.</a>
+            <a href="admin_equipment.html" id="nav-equipment" class="flex items-center gap-3 px-4 py-3.5 text-slate-400 hover:bg-white/5 hover:text-white rounded-xl font-medium transition-all"><span class="material-symbols-outlined">medical_services</span> ทะเบียนยืม-คืนอุปกรณ์</a>
+            <a href="admin_datacenter.html" class="flex items-center gap-3 px-4 py-3.5 text-slate-400 hover:bg-white/5 hover:text-white rounded-xl font-medium transition-all"><span class="material-symbols-outlined">folder_shared</span> ศูนย์ข้อมูลผู้ป่วย</a>
+            <a href="admin_map.html" class="flex items-center gap-3 px-4 py-3.5 bg-white/10 text-white rounded-xl font-bold transition-all"><span class="material-symbols-outlined">map</span> แผนที่พิกัดผู้ป่วย</a>
+            <a href="admin_delegation.html" class="flex items-center gap-3 px-4 py-3.5 text-slate-400 hover:bg-white/5 hover:text-white rounded-xl font-medium transition-all"><span class="material-symbols-outlined">assignment_ind</span> มอบหมายงาน อสม.</a>
+            <a href="admin_analytics.html" class="flex items-center gap-3 px-4 py-3.5 text-slate-400 hover:bg-white/5 hover:text-white rounded-xl font-medium transition-all"><span class="material-symbols-outlined">analytics</span> ศูนย์รายงาน (Export)</a>
+            <a href="admin_reports.html" id="nav-reports" class="flex items-center gap-3 px-4 py-3.5 text-slate-400 hover:bg-white/5 hover:text-white rounded-xl font-medium transition-all"><span class="material-symbols-outlined">gavel</span> บันทึกมติผ้าอ้อม</a>
+            <a href="admin_finance.html" id="nav-finance" class="flex items-center gap-3 px-4 py-3.5 text-slate-400 hover:bg-white/5 hover:text-white rounded-xl font-medium transition-all"><span class="material-symbols-outlined">account_balance_wallet</span> แผนการเงิน</a>
+            <a href="admin_settings.html" id="nav-settings" class="flex items-center gap-3 px-4 py-3.5 text-slate-400 hover:bg-white/5 hover:text-white rounded-xl font-medium transition-all"><span class="material-symbols-outlined">settings</span> ตั้งค่าระบบ</a>
+        </nav>
     </aside>
 
     <main class="flex-1 flex flex-col min-h-0 bg-slate-50 relative">
@@ -122,24 +123,35 @@
             </button>
         </div>
 
-        <div class="flex-1 p-2 lg:p-4 relative flex flex-col">
+        <div class="flex-1 p-4 lg:p-6 relative">
             <div id="loading-state" class="absolute inset-0 flex flex-col items-center justify-center bg-slate-50 z-30">
-                <div class="loader-small mb-3"></div><p class="text-sm text-slate-400 animate-pulse">กำลังโหลดพิกัดบนแผนที่...</p>
+                <div class="loader-small mb-3"></div><p class="text-sm text-slate-400 animate-pulse">กำลังโหลดพิกัดผู้ป่วย...</p>
             </div>
             
-            <!-- กรอบแผนที่ -->
-            <div class="flex-1 bg-white rounded-[20px] shadow-sm border border-slate-200 p-1 relative">
-                <div id="map"></div>
-                
-                <!-- ตัวช่วยอธิบายสี (Legend) ลอยอยู่มุมขวาล่าง -->
-                <div class="absolute bottom-4 right-4 bg-white/90 backdrop-blur-md p-3 rounded-2xl shadow-lg border border-slate-100 z-[400] text-[11px] font-bold text-slate-700 space-y-1">
-                    <div class="flex items-center gap-2"><div class="w-3 h-3 rounded-full bg-[#ef4444] border border-white shadow-sm"></div> ติดเตียง</div>
-                    <div class="flex items-center gap-2"><div class="w-3 h-3 rounded-full bg-[#f59e0b] border border-white shadow-sm"></div> ติดบ้าน</div>
-                    <div class="flex items-center gap-2"><div class="w-3 h-3 rounded-full bg-[#10b981] border border-white shadow-sm"></div> ติดสังคม</div>
-                    <div class="flex items-center gap-2"><div class="w-3 h-3 rounded-full bg-[#94a3b8] border border-white shadow-sm"></div> ยังไม่ประเมิน</div>
+            <div id="map" class="shadow-md border border-slate-200"></div>
+
+            <!-- Legend บนแผนที่ -->
+            <div class="absolute bottom-10 right-10 bg-white/95 backdrop-blur-sm p-4 rounded-2xl shadow-xl border border-slate-100 z-20 text-xs font-bold space-y-2 hidden md:block">
+                <h4 class="text-slate-700 border-b border-slate-100 pb-1 mb-2 font-black">สัญลักษณ์กลุ่มผู้ป่วย</h4>
+                <div class="flex items-center gap-2.5">
+                    <div class="w-3.5 h-3.5 rounded-full bg-emerald-500 border-2 border-white shadow-sm"></div>
+                    <span class="text-slate-600">กลุ่มติดสังคม</span>
+                </div>
+                <div class="flex items-center gap-2.5">
+                    <div class="w-3.5 h-3.5 rounded-full bg-amber-500 border-2 border-white shadow-sm"></div>
+                    <span class="text-slate-600">กลุ่มติดบ้าน</span>
+                </div>
+                <div class="flex items-center gap-2.5">
+                    <div class="w-3.5 h-3.5 rounded-full bg-red-500 border-2 border-white shadow-sm"></div>
+                    <span class="text-slate-600">กลุ่มติดเตียง (วิกฤต)</span>
+                </div>
+                <div class="flex items-center gap-2.5">
+                    <div class="w-3.5 h-3.5 rounded-full bg-slate-400 border-2 border-white shadow-sm"></div>
+                    <span class="text-slate-400">ยังไม่ประเมิน</span>
                 </div>
             </div>
         </div>
+
     </main>
 
     <script>
@@ -149,110 +161,70 @@
 
         let currentUserRole = "ADMIN";
         let assignedVillages = [];
-        let allPatients = []; 
-        let map; // ตัวแปรเก็บแผนที่ Leaflet
-        let markersGroup; // ตัวแปรเก็บกลุ่มหมุด (เพื่อง่ายต่อการล้างค่า)
-
-        function cleanJSON(rawStr) {
-            if (!rawStr || String(rawStr).trim() === '') return null;
-            let cleanStr = String(rawStr).trim();
-            if (cleanStr.startsWith('"') && cleanStr.endsWith('"')) { cleanStr = cleanStr.substring(1, cleanStr.length - 1); }
-            try { return JSON.parse(cleanStr); } catch(e) { return null; }
-        }
+        let map;
+        let markersGroup;
+        let allPatients = [];
 
         function toggleSidebar() { document.getElementById('sidebar').classList.toggle('-translate-x-full'); }
 
-        document.addEventListener("DOMContentLoaded", () => {
-            document.getElementById('sidebar-hospital-name').innerText = DEFAULT_CONFIGS.HOSPITAL_NAME;
-
-            liff.init({ liffId: LIFF_ID }).then(() => {
-                const mockUid = localStorage.getItem('dev_mock_uid');
-                const savedUid = localStorage.getItem('orsomo_uid');
-                if (mockUid) { verifyAdminAccess(mockUid); } 
-                else if (liff.isLoggedIn()) { liff.getProfile().then(p => { localStorage.setItem('orsomo_uid', p.userId); verifyAdminAccess(p.userId); }).catch(() => bounceToLogin()); } 
-                else if (savedUid) { verifyAdminAccess(savedUid); }
-                else { bounceToLogin(); }
-            }).catch(() => bounceToLogin());
-        });
-
-        function bounceToLogin() { window.location.href = 'index.html'; }
-
-        async function verifyAdminAccess(uid) {
+        document.addEventListener("DOMContentLoaded", async () => {
             try {
-                const userDoc = await db.collection('VHVs').doc(String(uid)).get();
-                let hasAccess = false;
-                let hospital = DEFAULT_CONFIGS.HOSPITAL_NAME;
+                initMap();
+
+                const authCtx = await OrsomoCore.Auth.guardPage({
+                    allowedRoles: ['ADMIN', 'SUB_ADMIN'],
+                    autoAdminShell: false,
+                    currentPage: 'admin_map.html'
+                });
+                if (!authCtx) return;
+
+                currentUserRole = authCtx.role;
+                assignedVillages = (authCtx.user && authCtx.user.assigned_villages) || [];
+
+                let hospital = (authCtx.user && authCtx.user.hospital_name) || DEFAULT_CONFIGS.HOSPITAL_NAME;
                 let vCount = DEFAULT_CONFIGS.VILLAGE_COUNT;
 
                 try {
                     const sysSnapHospital = await db.collection('SystemConfig').doc('HOSPITAL_NAME').get();
                     if(sysSnapHospital.exists) hospital = sysSnapHospital.data().value || hospital;
-                    const sysCountSnap = await db.collection('SystemConfig').doc('VILLAGE_COUNT').get();
-                    if(sysCountSnap.exists) vCount = parseInt(sysCountSnap.data().value) || vCount;
+                    const sysSnapVCount = await db.collection('SystemConfig').doc('VILLAGE_COUNT').get();
+                    if(sysSnapVCount.exists) vCount = parseInt(sysSnapVCount.data().value) || vCount;
                 } catch(e) {}
 
-                if (userDoc.exists) {
-                const userData = userDoc.data();
-                const hName = document.getElementById('header-user-name');
-                if (hName) hName.innerText = userData.name || 'ผู้ดูแลระบบ';
-                const hPic = document.getElementById('header-profile-pic');
-                const hIcon = document.getElementById('header-profile-icon');
-                if (hPic && hIcon && userData.photoURL) {
-                    hPic.src = userData.photoURL;
-                    hPic.classList.remove('hidden');
-                    hIcon.classList.add('hidden');
-                }
-                    const role = String(userData.role || '').toUpperCase();
-                    if (role === 'ADMIN') {
-                        hasAccess = true; currentUserRole = 'ADMIN'; hospital = userData.hospital_name || hospital;
-                    } else if (role === 'SUB_ADMIN') {
-                        hasAccess = true; currentUserRole = 'SUB_ADMIN'; hospital = userData.hospital_name || hospital;
-                        assignedVillages = userData.assigned_villages || [];
+                document.getElementById('sidebar-hospital-name').innerText = hospital;
+                document.getElementById('header-hospital-name').innerText = `Patient Map Locator: ${hospital}`;
+
+                const villageSelect = document.getElementById('village-filter');
+                const villageSelectMobile = document.getElementById('village-filter-mobile');
+
+                if (currentUserRole === 'SUB_ADMIN') {
+                    ['nav-settings', 'nav-finance', 'nav-inventory', 'nav-reports'].forEach(id => {
+                        const el = document.getElementById(id);
+                        if (el) el.style.display = 'none';
+                    });
+
+                    assignedVillages.forEach(v => {
+                        villageSelect.insertAdjacentHTML('beforeend', `<option value="${v}">หมู่ที่ ${v}</option>`);
+                        villageSelectMobile.insertAdjacentHTML('beforeend', `<option value="${v}">หมู่ที่ ${v}</option>`);
+                    });
+                } else {
+                    for(let i=1; i<=vCount; i++){
+                        villageSelect.insertAdjacentHTML('beforeend', `<option value="${i}">หมู่ที่ ${i}</option>`);
+                        villageSelectMobile.insertAdjacentHTML('beforeend', `<option value="${i}">หมู่ที่ ${i}</option>`);
                     }
                 }
 
-                if (hasAccess) {
-                    document.getElementById('sidebar-hospital-name').innerText = hospital;
-                    document.getElementById('header-hospital-name').innerText = `ระบบติดตามพิกัด - ${hospital}`;
-                    
-                    const villageSelect = document.getElementById('village-filter');
-                    const villageSelectMobile = document.getElementById('village-filter-mobile');
+                loadMapData();
 
-                    if (currentUserRole === 'SUB_ADMIN') {
-                        const navSettings = document.getElementById('nav-settings');
-                        if (navSettings) navSettings.style.display = 'none';
-                        const navFinance = document.getElementById('nav-finance');
-                        if (navFinance) navFinance.style.display = 'none';
-                        const navInventory = document.getElementById('nav-inventory');
-                        if (navInventory) navInventory.style.display = 'none';
-                        const navReports = document.getElementById('nav-reports');
-                        if (navReports) navReports.style.display = 'none';
-                        
-                        assignedVillages.forEach(v => { 
-                            villageSelect.insertAdjacentHTML('beforeend', `<option value="${v}">หมู่ที่ ${v}</option>`); 
-                            villageSelectMobile.insertAdjacentHTML('beforeend', `<option value="${v}">หมู่ที่ ${v}</option>`); 
-                        });
-                    } else {
-                        for(let i=1; i<=vCount; i++){ 
-                            villageSelect.insertAdjacentHTML('beforeend', `<option value="${i}">หมู่ที่ ${i}</option>`); 
-                            villageSelectMobile.insertAdjacentHTML('beforeend', `<option value="${i}">หมู่ที่ ${i}</option>`); 
-                        }
-                    }
-
-                    // สร้างแผนที่เปล่าๆ ไว้รอข้อมูล
-                    initMap();
-                    loadMapData(); 
-                } else window.location.href = 'dashboard.html'; 
-            } catch (error) { bounceToLogin(); }
-        }
+            } catch (err) {
+                console.error("Map init error:", err);
+            }
+        });
 
         function initMap() {
-            // สร้างแผนที่ โฟกัสเริ่มต้นที่ประเทศไทย (ตั้งค่าซูมกว้างๆ ไว้ก่อน)
             map = L.map('map').setView([13.7563, 100.5018], 6);
-            
-            // นำเข้าเลเยอร์แผนที่จาก OpenStreetMap
             L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-                attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+                attribution: '&copy; OpenStreetMap contributors'
             }).addTo(map);
 
             markersGroup = L.featureGroup().addTo(map);
@@ -266,15 +238,18 @@
 
                 snapshot.forEach(doc => {
                     const p = doc.data();
+                    p.docId = doc.id;
+                    if (!p.id) p.id = doc.id;
+
                     let hasPermissionToView = true;
                     if (currentUserRole === 'SUB_ADMIN') hasPermissionToView = assignedVillages.includes(String(p.village_no).trim());
 
-                    // เอาเฉพาะคนที่ Active และมีพิกัด lat_long บันทึกไว้แล้ว
-                    if (hasPermissionToView && String(p.status).toLowerCase() === 'active' && p.lat_long && p.lat_long.includes(',')) {
+                    const hasCoords = (p.lat && p.lng) || (p.lat_long && p.lat_long.includes(','));
+                    if (hasPermissionToView && String(p.status || 'Active').toLowerCase() === 'active' && hasCoords) {
                         allPatients.push(p);
                         
-                        const d = cleanJSON(p.diaper);
-                        if(d && Array.isArray(d.allocations)) {
+                        const d = OrsomoCore.DiaperAdapter.parse(p.diaper);
+                        if(Array.isArray(d.allocations)) {
                             d.allocations.forEach(alloc => uniqueAllocations.add(alloc));
                         }
                     }
@@ -294,75 +269,76 @@
                 document.getElementById('loading-state').classList.add('hidden');
                 filterMap();
 
-            } catch (error) { alert("ดึงฐานข้อมูลล้มเหลว"); }
+            } catch (error) { 
+                console.error("Map load error:", error);
+                alert("ดึงฐานข้อมูลล้มเหลว"); 
+            }
         }
 
         function filterMap() {
             const villageFilter = document.getElementById('village-filter').value;
             const allocFilter = document.getElementById('alloc-filter') ? document.getElementById('alloc-filter').value : '';
             
-            // ล้างหมุดเก่าออกให้หมดก่อน
             markersGroup.clearLayers();
-
             let validMarkersCount = 0;
 
             allPatients.forEach(p => {
                 if (villageFilter !== '' && String(p.village_no) !== villageFilter) return;
 
-                const d = cleanJSON(p.diaper);
-                const hasAllocations = (d && Array.isArray(d.allocations) && d.allocations.length > 0);
+                const d = OrsomoCore.DiaperAdapter.parse(p.diaper);
+                const hasAllocations = (Array.isArray(d.allocations) && d.allocations.length > 0);
                 if (allocFilter === 'never' && hasAllocations) return;
                 if (allocFilter === 'ever' && !hasAllocations) return;
                 if (allocFilter !== 'all' && allocFilter !== 'never' && allocFilter !== 'ever' && allocFilter !== '') {
                     if (!hasAllocations || !d.allocations.includes(allocFilter)) return;
                 }
 
-                // แปลงพิกัดข้อความให้เป็นตัวเลข Latitude / Longitude
-                const coords = p.lat_long.split(',');
-                if (coords.length === 2) {
-                    const lat = parseFloat(coords[0].trim());
-                    const lng = parseFloat(coords[1].trim());
-
-                    if (!isNaN(lat) && !isNaN(lng)) {
-                        
-                        // กำหนดสีตามกลุ่ม
-                        let markerColorClass = 'marker-gray';
-                        let badgeColor = 'bg-slate-100 text-slate-600';
-                        const group = p.group || '';
-
-                        if (group === 'ติดสังคม') { markerColorClass = 'marker-green'; badgeColor = 'bg-emerald-50 text-emerald-600 border border-emerald-100';}
-                        else if (group === 'ติดบ้าน') { markerColorClass = 'marker-yellow'; badgeColor = 'bg-amber-50 text-amber-600 border border-amber-100'; }
-                        else if (group === 'ติดเตียง') { markerColorClass = 'marker-red'; badgeColor = 'bg-red-50 text-red-600 border border-red-100'; }
-
-                        // สร้างไอคอนจำลองเป็น HTML 
-                        const customIcon = L.divIcon({
-                            className: 'custom-icon',
-                            html: `<div class="custom-marker ${markerColorClass}" style="width: 24px; height: 24px;"></div>`,
-                            iconSize: [24, 24],
-                            iconAnchor: [12, 12],
-                            popupAnchor: [0, -12]
-                        });
-
-                        // สร้าง Popup Card
-                        const popupHtml = `
-                            <div class="p-4 bg-white">
-                                <h3 class="font-bold text-slate-800 text-[14px] leading-tight mb-1">${p.prefix||''}${p.name||'-'}</h3>
-                                <p class="text-[10px] text-slate-500 mb-2">หมู่ที่ ${p.village_no||'-'} | HN: ${p.id||'-'}</p>
-                                <span class="${badgeColor} px-2 py-0.5 rounded-lg text-[10px] font-bold mb-3 inline-block">${group || 'ยังไม่ประเมิน'}</span>
-                                <button onclick="window.open('patient_profile.html?id=${p.id}', '_blank')" class="w-full bg-blue-50 hover:bg-blue-100 text-blue-600 py-2 rounded-xl text-xs font-bold transition-colors flex items-center justify-center gap-1 border border-blue-100">
-                                    <span class="material-symbols-outlined text-[14px]">folder_open</span> ดูแฟ้มประวัติ
-                                </button>
-                            </div>
-                        `;
-
-                        // วางหมุดลงบนแผนที่
-                        L.marker([lat, lng], {icon: customIcon}).bindPopup(popupHtml).addTo(markersGroup);
-                        validMarkersCount++;
+                let lat = null, lng = null;
+                if (p.lat && p.lng) {
+                    lat = parseFloat(p.lat);
+                    lng = parseFloat(p.lng);
+                } else if (p.lat_long && p.lat_long.includes(',')) {
+                    const coords = p.lat_long.split(',');
+                    if (coords.length === 2) {
+                        lat = parseFloat(coords[0].trim());
+                        lng = parseFloat(coords[1].trim());
                     }
+                }
+
+                if (lat !== null && lng !== null && !isNaN(lat) && !isNaN(lng)) {
+                    let markerColorClass = 'marker-gray';
+                    let badgeColor = 'bg-slate-100 text-slate-600';
+                    const group = p.group || '';
+
+                    if (group === 'ติดสังคม') { markerColorClass = 'marker-green'; badgeColor = 'bg-emerald-50 text-emerald-600 border border-emerald-100';}
+                    else if (group === 'ติดบ้าน') { markerColorClass = 'marker-yellow'; badgeColor = 'bg-amber-50 text-amber-600 border border-amber-100'; }
+                    else if (group === 'ติดเตียง') { markerColorClass = 'marker-red'; badgeColor = 'bg-red-50 text-red-600 border border-red-100'; }
+
+                    const customIcon = L.divIcon({
+                        className: 'custom-icon',
+                        html: `<div class="custom-marker ${markerColorClass}" style="width: 24px; height: 24px;"></div>`,
+                        iconSize: [24, 24],
+                        iconAnchor: [12, 12],
+                        popupAnchor: [0, -12]
+                    });
+
+                    const pDocId = p.docId || p.id;
+                    const popupHtml = `
+                        <div class="p-4 bg-white">
+                            <h3 class="font-bold text-slate-800 text-[14px] leading-tight mb-1">${p.prefix||''}${p.name||'-'}</h3>
+                            <p class="text-[10px] text-slate-500 mb-2">หมู่ที่ ${p.village_no||'-'} | HN: ${p.id||'-'}</p>
+                            <span class="${badgeColor} px-2 py-0.5 rounded-lg text-[10px] font-bold mb-3 inline-block">${group || 'ยังไม่ประเมิน'}</span>
+                            <button onclick="window.open('patient_profile.html?id=${pDocId}', '_blank')" class="w-full bg-blue-50 hover:bg-blue-100 text-blue-600 py-2 rounded-xl text-xs font-bold transition-colors flex items-center justify-center gap-1 border border-blue-100">
+                                <span class="material-symbols-outlined text-[14px]">folder_open</span> ดูแฟ้มประวัติ
+                            </button>
+                        </div>
+                    `;
+
+                    L.marker([lat, lng], {icon: customIcon}).bindPopup(popupHtml).addTo(markersGroup);
+                    validMarkersCount++;
                 }
             });
 
-            // ปรับมุมกล้องแผนที่ให้ครอบคลุมหมุดทั้งหมดที่มี (ถ้ามีอย่างน้อย 1 หมุด)
             if (validMarkersCount > 0) {
                 map.fitBounds(markersGroup.getBounds(), { padding: [30, 30], maxZoom: 17 });
             }

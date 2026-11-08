@@ -3,17 +3,20 @@
 <head>
     <meta charset="utf-8"/>
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
-    <title>จัดการรูปภาพ - อสม.สามารถ</title>
+    <title>จัดการรูปภาพผู้ป่วย & สภาพแวดล้อม - อสม.สามารถ</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700&display=swap" rel="stylesheet"/>
     <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
     
+    <script charset="utf-8" src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore-compat.js"></script>
     <script src="config.js"></script>
+    <script src="core.js"></script>
     
     <style>
-        body { font-family: 'Sarabun', sans-serif; background-color: #f9f9ff; padding-bottom: 100px; -webkit-tap-highlight-color: transparent;}
+        body { font-family: 'Sarabun', sans-serif; background-color: #f9f9ff; padding-bottom: 110px; -webkit-tap-highlight-color: transparent; }
         .material-symbols-outlined { font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24; }
         .loader-small { border: 2px solid #d8e3fb; border-bottom-color: #00694a; border-radius: 50%; width: 24px; height: 24px; animation: spin 1s linear infinite; }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
@@ -21,92 +24,113 @@
 </head>
 <body class="text-[#111c2d]">
 
-    <header class="bg-white sticky top-0 z-50 shadow-sm flex items-center w-full px-4 h-16 border-b border-gray-200 gap-3">
-        <button type="button" onclick="window.location.href='patient_profile.html?id=' + patientId" class="w-10 h-10 flex items-center justify-center rounded-full bg-gray-50 text-[#00694a] hover:bg-gray-100">
-            <span class="material-symbols-outlined">arrow_back</span>
-        </button>
-        <h1 class="text-base font-bold text-[#00694a]">รูปภาพผู้ป่วย & สภาพแวดล้อม</h1>
+    <header class="bg-white sticky top-0 z-50 shadow-sm flex items-center justify-between w-full px-4 h-16 border-b border-gray-200 gap-3">
+        <div class="flex items-center gap-3 min-w-0">
+            <button type="button" onclick="goBackProfile()" class="w-10 h-10 flex items-center justify-center rounded-full bg-gray-50 text-[#00694a] hover:bg-gray-100 shrink-0">
+                <span class="material-symbols-outlined">arrow_back</span>
+            </button>
+            <div class="min-w-0">
+                <h1 class="text-base font-bold text-[#00694a] truncate">รูปภาพผู้ป่วย & สภาพแวดล้อม</h1>
+                <p id="patient-subtitle" class="text-[11px] text-slate-500 truncate">กำลังตรวจสอบสิทธิ์...</p>
+            </div>
+        </div>
     </header>
 
     <main class="max-w-2xl mx-auto p-4 space-y-5">
         
         <div id="loading-state" class="flex flex-col items-center justify-center py-16 space-y-4">
             <div class="loader-small"></div>
-            <p class="text-[#526069] text-sm animate-pulse">กำลังโหลดรูปภาพเดิม...</p>
+            <p class="text-[#526069] text-sm animate-pulse">กำลังโหลดรูปภาพผู้ป่วย...</p>
         </div>
 
         <div id="main-content" class="hidden space-y-5">
             <div class="bg-blue-50 p-4 rounded-xl border border-blue-100 text-sm text-blue-800">
                 <p class="font-bold mb-1 flex items-center gap-1"><span class="material-symbols-outlined text-[18px]">info</span> คำแนะนำการถ่ายภาพ</p>
-                <p class="text-xs">แตะที่ช่องว่างเพื่อเปิดกล้องหรือเลือกรูปภาพ ระบบจะทำการบีบอัดรูปภาพให้อัตโนมัติเพื่อให้โหลดได้รวดเร็ว</p>
+                <p class="text-xs leading-relaxed">แตะที่ช่องเพื่อเปิดกล้องหรือเลือกรูปภาพ ระบบจะย่อขนาดรูปอัตโนมัติ (คมชัดและประหยัดพื้นที่ฐานข้อมูล 0 บาท)</p>
             </div>
 
             <div class="grid grid-cols-2 gap-4">
                 
-                <!-- 🌟 กล่องที่ 5 (เพิ่มใหม่): รูปโปรไฟล์ 🌟 -->
-                <div class="space-y-1 col-span-2 mb-2">
-                    <p class="text-[12px] font-bold text-blue-700 pl-1 flex items-center gap-1"><span class="material-symbols-outlined text-[16px]">face</span> รูปถ่ายหน้าตรงผู้ป่วย (Profile)</p>
-                    <div class="relative border-2 border-dashed border-blue-300 rounded-[20px] h-48 flex flex-col items-center justify-center overflow-hidden cursor-pointer hover:bg-blue-50 transition-colors group" onclick="document.getElementById('file_profile').click()">
-                        <input type="file" id="file_profile" accept="image/*" capture="user" class="hidden" onchange="handleImageUpload(this, 'profile')">
-                        <div id="preview_profile" class="w-full h-full absolute inset-0 flex flex-col items-center justify-center bg-blue-50/50">
+                <!-- รูปหน้าตรงผู้ป่วย (Profile) -->
+                <div class="space-y-1.5 col-span-2 mb-1">
+                    <div class="flex items-center justify-between px-1">
+                        <p class="text-[12px] font-bold text-blue-700 flex items-center gap-1"><span class="material-symbols-outlined text-[16px]">face</span> รูปถ่ายหน้าตรงผู้ป่วย (Profile)</p>
+                        <button type="button" id="clear_profile" onclick="clearImageSlot('profile')" class="hidden text-[11px] font-bold text-red-600 bg-red-50 px-2.5 py-0.5 rounded-lg hover:bg-red-100">ลบรูป</button>
+                    </div>
+                    <div class="relative border-2 border-dashed border-blue-300 rounded-[20px] h-52 flex flex-col items-center justify-center overflow-hidden cursor-pointer hover:bg-blue-50 transition-colors group" onclick="document.getElementById('file_profile').click()">
+                        <input type="file" id="file_profile" accept="image/*" class="hidden" onchange="handleImageUpload(this, 'profile')">
+                        <div id="preview_profile" class="w-full h-full absolute inset-0 flex flex-col items-center justify-center bg-blue-50/40">
                             <span id="icon_profile" class="material-symbols-outlined text-4xl text-blue-300 group-hover:text-blue-500 transition-colors">add_a_photo</span>
-                            <img id="img_tag_profile" src="" class="w-full h-full object-contain hidden p-2">
+                            <span id="hint_profile" class="text-[11px] text-blue-400 font-medium mt-1">แตะเพื่อถ่ายรูปหรือเลือกรูป</span>
+                            <img id="img_tag_profile" src="" alt="profile" class="w-full h-full object-contain hidden p-2">
                             <div id="loader_profile" class="loader-small hidden absolute" style="border-bottom-color:#2563eb;"></div>
                         </div>
                         <textarea id="b64_profile" class="hidden"></textarea>
                     </div>
                 </div>
 
-                <!-- กล่องที่ 1: เตียงนอน -->
+                <!-- 1. เตียงนอน -->
                 <div class="space-y-1">
-                    <p class="text-[11px] font-bold text-gray-600 pl-1">1. สภาพที่นอน/เตียง</p>
+                    <div class="flex items-center justify-between px-1">
+                        <p class="text-[11px] font-bold text-gray-600">1. สภาพที่นอน/เตียง</p>
+                        <button type="button" id="clear_bed" onclick="clearImageSlot('bed')" class="hidden text-[10px] font-bold text-red-600 hover:underline">ลบ</button>
+                    </div>
                     <div class="relative border-2 border-dashed border-gray-300 rounded-[20px] aspect-square flex flex-col items-center justify-center overflow-hidden cursor-pointer hover:bg-gray-50 transition-colors group" onclick="document.getElementById('file_bed').click()">
-                        <input type="file" id="file_bed" accept="image/*" capture="environment" class="hidden" onchange="handleImageUpload(this, 'bed')">
+                        <input type="file" id="file_bed" accept="image/*" class="hidden" onchange="handleImageUpload(this, 'bed')">
                         <div id="preview_bed" class="w-full h-full absolute inset-0 flex flex-col items-center justify-center bg-gray-50">
                             <span id="icon_bed" class="material-symbols-outlined text-4xl text-gray-300 group-hover:text-blue-500 transition-colors">add_a_photo</span>
-                            <img id="img_tag_bed" src="" class="w-full h-full object-cover hidden">
+                            <img id="img_tag_bed" src="" alt="bed" class="w-full h-full object-cover hidden">
                             <div id="loader_bed" class="loader-small hidden absolute"></div>
                         </div>
                         <textarea id="b64_bed" class="hidden"></textarea>
                     </div>
                 </div>
 
-                <!-- กล่องที่ 2: ห้องน้ำ -->
+                <!-- 2. ห้องน้ำ -->
                 <div class="space-y-1">
-                    <p class="text-[11px] font-bold text-gray-600 pl-1">2. สภาพห้องน้ำ</p>
+                    <div class="flex items-center justify-between px-1">
+                        <p class="text-[11px] font-bold text-gray-600">2. สภาพห้องน้ำ</p>
+                        <button type="button" id="clear_bath" onclick="clearImageSlot('bath')" class="hidden text-[10px] font-bold text-red-600 hover:underline">ลบ</button>
+                    </div>
                     <div class="relative border-2 border-dashed border-gray-300 rounded-[20px] aspect-square flex flex-col items-center justify-center overflow-hidden cursor-pointer hover:bg-gray-50 transition-colors group" onclick="document.getElementById('file_bath').click()">
-                        <input type="file" id="file_bath" accept="image/*" capture="environment" class="hidden" onchange="handleImageUpload(this, 'bath')">
+                        <input type="file" id="file_bath" accept="image/*" class="hidden" onchange="handleImageUpload(this, 'bath')">
                         <div id="preview_bath" class="w-full h-full absolute inset-0 flex flex-col items-center justify-center bg-gray-50">
                             <span id="icon_bath" class="material-symbols-outlined text-4xl text-gray-300 group-hover:text-blue-500 transition-colors">add_a_photo</span>
-                            <img id="img_tag_bath" src="" class="w-full h-full object-cover hidden">
+                            <img id="img_tag_bath" src="" alt="bath" class="w-full h-full object-cover hidden">
                             <div id="loader_bath" class="loader-small hidden absolute"></div>
                         </div>
                         <textarea id="b64_bath" class="hidden"></textarea>
                     </div>
                 </div>
 
-                <!-- กล่องที่ 3: ทางเข้าบ้าน -->
+                <!-- 3. ทางเข้าบ้าน -->
                 <div class="space-y-1">
-                    <p class="text-[11px] font-bold text-gray-600 pl-1">3. ทางเข้าบ้าน/บันได</p>
+                    <div class="flex items-center justify-between px-1">
+                        <p class="text-[11px] font-bold text-gray-600">3. ทางเข้าบ้าน/บันได</p>
+                        <button type="button" id="clear_entrance" onclick="clearImageSlot('entrance')" class="hidden text-[10px] font-bold text-red-600 hover:underline">ลบ</button>
+                    </div>
                     <div class="relative border-2 border-dashed border-gray-300 rounded-[20px] aspect-square flex flex-col items-center justify-center overflow-hidden cursor-pointer hover:bg-gray-50 transition-colors group" onclick="document.getElementById('file_entrance').click()">
-                        <input type="file" id="file_entrance" accept="image/*" capture="environment" class="hidden" onchange="handleImageUpload(this, 'entrance')">
+                        <input type="file" id="file_entrance" accept="image/*" class="hidden" onchange="handleImageUpload(this, 'entrance')">
                         <div id="preview_entrance" class="w-full h-full absolute inset-0 flex flex-col items-center justify-center bg-gray-50">
                             <span id="icon_entrance" class="material-symbols-outlined text-4xl text-gray-300 group-hover:text-blue-500 transition-colors">add_a_photo</span>
-                            <img id="img_tag_entrance" src="" class="w-full h-full object-cover hidden">
+                            <img id="img_tag_entrance" src="" alt="entrance" class="w-full h-full object-cover hidden">
                             <div id="loader_entrance" class="loader-small hidden absolute"></div>
                         </div>
                         <textarea id="b64_entrance" class="hidden"></textarea>
                     </div>
                 </div>
 
-                <!-- กล่องที่ 4: ทางเดินภายใน -->
+                <!-- 4. ทางเดินภายใน -->
                 <div class="space-y-1">
-                    <p class="text-[11px] font-bold text-gray-600 pl-1">4. ทางเดินภายในบ้าน</p>
+                    <div class="flex items-center justify-between px-1">
+                        <p class="text-[11px] font-bold text-gray-600">4. ทางเดินภายในบ้าน</p>
+                        <button type="button" id="clear_walkway" onclick="clearImageSlot('walkway')" class="hidden text-[10px] font-bold text-red-600 hover:underline">ลบ</button>
+                    </div>
                     <div class="relative border-2 border-dashed border-gray-300 rounded-[20px] aspect-square flex flex-col items-center justify-center overflow-hidden cursor-pointer hover:bg-gray-50 transition-colors group" onclick="document.getElementById('file_walkway').click()">
-                        <input type="file" id="file_walkway" accept="image/*" capture="environment" class="hidden" onchange="handleImageUpload(this, 'walkway')">
+                        <input type="file" id="file_walkway" accept="image/*" class="hidden" onchange="handleImageUpload(this, 'walkway')">
                         <div id="preview_walkway" class="w-full h-full absolute inset-0 flex flex-col items-center justify-center bg-gray-50">
                             <span id="icon_walkway" class="material-symbols-outlined text-4xl text-gray-300 group-hover:text-blue-500 transition-colors">add_a_photo</span>
-                            <img id="img_tag_walkway" src="" class="w-full h-full object-cover hidden">
+                            <img id="img_tag_walkway" src="" alt="walkway" class="w-full h-full object-cover hidden">
                             <div id="loader_walkway" class="loader-small hidden absolute"></div>
                         </div>
                         <textarea id="b64_walkway" class="hidden"></textarea>
@@ -117,132 +141,190 @@
         </div>
     </main>
 
-    <div class="fixed bottom-0 left-0 w-full bg-white/90 backdrop-blur-md border-t p-4 z-50 shadow-[0_-4px_10px_rgba(0,0,0,0.05)] hidden" id="save-bar">
-        <button onclick="saveImages()" id="btn-save" class="w-full bg-[#00694a] text-white py-3.5 rounded-xl font-bold shadow-md hover:bg-[#005239] flex justify-center items-center gap-2 active:scale-95 transition-all">
-            บันทึกรูปภาพ <span class="material-symbols-outlined text-sm">cloud_upload</span>
-        </button>
+    <div class="fixed bottom-0 left-0 w-full bg-white/95 backdrop-blur-md border-t p-4 z-50 shadow-[0_-4px_10px_rgba(0,0,0,0.05)] hidden" id="save-bar">
+        <div class="max-w-2xl mx-auto">
+            <button type="button" onclick="saveImages()" id="btn-save" class="w-full bg-[#00694a] text-white py-3.5 rounded-xl font-bold shadow-md hover:bg-[#005239] flex justify-center items-center gap-2 active:scale-95 transition-all">
+                <span class="material-symbols-outlined text-base">cloud_upload</span> บันทึกรูปภาพทั้งหมด
+            </button>
+        </div>
     </div>
 
     <script>
-        firebase.initializeApp(firebaseConfig);
-        firebase.firestore().enablePersistence({ synchronizeTabs: true }).catch(err => console.warn('Offline persistence error:', err.code));
-        const db = firebase.firestore();
-
+        let authCtx = null;
+        let db = null;
         const urlParams = new URLSearchParams(window.location.search);
         const patientId = urlParams.get('id');
 
-        async function loadImages() {
+        function goBackProfile() {
+            if (patientId) {
+                window.location.href = 'patient_profile.html?id=' + encodeURIComponent(patientId);
+            } else {
+                window.location.href = (authCtx && authCtx.role !== 'VHV') ? 'admin_datacenter.html' : 'dashboard.html';
+            }
+        }
+
+        function setPreviewUI(type, url) {
+            const b64El = document.getElementById(`b64_${type}`);
+            const imgEl = document.getElementById(`img_tag_${type}`);
+            const iconEl = document.getElementById(`icon_${type}`);
+            const clearBtn = document.getElementById(`clear_${type}`);
+            const hintEl = document.getElementById(`hint_${type}`);
+
+            if (url) {
+                b64El.value = url;
+                imgEl.src = url;
+                imgEl.classList.remove('hidden');
+                iconEl.classList.add('hidden');
+                if (hintEl) hintEl.classList.add('hidden');
+                if (clearBtn) clearBtn.classList.remove('hidden');
+            } else {
+                b64El.value = '';
+                imgEl.src = '';
+                imgEl.classList.add('hidden');
+                iconEl.classList.remove('hidden');
+                if (hintEl) hintEl.classList.remove('hidden');
+                if (clearBtn) clearBtn.classList.add('hidden');
+            }
+        }
+
+        function clearImageSlot(type) {
+            setPreviewUI(type, '');
+            const fileEl = document.getElementById(`file_${type}`);
+            if (fileEl) fileEl.value = '';
+        }
+
+        document.addEventListener('DOMContentLoaded', async function () {
             if (!patientId) {
-                alert("ไม่พบรหัสผู้ป่วย");
-                window.location.href = "dashboard.html";
+                showToast('ไม่พบรหัสผู้ป่วย', 'error', 'dashboard.html');
                 return;
             }
+            try {
+                authCtx = await OrsomoCore.Auth.guardPage({
+                    allowedRoles: ['VHV', 'SUB_ADMIN', 'ADMIN'],
+                    loginUrl: 'index.html'
+                });
+                db = authCtx.db;
+                await loadImages();
+            } catch (err) {
+                console.warn('Image page guard stopped:', err && err.message ? err.message : err);
+            }
+        });
 
+        async function loadImages() {
             try {
                 const docSnap = await db.collection('Patients').doc(String(patientId)).get();
-                if(docSnap.exists) {
-                    const data = docSnap.data();
-                    
-                    const setPreview = (type, url) => {
-                        if(url) {
-                            let finalUrl = url;
-                            if (!url.startsWith('data:image')) {
-                                const match = url.match(/d\/([a-zA-Z0-9_-]+)/) || url.match(/id=([a-zA-Z0-9_-]+)/);
-                                if (match) finalUrl = `https://drive.google.com/thumbnail?id=${match[1]}&sz=w1000`;
-                            }
-                            
-                            document.getElementById(`b64_${type}`).value = finalUrl;
-                            document.getElementById(`img_tag_${type}`).src = finalUrl;
-                            document.getElementById(`img_tag_${type}`).classList.remove('hidden');
-                            document.getElementById(`icon_${type}`).classList.add('hidden');
-                        }
-                    };
-
-                    setPreview('profile', data.profile_pic); // 🌟 โหลดรูปโปรไฟล์
-                    setPreview('bed', data.pic_bed);
-                    setPreview('bath', data.pic_bath);
-                    setPreview('entrance', data.pic_entrance);
-                    setPreview('walkway', data.pic_walkway);
+                if (!docSnap.exists) {
+                    showToast('ไม่พบข้อมูลผู้ป่วยในระบบ', 'error', 'dashboard.html');
+                    return;
                 }
-                
+                const data = docSnap.data() || {};
+                if (!OrsomoCore.Auth.canAccessPatient(authCtx, data, 'village')) {
+                    showToast('คุณไม่มีสิทธิ์เข้าถึงรูปภาพผู้ป่วยนอกเขตรับผิดชอบ', 'error', 'dashboard.html');
+                    return;
+                }
+
+                document.getElementById('patient-subtitle').innerText =
+                    `${data.prefix || ''}${data.name || '-'} (หมู่ที่ ${data.village_no || '-'})`;
+
+                const imgs = await OrsomoCore.ImageStore.getPatientImages(db, patientId, data);
+                setPreviewUI('profile', imgs.profile_pic);
+                setPreviewUI('bed', imgs.pic_bed);
+                setPreviewUI('bath', imgs.pic_bath);
+                setPreviewUI('entrance', imgs.pic_entrance);
+                setPreviewUI('walkway', imgs.pic_walkway);
+
                 document.getElementById('loading-state').classList.add('hidden');
                 document.getElementById('main-content').classList.remove('hidden');
                 document.getElementById('save-bar').classList.remove('hidden');
-
-            } catch(e) {
-                alert("เกิดข้อผิดพลาดในการโหลดรูปภาพ");
+            } catch (e) {
                 console.error(e);
+                showToast('เกิดข้อผิดพลาดในการโหลดรูปภาพ', 'error');
             }
         }
 
-        // ฟังก์ชันบีบอัดรูปให้เล็กและโหลดไว
-        function compressImage(file, callback) {
-            const reader = new FileReader();
-            reader.readAsDataURL(file);
-            reader.onload = event => {
-                const img = new Image();
-                img.src = event.target.result;
-                img.onload = () => {
-                    const canvas = document.createElement('canvas');
-                    let width = img.width; let height = img.height;
-                    const max_size = 600;
+        async function handleImageUpload(input, type) {
+            const file = input && input.files ? input.files[0] : null;
+            if (!file) return;
 
-                    if (width > height && width > max_size) {
-                        height *= max_size / width; width = max_size;
-                    } else if (height > max_size) {
-                        width *= max_size / height; height = max_size;
-                    }
+            document.getElementById(`img_tag_${type}`).classList.add('hidden');
+            document.getElementById(`icon_${type}`).classList.add('hidden');
+            document.getElementById(`loader_${type}`).classList.remove('hidden');
 
-                    canvas.width = width; canvas.height = height;
-                    const ctx = canvas.getContext('2d');
-                    ctx.drawImage(img, 0, 0, width, height);
-                    const dataUrl = canvas.toDataURL('image/jpeg', 0.5); // บีบอัด 50%
-                    callback(dataUrl);
-                }
-            };
-        }
-
-        function handleImageUpload(input, type) {
-            const file = input.files[0];
-            if (file) {
-                document.getElementById(`img_tag_${type}`).classList.add('hidden');
-                document.getElementById(`icon_${type}`).classList.add('hidden');
-                document.getElementById(`loader_${type}`).classList.remove('hidden');
-                
-                compressImage(file, (base64Str) => {
-                    document.getElementById(`b64_${type}`).value = base64Str;
-                    document.getElementById(`img_tag_${type}`).src = base64Str;
-                    document.getElementById(`img_tag_${type}`).classList.remove('hidden');
-                    document.getElementById(`loader_${type}`).classList.add('hidden');
+            try {
+                const compressed = await OrsomoCore.ImageStore.compressImage(file, {
+                    maxWidth: 850,
+                    maxHeight: 850,
+                    quality: 0.70,
+                    mimeType: 'image/jpeg'
                 });
+                setPreviewUI(type, compressed);
+            } catch (err) {
+                console.error(err);
+                showToast('ไม่สามารถย่อขนาดรูปภาพได้ กรุณาลองใหม่', 'error');
+                setPreviewUI(type, document.getElementById(`b64_${type}`).value);
+            } finally {
+                document.getElementById(`loader_${type}`).classList.add('hidden');
+                input.value = '';
             }
         }
 
         async function saveImages() {
             const btn = document.getElementById('btn-save');
-            btn.innerHTML = '<div class="loader-small" style="border-color:white;border-bottom-color:transparent"></div> กำลังอัปโหลด...';
+            const oldHtml = btn.innerHTML;
+            btn.innerHTML = '<div class="loader-small" style="border-color:white;border-bottom-color:transparent"></div> กำลังบันทึกรูปภาพ...';
             btn.disabled = true;
 
-            const updateData = {
-                profile_pic: document.getElementById('b64_profile').value, // 🌟 บันทึกรูปโปรไฟล์
-                pic_bed: document.getElementById('b64_bed').value,
-                pic_bath: document.getElementById('b64_bath').value,
-                pic_entrance: document.getElementById('b64_entrance').value,
-                pic_walkway: document.getElementById('b64_walkway').value
-            };
+            const profileFull = document.getElementById('b64_profile').value.trim();
+            const picBed = document.getElementById('b64_bed').value.trim();
+            const picBath = document.getElementById('b64_bath').value.trim();
+            const picEntrance = document.getElementById('b64_entrance').value.trim();
+            const picWalkway = document.getElementById('b64_walkway').value.trim();
 
             try {
-                await db.collection('Patients').doc(String(patientId)).update(updateData);
-                alert("อัปโหลดและบันทึกรูปภาพสำเร็จ!");
-                window.location.href = `patient_profile.html?id=${patientId}`;
-            } catch(e) {
-                alert("เกิดข้อผิดพลาดในการบันทึก กรุณาลองใหม่");
-                btn.innerHTML = 'บันทึกรูปภาพ <span class="material-symbols-outlined text-sm">cloud_upload</span>';
+                // 1. บันทึกรูปคมชัดทั้งหมดแยกไว้ในคอลเลกชัน Patient_Images (0 บาท ไม่ทำเอกสาร Patients บวม)
+                await OrsomoCore.ImageStore.savePatientImages(db, patientId, {
+                    type: 'ENV_AND_PROFILE',
+                    profile_pic: profileFull,
+                    pic_bed: picBed,
+                    pic_bath: picBath,
+                    pic_entrance: picEntrance,
+                    pic_walkway: picWalkway,
+                    house_1: picBed,
+                    house_2: picBath,
+                    house_3: picEntrance,
+                    house_4: picWalkway,
+                    updated_by: authCtx.uid
+                });
+
+                // 2. สร้าง Thumbnail จิ๋วสำหรับแสดงบนหน้ารายชื่อผู้ป่วยรวดเร็ว และล้างรูปสภาพบ้านก้อนใหญ่ออกจาก Patients
+                let thumbUrl = '';
+                if (profileFull) {
+                    if (profileFull.startsWith('data:image')) {
+                        thumbUrl = await OrsomoCore.ImageStore.createThumbnail(profileFull);
+                    } else {
+                        thumbUrl = profileFull;
+                    }
+                }
+
+                await db.collection('Patients').doc(String(patientId)).update({
+                    profile_thumb: thumbUrl,
+                    profile_pic: thumbUrl,
+                    pic_bed: '',
+                    pic_bath: '',
+                    pic_entrance: '',
+                    pic_walkway: '',
+                    has_env_images: Boolean(picBed || picBath || picEntrance || picWalkway),
+                    updated_at: firebase.firestore.FieldValue.serverTimestamp()
+                });
+
+                showToast('บันทึกรูปภาพเรียบร้อยแล้ว', 'success', `patient_profile.html?id=${encodeURIComponent(patientId)}`);
+            } catch (e) {
+                console.error(e);
+                showToast('เกิดข้อผิดพลาดในการบันทึกรูปภาพ กรุณาลองใหม่', 'error');
+                btn.innerHTML = oldHtml;
                 btn.disabled = false;
             }
         }
-
-        loadImages();
     </script>
 </body>
 </html>

@@ -15,9 +15,11 @@
     <link rel="apple-touch-icon" href="https://cdn-icons-png.flaticon.com/512/3063/3063116.png">
     
     <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-messaging-compat.js"></script>
     <script src="config.js"></script>
+    <script src="core.js"></script>
     
     <style>
         body { font-family: 'Sarabun', sans-serif; background-color: #f8fafc; }
@@ -53,17 +55,18 @@
         </div>
 
         <nav class="flex-1 px-4 py-6 space-y-2 overflow-y-auto">
-    <a href="admin_dashboard.html" class="flex items-center gap-3 px-4 py-3.5 text-slate-400 hover:bg-white/5 hover:text-white rounded-xl font-medium transition-all"><span class="material-symbols-outlined">dashboard</span> ภาพรวมระบบ</a>
-    <a href="admin_resources.html" class="flex items-center gap-3 px-4 py-3.5 text-slate-400 hover:bg-white/5 hover:text-white rounded-xl font-medium transition-all"><span class="material-symbols-outlined">inventory_2</span> บริหารทรัพยากร</a>
-    <a href="admin_inventory.html" id="nav-inventory" class="flex items-center gap-3 px-4 py-3.5 text-slate-400 hover:bg-white/5 hover:text-white rounded-xl font-medium transition-all"><span class="material-symbols-outlined">warehouse</span> ระบบคลังพัสดุ กปท.</a>
-    <a href="admin_datacenter.html" class="flex items-center gap-3 px-4 py-3.5 text-slate-400 hover:bg-white/5 hover:text-white rounded-xl font-medium transition-all"><span class="material-symbols-outlined">folder_shared</span> ศูนย์ข้อมูลผู้ป่วย</a>
-    <a href="admin_map.html" class="flex items-center gap-3 px-4 py-3.5 text-slate-400 hover:bg-white/5 hover:text-white rounded-xl font-medium transition-all"><span class="material-symbols-outlined">map</span> แผนที่พิกัดผู้ป่วย</a>
-    <a href="admin_delegation.html" class="flex items-center gap-3 px-4 py-3.5 text-slate-400 hover:bg-white/5 hover:text-white rounded-xl font-medium transition-all"><span class="material-symbols-outlined">assignment_ind</span> มอบหมายงาน อสม.</a>
-    <a href="admin_analytics.html" class="flex items-center gap-3 px-4 py-3.5 text-slate-400 hover:bg-white/5 hover:text-white rounded-xl font-medium transition-all"><span class="material-symbols-outlined">analytics</span> ศูนย์รายงาน (Export)</a>
-    <a href="admin_reports.html" id="nav-reports" class="flex items-center gap-3 px-4 py-3.5 text-slate-400 hover:bg-white/5 hover:text-white rounded-xl font-medium transition-all"><span class="material-symbols-outlined">gavel</span> บันทึกมติผ้าอ้อม</a>
-    <a href="admin_finance.html" id="nav-finance" class="flex items-center gap-3 px-4 py-3.5 text-slate-400 hover:bg-white/5 hover:text-white rounded-xl font-medium transition-all"><span class="material-symbols-outlined">account_balance_wallet</span> แผนการเงิน</a>
-    <a href="admin_settings.html" id="nav-settings" class="flex items-center gap-3 px-4 py-3.5 text-slate-400 hover:bg-white/5 hover:text-white rounded-xl font-medium transition-all"><span class="material-symbols-outlined">settings</span> ตั้งค่าระบบ</a>
-</nav>
+            <a href="admin_dashboard.html" class="flex items-center gap-3 px-4 py-3.5 bg-white/10 text-white rounded-xl font-bold transition-all"><span class="material-symbols-outlined">dashboard</span> ภาพรวมระบบ</a>
+            <a href="admin_resources.html" class="flex items-center gap-3 px-4 py-3.5 text-slate-400 hover:bg-white/5 hover:text-white rounded-xl font-medium transition-all"><span class="material-symbols-outlined">inventory_2</span> บริหารทรัพยากร</a>
+            <a href="admin_inventory.html" id="nav-inventory" class="flex items-center gap-3 px-4 py-3.5 text-slate-400 hover:bg-white/5 hover:text-white rounded-xl font-medium transition-all"><span class="material-symbols-outlined">warehouse</span> ระบบคลังพัสดุ กปท.</a>
+            <a href="admin_equipment.html" id="nav-equipment" class="flex items-center gap-3 px-4 py-3.5 text-slate-400 hover:bg-white/5 hover:text-white rounded-xl font-medium transition-all"><span class="material-symbols-outlined">medical_services</span> ทะเบียนยืม-คืนอุปกรณ์</a>
+            <a href="admin_datacenter.html" class="flex items-center gap-3 px-4 py-3.5 text-slate-400 hover:bg-white/5 hover:text-white rounded-xl font-medium transition-all"><span class="material-symbols-outlined">folder_shared</span> ศูนย์ข้อมูลผู้ป่วย</a>
+            <a href="admin_map.html" class="flex items-center gap-3 px-4 py-3.5 text-slate-400 hover:bg-white/5 hover:text-white rounded-xl font-medium transition-all"><span class="material-symbols-outlined">map</span> แผนที่พิกัดผู้ป่วย</a>
+            <a href="admin_delegation.html" class="flex items-center gap-3 px-4 py-3.5 text-slate-400 hover:bg-white/5 hover:text-white rounded-xl font-medium transition-all"><span class="material-symbols-outlined">assignment_ind</span> มอบหมายงาน อสม.</a>
+            <a href="admin_analytics.html" class="flex items-center gap-3 px-4 py-3.5 text-slate-400 hover:bg-white/5 hover:text-white rounded-xl font-medium transition-all"><span class="material-symbols-outlined">analytics</span> ศูนย์รายงาน (Export)</a>
+            <a href="admin_reports.html" id="nav-reports" class="flex items-center gap-3 px-4 py-3.5 text-slate-400 hover:bg-white/5 hover:text-white rounded-xl font-medium transition-all"><span class="material-symbols-outlined">gavel</span> บันทึกมติผ้าอ้อม</a>
+            <a href="admin_finance.html" id="nav-finance" class="flex items-center gap-3 px-4 py-3.5 text-slate-400 hover:bg-white/5 hover:text-white rounded-xl font-medium transition-all"><span class="material-symbols-outlined">account_balance_wallet</span> แผนการเงิน</a>
+            <a href="admin_settings.html" id="nav-settings" class="flex items-center gap-3 px-4 py-3.5 text-slate-400 hover:bg-white/5 hover:text-white rounded-xl font-medium transition-all"><span class="material-symbols-outlined">settings</span> ตั้งค่าระบบ</a>
+        </nav>
     </aside>
 
     <main class="flex-1 flex flex-col min-h-0 bg-slate-50">
@@ -92,8 +95,7 @@
                                 <h3 class="text-sm font-bold text-slate-800">การแจ้งเตือน</h3>
                                 <button onclick="clearNotifications()" class="text-[11px] text-slate-400 hover:text-slate-600 font-medium">รับทราบทั้งหมด</button>
                             </div>
-                            <!-- 🌟 ปุ่มสำหรับ iOS ให้กดขออนุญาต 🌟 -->
-                                                    </div>
+                        </div>
                         <div id="notif-list" class="max-h-[350px] overflow-y-auto custom-scrollbar divide-y divide-slate-50">
                             <!-- Items will be injected here -->
                             <div class="p-8 text-center text-slate-400 text-xs">กำลังโหลดการแจ้งเตือน...</div>
@@ -174,6 +176,23 @@
                 </div>
 
                 <div class="mt-6 space-y-4">
+                    <!-- 🌟 การ์ดแจ้งเตือนอุปกรณ์การแพทย์ค้างติดตามคืน (Requirement 5.3) 🌟 -->
+                    <div id="card-equipment-alert" class="bg-amber-50 rounded-[24px] p-5 shadow-sm border border-amber-300 cursor-pointer hover:bg-amber-100 transition-colors hidden" onclick="window.location.href='admin_equipment.html'">
+                        <div class="flex justify-between items-center">
+                            <div class="flex items-center gap-3">
+                                <span class="material-symbols-outlined text-amber-600 text-[26px]">warning</span>
+                                <div>
+                                    <h4 class="font-bold text-amber-900 text-sm">อุปกรณ์การแพทย์ค้างติดตามคืน</h4>
+                                    <p class="text-[11px] text-amber-700">ผู้ป่วยย้าย/เสียชีวิต แต่ยังไม่ได้รับอุปกรณ์คืน</p>
+                                </div>
+                            </div>
+                            <div class="flex items-center gap-2">
+                                <span class="font-black text-amber-700 text-lg" id="stat-equipment-overdue">0</span>
+                                <span class="bg-amber-200 text-amber-800 text-[10px] px-2 py-1 rounded-lg font-bold">ติดตามด่วน</span>
+                            </div>
+                        </div>
+                    </div>
+
                     <div class="bg-white rounded-[24px] p-5 shadow-sm border border-slate-200 cursor-pointer hover:bg-slate-50 transition-colors" onclick="window.location.href='admin_resources.html'">
                         <div class="flex justify-between items-center">
                             <div class="flex items-center gap-3">
@@ -221,7 +240,6 @@
         firebase.initializeApp(firebaseConfig);
         firebase.firestore().enablePersistence({ synchronizeTabs: true }).catch(err => console.warn('Offline persistence error:', err.code));
         const db = firebase.firestore();
-         
 
         let currentUserRole = "ADMIN";
         let assignedVillages = [];
@@ -231,126 +249,51 @@
 
         function toggleSidebar() { document.getElementById('sidebar').classList.toggle('-translate-x-full'); }
 
-        function cleanJSON(rawStr) {
-            if (!rawStr || String(rawStr).trim() === '') return null;
-            let cleanStr = String(rawStr).trim();
-            // Removed dangerous replace
-            if (cleanStr.startsWith('"') && cleanStr.endsWith('"')) cleanStr = cleanStr.substring(1, cleanStr.length - 1);
-            try { return JSON.parse(cleanStr); } catch(e) { return null; }
-        }
-
-        function calculateDaysSince(dateStr) {
-            if (!dateStr || dateStr.trim() === '' || dateStr === '-') return 999;
-            let targetDate;
-            if (dateStr.includes('/')) {
-                const parts = dateStr.split(' ')[0].split('/');
-                let year = parseInt(parts[2]);
-                if (year > 2400) year -= 543;
-                targetDate = new Date(year, parseInt(parts[1]) - 1, parseInt(parts[0]));
-            } else { targetDate = new Date(dateStr); }
-            if (isNaN(targetDate)) return 999;
-            return Math.floor(Math.abs(new Date() - targetDate) / (1000 * 60 * 60 * 24));
-        }
-
-        document.addEventListener("DOMContentLoaded", () => {
-            document.getElementById('sidebar-hospital-name').innerText = DEFAULT_CONFIGS.HOSPITAL_NAME;
-
-            // เช็คว่าเคยอนุญาตไปหรือยัง ถ้ายังให้โชว์ปุ่มในกระดิ่งแจ้งเตือน
-            function checkNotificationStatus() {
-                const btnPush = document.getElementById('btn-enable-push');
-                if (window.Notification && Notification.permission === 'default') {
-                    if (btnPush) btnPush.classList.remove('hidden');
-                } else {
-                    if (btnPush) btnPush.classList.add('hidden');
-                }
-            }
-            checkNotificationStatus();
-            
-            // 🌟 ปลุก Service Worker 🌟
+        document.addEventListener("DOMContentLoaded", async () => {
+            // ปลุก Service Worker
             if ('serviceWorker' in navigator) {
                 navigator.serviceWorker.register('/firebase-messaging-sw.js').catch(err => console.log('SW failed', err));
             }
 
-            liff.init({ liffId: LIFF_ID }).then(() => {
-                const mockUid = localStorage.getItem('dev_mock_uid');
-                const savedUid = localStorage.getItem('orsomo_uid'); // 🌟 1. ดึงความจำ UID สำหรับ PWA
-
-                if (mockUid) { 
-                    currentUserUid = mockUid;
-                    verifyAdminAccess(mockUid); 
-                } else if (liff.isLoggedIn()) { 
-                    liff.getProfile().then(p => {
-                        localStorage.setItem('orsomo_uid', p.userId); // 🌟 2. จำรหัสตอนเข้าผ่าน LINE
-                        currentUserUid = p.userId;
-                        
-                        verifyAdminAccess(p.userId);
-                    }).catch(() => bounceToLogin()); 
-                } else if (savedUid) {
-                    // 🌟 3. ข้าม Login เมื่อใช้ผ่าน PWA (แอปหน้าจอโฮม) 🌟
-                    currentUserUid = savedUid;
-                    verifyAdminAccess(savedUid);
-                } else { 
-                    bounceToLogin(); 
-                }
-            }).catch(() => bounceToLogin());
-        });
-
-        function bounceToLogin() { window.location.href = 'index.html'; }
-
-        
-        // 🌟 ดึงข้อมูลและอัปเดต UI หน้าแอดมิน (ฉบับแก้บั๊กไม่แสดงรูป) 🌟
-        async function verifyAdminAccess(uid) {
             try {
-                const userDoc = await db.collection('VHVs').doc(String(uid)).get();
-                let hasAccess = false;
-                let hospital = DEFAULT_CONFIGS.HOSPITAL_NAME;
+                const authCtx = await OrsomoCore.Auth.guardPage({
+                    allowedRoles: ['ADMIN', 'SUB_ADMIN'],
+                    autoAdminShell: false,
+                    currentPage: 'admin_dashboard.html'
+                });
+                if (!authCtx) return;
 
-                try {
-                    const sysSnapHospital = await db.collection('SystemConfig').doc('HOSPITAL_NAME').get();
-                    if(sysSnapHospital.exists) hospital = sysSnapHospital.data().value || hospital;
-                } catch(e) {}
+                currentUserUid = authCtx.uid;
+                currentUserRole = authCtx.role;
+                assignedVillages = (authCtx.user && authCtx.user.assigned_villages) || [];
 
-                if (userDoc.exists) {
-                    const userData = userDoc.data();
-                    
-                    // 🌟 นำชื่อและรูปภาพจากฐานข้อมูลมาแสดงบนหัวเว็บ (Bypass LINE)
-                    document.getElementById('header-user-name').innerText = userData.name || 'แอดมิน';
-                    if(userData.profile_pic) {
-                        document.getElementById('header-profile-pic').src = userData.profile_pic;
-                        document.getElementById('header-profile-pic').classList.remove('hidden');
-                        document.getElementById('header-profile-icon').classList.add('hidden');
-                    }
-                    
-                    const role = String(userData.role || '').toUpperCase();
-                    if (role === 'ADMIN') {
-                        hasAccess = true; currentUserRole = 'ADMIN'; hospital = userData.hospital_name || hospital;
-                    } else if (role === 'SUB_ADMIN') {
-                        hasAccess = true; currentUserRole = 'SUB_ADMIN'; hospital = userData.hospital_name || hospital;
-                        assignedVillages = userData.assigned_villages || [];
-                    }
+                let hospital = (authCtx.user && authCtx.user.hospital_name) || DEFAULT_CONFIGS.HOSPITAL_NAME;
+                document.getElementById('sidebar-hospital-name').innerText = hospital;
+                document.getElementById('header-hospital-name').innerText = `ข้อมูลสำหรับ ${hospital}`;
+                document.getElementById('header-user-name').innerText = (authCtx.user && authCtx.user.name) || 'ผู้ดูแลระบบ';
+
+                if (authCtx.user && (authCtx.user.profile_pic || authCtx.user.photoURL)) {
+                    const pSrc = authCtx.user.profile_pic || authCtx.user.photoURL;
+                    document.getElementById('header-profile-pic').src = pSrc;
+                    document.getElementById('header-profile-pic').classList.remove('hidden');
+                    document.getElementById('header-profile-icon').classList.add('hidden');
                 }
 
-                if (hasAccess) {
-                    document.getElementById('sidebar-hospital-name').innerText = hospital;
-                    document.getElementById('header-hospital-name').innerText = `ข้อมูลสำหรับ ${hospital}`;
-                    
-                    if (currentUserRole === 'SUB_ADMIN') {
-                        const navSettings = document.getElementById('nav-settings');
-                        if (navSettings) navSettings.style.display = 'none';
-                        const navFinance = document.getElementById('nav-finance');
-                        if (navFinance) navFinance.style.display = 'none'; 
-                        
-                        const navInventory = document.getElementById('nav-inventory');
-                        if (navInventory) navInventory.style.display = 'none';
-                        const navReports = document.getElementById('nav-reports');
-                        if (navReports) navReports.style.display = 'none';
-                    }
-                    
-                    await loadVHVs();
-                    loadDashboardData(); 
-                } else window.location.href = 'dashboard.html'; 
-            } catch (error) { bounceToLogin(); }
-        }
+                if (currentUserRole === 'SUB_ADMIN') {
+                    ['nav-settings', 'nav-finance', 'nav-inventory', 'nav-reports'].forEach(id => {
+                        const el = document.getElementById(id);
+                        if (el) el.style.display = 'none';
+                    });
+                }
+
+                await loadVHVs();
+                await loadDashboardData();
+                await checkEquipmentOverdueLoans();
+
+            } catch (err) {
+                console.error("Dashboard init error:", err);
+            }
+        });
 
         async function loadVHVs() {
             try {
@@ -359,7 +302,7 @@
                 snapshot.forEach(doc => {
                     const v = doc.data();
                     if(v.uid && v.name) {
-                        allVHVsList.push({ id: v.uid, name: v.name, village: v.village_no, status: v.status });
+                        allVHVsList.push({ id: v.uid, name: v.name, nickname: v.nickname || '', village: v.village_no, status: v.status });
                     }
                 });
             } catch(e) { console.error("Error loading VHVs"); }
@@ -375,20 +318,147 @@
 
         function closeNotificationIfOpen(e) {
             const dropdown = document.getElementById('notif-dropdown');
-            if (dropdown.classList.contains('show') && !e.target.closest('.relative')) {
+            if (dropdown && dropdown.classList.contains('show') && !e.target.closest('.relative')) {
                 dropdown.classList.remove('show');
             }
         }
 
         function getVhvName(uid) {
             const vhv = allVHVsList.find(v => v.id === uid);
-            return vhv ? vhv.name : 'อสม.';
+            return vhv ? (vhv.nickname ? `${vhv.name} (${vhv.nickname})` : vhv.name) : 'อสม.';
+        }
+
+        function clearNotifications() {
+            let dismissedNotifs = JSON.parse(localStorage.getItem(`dismissed_notifs_${currentUserUid}`) || '[]');
+            
+            notifications.forEach(n => {
+                if (!dismissedNotifs.includes(n.nid)) {
+                    dismissedNotifs.push(n.nid);
+                }
+            });
+
+            if (dismissedNotifs.length > 300) dismissedNotifs = dismissedNotifs.slice(-300);
+            localStorage.setItem(`dismissed_notifs_${currentUserUid}`, JSON.stringify(dismissedNotifs));
+
+            document.getElementById('notif-list').innerHTML = `
+                <div class="p-8 flex flex-col items-center justify-center text-slate-400">
+                    <span class="material-symbols-outlined text-[40px] mb-2 text-slate-200">notifications_paused</span>
+                    <p class="text-xs font-bold text-slate-500">รับทราบและเคลียร์แจ้งเตือนแล้ว</p>
+                </div>`;
+            document.getElementById('notif-badge').classList.add('hidden');
+            notifications = [];
+        }
+
+        async function loadDashboardData() {
+            try {
+                const snapshot = await db.collection('Patients').get();
+                dashboardPatients = [];
+                
+                let cSocial = 0, cHome = 0, cBed = 0, cAll = 0;
+                let cPending = 0;
+                let cOverdue = 0;
+
+                snapshot.forEach(doc => {
+                    const p = doc.data();
+                    p.docId = doc.id;
+                    if (!p.id) p.id = doc.id;
+
+                    let hasPermissionToView = true;
+                    if (currentUserRole === 'SUB_ADMIN') hasPermissionToView = assignedVillages.includes(String(p.village_no).trim());
+
+                    if (hasPermissionToView && String(p.status || 'Active').toLowerCase() === 'active') {
+                        dashboardPatients.push(p);
+                        cAll++;
+                        if(p.group === 'ติดสังคม') cSocial++;
+                        else if(p.group === 'ติดบ้าน') cHome++;
+                        else if(p.group === 'ติดเตียง') cBed++;
+
+                        const dp = OrsomoCore.DiaperAdapter.parse(p.diaper);
+                        if (dp.approve_status === 'รออนุมัติ') cPending++;
+
+                        const daysSince = OrsomoCore.DateUtils.daysSince(p.last_assess);
+                        if (daysSince > 30) cOverdue++;
+                    }
+                });
+
+                document.getElementById('stat-all').innerText = cAll;
+                document.getElementById('stat-social').innerText = cSocial;
+                document.getElementById('stat-home').innerText = cHome;
+                document.getElementById('stat-bed').innerText = cBed;
+                
+                document.getElementById('stat-pending').innerText = cPending;
+                document.getElementById('stat-overdue').innerText = cOverdue;
+
+                document.getElementById('loading-state').classList.add('hidden');
+                document.getElementById('dashboard-content').classList.remove('hidden');
+
+                generateNotifications(); 
+
+                const urlParams = new URLSearchParams(window.location.search);
+                const openGroup = urlParams.get('openGroup');
+                if (openGroup) {
+                    setTimeout(() => showGroupList(openGroup), 100);
+                    window.history.replaceState(null, '', window.location.pathname);
+                }
+
+            } catch (error) { 
+                console.error("Dashboard error:", error);
+                alert("ดึงฐานข้อมูลล้มเหลว"); 
+            }
+        }
+
+        // 🌟 ตรวจสอบอุปกรณ์การแพทย์ที่ยังไม่ได้รับคืนจากผู้ป่วยที่ย้าย/เสียชีวิต (Requirement 5.3) 🌟
+        async function checkEquipmentOverdueLoans() {
+            try {
+                const snap = await db.collection('Equipment_Loans').where('status', '==', 'BORROWED').get();
+                let overdueCount = 0;
+                const dismissedNotifs = JSON.parse(localStorage.getItem(`dismissed_notifs_${currentUserUid}`) || '[]');
+
+                const patientStatusMap = {};
+                const pSnap = await db.collection('Patients').get();
+                pSnap.forEach(d => {
+                    const data = d.data();
+                    patientStatusMap[d.id] = data.status || 'Active';
+                    if (data.id) patientStatusMap[data.id] = data.status || 'Active';
+                });
+
+                snap.forEach(doc => {
+                    const loan = doc.data();
+                    const pStatus = patientStatusMap[loan.patient_id] || 'Active';
+                    const isDeceasedOrMoved = (pStatus === 'เสียชีวิต' || pStatus === 'ย้ายที่อยู่' || pStatus === 'เลิกติดตาม');
+
+                    if (isDeceasedOrMoved) {
+                        overdueCount++;
+                        const nid = `equip_overdue_${doc.id}`;
+                        if (!dismissedNotifs.includes(nid)) {
+                            notifications.push({
+                                nid: nid, type: 'equip_overdue', icon: 'medical_services', color: 'amber',
+                                title: `ติดตามคืน ${loan.equipment_name || 'อุปกรณ์'}`,
+                                message: `ผู้ป่วย "${loan.patient_name || 'ไม่ระบุ'}" (${pStatus}) มียืมอุปกรณ์ "${loan.equipment_name || '-'}" ยังไม่ได้รับคืน`,
+                                time: 'ติดตามด่วน', link: 'admin_equipment.html', sortOrder: 0
+                            });
+                        }
+                    }
+                });
+
+                const alertCard = document.getElementById('card-equipment-alert');
+                const alertCountEl = document.getElementById('stat-equipment-overdue');
+                if (overdueCount > 0) {
+                    alertCountEl.innerText = overdueCount;
+                    alertCard.classList.remove('hidden');
+                } else {
+                    alertCard.classList.add('hidden');
+                }
+
+                notifications.sort((a,b) => a.sortOrder - b.sortOrder);
+                renderNotifications();
+            } catch(e) {
+                console.warn("Check equipment error:", e);
+            }
         }
 
         function generateNotifications() {
-            notifications = [];
             let pendingDiapersCount = 0;
-            
             let dismissedNotifs = JSON.parse(localStorage.getItem(`dismissed_notifs_${currentUserUid}`) || '[]');
             
             const pendingVHVs = allVHVsList.filter(v => v.status === 'Pending');
@@ -400,7 +470,7 @@
                     notifications.push({
                         nid: nid, type: 'vhv_pending', icon: 'person_add', color: 'blue',
                         title: 'คำขอสมัครใช้งานใหม่',
-                        message: `อสม. ${v.name} (หมู่ ${v.village}) รอการอนุมัติสิทธิ์เข้าใช้งาน`,
+                        message: `อสม. ${v.name} ${v.nickname ? '('+v.nickname+')' : ''} (หมู่ ${v.village}) รอการอนุมัติสิทธิ์เข้าใช้งาน`,
                         time: 'ตรวจสอบด่วน', link: 'admin_delegation.html', sortOrder: 1
                     });
                 }
@@ -410,36 +480,36 @@
                 const isNew = (!p.last_assess || p.last_assess === '-');
                 
                 if (isNew) {
-                    let nid = `patient_new_${p.id}`;
+                    let nid = `patient_new_${p.docId || p.id}`;
                     if (!dismissedNotifs.includes(nid)) {
                         const creatorName = p.created_by || 'อสม.';
                         notifications.push({
                             nid: nid, type: 'patient_new', icon: 'fiber_new', color: 'emerald',
                             title: 'เพิ่มผู้ป่วยรายใหม่',
                             message: `คุณ ${creatorName} ได้เพิ่มข้อมูลผู้ป่วยใหม่ "${p.prefix||''}${p.name}" (หมู่ ${p.village_no})`,
-                            time: 'เข้าใหม่', link: `patient_profile.html?id=${p.id}`, sortOrder: 3
+                            time: 'เข้าใหม่', link: `patient_profile.html?id=${p.docId || p.id}`, sortOrder: 3
                         });
                     }
                 }
 
                 if (!isNew && p.assigned_vhv_id && p.needs_assessment === false) {
-                    const daysSinceAssess = calculateDaysSince(p.last_assess);
+                    const daysSinceAssess = OrsomoCore.DateUtils.daysSince(p.last_assess);
                     if (daysSinceAssess <= 3) {
-                        let nid = `task_completed_${p.id}_${p.last_assess}`;
+                        let nid = `task_completed_${p.docId || p.id}_${p.last_assess}`;
                         if (!dismissedNotifs.includes(nid)) {
                             notifications.push({
                                 nid: nid, type: 'task_completed', icon: 'task_alt', color: 'teal',
                                 title: 'อสม. ลงพื้นที่สำเร็จ',
                                 message: `คุณ ${getVhvName(p.assigned_vhv_id)} ได้ประเมินผู้ป่วย "${p.prefix||''}${p.name}" เรียบร้อยแล้ว`,
                                 time: `${daysSinceAssess === 0 ? 'วันนี้' : daysSinceAssess + ' วันที่ผ่านมา'}`,
-                                link: `patient_profile.html?id=${p.id}`, sortOrder: 4
+                                link: `patient_profile.html?id=${p.docId || p.id}`, sortOrder: 4
                             });
                         }
                     }
                 }
 
-                const d = cleanJSON(p.diaper);
-                if (d && d.approve_status === 'รออนุมัติ') {
+                const d = OrsomoCore.DiaperAdapter.parse(p.diaper);
+                if (d.approve_status === 'รออนุมัติ') {
                     pendingDiapersCount++;
                 }
             });
@@ -463,6 +533,7 @@
         function renderNotifications() {
             const list = document.getElementById('notif-list');
             const badge = document.getElementById('notif-badge');
+            if (!list || !badge) return;
             
             const displayNotifs = notifications.slice(0, 15);
             
@@ -496,93 +567,6 @@
                 });
                 list.innerHTML = html;
             }
-        }
-
-        function clearNotifications() {
-            let dismissedNotifs = JSON.parse(localStorage.getItem(`dismissed_notifs_${currentUserUid}`) || '[]');
-            
-            notifications.forEach(n => {
-                if (!dismissedNotifs.includes(n.nid)) {
-                    dismissedNotifs.push(n.nid);
-                }
-            });
-
-            if (dismissedNotifs.length > 300) dismissedNotifs = dismissedNotifs.slice(-300);
-            
-            localStorage.setItem(`dismissed_notifs_${currentUserUid}`, JSON.stringify(dismissedNotifs));
-
-            document.getElementById('notif-list').innerHTML = `
-                <div class="p-8 flex flex-col items-center justify-center text-slate-400">
-                    <span class="material-symbols-outlined text-[40px] mb-2 text-slate-200">notifications_paused</span>
-                    <p class="text-xs font-bold text-slate-500">รับทราบและเคลียร์แจ้งเตือนแล้ว</p>
-                </div>`;
-            document.getElementById('notif-badge').classList.add('hidden');
-            notifications = [];
-        }
-
-        // ----------------------------------------------------
-
-        async function loadDashboardData() {
-            try {
-                const snapshot = await db.collection('Patients').get();
-                dashboardPatients = [];
-                
-                let cSocial = 0, cHome = 0, cBed = 0, cAll = 0;
-                let cPending = 0;
-                let cOverdue = 0;
-
-                snapshot.forEach(doc => {
-                    const p = doc.data();
-                    let hasPermissionToView = true;
-                    if (currentUserRole === 'SUB_ADMIN') hasPermissionToView = assignedVillages.includes(String(p.village_no).trim());
-
-                    if (hasPermissionToView && String(p.status).toLowerCase() === 'active') {
-                        dashboardPatients.push(p);
-                        cAll++;
-                        if(p.group === 'ติดสังคม') cSocial++;
-                        else if(p.group === 'ติดบ้าน') cHome++;
-                        else if(p.group === 'ติดเตียง') cBed++;
-
-                        if (p.diaper) {
-                            try {
-                                let dp = {};
-                                if (typeof p.diaper === 'object') {
-                                    dp = p.diaper;
-                                } else {
-                                    let dpStr = String(p.diaper).trim();
-                                    if (dpStr.startsWith('"') && dpStr.endsWith('"')) { dpStr = dpStr.substring(1, dpStr.length - 1); }
-                                    dp = JSON.parse(dpStr);
-                                }
-                                if (dp.approve_status === 'รออนุมัติ') cPending++;
-                            } catch(e) {}
-                        }
-
-                        const daysSince = calculateDaysSince(p.last_assess);
-                        if (daysSince > 30) cOverdue++;
-                    }
-                });
-
-                document.getElementById('stat-all').innerText = cAll;
-                document.getElementById('stat-social').innerText = cSocial;
-                document.getElementById('stat-home').innerText = cHome;
-                document.getElementById('stat-bed').innerText = cBed;
-                
-                document.getElementById('stat-pending').innerText = cPending;
-                document.getElementById('stat-overdue').innerText = cOverdue;
-
-                document.getElementById('loading-state').classList.add('hidden');
-                document.getElementById('dashboard-content').classList.remove('hidden');
-
-                generateNotifications(); 
-
-                const urlParams = new URLSearchParams(window.location.search);
-                const openGroup = urlParams.get('openGroup');
-                if (openGroup) {
-                    setTimeout(() => showGroupList(openGroup), 100);
-                    window.history.replaceState(null, '', window.location.pathname);
-                }
-
-            } catch (error) { alert("ดึงฐานข้อมูลล้มเหลว"); }
         }
 
         function viewPatient(id, group) {
@@ -631,8 +615,9 @@
                             avatar = `<img src="${p.profile_pic}" class="w-10 h-10 rounded-full object-cover flex-shrink-0 border border-slate-200">`;
                         }
 
+                        const pId = p.docId || p.id;
                         html += `
-                            <div class="flex items-center justify-between bg-white border border-slate-100 p-3 rounded-xl hover:border-blue-300 hover:shadow-md transition-all cursor-pointer group" onclick="viewPatient('${p.id}', '${targetGroup}')">
+                            <div class="flex items-center justify-between bg-white border border-slate-100 p-3 rounded-xl hover:border-blue-300 hover:shadow-md transition-all cursor-pointer group" onclick="viewPatient('${pId}', '${targetGroup}')">
                                 <div class="flex items-center gap-3">
                                     ${avatar}
                                     <div>

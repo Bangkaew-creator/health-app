@@ -2,51 +2,65 @@
 <html lang="th">
 <head>
     <meta charset="utf-8"/>
-    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
     <title>เข้าสู่ระบบ - อสม.สามารถ (Orsomo Smart)</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700&display=swap" rel="stylesheet"/>
     <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
     <script charset="utf-8" src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
-    
+
     <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="#00694a">
     <link rel="apple-touch-icon" href="https://cdn-icons-png.flaticon.com/512/3063/3063116.png">
 
     <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore-compat.js"></script>
     <script src="config.js"></script>
-    
+    <script src="core.js"></script>
+
     <style>
-        body { font-family: 'Sarabun', sans-serif; background-color: #f8fafc; }
+        body { font-family: 'Sarabun', sans-serif; background-color: #f8fafc; -webkit-tap-highlight-color: transparent; }
         .material-symbols-outlined { font-variation-settings: 'FILL' 1, 'wght' 400, 'GRAD' 0, 'opsz' 24; }
-        .loader { border: 3px solid #f3f3f3; border-top: 3px solid #00694a; border-radius: 50%; width: 30px; height: 30px; animation: spin 1s linear infinite; }
+        .loader { border: 3px solid #f3f3f3; border-top: 3px solid #00694a; border-radius: 50%; width: 32px; height: 32px; animation: spin 1s linear infinite; }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
     </style>
 </head>
-<body class="flex items-center justify-center min-h-screen p-4">
+<body class="flex flex-col items-center justify-center min-h-screen p-4 relative">
 
     <!-- หน้าจอโหลดดิ้ง -->
-    <div id="loading-screen" class="flex flex-col items-center justify-center">
+    <div id="loading-screen" class="flex flex-col items-center justify-center text-center">
         <div class="loader mb-4"></div>
-        <p class="text-slate-500 font-medium">กำลังตรวจสอบสิทธิ์การเข้าใช้งาน...</p>
+        <p class="text-slate-500 font-medium text-sm">กำลังตรวจสอบสิทธิ์การเข้าใช้งาน...</p>
     </div>
 
-    <!-- หน้าจอรออนุมัติ -->
-    <div id="pending-screen" class="hidden w-full max-w-md bg-white rounded-3xl p-8 shadow-xl text-center">
-        <span class="material-symbols-outlined text-[70px] text-amber-500 mb-4 bg-amber-50 w-24 h-24 rounded-full flex items-center justify-center mx-auto animate-pulse">schedule</span>
+    <!-- หน้าจอรออนุมัติ (ล็อกสิทธิ์ไม่ให้มองเห็นข้อมูลใดๆ) -->
+    <div id="pending-screen" class="hidden w-full max-w-md bg-white rounded-3xl p-8 shadow-xl text-center border border-amber-100">
+        <span class="material-symbols-outlined text-[64px] text-amber-500 mb-4 bg-amber-50 w-24 h-24 rounded-full flex items-center justify-center mx-auto animate-pulse">schedule</span>
         <h2 class="text-2xl font-bold text-slate-800">รอการตรวจสอบสิทธิ์</h2>
         <p class="text-sm text-slate-500 mt-2 mb-4 leading-relaxed">ข้อมูลลงทะเบียนของคุณถูกส่งเข้าระบบเรียบร้อยแล้ว</p>
-        <p class="text-xs text-slate-400 leading-relaxed bg-slate-50 p-3 rounded-xl border border-slate-100">
-            โปรดรอเจ้าหน้าที่อนุมัติการเข้าถึงข้อมูลเพื่อความปลอดภัย<br>
-            (เมื่อได้รับอนุมัติแล้ว ระบบจะพาวาร์ปเข้าหน้าจอหลักโดยอัตโนมัติในการเข้าใช้งานครั้งถัดไปครับ)
+        <div class="text-xs text-slate-500 leading-relaxed bg-slate-50 p-4 rounded-2xl border border-slate-100">
+            เพื่อคุ้มครองข้อมูลส่วนบุคคลของผู้ป่วย บัญชีที่ยังไม่อนุมัติจะไม่สามารถเปิดดูข้อมูลในระบบได้<br><br>
+            เมื่อเจ้าหน้าที่ รพ.สต. หรือแอดมินอนุมัติแล้ว ระบบจะพาเข้าหน้าหลักโดยอัตโนมัติครับ
+        </div>
+        <button onclick="window.location.reload()" class="mt-5 w-full py-3 bg-amber-50 hover:bg-amber-100 text-amber-700 font-bold text-sm rounded-xl transition-colors flex items-center justify-center gap-1.5">
+            <span class="material-symbols-outlined text-[18px]">refresh</span> ตรวจสอบสถานะอีกครั้ง
+        </button>
+    </div>
+
+    <!-- หน้าจอบัญชีถูกปฏิเสธ/ระงับสิทธิ์ -->
+    <div id="rejected-screen" class="hidden w-full max-w-md bg-white rounded-3xl p-8 shadow-xl text-center border border-red-100">
+        <span class="material-symbols-outlined text-[64px] text-red-500 mb-4 bg-red-50 w-24 h-24 rounded-full flex items-center justify-center mx-auto">block</span>
+        <h2 class="text-xl font-bold text-slate-800">ไม่อนุญาตให้เข้าถึงระบบ</h2>
+        <p class="text-sm text-slate-500 mt-2 leading-relaxed">
+            บัญชีของคุณถูกปฏิเสธหรือระงับสิทธิ์การเข้าใช้งาน<br>กรุณาติดต่อเจ้าหน้าที่ รพ.สต. หรือผู้ดูแลระบบส่วนกลางครับ
         </p>
     </div>
 
     <!-- หน้าจอลงทะเบียน อสม. -->
-    <div id="registration-screen" class="hidden w-full max-w-md bg-white rounded-3xl p-8 shadow-xl">
-        <div class="text-center mb-6 cursor-pointer select-none" onclick="secretTap()">
-            <div class="w-16 h-16 bg-[#00694a]/10 text-[#00694a] rounded-2xl flex items-center justify-center mx-auto mb-3 transition-transform active:scale-95">
+    <div id="registration-screen" class="hidden w-full max-w-md bg-white rounded-3xl p-7 shadow-xl border border-slate-100">
+        <div class="text-center mb-6 select-none">
+            <div class="w-16 h-16 bg-[#00694a]/10 text-[#00694a] rounded-2xl flex items-center justify-center mx-auto mb-3">
                 <span class="material-symbols-outlined text-4xl">how_to_reg</span>
             </div>
             <h1 class="text-2xl font-bold text-slate-800">ลงทะเบียน อสม.</h1>
@@ -55,103 +69,106 @@
 
         <div class="space-y-4">
             <div>
-                <label class="block text-sm font-bold text-slate-700 mb-1">ชื่อ - นามสกุล</label>
-                <input type="text" id="reg-name" placeholder="ระบุชื่อและนามสกุล" class="w-full px-4 py-3 rounded-xl border border-slate-200 focus:border-[#00694a] focus:ring-2 focus:ring-[#00694a]/20 outline-none">
+                <label class="block text-sm font-bold text-slate-700 mb-1">ชื่อ - นามสกุล <span class="text-red-500">*</span></label>
+                <input type="text" id="reg-name" placeholder="ระบุคำนำหน้า ชื่อ และนามสกุล" class="w-full px-4 py-3 rounded-xl border border-slate-200 focus:border-[#00694a] focus:ring-2 focus:ring-[#00694a]/20 outline-none text-sm">
             </div>
             <div>
                 <label class="block text-sm font-bold text-slate-700 mb-1">ชื่อเล่น (ถ้ามี)</label>
-                <input type="text" id="reg-nickname" placeholder="เช่น ป้าสม, พี่น้อย" class="w-full px-4 py-3 rounded-xl border border-slate-200 focus:border-[#00694a] focus:ring-2 focus:ring-[#00694a]/20 outline-none">
+                <input type="text" id="reg-nickname" placeholder="เช่น ป้าสม, พี่น้อย" class="w-full px-4 py-3 rounded-xl border border-slate-200 focus:border-[#00694a] focus:ring-2 focus:ring-[#00694a]/20 outline-none text-sm">
             </div>
             <div>
-                <label class="block text-sm font-bold text-slate-700 mb-1">เบอร์โทรศัพท์มือถือ</label>
-                <input type="tel" id="reg-phone" placeholder="08X-XXX-XXXX" class="w-full px-4 py-3 rounded-xl border border-slate-200 focus:border-[#00694a] focus:ring-2 focus:ring-[#00694a]/20 outline-none">
+                <label class="block text-sm font-bold text-slate-700 mb-1">เบอร์โทรศัพท์มือถือ <span class="text-red-500">*</span></label>
+                <input type="tel" id="reg-phone" placeholder="08X-XXX-XXXX" class="w-full px-4 py-3 rounded-xl border border-slate-200 focus:border-[#00694a] focus:ring-2 focus:ring-[#00694a]/20 outline-none text-sm">
             </div>
             <div>
-                <label class="block text-sm font-bold text-slate-700 mb-1">หมู่ที่รับผิดชอบ</label>
-                <select id="reg-village" class="w-full px-4 py-3 rounded-xl border border-slate-200 focus:border-[#00694a] focus:ring-2 focus:ring-[#00694a]/20 outline-none bg-white">
+                <label class="block text-sm font-bold text-slate-700 mb-1">หมู่ที่รับผิดชอบ <span class="text-red-500">*</span></label>
+                <select id="reg-village" class="w-full px-4 py-3 rounded-xl border border-slate-200 focus:border-[#00694a] focus:ring-2 focus:ring-[#00694a]/20 outline-none bg-white text-sm">
                     <option value="" disabled selected>-- กำลังโหลดข้อมูลหมู่... --</option>
                 </select>
             </div>
-            <button onclick="registerUser()" id="btn-register" class="w-full bg-[#00694a] hover:bg-[#005239] text-white font-bold py-3.5 rounded-xl shadow-lg mt-4 transition-all active:scale-95">ยืนยันการลงทะเบียน</button>
+            <button onclick="registerUser()" id="btn-register" class="w-full bg-[#00694a] hover:bg-[#005239] text-white font-bold py-3.5 rounded-xl shadow-lg mt-4 transition-all active:scale-95">
+                ยืนยันการลงทะเบียน
+            </button>
         </div>
     </div>
-    
-    <div id="admin-trigger" class="hidden absolute bottom-6 text-center w-full max-w-md mx-auto">
-        <button onclick="showAdminRegistration()" class="text-[11px] text-slate-400 hover:text-slate-600 font-medium transition-colors flex items-center justify-center mx-auto gap-1">
-            <span class="material-symbols-outlined text-[14px]">lock</span> สำหรับเจ้าหน้าที่ รพ.สต. / ส่วนกลาง
+
+    <div id="admin-trigger" class="hidden mt-6 text-center w-full max-w-md mx-auto">
+        <button onclick="showAdminRegistration()" class="text-xs text-slate-400 hover:text-slate-600 font-medium transition-colors flex items-center justify-center mx-auto gap-1 py-2">
+            <span class="material-symbols-outlined text-[15px]">lock</span> สำหรับเจ้าหน้าที่ รพ.สต. / ส่วนกลาง
         </button>
     </div>
 
     <!-- หน้าจอลงทะเบียนเจ้าหน้าที่ -->
-    <div id="admin-registration-screen" class="hidden w-full max-w-md bg-white rounded-3xl p-8 shadow-2xl border-t-4 border-amber-500 relative z-10">
+    <div id="admin-registration-screen" class="hidden w-full max-w-md bg-white rounded-3xl p-7 shadow-2xl border-t-4 border-amber-500 relative z-10">
         <div class="text-center mb-6">
             <div class="w-16 h-16 bg-amber-100 text-amber-600 rounded-2xl flex items-center justify-center mx-auto mb-3">
                 <span class="material-symbols-outlined text-4xl">admin_panel_settings</span>
             </div>
-            <h1 class="text-xl font-bold text-slate-800">ลงทะเบียนเจ้าหน้าที่ รพ.สต.</h1>
-            <p class="text-xs text-slate-500 mt-1">ใช้รหัสลับ (Secret Code) เพื่อกำหนดสิทธิ์รับผิดชอบ</p>
+            <h1 class="text-xl font-bold text-slate-800">ลงทะเบียนเจ้าหน้าที่ รพ.สต. / ส่วนกลาง</h1>
+            <p class="text-xs text-slate-500 mt-1">ใช้รหัสลับ (Secret Code) เพื่อยืนยันสิทธิ์หน่วยงาน</p>
         </div>
-        
+
         <div class="space-y-4">
             <div>
-                <label class="block text-sm font-bold text-slate-700 mb-1">ชื่อ - นามสกุล</label>
-                <input type="text" id="admin-reg-name" placeholder="ระบุชื่อเจ้าหน้าที่" class="w-full px-4 py-3 rounded-xl border border-slate-200 focus:border-amber-500 focus:ring-2 focus:ring-amber-500/20 outline-none">
+                <label class="block text-sm font-bold text-slate-700 mb-1">ชื่อ - นามสกุล <span class="text-red-500">*</span></label>
+                <input type="text" id="admin-reg-name" placeholder="ระบุชื่อและนามสกุลเจ้าหน้าที่" class="w-full px-4 py-3 rounded-xl border border-slate-200 focus:border-amber-500 focus:ring-2 focus:ring-amber-500/20 outline-none text-sm">
             </div>
             <div>
-                <label class="block text-sm font-bold text-slate-700 mb-1">เบอร์โทรศัพท์มือถือ</label>
-                <input type="tel" id="admin-reg-phone" placeholder="08X-XXX-XXXX" class="w-full px-4 py-3 rounded-xl border border-slate-200 focus:border-amber-500 focus:ring-2 focus:ring-amber-500/20 outline-none">
+                <label class="block text-sm font-bold text-slate-700 mb-1">ชื่อเล่น (ถ้ามี)</label>
+                <input type="text" id="admin-reg-nickname" placeholder="ระบุชื่อเล่น" class="w-full px-4 py-3 rounded-xl border border-slate-200 focus:border-amber-500 focus:ring-2 focus:ring-amber-500/20 outline-none text-sm">
             </div>
             <div>
-                <label class="block text-sm font-bold text-slate-700 mb-1">รหัสลับ (Secret Code)</label>
-                <input type="password" id="admin-reg-secret" placeholder="กรอกรหัส รพ.สต. หรือ รหัสแอดมิน" class="w-full px-4 py-3 rounded-xl border border-slate-200 focus:border-amber-500 focus:ring-2 focus:ring-amber-500/20 outline-none">
+                <label class="block text-sm font-bold text-slate-700 mb-1">เบอร์โทรศัพท์มือถือ <span class="text-red-500">*</span></label>
+                <input type="tel" id="admin-reg-phone" placeholder="08X-XXX-XXXX" class="w-full px-4 py-3 rounded-xl border border-slate-200 focus:border-amber-500 focus:ring-2 focus:ring-amber-500/20 outline-none text-sm">
             </div>
-            <button onclick="registerStaff()" id="btn-register-admin" class="w-full bg-amber-500 hover:bg-amber-600 text-white font-bold py-3.5 rounded-xl shadow-lg mt-4 transition-all active:scale-95">ตรวจสอบรหัสและยืนยัน</button>
-            <button onclick="hideAdminRegistration()" class="w-full text-slate-400 font-bold py-2 mt-2 hover:text-slate-600 text-sm">กลับไปหน้าลงทะเบียน อสม.</button>
+            <div>
+                <label class="block text-sm font-bold text-slate-700 mb-1">รหัสลับ (Secret Code) <span class="text-red-500">*</span></label>
+                <input type="password" id="admin-reg-secret" placeholder="กรอกรหัส รพ.สต. หรือ รหัสแอดมิน" class="w-full px-4 py-3 rounded-xl border border-slate-200 focus:border-amber-500 focus:ring-2 focus:ring-amber-500/20 outline-none text-sm">
+            </div>
+            <button onclick="registerStaff()" id="btn-register-admin" class="w-full bg-amber-500 hover:bg-amber-600 text-white font-bold py-3.5 rounded-xl shadow-lg mt-4 transition-all active:scale-95">
+                ตรวจสอบรหัสและยืนยัน
+            </button>
+            <button onclick="hideAdminRegistration()" class="w-full text-slate-400 font-bold py-2 mt-1 hover:text-slate-600 text-sm">
+                กลับไปหน้าลงทะเบียน อสม.
+            </button>
         </div>
     </div>
 
     <script>
-        firebase.initializeApp(firebaseConfig);
-        firebase.firestore().enablePersistence({ synchronizeTabs: true }).catch(err => console.warn('Offline persistence error:', err.code));
-        const db = firebase.firestore();
+        const db = OrsomoCore.Auth.ensureFirebase();
         let globalVillageCount = DEFAULT_CONFIGS.VILLAGE_COUNT;
-        
-        let tapCount = 0;
-        function secretTap() {
-            tapCount++;
-            if(tapCount >= 5) {
-                tapCount = 0;
-                let pwd = prompt("Developer Mode: Enter Password");
-                if(pwd === "1234") { window.location.href = "dev_tools.html"; }
-            }
-            setTimeout(() => { tapCount = 0; }, 3000); 
-        }
+        let currentResolvedUid = '';
+        let currentResolvedPic = '';
 
-        document.addEventListener("DOMContentLoaded", () => {
-            if ('serviceWorker' in navigator) {
-                navigator.serviceWorker.register('/firebase-messaging-sw.js').catch(err => console.log('SW failed', err));
-            }
+        document.addEventListener("DOMContentLoaded", async () => {
+            try { localStorage.removeItem('dev_mock_uid'); } catch (e) {}
 
-            liff.init({ liffId: LIFF_ID }).then(() => {
-                const mockUid = localStorage.getItem('dev_mock_uid');
-                const savedUid = localStorage.getItem('orsomo_uid'); // 🌟 1. ดึงความจำ
+            // เริ่มต้น Anonymous Auth เพื่อรองรับกฎความปลอดภัยฐานข้อมูล 2 ชั้น
+            await OrsomoCore.Auth.ensureAnonymousSignIn();
 
-                if (mockUid) {
-                    processLoginRouting(mockUid);
-                } else if (liff.isLoggedIn()) { 
-                    // 🌟 2. ถ้าล็อกอินในเบราว์เซอร์ปกติ ให้จำ UID ใส่เครื่องไว้เลย
-                    liff.getProfile().then(profile => {
+            try {
+                await liff.init({ liffId: LIFF_ID });
+                const savedUid = localStorage.getItem('orsomo_uid') || '';
+
+                if (liff.isLoggedIn()) {
+                    try {
+                        const profile = await liff.getProfile();
+                        currentResolvedUid = profile.userId;
+                        currentResolvedPic = profile.pictureUrl || '';
                         localStorage.setItem('orsomo_uid', profile.userId);
-                        processLoginRouting(profile.userId);
-                    }).catch(() => {
-                        if (savedUid) processLoginRouting(savedUid);
-                        else showRegistrationUI();
-                    });
+                        await processLoginRouting(profile.userId);
+                    } catch (profileErr) {
+                        if (savedUid) {
+                            currentResolvedUid = savedUid;
+                            await processLoginRouting(savedUid);
+                        } else {
+                            await showRegistrationUI();
+                        }
+                    }
                 } else if (savedUid) {
-                    // 🌟 3. ถ้าเปิดแอป PWA แล้วจำ UID ได้ ให้พุ่งเข้า Dashboard เลย ไม่ต้องล็อกอิน LINE!
-                    processLoginRouting(savedUid);
+                    currentResolvedUid = savedUid;
+                    await processLoginRouting(savedUid);
                 } else {
-                    // 🌟 4. ดักจับบั๊ก iOS: ถ้าเปิด PWA ครั้งแรกแล้วเครื่องจำไม่ได้ ให้แสดงวิธีแก้
                     const isPWA = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
                     if (isPWA) {
                         document.getElementById('loading-screen').innerHTML = `
@@ -160,111 +177,161 @@
                                 <h2 class="font-bold text-lg text-slate-800 mb-2">ไม่สามารถยืนยันตัวตนได้</h2>
                                 <p class="text-xs text-slate-600 leading-relaxed mb-4">
                                     เนื่องจากข้อจำกัดด้านความปลอดภัยของ iOS (Apple)<br><br>
-                                    <b>วิธีแก้ไข:</b> กรุณากลับไปที่แอป LINE กดลิงก์เข้าสู่ระบบอีก 1 ครั้ง (เพื่อให้ระบบจดจำเครื่องนี้) หลังจากนั้นแอปบนหน้าจอจะใช้งานได้ปกติครับ
+                                    <b>วิธีแก้ไข:</b> กรุณากลับไปที่แอป LINE กดลิงก์เข้าสู่ระบบอีก 1 ครั้ง เพื่อให้ระบบจดจำเครื่องนี้ หลังจากนั้นแอปบนหน้าจอโฮมจะใช้งานได้ปกติครับ
                                 </p>
                             </div>
                         `;
                     } else {
-                        liff.login({ redirectUri: window.location.href }); 
+                        liff.login({ redirectUri: window.location.href });
                     }
                 }
-            });
+            } catch (err) {
+                console.error("LIFF Init Error:", err);
+                const savedUid = localStorage.getItem('orsomo_uid') || '';
+                if (savedUid) {
+                    currentResolvedUid = savedUid;
+                    await processLoginRouting(savedUid);
+                } else {
+                    document.getElementById('loading-screen').innerHTML = `
+                        <div class="text-center p-6 bg-amber-50 rounded-2xl border border-amber-200 max-w-sm shadow-sm">
+                            <span class="material-symbols-outlined text-[46px] text-amber-500 mb-2">lock</span>
+                            <h2 class="font-bold text-base text-slate-800 mb-1">กรุณาเข้าใช้งานผ่านแอป LINE</h2>
+                            <p class="text-xs text-slate-600 leading-relaxed">ระบบต้องยืนยันตัวตนผ่านบัญชี LINE ก่อนเข้าถึงข้อมูลสุขภาพชุมชนครับ</p>
+                        </div>
+                    `;
+                }
+            }
         });
 
         function buildVillageOptions(vCount) {
             const vSelect = document.getElementById('reg-village');
             vSelect.innerHTML = '<option value="" disabled selected>-- เลือกหมู่ที่รับผิดชอบ --</option>';
-            for(let i=1; i<=vCount; i++) {
+            for (let i = 1; i <= vCount; i++) {
                 vSelect.insertAdjacentHTML('beforeend', `<option value="${i}">หมู่ที่ ${i}</option>`);
             }
         }
 
+        async function loadBootstrapVillageCount() {
+            try {
+                const sysSnap = await db.collection('SystemConfig').doc('VILLAGE_COUNT').get();
+                if (sysSnap.exists) {
+                    globalVillageCount = parseInt(sysSnap.data().value, 10) || globalVillageCount;
+                }
+            } catch (e) {}
+        }
+
+        function hideAllScreens() {
+            ['loading-screen', 'pending-screen', 'rejected-screen', 'registration-screen', 'admin-trigger', 'admin-registration-screen'].forEach(id => {
+                const el = document.getElementById(id);
+                if (el) {
+                    el.classList.add('hidden');
+                    el.style.display = '';
+                }
+            });
+        }
+
         async function processLoginRouting(uid) {
             try {
+                await OrsomoCore.Auth.bindAuthSession(db, uid);
+                await loadBootstrapVillageCount();
+
                 const userDoc = await db.collection('VHVs').doc(String(uid)).get();
-
-                try {
-                    const sysSnap = await db.collection('SystemConfig').doc('VILLAGE_COUNT').get();
-                    if(sysSnap.exists) globalVillageCount = parseInt(sysSnap.data().value) || globalVillageCount;
-                } catch(e) {}
-
-                document.getElementById('loading-screen').classList.add('hidden');
+                hideAllScreens();
 
                 if (userDoc.exists) {
-                    const userData = userDoc.data();
-                    const status = String(userData.status || '').toLowerCase();
-                    const role = String(userData.role || '').toUpperCase();
+                    const userData = userDoc.data() || {};
+                    const status = String(userData.status || '').trim().toLowerCase();
+                    const role = String(userData.role || '').trim().toUpperCase();
 
                     if (status === 'active') {
-                        if (role === 'ADMIN' || role === 'SUB_ADMIN') window.location.href = 'admin_dashboard.html';
-                        else window.location.href = 'dashboard.html'; 
+                        if (role === 'ADMIN' || role === 'SUB_ADMIN') {
+                            window.location.replace('admin_dashboard.html');
+                        } else {
+                            window.location.replace('dashboard.html');
+                        }
                     } else if (status === 'pending') {
                         document.getElementById('pending-screen').classList.remove('hidden');
                     } else {
-                        alert('บัญชีของคุณถูกปฏิเสธ หรือไม่อนุญาตให้เข้าถึงระบบ');
+                        document.getElementById('rejected-screen').classList.remove('hidden');
                     }
                 } else {
-                    showRegistrationUI();
+                    await showRegistrationUI();
                 }
             } catch (e) {
-                alert("เชื่อมต่อฐานข้อมูลล้มเหลว");
-                showRegistrationUI();
+                console.error("Login routing error:", e);
+                showToast("เชื่อมต่อฐานข้อมูลล้มเหลว กรุณาลองใหม่อีกครั้ง", "error");
             }
         }
 
-        function showRegistrationUI() {
-            document.getElementById('loading-screen').classList.add('hidden');
+        async function showRegistrationUI() {
+            await loadBootstrapVillageCount();
+            hideAllScreens();
             buildVillageOptions(globalVillageCount);
             document.getElementById('registration-screen').classList.remove('hidden');
             document.getElementById('admin-trigger').classList.remove('hidden');
         }
 
         function showAdminRegistration() {
-            document.getElementById('registration-screen').style.display = 'none';
-            document.getElementById('admin-trigger').style.display = 'none';
-            const adminScreen = document.getElementById('admin-registration-screen');
-            adminScreen.classList.remove('hidden');
-            adminScreen.style.display = 'block'; 
+            document.getElementById('registration-screen').classList.add('hidden');
+            document.getElementById('admin-trigger').classList.add('hidden');
+            document.getElementById('admin-registration-screen').classList.remove('hidden');
         }
-        
+
         function hideAdminRegistration() {
-            document.getElementById('admin-registration-screen').style.display = 'none';
+            document.getElementById('admin-registration-screen').classList.add('hidden');
             document.getElementById('registration-screen').classList.remove('hidden');
-            document.getElementById('registration-screen').style.display = 'block'; 
-            document.getElementById('admin-trigger').style.display = 'block'; 
+            document.getElementById('admin-trigger').classList.remove('hidden');
+        }
+
+        async function ensureCurrentIdentity() {
+            let uid = currentResolvedUid || localStorage.getItem('orsomo_uid') || '';
+            let picUrl = currentResolvedPic || '';
+
+            if (!uid && typeof liff !== 'undefined' && liff.isLoggedIn()) {
+                const profile = await liff.getProfile();
+                uid = profile.userId;
+                picUrl = profile.pictureUrl || '';
+                localStorage.setItem('orsomo_uid', uid);
+            }
+            if (uid) {
+                await OrsomoCore.Auth.bindAuthSession(db, uid);
+            }
+            return { uid, picUrl };
         }
 
         async function registerStaff() {
-            const name = document.getElementById('admin-reg-name').value;
-            const phone = document.getElementById('admin-reg-phone').value;
-            const nickname = document.getElementById('admin-reg-nickname') ? document.getElementById('admin-reg-nickname').value : '';
+            const name = document.getElementById('admin-reg-name').value.trim();
+            const nickname = document.getElementById('admin-reg-nickname').value.trim();
+            const phone = document.getElementById('admin-reg-phone').value.trim();
             const secretCode = document.getElementById('admin-reg-secret').value.trim();
-            if (!name || !phone || !secretCode) return alert("กรุณากรอกข้อมูลให้ครบถ้วน");
+
+            if (!name || !phone || !secretCode) {
+                return showToast("กรุณากรอกข้อมูลและรหัสลับให้ครบถ้วน", "error");
+            }
 
             const btn = document.getElementById('btn-register-admin');
-            btn.disabled = true; btn.innerText = "กำลังตรวจสอบรหัส...";
+            btn.disabled = true;
+            btn.innerText = "กำลังตรวจสอบรหัส...";
 
             try {
-                let currentUid = localStorage.getItem('dev_mock_uid') || localStorage.getItem('orsomo_uid');
-                let picUrl = "https://via.placeholder.com/150";
-
-                if(!currentUid && liff.isLoggedIn()) {
-                    const profile = await liff.getProfile();
-                    currentUid = profile.userId;
-                    picUrl = profile.pictureUrl || picUrl;
-                    localStorage.setItem('orsomo_uid', currentUid);
+                const identity = await ensureCurrentIdentity();
+                if (!identity.uid) {
+                    showToast("ไม่พบข้อมูลยืนยันตัวตน LINE กรุณาเข้าผ่านแอป LINE", "error");
+                    btn.disabled = false;
+                    btn.innerText = "ตรวจสอบรหัสและยืนยัน";
+                    return;
                 }
-                
+
                 const adminCodeSnap = await db.collection('SystemConfig').doc('ADMIN_SECRET_CODE').get();
-                const adminSecret = adminCodeSnap.exists ? String(adminCodeSnap.data().value).trim() : null;
+                const adminSecret = adminCodeSnap.exists ? String(adminCodeSnap.data().value || '').trim() : null;
 
                 const subCentersSnap = await db.collection('SystemConfig').doc('SUB_CENTERS').get();
                 let subCenters = [];
-                if(subCentersSnap.exists) {
+                if (subCentersSnap.exists) {
                     const val = subCentersSnap.data().value;
                     if (val && typeof val === 'string') {
-                        try { subCenters = JSON.parse(val); } catch(e){}
-                    } else if (val && Array.isArray(val)) {
+                        try { subCenters = JSON.parse(val); } catch (e) {}
+                    } else if (Array.isArray(val)) {
                         subCenters = val;
                     }
                 }
@@ -274,105 +341,107 @@
                 let specificHospitalName = null;
 
                 if (adminSecret && secretCode === adminSecret) {
-                    assignedRole = 'ADMIN'; 
+                    assignedRole = 'ADMIN';
                 } else {
-                    const matchedSub = subCenters.find(sc => String(sc.secret_code).trim() === secretCode);
+                    const matchedSub = subCenters.find(sc => String(sc.secret_code || '').trim() === secretCode);
                     if (matchedSub) {
-                        assignedRole = 'SUB_ADMIN'; 
-                        assignedVillages = matchedSub.villages;
+                        assignedRole = 'SUB_ADMIN';
+                        assignedVillages = Array.isArray(matchedSub.villages) ? matchedSub.villages.map(String) : [];
                         specificHospitalName = matchedSub.name;
                     }
                 }
 
                 if (!assignedRole) {
-                    alert("รหัสลับไม่ถูกต้อง! ไม่อนุญาตให้เข้าใช้งานในฐานะเจ้าหน้าที่");
-                    btn.disabled = false; btn.innerText = "ตรวจสอบรหัสและยืนยัน";
+                    showToast("รหัสลับไม่ถูกต้อง ไม่อนุญาตให้ลงทะเบียนสิทธิ์เจ้าหน้าที่", "error");
+                    btn.disabled = false;
+                    btn.innerText = "ตรวจสอบรหัสและยืนยัน";
                     return;
                 }
 
-                const existingDoc = await db.collection('VHVs').doc(String(currentUid)).get();
+                const existingDoc = await db.collection('VHVs').doc(String(identity.uid)).get();
                 if (existingDoc.exists) {
-                    alert("บัญชีนี้เคยลงทะเบียนในระบบไว้แล้ว");
-                    window.location.reload();
+                    showToast("บัญชีนี้เคยลงทะเบียนในระบบไว้แล้ว กำลังเข้าสู่ระบบ...", "info", "reload");
                     return;
                 }
-                
+
                 let finalHospitalName = specificHospitalName;
                 if (!finalHospitalName) {
                     const hSnap = await db.collection('SystemConfig').doc('HOSPITAL_NAME').get();
-                    finalHospitalName = hSnap.exists ? hSnap.data().value : DEFAULT_CONFIGS.HOSPITAL_NAME;
+                    finalHospitalName = hSnap.exists ? (hSnap.data().value || DEFAULT_CONFIGS.HOSPITAL_NAME) : DEFAULT_CONFIGS.HOSPITAL_NAME;
                 }
 
-                await db.collection('VHVs').doc(String(currentUid)).set({
-                    uid: currentUid,
+                await db.collection('VHVs').doc(String(identity.uid)).set({
+                    uid: identity.uid,
                     name: name,
                     nickname: nickname,
                     phone: phone,
                     role: assignedRole,
-                    status: 'Active', 
+                    status: 'Active',
                     hospital_name: finalHospitalName,
-                    assigned_villages: assignedVillages, 
-                    profile_pic: picUrl,
+                    assigned_villages: assignedVillages,
+                    profile_pic: identity.picUrl || '',
+                    secret_verify: secretCode,
                     timestamp: firebase.firestore.FieldValue.serverTimestamp()
                 });
 
-                alert(`ยินดีต้อนรับ! ลงทะเบียนในสิทธิ์แอดมินสำเร็จ`);
-                window.location.href = 'admin_dashboard.html'; 
-                
-            } catch (error) { 
-                alert("การเชื่อมต่อล้มเหลว กรุณาลองใหม่"); 
-                btn.disabled = false; btn.innerText = "ตรวจสอบรหัสและยืนยัน"; 
+                showToast("ลงทะเบียนสิทธิ์เจ้าหน้าที่สำเร็จ!", "success", "admin_dashboard.html");
+            } catch (error) {
+                console.error(error);
+                showToast("การเชื่อมต่อล้มเหลว กรุณาลองใหม่", "error");
+                btn.disabled = false;
+                btn.innerText = "ตรวจสอบรหัสและยืนยัน";
             }
         }
 
         async function registerUser() {
-            const name = document.getElementById('reg-name').value;
-            const nickname = document.getElementById('reg-nickname') ? document.getElementById('reg-nickname').value : '';
-            const phone = document.getElementById('reg-phone').value;
+            const name = document.getElementById('reg-name').value.trim();
+            const nickname = document.getElementById('reg-nickname').value.trim();
+            const phone = document.getElementById('reg-phone').value.trim();
             const village = document.getElementById('reg-village').value;
-            
-            if (!name || !phone || !village) return alert("กรุณากรอกข้อมูลให้ครบถ้วนก่อนยืนยันครับ");
+
+            if (!name || !phone || !village) {
+                return showToast("กรุณากรอกชื่อ เบอร์โทร และเลือกหมู่ที่รับผิดชอบให้ครบถ้วนครับ", "error");
+            }
 
             const btn = document.getElementById('btn-register');
-            btn.disabled = true; btn.innerText = "กำลังบันทึกข้อมูล...";
+            btn.disabled = true;
+            btn.innerText = "กำลังบันทึกข้อมูล...";
 
             try {
-                let currentUid = localStorage.getItem('dev_mock_uid') || localStorage.getItem('orsomo_uid');
-                let picUrl = "https://via.placeholder.com/150";
-
-                if(!currentUid && liff.isLoggedIn()) {
-                    const profile = await liff.getProfile();
-                    currentUid = profile.userId;
-                    picUrl = profile.pictureUrl || picUrl;
-                    localStorage.setItem('orsomo_uid', currentUid);
-                }
-                
-                const existingDoc = await db.collection('VHVs').doc(String(currentUid)).get();
-                if (existingDoc.exists) {
-                    alert("บัญชีนี้เคยลงทะเบียนไว้แล้ว");
-                    window.location.reload();
+                const identity = await ensureCurrentIdentity();
+                if (!identity.uid) {
+                    showToast("ไม่พบข้อมูลยืนยันตัวตน LINE กรุณาเข้าผ่านแอป LINE", "error");
+                    btn.disabled = false;
+                    btn.innerText = "ยืนยันการลงทะเบียน";
                     return;
                 }
 
-                await db.collection('VHVs').doc(String(currentUid)).set({
-                    uid: currentUid,
+                const existingDoc = await db.collection('VHVs').doc(String(identity.uid)).get();
+                if (existingDoc.exists) {
+                    showToast("บัญชีนี้เคยลงทะเบียนไว้แล้ว", "info", "reload");
+                    return;
+                }
+
+                await db.collection('VHVs').doc(String(identity.uid)).set({
+                    uid: identity.uid,
                     name: name,
                     nickname: nickname,
                     phone: phone,
                     role: 'VHV',
-                    status: 'Pending', 
-                    village_no: village,
-                    profile_pic: picUrl,
+                    status: 'Pending',
+                    village_no: String(village),
+                    profile_pic: identity.picUrl || '',
                     timestamp: firebase.firestore.FieldValue.serverTimestamp()
                 });
 
-                document.getElementById('registration-screen').classList.add('hidden');
-                document.getElementById('admin-trigger').classList.add('hidden');
+                hideAllScreens();
                 document.getElementById('pending-screen').classList.remove('hidden');
-                
-            } catch (error) { 
-                alert("การเชื่อมต่อล้มเหลว กรุณาลองใหม่"); 
-                btn.disabled = false; btn.innerText = "ยืนยันการลงทะเบียน"; 
+                showToast("ส่งคำขอลงทะเบียนเรียบร้อยแล้ว รอเจ้าหน้าที่อนุมัติครับ", "success");
+            } catch (error) {
+                console.error(error);
+                showToast("การเชื่อมต่อล้มเหลว กรุณาลองใหม่", "error");
+                btn.disabled = false;
+                btn.innerText = "ยืนยันการลงทะเบียน";
             }
         }
     </script>

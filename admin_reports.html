@@ -11,8 +11,10 @@
     <script charset="utf-8" src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
     
     <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore-compat.js"></script>
     <script src="config.js"></script>
+    <script src="core.js"></script>
     
     <style>
         body { font-family: 'Sarabun', sans-serif; background-color: #f4f7fa; }
@@ -37,17 +39,18 @@
             <button onclick="toggleSidebar()" class="lg:hidden text-slate-400 p-1"><span class="material-symbols-outlined">close</span></button>
         </div>
         <nav class="flex-1 px-4 py-6 space-y-2 overflow-y-auto">
-    <a href="admin_dashboard.html" class="flex items-center gap-3 px-4 py-3.5 text-slate-400 hover:bg-white/5 hover:text-white rounded-xl font-medium transition-all"><span class="material-symbols-outlined">dashboard</span> ภาพรวมระบบ</a>
-    <a href="admin_resources.html" class="flex items-center gap-3 px-4 py-3.5 text-slate-400 hover:bg-white/5 hover:text-white rounded-xl font-medium transition-all"><span class="material-symbols-outlined">inventory_2</span> บริหารทรัพยากร</a>
-    <a href="admin_inventory.html" id="nav-inventory" class="flex items-center gap-3 px-4 py-3.5 text-slate-400 hover:bg-white/5 hover:text-white rounded-xl font-medium transition-all"><span class="material-symbols-outlined">warehouse</span> ระบบคลังพัสดุ กปท.</a>
-    <a href="admin_datacenter.html" class="flex items-center gap-3 px-4 py-3.5 text-slate-400 hover:bg-white/5 hover:text-white rounded-xl font-medium transition-all"><span class="material-symbols-outlined">folder_shared</span> ศูนย์ข้อมูลผู้ป่วย</a>
-    <a href="admin_map.html" class="flex items-center gap-3 px-4 py-3.5 text-slate-400 hover:bg-white/5 hover:text-white rounded-xl font-medium transition-all"><span class="material-symbols-outlined">map</span> แผนที่พิกัดผู้ป่วย</a>
-    <a href="admin_delegation.html" class="flex items-center gap-3 px-4 py-3.5 text-slate-400 hover:bg-white/5 hover:text-white rounded-xl font-medium transition-all"><span class="material-symbols-outlined">assignment_ind</span> มอบหมายงาน อสม.</a>
-    <a href="admin_analytics.html" class="flex items-center gap-3 px-4 py-3.5 text-slate-400 hover:bg-white/5 hover:text-white rounded-xl font-medium transition-all"><span class="material-symbols-outlined">analytics</span> ศูนย์รายงาน (Export)</a>
-    <a href="admin_reports.html" id="nav-reports" class="flex items-center gap-3 px-4 py-3.5 text-slate-400 hover:bg-white/5 hover:text-white rounded-xl font-medium transition-all"><span class="material-symbols-outlined">gavel</span> บันทึกมติผ้าอ้อม</a>
-    <a href="admin_finance.html" id="nav-finance" class="flex items-center gap-3 px-4 py-3.5 text-slate-400 hover:bg-white/5 hover:text-white rounded-xl font-medium transition-all"><span class="material-symbols-outlined">account_balance_wallet</span> แผนการเงิน</a>
-    <a href="admin_settings.html" id="nav-settings" class="flex items-center gap-3 px-4 py-3.5 text-slate-400 hover:bg-white/5 hover:text-white rounded-xl font-medium transition-all"><span class="material-symbols-outlined">settings</span> ตั้งค่าระบบ</a>
-</nav>
+            <a href="admin_dashboard.html" class="flex items-center gap-3 px-4 py-3.5 text-slate-400 hover:bg-white/5 hover:text-white rounded-xl font-medium transition-all"><span class="material-symbols-outlined">dashboard</span> ภาพรวมระบบ</a>
+            <a href="admin_resources.html" class="flex items-center gap-3 px-4 py-3.5 text-slate-400 hover:bg-white/5 hover:text-white rounded-xl font-medium transition-all"><span class="material-symbols-outlined">inventory_2</span> บริหารทรัพยากร</a>
+            <a href="admin_equipment.html" id="nav-equipment" class="flex items-center gap-3 px-4 py-3.5 text-slate-400 hover:bg-white/5 hover:text-white rounded-xl font-medium transition-all"><span class="material-symbols-outlined">accessible</span> ระบบยืม-คืนอุปกรณ์</a>
+            <a href="admin_inventory.html" id="nav-inventory" class="flex items-center gap-3 px-4 py-3.5 text-slate-400 hover:bg-white/5 hover:text-white rounded-xl font-medium transition-all"><span class="material-symbols-outlined">warehouse</span> ระบบคลังพัสดุ กปท.</a>
+            <a href="admin_datacenter.html" class="flex items-center gap-3 px-4 py-3.5 text-slate-400 hover:bg-white/5 hover:text-white rounded-xl font-medium transition-all"><span class="material-symbols-outlined">folder_shared</span> ศูนย์ข้อมูลผู้ป่วย</a>
+            <a href="admin_map.html" class="flex items-center gap-3 px-4 py-3.5 text-slate-400 hover:bg-white/5 hover:text-white rounded-xl font-medium transition-all"><span class="material-symbols-outlined">map</span> แผนที่พิกัดผู้ป่วย</a>
+            <a href="admin_delegation.html" class="flex items-center gap-3 px-4 py-3.5 text-slate-400 hover:bg-white/5 hover:text-white rounded-xl font-medium transition-all"><span class="material-symbols-outlined">assignment_ind</span> มอบหมายงาน อสม.</a>
+            <a href="admin_analytics.html" class="flex items-center gap-3 px-4 py-3.5 text-slate-400 hover:bg-white/5 hover:text-white rounded-xl font-medium transition-all"><span class="material-symbols-outlined">analytics</span> ศูนย์รายงาน (Export)</a>
+            <a href="admin_reports.html" id="nav-reports" class="flex items-center gap-3 px-4 py-3.5 text-white bg-white/10 rounded-xl font-medium transition-all"><span class="material-symbols-outlined text-amber-400">gavel</span> บันทึกมติผ้าอ้อม</a>
+            <a href="admin_finance.html" id="nav-finance" class="flex items-center gap-3 px-4 py-3.5 text-slate-400 hover:bg-white/5 hover:text-white rounded-xl font-medium transition-all"><span class="material-symbols-outlined">account_balance_wallet</span> แผนการเงิน</a>
+            <a href="admin_settings.html" id="nav-settings" class="flex items-center gap-3 px-4 py-3.5 text-slate-400 hover:bg-white/5 hover:text-white rounded-xl font-medium transition-all"><span class="material-symbols-outlined">settings</span> ตั้งค่าระบบ</a>
+        </nav>
     </aside>
 
     <main class="flex-1 flex flex-col min-h-0 bg-slate-50 overflow-y-auto">
@@ -57,6 +60,16 @@
                 <div>
                     <h2 class="text-base lg:text-lg font-bold text-slate-900 leading-tight">บันทึกมติผ้าอ้อม</h2>
                     <p id="header-hospital-name" class="text-[11px] lg:text-xs text-slate-400 font-medium mt-0.5">ศูนย์บันทึกมติผ้าอ้อมและจัดสรรงบประมาณ</p>
+                </div>
+            </div>
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-full bg-slate-100 border border-slate-200 overflow-hidden flex items-center justify-center">
+                    <img id="header-profile-pic" class="w-full h-full object-cover hidden" alt="Profile">
+                    <span id="header-profile-icon" class="material-symbols-outlined text-slate-400">person</span>
+                </div>
+                <div class="hidden sm:block text-right">
+                    <p id="header-user-name" class="text-xs font-bold text-slate-700">กำลังโหลด...</p>
+                    <p id="header-user-role" class="text-[10px] text-amber-600 font-medium">ผู้ดูแลระบบ (ADMIN)</p>
                 </div>
             </div>
         </header>
@@ -76,18 +89,20 @@
                         <p class="text-xs text-slate-500 mt-0.5">ติ๊กเลือกผู้ป่วยเพื่อคาดการณ์งบประมาณ บันทึกมติ หรือโหลดตาราง Excel</p>
                     </div>
                     <div class="flex flex-wrap gap-2 w-full xl:w-auto">
-                        <button onclick="openImportAllocModal()" class="flex-1 xl:flex-none bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-xl font-bold text-xs flex items-center justify-center gap-1.5 shadow-sm active:scale-95"><span class="material-symbols-outlined text-[16px]">upload_file</span> อัปโหลด Excel (ประวัติ)</button>
-                        <button onclick="openCommitteeModal()" class="flex-1 xl:flex-none bg-amber-500 hover:bg-amber-600 text-white px-4 py-2 rounded-xl font-bold text-xs flex items-center justify-center gap-1.5 shadow-sm active:scale-95"><span class="material-symbols-outlined text-[16px]">local_shipping</span> จัดการรอบส่งมอบ/มติ (<span id="select-count-1">0</span>)</button>
-                        <button onclick="exportToExcel()" class="flex-1 xl:flex-none bg-[#00694a] hover:bg-[#005239] text-white px-4 py-2 rounded-xl font-bold text-xs flex items-center justify-center gap-1.5 shadow-sm active:scale-95"><span class="material-symbols-outlined text-[16px]">download</span> โหลด Excel (<span id="select-count-2">0</span>)</button>
+                        <button onclick="openImportAllocModal()" class="flex-1 xl:flex-none bg-blue-600 hover:bg-blue-700 text-white px-3.5 py-2 rounded-xl font-bold text-xs flex items-center justify-center gap-1.5 shadow-sm active:scale-95"><span class="material-symbols-outlined text-[16px]">upload_file</span> อัปโหลด Excel (ประวัติ)</button>
+                        <button onclick="openCommitteeModal()" class="flex-1 xl:flex-none bg-amber-500 hover:bg-amber-600 text-white px-3.5 py-2 rounded-xl font-bold text-xs flex items-center justify-center gap-1.5 shadow-sm active:scale-95"><span class="material-symbols-outlined text-[16px]">local_shipping</span> จัดการรอบส่งมอบ/มติ (<span id="select-count-1">0</span>)</button>
+                        <button onclick="openPrintDistributionModal()" class="flex-1 xl:flex-none bg-purple-600 hover:bg-purple-700 text-white px-3.5 py-2 rounded-xl font-bold text-xs flex items-center justify-center gap-1.5 shadow-sm active:scale-95"><span class="material-symbols-outlined text-[16px]">print</span> พิมพ์ใบเซ็นรับมอบ (แยกหมู่)</button>
+                        <button onclick="openBatchDeliveryModal()" class="flex-1 xl:flex-none bg-teal-600 hover:bg-teal-700 text-white px-3.5 py-2 rounded-xl font-bold text-xs flex items-center justify-center gap-1.5 shadow-sm active:scale-95"><span class="material-symbols-outlined text-[16px]">assignment_turned_in</span> ยืนยันรับมอบ/แนบใบเซ็น</button>
+                        <button onclick="exportToExcel()" class="flex-1 xl:flex-none bg-[#00694a] hover:bg-[#005239] text-white px-3.5 py-2 rounded-xl font-bold text-xs flex items-center justify-center gap-1.5 shadow-sm active:scale-95"><span class="material-symbols-outlined text-[16px]">download</span> โหลด Excel (<span id="select-count-2">0</span>)</button>
                     </div>
                 </div>
 
-                <!-- งบประมาณ Real-time -->
+                <!-- งบประมาณ Real-time (รวมผ้าอ้อม, แผ่นรอง, เจลลี่, ป้ายโครงการ) -->
                 <div class="bg-white p-5 rounded-2xl shadow-sm border-t-4 border-navy mb-5">
                     <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-4 mb-4 border-b border-slate-100 pb-4">
                         <div>
-                            <h3 class="text-sm font-bold text-navy flex items-center gap-2"><span class="material-symbols-outlined text-amber-500 text-[20px]">account_balance_wallet</span> คาดการณ์งบประมาณสำหรับผู้ป่วยที่เลือก</h3>
-                            <p class="text-[11px] text-slate-500 mt-1">ยอดจะเปลี่ยนไปตามจำนวนคนที่คุณติ๊ก <strong class="text-blue-600">✓ เลือก</strong> ในตารางด้านล่าง</p>
+                            <h3 class="text-sm font-bold text-navy flex items-center gap-2"><span class="material-symbols-outlined text-amber-500 text-[20px]">account_balance_wallet</span> คาดการณ์งบประมาณสำหรับผู้ป่วยที่เลือก (ครอบคลุมทุกหมวดโครงการ)</h3>
+                            <p class="text-[11px] text-slate-500 mt-1">คำนวณตามจำนวนคนที่คุณติ๊ก <strong class="text-blue-600">✓ เลือก</strong> ในตาราง รวมผ้าอ้อม แผ่นรอง เจลลี่โภชนาการ และป้ายโครงการ</p>
                         </div>
                         <div class="flex items-center gap-2 bg-slate-50 p-2 rounded-xl border border-slate-200">
                             <label class="text-xs font-bold text-slate-700 pl-2 whitespace-nowrap">ระยะเวลาคำนวณ</label>
@@ -99,7 +114,7 @@
                     <div class="grid grid-cols-1 lg:grid-cols-4 gap-4">
                         <div class="lg:col-span-3 bg-blue-50/50 p-3 lg:p-4 rounded-xl border border-blue-100 flex flex-col justify-center">
                             <div class="flex justify-between items-center mb-3">
-                                <p class="text-[11px] font-bold text-blue-800 uppercase tracking-wider">จำนวนชิ้นรวมที่ต้องใช้</p>
+                                <p class="text-[11px] font-bold text-blue-800 uppercase tracking-wider">จำนวนวัสดุรวมที่ต้องใช้</p>
                                 <div class="flex items-center gap-2">
                                     <button type="button" id="btn-clear-selected" onclick="clearAllSelections()" class="hidden text-[10px] font-bold text-rose-600 hover:text-rose-700 bg-rose-50 hover:bg-rose-100 border border-rose-200 px-2 py-0.5 rounded-full transition-colors flex items-center gap-0.5">
                                         <span class="material-symbols-outlined text-[12px]">close</span> ล้างที่เลือกทั้งหมด
@@ -107,17 +122,19 @@
                                     <span class="bg-blue-600 text-white text-[10px] font-bold px-2.5 py-0.5 rounded-full shadow-sm">เลือกไว้ <span id="summary-selected-count">0</span> คน</span>
                                 </div>
                             </div>
-                            <div class="grid grid-cols-3 lg:grid-cols-5 gap-2 text-center">
+                            <div class="grid grid-cols-3 sm:grid-cols-6 gap-2 text-center">
                                 <div class="bg-white p-2 rounded-lg border border-slate-100"><span class="text-[10px] text-slate-400 block">ไซส์ S</span><span class="font-bold text-navy text-sm lg:text-base" id="sum-s">0</span></div>
                                 <div class="bg-white p-2 rounded-lg border border-slate-100"><span class="text-[10px] text-slate-400 block">ไซส์ M</span><span class="font-bold text-navy text-sm lg:text-base" id="sum-m">0</span></div>
                                 <div class="bg-white p-2 rounded-lg border border-slate-100"><span class="text-[10px] text-slate-400 block">ไซส์ L</span><span class="font-bold text-navy text-sm lg:text-base" id="sum-l">0</span></div>
                                 <div class="bg-white p-2 rounded-lg border border-slate-100"><span class="text-[10px] text-slate-400 block">ไซส์ XL</span><span class="font-bold text-navy text-sm lg:text-base" id="sum-xl">0</span></div>
                                 <div class="bg-white p-2 rounded-lg border border-emerald-100"><span class="text-[10px] text-emerald-600 font-bold block">แผ่นรอง</span><span class="font-bold text-emerald-700 text-sm lg:text-base" id="sum-pad">0</span></div>
+                                <div class="bg-white p-2 rounded-lg border border-purple-100"><span class="text-[10px] text-purple-600 font-bold block">เจลลี่</span><span class="font-bold text-purple-700 text-sm lg:text-base" id="sum-jelly">0</span></div>
                             </div>
                         </div>
                         <div class="bg-gradient-to-br from-amber-50 to-orange-50 p-3 lg:p-4 rounded-xl border border-amber-200 flex flex-col justify-center items-center text-center shadow-sm">
-                            <p class="text-[11px] font-bold text-amber-800 uppercase tracking-wider mb-1">งบประมาณรวม (THB)</p>
+                            <p class="text-[11px] font-bold text-amber-800 uppercase tracking-wider mb-1">งบประมาณรวมทั้งสิ้น (THB)</p>
                             <h3 class="text-xl lg:text-2xl font-black text-amber-600 tracking-tight mt-1" id="sum-cost">0.00 <span class="text-sm text-amber-500 font-bold">฿</span></h3>
+                            <p class="text-[10px] text-slate-500 mt-1">รวมเจลลี่: <span id="sum-jelly-cost" class="font-bold text-slate-700">0.00</span> ฿ | ป้าย: <span id="sum-banner-cost" class="font-bold text-slate-700">0.00</span> ฿</p>
                         </div>
                     </div>
                 </div>
@@ -361,6 +378,107 @@
                 </div>
             </div>
         </div>
+
+        <!-- MODAL: พิมพ์ใบเซ็นรับมอบผ้าอ้อม (แยกหมู่บ้าน) (Requirement 3.3 ก & 5.1) -->
+        <div id="print-dist-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+            <div class="bg-white rounded-3xl w-full max-w-md shadow-2xl p-6 relative">
+                <div class="flex items-center justify-between pb-3 border-b border-slate-100">
+                    <h3 class="font-bold text-slate-800 text-sm flex items-center gap-2">
+                        <span class="material-symbols-outlined text-purple-600">print</span> พิมพ์ใบเซ็นรับมอบผ้าอ้อม กปท.
+                    </h3>
+                    <button onclick="closePrintDistributionModal()" class="text-slate-400 hover:text-slate-600 p-1">
+                        <span class="material-symbols-outlined">close</span>
+                    </button>
+                </div>
+                <div class="py-4 space-y-4">
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 mb-1">เลือกรอบที่จัดสรร <span class="text-red-500">*</span></label>
+                        <select id="print-round-select" class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold text-purple-700 outline-none focus:ring-2 focus:ring-purple-500">
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 mb-1">เลือกหมู่บ้าน</label>
+                        <select id="print-village-select" class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold text-slate-700 outline-none focus:ring-2 focus:ring-purple-500">
+                            <option value="all">พิมพ์รวมทุกหมู่บ้าน</option>
+                        </select>
+                    </div>
+                    <div class="p-3 bg-purple-50 rounded-xl border border-purple-100 text-xs text-purple-800 space-y-1">
+                        <p class="font-bold flex items-center gap-1"><span class="material-symbols-outlined text-[15px]">description</span> รูปแบบเอกสารพิมพ์:</p>
+                        <p>• มีช่องลงลายมือชื่อผู้รับมอบ/ญาติ และช่องลงชื่อ อสม. ผู้ส่งมอบ</p>
+                        <p>• แสดงรายละเอียดจำนวนผ้าอ้อม แผ่นรอง และเจลลี่โภชนาการครบถ้วน</p>
+                    </div>
+                </div>
+                <div class="pt-3 border-t border-slate-100 flex gap-2 justify-end">
+                    <button onclick="closePrintDistributionModal()" class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-xl text-xs transition-colors">ยกเลิก</button>
+                    <button onclick="executePrintDistribution()" class="px-5 py-2 bg-purple-600 hover:bg-purple-700 text-white font-bold rounded-xl text-xs transition-colors shadow-sm flex items-center gap-1.5 active:scale-95">
+                        <span class="material-symbols-outlined text-[16px]">print</span> เริ่มการพิมพ์ (Print)
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- MODAL: ยืนยันรับมอบย้อนหลังแบบกลุ่ม & แนบรูปใบเซ็นรับ (Requirement 3.3 ก, 5.1) -->
+        <div id="batch-delivery-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+            <div class="bg-white rounded-3xl w-full max-w-2xl shadow-2xl p-6 relative flex flex-col max-h-[90vh]">
+                <div class="flex items-center justify-between pb-3 border-b border-slate-100">
+                    <h3 class="font-bold text-slate-800 text-sm flex items-center gap-2">
+                        <span class="material-symbols-outlined text-teal-600">assignment_turned_in</span> ยืนยันรับมอบย้อนหลัง & แนบหลักฐานใบเซ็นรับ
+                    </h3>
+                    <button onclick="closeBatchDeliveryModal()" class="text-slate-400 hover:text-slate-600 p-1">
+                        <span class="material-symbols-outlined">close</span>
+                    </button>
+                </div>
+                <div class="py-4 space-y-4 overflow-y-auto flex-1">
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <div>
+                            <label class="block text-xs font-bold text-slate-700 mb-1">เลือกรอบที่จัดสรร <span class="text-red-500">*</span></label>
+                            <select id="batch-round-select" onchange="loadBatchRecipients()" class="w-full px-3.5 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold text-teal-700 outline-none focus:ring-2 focus:ring-teal-500">
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-slate-700 mb-1">กรองหมู่บ้าน</label>
+                            <select id="batch-village-select" onchange="loadBatchRecipients()" class="w-full px-3.5 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold text-slate-700 outline-none focus:ring-2 focus:ring-teal-500">
+                                <option value="all">ทุกหมู่บ้าน</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <div>
+                            <label class="block text-xs font-bold text-slate-700 mb-1">วันที่ได้รับ/ส่งมอบ <span class="text-red-500">*</span></label>
+                            <input type="date" id="batch-delivery-date" class="w-full px-3.5 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold text-slate-800 outline-none focus:ring-2 focus:ring-teal-500">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-slate-700 mb-1">แนบรูปถ่ายใบเซ็นรับมอบ (เอกสารมีลายมือชื่อ)</label>
+                            <input type="file" id="batch-doc-img-input" accept="image/*" onchange="previewBatchDocImage(this)" class="w-full text-xs text-slate-500 file:mr-2 file:py-1.5 file:px-3 file:rounded-xl file:border-0 file:text-xs file:font-bold file:bg-teal-50 file:text-teal-700 hover:file:bg-teal-100">
+                        </div>
+                    </div>
+
+                    <div id="batch-img-preview-box" class="hidden text-center p-2 bg-slate-50 rounded-xl border border-slate-200">
+                        <p class="text-[10px] text-slate-500 mb-1">ตัวอย่างรูปหลักฐานที่แนบ:</p>
+                        <img id="batch-img-preview" src="" alt="หลักฐานใบเซ็นรับ" class="max-h-36 mx-auto rounded-lg object-contain">
+                    </div>
+
+                    <div>
+                        <div class="flex items-center justify-between mb-2">
+                            <label class="text-xs font-bold text-slate-700">รายชื่อผู้มีสิทธิ์ในรอบนี้ (<span id="batch-recipient-count">0</span> ราย)</label>
+                            <label class="text-xs text-teal-700 font-bold flex items-center gap-1 cursor-pointer">
+                                <input type="checkbox" id="batch-check-all" onchange="toggleBatchCheckAll(this)" checked class="accent-teal-600"> เลือกทั้งหมด
+                            </label>
+                        </div>
+                        <div class="border border-slate-200 rounded-xl max-h-48 overflow-y-auto divide-y divide-slate-100" id="batch-recipient-list">
+                            <p class="text-xs text-slate-400 p-4 text-center">กำลังโหลดรายชื่อ...</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="pt-3 border-t border-slate-100 flex gap-2 justify-end">
+                    <button onclick="closeBatchDeliveryModal()" class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-xl text-xs transition-colors">ยกเลิก</button>
+                    <button id="btn-submit-batch-delivery" onclick="submitBatchDeliveryConfirmation()" class="px-5 py-2 bg-teal-600 hover:bg-teal-700 text-white font-bold rounded-xl text-xs transition-colors shadow-sm flex items-center gap-1.5 active:scale-95">
+                        <span class="material-symbols-outlined text-[16px]">check_circle</span> บันทึกยืนยันการรับมอบ
+                    </button>
+                </div>
+            </div>
+        </div>
     </main>
 
     <script>
@@ -378,6 +496,9 @@
 
         let configDiaperPrice = DEFAULT_CONFIGS.DIAPER_PRICE || 9.50;
         let configUnderpadPrice = DEFAULT_CONFIGS.UNDERPAD_PRICE || 6.00;
+        let configJellyPrice = DEFAULT_CONFIGS.JELLY_PRICE || 30.00;
+        let configJellyQty = DEFAULT_CONFIGS.JELLY_DEFAULT_QTY || 1;
+        let configBannerPrice = DEFAULT_CONFIGS.BANNER_PRICE || 500.00;
 
         function showToast(msg, type = 'success') {
             let container = document.getElementById('toast-container');
@@ -415,27 +536,30 @@
             document.getElementById('sidebar-hospital-name').innerText = DEFAULT_CONFIGS.HOSPITAL_NAME;
             document.getElementById('sidebar-system-name').innerText = DEFAULT_CONFIGS.SYSTEM_NAME;
             
-            liff.init({ liffId: LIFF_ID }).then(() => {
-                const mockUid = localStorage.getItem('dev_mock_uid');
-                const savedUid = localStorage.getItem('orsomo_uid');
-                if (mockUid) {
-                    verifyAdminAccess(mockUid);
-                } else if (liff.isLoggedIn()) { 
-                    liff.getProfile().then(p => { localStorage.setItem('orsomo_uid', p.userId); verifyAdminAccess(p.userId); }).catch(() => bounceToLogin());
-                } else if (savedUid) {
-                    verifyAdminAccess(savedUid);
-                } else bounceToLogin();
-            }).catch(() => bounceToLogin());
+            verifyAdminAccess();
         });
 
         function bounceToLogin() { window.location.href = 'index.html'; }
 
-        async function verifyAdminAccess(uid) {
+        async function verifyAdminAccess() {
             try {
-                const userDoc = await db.collection('VHVs').doc(String(uid)).get();
-                let hasAccess = false; 
-                let vCount = DEFAULT_CONFIGS.VILLAGE_COUNT; 
-                let hospital = DEFAULT_CONFIGS.HOSPITAL_NAME;
+                const user = await OrsomoCore.Auth.guardPage({ allowedRoles: ['ADMIN'] });
+                currentUserRole = user.role || 'ADMIN';
+                assignedVillages = user.assigned_villages || [];
+
+                const hName = document.getElementById('header-user-name');
+                if (hName) hName.innerText = user.name || 'ผู้ดูแลระบบ';
+                const hRole = document.getElementById('header-user-role');
+                if (hRole) hRole.innerText = 'ผู้ดูแลระบบ (ADMIN)';
+
+                const hPic = document.getElementById('header-profile-pic');
+                const hIcon = document.getElementById('header-profile-icon');
+                if (hPic && hIcon) {
+                    OrsomoCore.UI.resolveAvatar(user, hPic, hIcon);
+                }
+
+                let hospital = user.hospital_name || DEFAULT_CONFIGS.HOSPITAL_NAME;
+                let vCount = DEFAULT_CONFIGS.VILLAGE_COUNT;
 
                 try {
                     const sysSnap = await db.collection('SystemConfig').doc('HOSPITAL_NAME').get();
@@ -449,38 +573,20 @@
                     const sysSnapUnderpad = await db.collection('SystemConfig').doc('UNDERPAD_PRICE').get();
                     if(sysSnapUnderpad.exists) configUnderpadPrice = parseFloat(sysSnapUnderpad.data().value) || configUnderpadPrice;
 
+                    const sysSnapJelly = await db.collection('SystemConfig').doc('JELLY_PRICE').get();
+                    if(sysSnapJelly.exists) configJellyPrice = parseFloat(sysSnapJelly.data().value) || configJellyPrice;
+                    const sysSnapJellyQty = await db.collection('SystemConfig').doc('JELLY_DEFAULT_QTY').get();
+                    if(sysSnapJellyQty.exists) configJellyQty = parseInt(sysSnapJellyQty.data().value) || configJellyQty;
+                    const sysSnapBanner = await db.collection('SystemConfig').doc('BANNER_PRICE').get();
+                    if(sysSnapBanner.exists) configBannerPrice = parseFloat(sysSnapBanner.data().value) || configBannerPrice;
                 } catch(e) {}
 
-                if (userDoc.exists) {
-                const userData = userDoc.data();
-                const hName = document.getElementById('header-user-name');
-                if (hName) hName.innerText = userData.name || 'ผู้ดูแลระบบ';
-                const hPic = document.getElementById('header-profile-pic');
-                const hIcon = document.getElementById('header-profile-icon');
-                if (hPic && hIcon && userData.photoURL) {
-                    hPic.src = userData.photoURL;
-                    hPic.classList.remove('hidden');
-                    hIcon.classList.add('hidden');
-                }
-                    const role = String(userData.role || '').toUpperCase();
-                    if (role === 'ADMIN') {
-                        hasAccess = true; currentUserRole = 'ADMIN'; hospital = userData.hospital_name || hospital;
-                    } else if (role === 'SUB_ADMIN') {
-                        hasAccess = true; currentUserRole = 'SUB_ADMIN'; hospital = userData.hospital_name || hospital;
-                        assignedVillages = userData.assigned_villages || [];
-                    }
-                }
-
-                if (hasAccess) {
-                    document.getElementById('sidebar-hospital-name').innerText = hospital;
-                    
-                    if (currentUserRole === 'SUB_ADMIN') {
-                        window.location.href = 'admin_dashboard.html'; // SUB_ADMIN cannot access reports!
-                    }
-
-                    loadReportData();
-                } else { window.location.href = 'dashboard.html'; }
-            } catch (error) { console.error(error); window.location.href = 'index.html'; }
+                document.getElementById('sidebar-hospital-name').innerText = hospital;
+                loadReportData();
+            } catch (error) { 
+                console.error("Auth guard error:", error); 
+                window.location.href = 'index.html'; 
+            }
         }
 
         async function loadReportData() {
@@ -790,6 +896,7 @@
 
             const days = parseInt(document.getElementById('kpt-forecast-days').value) || 30;
             let totalS = 0, totalM = 0, totalL = 0, totalXL = 0, totalPad = 0;
+            let diaperPatientsCount = 0;
 
             selectedList.forEach(p => {
                 const d = p.detail;
@@ -805,6 +912,7 @@
                     const calcPad = Math.ceil((padPerMonth / 30) * days);
 
                     if (calcDiaper > 0 && d.req_diaper) {
+                        diaperPatientsCount++;
                         const size = String(d.size || 'L').toUpperCase().trim();
                         if (size === 'S') totalS += calcDiaper;
                         else if (size === 'M') totalM += calcDiaper;
@@ -823,8 +931,363 @@
             document.getElementById('sum-xl').innerText = totalXL.toLocaleString();
             document.getElementById('sum-pad').innerText = totalPad.toLocaleString();
 
-            const totalCost = ((totalS + totalM + totalL + totalXL) * configDiaperPrice) + (totalPad * configUnderpadPrice);
-            document.getElementById('sum-cost').innerHTML = totalCost.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2}) + ' <span class="text-sm text-amber-500 font-bold">฿</span>';
+            // Requirement 1.2 ก, 3.2 ข, 5.2: คำนวณเจลลี่โภชนาการ และป้ายโครงการ กปท.
+            const totalJelly = diaperPatientsCount * (configJellyQty || 1);
+            const jellyCost = totalJelly * (configJellyPrice || 30.00);
+            const bannerCost = count > 0 ? (configBannerPrice || 500.00) : 0;
+            const diaperPadCost = ((totalS + totalM + totalL + totalXL) * configDiaperPrice) + (totalPad * configUnderpadPrice);
+            const grandTotalCost = diaperPadCost + jellyCost + bannerCost;
+
+            const sumJellyEl = document.getElementById('sum-jelly');
+            if (sumJellyEl) sumJellyEl.innerText = totalJelly.toLocaleString();
+            const sumJellyCostEl = document.getElementById('sum-jelly-cost');
+            if (sumJellyCostEl) sumJellyCostEl.innerText = jellyCost.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2});
+            const sumBannerCostEl = document.getElementById('sum-banner-cost');
+            if (sumBannerCostEl) sumBannerCostEl.innerText = bannerCost.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2});
+
+            document.getElementById('sum-cost').innerHTML = grandTotalCost.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2}) + ' <span class="text-sm text-amber-500 font-bold">฿</span>';
+        }
+
+        // ========================================================
+        // ฟังก์ชันการพิมพ์ใบเซ็นรับมอบผ้าอ้อม (แยกหมู่บ้าน) (Requirement 3.3 ก & 5.1)
+        // ========================================================
+        function getAllUniqueRounds() {
+            const rounds = new Set();
+            allPatients.forEach(p => {
+                const d = cleanJSON(p.diaper);
+                if (d && Array.isArray(d.allocations)) {
+                    d.allocations.forEach(r => rounds.add(r));
+                }
+            });
+            return Array.from(rounds).sort().reverse();
+        }
+
+        function openPrintDistributionModal() {
+            const rounds = getAllUniqueRounds();
+            const roundSelect = document.getElementById('print-round-select');
+            if (roundSelect) {
+                if (rounds.length === 0) {
+                    roundSelect.innerHTML = '<option value="">ยังไม่มีรอบที่บันทึกมติ</option>';
+                } else {
+                    roundSelect.innerHTML = rounds.map(r => `<option value="${r}">รอบที่ ${r}</option>`).join('');
+                }
+            }
+
+            const vSelect = document.getElementById('print-village-select');
+            if (vSelect) {
+                const villageSet = new Set();
+                const maxV = parseInt(configVillageCount) || 15;
+                for (let i = 1; i <= maxV; i++) villageSet.add(String(i));
+                allPatients.forEach(p => { if (p.village_no) villageSet.add(String(p.village_no).trim()); });
+                const sorted = Array.from(villageSet).sort((a,b) => a.localeCompare(b, undefined, {numeric:true}));
+                vSelect.innerHTML = '<option value="all">พิมพ์รวมทุกหมู่บ้าน</option>' + 
+                    sorted.map(v => `<option value="${v}">หมู่ที่ ${v}</option>`).join('');
+            }
+
+            document.getElementById('print-dist-modal').classList.remove('hidden');
+        }
+
+        function closePrintDistributionModal() {
+            document.getElementById('print-dist-modal').classList.add('hidden');
+        }
+
+        function executePrintDistribution() {
+            const round = document.getElementById('print-round-select').value;
+            const village = document.getElementById('print-village-select').value;
+            if (!round) return showToast('กรุณาเลือกรอบที่ต้องการพิมพ์', 'error');
+
+            const filtered = allPatients.filter(p => {
+                if (String(p.status || 'Active').trim().toLowerCase() !== 'active') return false;
+                if (village !== 'all' && String(p.village_no).trim() !== village) return false;
+                const d = cleanJSON(p.diaper);
+                if (!d) return false;
+                return (Array.isArray(d.allocations) && d.allocations.includes(round)) || 
+                       (d.alloc_history && d.alloc_history[round]);
+            }).sort((a,b) => {
+                const va = parseInt(a.village_no) || 0;
+                const vb = parseInt(b.village_no) || 0;
+                if (va !== vb) return va - vb;
+                return String(a.name || '').localeCompare(String(b.name || ''), 'th');
+            });
+
+            if (filtered.length === 0) {
+                return showToast(`ไม่พบรายชื่อผู้ป่วยในรอบที่ ${round} ${village !== 'all' ? `(หมู่ ${village})` : ''}`, 'error');
+            }
+
+            const hospName = document.getElementById('sidebar-hospital-name').innerText || DEFAULT_CONFIGS.HOSPITAL_NAME;
+            const areaText = village === 'all' ? 'ทุกหมู่บ้านในเขตรับผิดชอบ' : `หมู่ที่ ${village}`;
+
+            let rowsHtml = '';
+            filtered.forEach((p, idx) => {
+                const d = cleanJSON(p.diaper) || {};
+                const h = (d.alloc_history && d.alloc_history[round]) ? d.alloc_history[round] : {};
+                
+                let itemsDesc = [];
+                const dpQty = h.diaper_qty !== undefined ? parseInt(h.diaper_qty) : (d.approved_diaper || 0);
+                const upQty = h.underpad_qty !== undefined ? parseInt(h.underpad_qty) : (d.approved_underpad || 0);
+                const dpSize = h.size || d.size || 'L';
+
+                if (dpQty > 0) itemsDesc.push(`ผ้าอ้อม (${dpSize}) ${dpQty} ชิ้น`);
+                if (upQty > 0) itemsDesc.push(`แผ่นรองซับ ${upQty} ชิ้น`);
+                if (dpQty > 0) itemsDesc.push(`เจลลี่ ${configJellyQty || 1} ชิ้น`);
+
+                const deliveryDate = h.delivery_date ? formatThaiDate(h.delivery_date) : '';
+
+                rowsHtml += `
+                    <tr>
+                        <td style="border: 1px solid #94a3b8; padding: 6px; text-align: center;">${idx + 1}</td>
+                        <td style="border: 1px solid #94a3b8; padding: 6px;">${p.prefix || ''}${p.name || '-'}</td>
+                        <td style="border: 1px solid #94a3b8; padding: 6px; text-align: center;">${p.id_card || '-'}</td>
+                        <td style="border: 1px solid #94a3b8; padding: 6px; text-align: center;">${p.house_no || '-'} ม.${p.village_no || '-'}</td>
+                        <td style="border: 1px solid #94a3b8; padding: 6px;">${itemsDesc.join('<br>') || '-'}</td>
+                        <td style="border: 1px solid #94a3b8; padding: 6px; text-align: center;">${deliveryDate}</td>
+                        <td style="border: 1px solid #94a3b8; padding: 6px; text-align: center; height: 38px;"></td>
+                        <td style="border: 1px solid #94a3b8; padding: 6px; text-align: center;"></td>
+                    </tr>
+                `;
+            });
+
+            const printHtml = `
+                <!DOCTYPE html>
+                <html lang="th">
+                <head>
+                    <meta charset="utf-8"/>
+                    <title>แบบฟอร์มการรับมอบผ้าอ้อมและวัสดุทางการแพทย์ กปท. - รอบที่ ${round}</title>
+                    <style>
+                        body { font-family: 'Sarabun', Arial, sans-serif; margin: 15mm 10mm; color: #1e293b; font-size: 13px; }
+                        h2, h3, p { margin: 2px 0; }
+                        table { width: 100%; border-collapse: collapse; margin-top: 15px; font-size: 11px; }
+                        th { background-color: #f1f5f9; border: 1px solid #94a3b8; padding: 8px 4px; text-align: center; font-weight: bold; }
+                        @media print {
+                            @page { size: A4 landscape; margin: 10mm; }
+                            button { display: none !important; }
+                        }
+                    </style>
+                </head>
+                <body>
+                    <div style="text-align: right; margin-bottom: 8px;">
+                        <button onclick="window.print()" style="padding: 8px 16px; background-color: #0f172a; color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; font-size: 13px;">สั่งพิมพ์เอกสาร (Print)</button>
+                    </div>
+                    <div style="text-align: center; margin-bottom: 15px;">
+                        <h2 style="font-size: 16px; font-weight: bold;">แบบฟอร์มหลักฐานการรับมอบผ้าอ้อมผู้ใหญ่และแผ่นรองซับ</h2>
+                        <h3 style="font-size: 14px; font-weight: normal;">โครงการสนับสนุนผ้าอ้อมผู้ใหญ่สำหรับบุคคลที่มีภาวะพึ่งพิง กองทุนหลักประกันสุขภาพท้องถิ่น (กปท.)</h3>
+                        <p style="font-size: 12px; color: #475569;">${hospName} • <strong>รอบจัดสรรที่ ${round}</strong> • พื้นที่: <strong>${areaText}</strong> (จำนวน ${filtered.length} ราย)</p>
+                    </div>
+
+                    <table>
+                        <thead>
+                            <tr>
+                                <th style="width: 35px;">ลำดับ</th>
+                                <th style="width: 170px;">ชื่อ - สกุล ผู้ป่วย</th>
+                                <th style="width: 115px;">เลขประจำตัว ปชช.</th>
+                                <th style="width: 90px;">บ้านเลขที่ / หมู่</th>
+                                <th style="width: 170px;">รายการและจำนวนที่ได้รับ</th>
+                                <th style="width: 90px;">วันที่รับมอบ</th>
+                                <th style="width: 130px;">ลายมือชื่อผู้รับมอบ / ญาติ</th>
+                                <th style="width: 130px;">ลายมือชื่อ อสม. ผู้มอบ</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${rowsHtml}
+                        </tbody>
+                    </table>
+
+                    <div style="margin-top: 40px; display: flex; justify-content: space-around; text-align: center; font-size: 12px; page-break-inside: avoid;">
+                        <div style="width: 250px;">
+                            <p style="margin-bottom: 45px;">ลงชื่อ........................................................</p>
+                            <p>(........................................................)</p>
+                            <p style="color: #64748b; font-size: 11px;">ผู้ส่งมอบ (อสม. ประจำหมู่บ้าน)</p>
+                        </div>
+                        <div style="width: 250px;">
+                            <p style="margin-bottom: 45px;">ลงชื่อ........................................................</p>
+                            <p>(........................................................)</p>
+                            <p style="color: #64748b; font-size: 11px;">เจ้าหน้าที่ผู้รับผิดชอบโครงการ กปท.</p>
+                        </div>
+                        <div style="width: 250px;">
+                            <p style="margin-bottom: 45px;">ลงชื่อ........................................................</p>
+                            <p>(........................................................)</p>
+                            <p style="color: #64748b; font-size: 11px;">ประธานกองทุนหลักประกันสุขภาพท้องถิ่น</p>
+                        </div>
+                    </div>
+                </body>
+                </html>
+            `;
+
+            const printWin = window.open('', '_blank');
+            if (printWin) {
+                printWin.document.open();
+                printWin.document.write(printHtml);
+                printWin.document.close();
+                closePrintDistributionModal();
+            } else {
+                showToast('เบราว์เซอร์บล็อกหน้าต่างพิมพ์ กรุณาอนุญาตป็อปอัป', 'error');
+            }
+        }
+
+        // ========================================================
+        // ฟังก์ชันยืนยันรับมอบย้อนหลังแบบกลุ่ม & แนบรูป (Requirement 3.3 ก & 5.1)
+        // ========================================================
+        let batchDocImageBase64 = null;
+
+        function openBatchDeliveryModal() {
+            const rounds = getAllUniqueRounds();
+            const roundSelect = document.getElementById('batch-round-select');
+            if (roundSelect) {
+                if (rounds.length === 0) {
+                    roundSelect.innerHTML = '<option value="">ยังไม่มีรอบที่บันทึกมติ</option>';
+                } else {
+                    roundSelect.innerHTML = rounds.map(r => `<option value="${r}">รอบที่ ${r}</option>`).join('');
+                }
+            }
+
+            const vSelect = document.getElementById('batch-village-select');
+            if (vSelect) {
+                const villageSet = new Set();
+                const maxV = parseInt(configVillageCount) || 15;
+                for (let i = 1; i <= maxV; i++) villageSet.add(String(i));
+                allPatients.forEach(p => { if (p.village_no) villageSet.add(String(p.village_no).trim()); });
+                const sorted = Array.from(villageSet).sort((a,b) => a.localeCompare(b, undefined, {numeric:true}));
+                vSelect.innerHTML = '<option value="all">ทุกหมู่บ้าน</option>' + 
+                    sorted.map(v => `<option value="${v}">หมู่ที่ ${v}</option>`).join('');
+            }
+
+            document.getElementById('batch-delivery-date').value = new Date().toISOString().split('T')[0];
+            batchDocImageBase64 = null;
+            document.getElementById('batch-doc-img-input').value = '';
+            document.getElementById('batch-img-preview-box').classList.add('hidden');
+            document.getElementById('batch-img-preview').src = '';
+
+            loadBatchRecipients();
+            document.getElementById('batch-delivery-modal').classList.remove('hidden');
+        }
+
+        function closeBatchDeliveryModal() {
+            document.getElementById('batch-delivery-modal').classList.add('hidden');
+        }
+
+        function loadBatchRecipients() {
+            const round = document.getElementById('batch-round-select').value;
+            const village = document.getElementById('batch-village-select').value;
+            const container = document.getElementById('batch-recipient-list');
+            const countEl = document.getElementById('batch-recipient-count');
+
+            if (!round) {
+                container.innerHTML = '<p class="text-xs text-slate-400 p-4 text-center">ไม่มีข้อมูลรอบที่จัดสรร</p>';
+                countEl.innerText = '0';
+                return;
+            }
+
+            const recipients = allPatients.filter(p => {
+                if (String(p.status || 'Active').trim().toLowerCase() !== 'active') return false;
+                if (village !== 'all' && String(p.village_no).trim() !== village) return false;
+                const d = cleanJSON(p.diaper);
+                if (!d) return false;
+                return (Array.isArray(d.allocations) && d.allocations.includes(round)) || 
+                       (d.alloc_history && d.alloc_history[round]);
+            });
+
+            countEl.innerText = recipients.length;
+
+            if (recipients.length === 0) {
+                container.innerHTML = '<p class="text-xs text-slate-400 p-4 text-center">ไม่พบผู้มีสิทธิ์ในรอบ/หมู่บ้านที่เลือก</p>';
+                return;
+            }
+
+            let html = '';
+            recipients.forEach(p => {
+                const d = cleanJSON(p.diaper) || {};
+                const h = (d.alloc_history && d.alloc_history[round]) ? d.alloc_history[round] : {};
+                const isDelivered = !!(h.delivered || h.delivered_at);
+                const deliveredDateStr = h.delivered_at || h.delivery_date || '';
+
+                const statusBadge = isDelivered 
+                    ? `<span class="bg-emerald-50 text-emerald-700 text-[10px] font-bold px-2 py-0.5 rounded border border-emerald-200">รับมอบแล้ว (${deliveredDateStr})</span>`
+                    : `<span class="bg-amber-50 text-amber-700 text-[10px] font-bold px-2 py-0.5 rounded border border-amber-200">รอยืนยันรับมอบ</span>`;
+
+                html += `
+                    <div class="p-2.5 flex items-center justify-between hover:bg-slate-50 gap-2">
+                        <label class="flex items-center gap-2 cursor-pointer flex-1 min-w-0">
+                            <input type="checkbox" value="${p.docId || p.id}" class="batch-recipient-cb accent-teal-600 rounded" ${isDelivered ? '' : 'checked'}>
+                            <span class="text-xs font-bold text-slate-800 truncate">${p.prefix || ''}${p.name || '-'}</span>
+                            <span class="text-[11px] text-slate-400 shrink-0">(ม.${p.village_no || '-'} บ้านเลขที่ ${p.house_no || '-'})</span>
+                        </label>
+                        <div class="shrink-0 flex items-center gap-2">
+                            ${statusBadge}
+                        </div>
+                    </div>
+                `;
+            });
+
+            container.innerHTML = html;
+        }
+
+        function toggleBatchCheckAll(source) {
+            document.querySelectorAll('.batch-recipient-cb').forEach(cb => cb.checked = source.checked);
+        }
+
+        async function previewBatchDocImage(input) {
+            if (input.files && input.files[0]) {
+                const file = input.files[0];
+                try {
+                    const compressed = await OrsomoCore.Image.compressAndBase64(file, { maxWidth: 1200, quality: 0.8 });
+                    batchDocImageBase64 = compressed;
+                    document.getElementById('batch-img-preview').src = compressed;
+                    document.getElementById('batch-img-preview-box').classList.remove('hidden');
+                } catch(e) {
+                    showToast('การประมวลผลรูปภาพขัดข้อง กรุณาลองใหม่', 'error');
+                }
+            }
+        }
+
+        async function submitBatchDeliveryConfirmation() {
+            const round = document.getElementById('batch-round-select').value;
+            const deliveryDate = document.getElementById('batch-delivery-date').value;
+            if (!round) return showToast('กรุณาเลือกรอบที่จัดสรร', 'error');
+            if (!deliveryDate) return showToast('กรุณาระบุวันที่รับมอบ', 'error');
+
+            const checkedBoxes = Array.from(document.querySelectorAll('.batch-recipient-cb:checked'));
+            if (checkedBoxes.length === 0) return showToast('กรุณาติ๊กเลือกผู้ป่วยอย่างน้อย 1 ราย', 'error');
+
+            const btn = document.getElementById('btn-submit-batch-delivery');
+            btn.disabled = true; btn.innerHTML = 'กำลังบันทึก...';
+
+            try {
+                const batch = db.batch();
+                const now = new Date();
+                const auditDate = `${now.getDate()}/${now.getMonth()+1}/${now.getFullYear()+543} ${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`;
+
+                for (const cb of checkedBoxes) {
+                    const patientId = cb.value;
+                    const p = allPatients.find(item => (item.docId || item.id) === patientId);
+                    if (!p) continue;
+
+                    let d = cleanJSON(p.diaper) || {};
+                    if (!d.alloc_history) d.alloc_history = {};
+                    if (!d.alloc_history[round]) d.alloc_history[round] = {};
+
+                    d.alloc_history[round].delivered = true;
+                    d.alloc_history[round].delivered_at = formatThaiDate(deliveryDate);
+                    d.alloc_history[round].verified_by = 'ADMIN';
+                    d.alloc_history[round].verified_timestamp = auditDate;
+                    if (batchDocImageBase64) {
+                        d.alloc_history[round].signed_doc_img = batchDocImageBase64;
+                    }
+
+                    const docRef = db.collection('Patients').doc(String(patientId));
+                    batch.update(docRef, { diaper: JSON.stringify(d) });
+                }
+
+                await batch.commit();
+                showToast(`บันทึกยืนยันการรับมอบย้อนหลัง ${checkedBoxes.length} รายเรียบร้อยแล้ว!`);
+                closeBatchDeliveryModal();
+                await loadReportData();
+            } catch(e) {
+                console.error("Batch delivery confirm error:", e);
+                showToast('การบันทึกล้มเหลว กรุณาลองใหม่', 'error');
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = '<span class="material-symbols-outlined text-[16px]">check_circle</span> บันทึกยืนยันการรับมอบ';
+            }
         }
 
         function formatThaiDate(dStr) {

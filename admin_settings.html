@@ -9,14 +9,15 @@
     <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
     <script charset="utf-8" src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
     
-    <!-- 🌟 เพิ่ม Manifest สำหรับ PWA 🌟 -->
     <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="#00694a">
     <link rel="apple-touch-icon" href="https://cdn-icons-png.flaticon.com/512/3063/3063116.png">
     
     <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore-compat.js"></script>
     <script src="config.js"></script>
+    <script src="core.js"></script>
     
     <style>
         body { font-family: 'Sarabun', sans-serif; background-color: #f8fafc; }
@@ -45,17 +46,18 @@
         </div>
 
         <nav class="flex-1 px-4 py-6 space-y-2 overflow-y-auto">
-    <a href="admin_dashboard.html" class="flex items-center gap-3 px-4 py-3.5 text-slate-400 hover:bg-white/5 hover:text-white rounded-xl font-medium transition-all"><span class="material-symbols-outlined">dashboard</span> ภาพรวมระบบ</a>
-    <a href="admin_resources.html" class="flex items-center gap-3 px-4 py-3.5 text-slate-400 hover:bg-white/5 hover:text-white rounded-xl font-medium transition-all"><span class="material-symbols-outlined">inventory_2</span> บริหารทรัพยากร</a>
-    <a href="admin_inventory.html" id="nav-inventory" class="flex items-center gap-3 px-4 py-3.5 text-slate-400 hover:bg-white/5 hover:text-white rounded-xl font-medium transition-all"><span class="material-symbols-outlined">warehouse</span> ระบบคลังพัสดุ กปท.</a>
-    <a href="admin_datacenter.html" class="flex items-center gap-3 px-4 py-3.5 text-slate-400 hover:bg-white/5 hover:text-white rounded-xl font-medium transition-all"><span class="material-symbols-outlined">folder_shared</span> ศูนย์ข้อมูลผู้ป่วย</a>
-    <a href="admin_map.html" class="flex items-center gap-3 px-4 py-3.5 text-slate-400 hover:bg-white/5 hover:text-white rounded-xl font-medium transition-all"><span class="material-symbols-outlined">map</span> แผนที่พิกัดผู้ป่วย</a>
-    <a href="admin_delegation.html" class="flex items-center gap-3 px-4 py-3.5 text-slate-400 hover:bg-white/5 hover:text-white rounded-xl font-medium transition-all"><span class="material-symbols-outlined">assignment_ind</span> มอบหมายงาน อสม.</a>
-    <a href="admin_analytics.html" class="flex items-center gap-3 px-4 py-3.5 text-slate-400 hover:bg-white/5 hover:text-white rounded-xl font-medium transition-all"><span class="material-symbols-outlined">analytics</span> ศูนย์รายงาน (Export)</a>
-    <a href="admin_reports.html" id="nav-reports" class="flex items-center gap-3 px-4 py-3.5 text-slate-400 hover:bg-white/5 hover:text-white rounded-xl font-medium transition-all"><span class="material-symbols-outlined">gavel</span> บันทึกมติผ้าอ้อม</a>
-    <a href="admin_finance.html" id="nav-finance" class="flex items-center gap-3 px-4 py-3.5 text-slate-400 hover:bg-white/5 hover:text-white rounded-xl font-medium transition-all"><span class="material-symbols-outlined">account_balance_wallet</span> แผนการเงิน</a>
-    <a href="admin_settings.html" id="nav-settings" class="flex items-center gap-3 px-4 py-3.5 text-slate-400 hover:bg-white/5 hover:text-white rounded-xl font-medium transition-all"><span class="material-symbols-outlined">settings</span> ตั้งค่าระบบ</a>
-</nav>
+            <a href="admin_dashboard.html" class="flex items-center gap-3 px-4 py-3.5 text-slate-400 hover:bg-white/5 hover:text-white rounded-xl font-medium transition-all"><span class="material-symbols-outlined">dashboard</span> ภาพรวมระบบ</a>
+            <a href="admin_resources.html" class="flex items-center gap-3 px-4 py-3.5 text-slate-400 hover:bg-white/5 hover:text-white rounded-xl font-medium transition-all"><span class="material-symbols-outlined">inventory_2</span> บริหารทรัพยากร</a>
+            <a href="admin_inventory.html" id="nav-inventory" class="flex items-center gap-3 px-4 py-3.5 text-slate-400 hover:bg-white/5 hover:text-white rounded-xl font-medium transition-all"><span class="material-symbols-outlined">warehouse</span> ระบบคลังพัสดุ กปท.</a>
+            <a href="admin_equipment.html" id="nav-equipment" class="flex items-center gap-3 px-4 py-3.5 text-slate-400 hover:bg-white/5 hover:text-white rounded-xl font-medium transition-all"><span class="material-symbols-outlined">medical_services</span> ทะเบียนยืม-คืนอุปกรณ์</a>
+            <a href="admin_datacenter.html" class="flex items-center gap-3 px-4 py-3.5 text-slate-400 hover:bg-white/5 hover:text-white rounded-xl font-medium transition-all"><span class="material-symbols-outlined">folder_shared</span> ศูนย์ข้อมูลผู้ป่วย</a>
+            <a href="admin_map.html" class="flex items-center gap-3 px-4 py-3.5 text-slate-400 hover:bg-white/5 hover:text-white rounded-xl font-medium transition-all"><span class="material-symbols-outlined">map</span> แผนที่พิกัดผู้ป่วย</a>
+            <a href="admin_delegation.html" class="flex items-center gap-3 px-4 py-3.5 text-slate-400 hover:bg-white/5 hover:text-white rounded-xl font-medium transition-all"><span class="material-symbols-outlined">assignment_ind</span> มอบหมายงาน อสม.</a>
+            <a href="admin_analytics.html" class="flex items-center gap-3 px-4 py-3.5 text-slate-400 hover:bg-white/5 hover:text-white rounded-xl font-medium transition-all"><span class="material-symbols-outlined">analytics</span> ศูนย์รายงาน (Export)</a>
+            <a href="admin_reports.html" id="nav-reports" class="flex items-center gap-3 px-4 py-3.5 text-slate-400 hover:bg-white/5 hover:text-white rounded-xl font-medium transition-all"><span class="material-symbols-outlined">gavel</span> บันทึกมติผ้าอ้อม</a>
+            <a href="admin_finance.html" id="nav-finance" class="flex items-center gap-3 px-4 py-3.5 text-slate-400 hover:bg-white/5 hover:text-white rounded-xl font-medium transition-all"><span class="material-symbols-outlined">account_balance_wallet</span> แผนการเงิน</a>
+            <a href="admin_settings.html" id="nav-settings" class="flex items-center gap-3 px-4 py-3.5 bg-white/10 text-white rounded-xl font-bold transition-all"><span class="material-symbols-outlined">settings</span> ตั้งค่าระบบ</a>
+        </nav>
     </aside>
 
     <main class="flex-1 flex flex-col min-h-0 bg-slate-50">
@@ -83,6 +85,7 @@
             
             <div id="settings-content" class="hidden max-w-2xl mx-auto space-y-6 pb-10">
                 
+                <!-- ข้อมูลส่วนตัว -->
                 <div class="bg-white rounded-[24px] p-6 shadow-sm border border-slate-200 relative overflow-hidden">
                     <div class="absolute top-0 right-0 w-32 h-32 bg-blue-50 rounded-bl-full -z-10"></div>
                     
@@ -93,7 +96,7 @@
                         </div>
                         <div>
                             <h3 class="text-lg font-bold text-slate-800">ข้อมูลส่วนตัว (Profile)</h3>
-                            <p class="text-[11px] text-slate-500">จัดการข้อมูลแอดมิน</p>
+                            <p class="text-[11px] text-slate-500">จัดการข้อมูลเจ้าหน้าที่และชื่อที่แสดงในระบบ</p>
                         </div>
                     </div>
                     
@@ -101,6 +104,10 @@
                         <div>
                             <label class="text-sm font-bold text-slate-600 mb-1 block">ชื่อ-นามสกุล เจ้าหน้าที่</label>
                             <input type="text" id="profile-name" class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="ระบุชื่อ-นามสกุลของคุณ">
+                        </div>
+                        <div>
+                            <label class="text-sm font-bold text-slate-600 mb-1 block">ชื่อเล่น (Nickname)</label>
+                            <input type="text" id="profile-nickname" class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="ระบุชื่อเล่น เช่น พี่นิด, หมอโต้ง">
                         </div>
                         <div>
                             <label class="text-sm font-bold text-slate-600 mb-1 block">เบอร์โทรศัพท์ติดต่อ</label>
@@ -118,80 +125,102 @@
                     </div>
                 </div>
 
-                <!-- (ส่วนตั้งค่า System Config ซ่อนไว้ก่อนเพื่อความกระชับ) -->
-                <div id="system-config-card" class="hidden bg-white rounded-[24px] p-6 shadow-sm border border-slate-200 relative overflow-hidden">
-                    <div class="absolute top-0 right-0 w-32 h-32 bg-amber-50 rounded-bl-full -z-10"></div>
-                    <div class="flex items-center gap-2 mb-6">
-                        <span class="material-symbols-outlined text-amber-500 text-[28px]">cloud</span>
-                        <h3 class="text-lg font-bold text-slate-800">ตั้งค่าระดับองค์กร (System Config)</h3>
-                    </div>
-                    
-                    <div class="space-y-4">
-                        <div>
-                            <label class="text-sm font-bold text-slate-600 mb-1 block">ชื่อหน่วยงาน (รพ.สต. / ท้องถิ่น)</label>
-                            <input type="text" id="sys-hospital" class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-amber-500">
-                        </div>
-                        <div>
-                            <label class="text-sm font-bold text-slate-600 mb-1 block">จำนวนหมู่บ้านที่รับผิดชอบ</label>
-                            <input type="number" id="sys-villages" class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-amber-500">
-                        </div>
-                        <div class="grid grid-cols-2 gap-4">
+                <!-- การตั้งค่าระบบส่วนกลาง (เฉพาะ ADMIN) -->
+                <div id="admin-only-section" class="space-y-6">
+                    <div class="bg-white rounded-[24px] p-6 shadow-sm border border-slate-200 relative overflow-hidden">
+                        <div class="flex items-center gap-3 mb-6 pb-4 border-b border-slate-100">
+                            <span class="material-symbols-outlined text-emerald-600 text-[26px]">tune</span>
                             <div>
-                                <label class="text-sm font-bold text-slate-600 mb-1 block">ราคาผ้าอ้อม (บาท/ชิ้น)</label>
-                                <input type="number" step="0.01" id="sys-diaper-price" class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-amber-500">
-                            </div>
-                            <div>
-                                <label class="text-sm font-bold text-slate-600 mb-1 block">ราคาแผ่นรองซับ (บาท/ชิ้น)</label>
-                                <input type="number" step="0.01" id="sys-underpad-price" class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-amber-500">
+                                <h3 class="text-lg font-bold text-slate-800">การตั้งค่าระบบส่วนกลาง</h3>
+                                <p class="text-[11px] text-slate-500">กำหนดค่าพื้นฐาน ข้อมูลองค์กร และราคาวัสดุกองทุน กปท.</p>
                             </div>
                         </div>
 
-                        <div class="pt-2 border-t border-slate-100 text-right">
-                            <button onclick="saveSystemConfig()" id="btn-save-sys" class="bg-amber-500 hover:bg-amber-600 text-white px-6 py-2.5 rounded-xl text-sm font-bold shadow-sm transition-all active:scale-95 inline-flex items-center gap-2">
-                                บันทึกการตั้งค่าระบบ
+                        <div class="space-y-4">
+                            <div>
+                                <label class="text-sm font-bold text-slate-600 mb-1 block">ชื่อหน่วยงาน / โรงพยาบาล / เทศบาล</label>
+                                <input type="text" id="sys-hospital" class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500">
+                            </div>
+                            <div>
+                                <label class="text-sm font-bold text-slate-600 mb-1 block">จำนวนหมู่บ้านในเขตรับผิดชอบ (หมู่)</label>
+                                <input type="number" id="sys-villages" class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500">
+                            </div>
+
+                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2">
+                                <div>
+                                    <label class="text-sm font-bold text-slate-600 mb-1 block">ราคาผ้าอ้อมผู้ใหญ่ (บาท/ชิ้น)</label>
+                                    <input type="number" step="0.25" id="sys-diaper-price" class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500" placeholder="9.50">
+                                </div>
+                                <div>
+                                    <label class="text-sm font-bold text-slate-600 mb-1 block">ราคาแผ่นรองซับ (บาท/ชิ้น)</label>
+                                    <input type="number" step="0.25" id="sys-underpad-price" class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500" placeholder="6.00">
+                                </div>
+                            </div>
+
+                            <!-- 🌟 เพิ่มการตั้งค่าราคาเจลลี่โภชนาการ และ ป้ายโครงการ กปท. (Requirement 5.2 & 3.2 ข.) 🌟 -->
+                            <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-2">
+                                <div>
+                                    <label class="text-xs font-bold text-slate-600 mb-1 block">ราคาเจลลี่โภชนาการ (บาท/ชิ้น)</label>
+                                    <input type="number" step="0.50" id="sys-jelly-price" class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500" placeholder="30.00">
+                                </div>
+                                <div>
+                                    <label class="text-xs font-bold text-slate-600 mb-1 block">จำนวนแจกเจลลี่เริ่มต้น (ชิ้น/คน/รอบ)</label>
+                                    <input type="number" id="sys-jelly-qty" class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500" placeholder="1">
+                                </div>
+                                <div>
+                                    <label class="text-xs font-bold text-slate-600 mb-1 block">ราคาป้ายโครงการ กปท. (บาท/โครงการ)</label>
+                                    <input type="number" step="10.00" id="sys-banner-price" class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500" placeholder="500.00">
+                                </div>
+                            </div>
+
+                            <div class="pt-4 border-t border-slate-100 flex justify-end">
+                                <button onclick="saveSystemConfig()" id="btn-save-sys" class="bg-[#00694a] hover:bg-[#005239] text-white px-6 py-2.5 rounded-xl text-sm font-bold shadow-sm transition-all active:scale-95 flex items-center gap-2">
+                                    บันทึกการตั้งค่าระบบ
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- รหัสผ่านหน่วยงานย่อย (รพ.สต.) -->
+                    <div class="bg-white rounded-[24px] p-6 shadow-sm border border-slate-200">
+                        <div class="flex items-center gap-3 mb-6 pb-4 border-b border-slate-100">
+                            <span class="material-symbols-outlined text-amber-500 text-[26px]">vpn_key</span>
+                            <div>
+                                <h3 class="text-lg font-bold text-slate-800">รหัสผ่านหน่วยงานย่อย (รพ.สต.)</h3>
+                                <p class="text-[11px] text-slate-500">สร้างรหัสลับเพื่อให้เจ้าหน้าที่ รพ.สต. ใช้สมัครสิทธิ์ Sub-Admin</p>
+                            </div>
+                        </div>
+
+                        <div class="space-y-4">
+                            <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                                <div>
+                                    <label class="text-xs font-bold text-slate-600 mb-1 block">ชื่อ รพ.สต. / ศูนย์บริการ</label>
+                                    <input type="text" id="sub-name" class="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs" placeholder="รพ.สต.บ้านหนองขาม">
+                                </div>
+                                <div>
+                                    <label class="text-xs font-bold text-slate-600 mb-1 block">หมู่ที่รับผิดชอบ (คั่นด้วยจุลภาค)</label>
+                                    <input type="text" id="sub-villages" class="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs" placeholder="เช่น 1,2,3,4">
+                                </div>
+                                <div>
+                                    <label class="text-xs font-bold text-slate-600 mb-1 block">รหัสผ่านลับ (Secret Code)</label>
+                                    <input type="text" id="sub-token" class="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-mono uppercase" placeholder="เช่น SUB888">
+                                </div>
+                            </div>
+                            <button onclick="createSubAgency()" id="btn-create-sub" class="w-full py-2.5 bg-amber-500 hover:bg-amber-600 text-white rounded-xl text-xs font-bold shadow-sm transition-all">
+                                + สร้างรหัสหน่วยงานย่อย
                             </button>
-                        </div>
-                    </div>
-                </div>
 
-                <div id="sub-agency-card" class="hidden bg-white rounded-[24px] p-6 shadow-sm border border-slate-200 relative overflow-hidden">
-                    <div class="absolute top-0 right-0 w-32 h-32 bg-emerald-50 rounded-bl-full -z-10"></div>
-                    <div class="flex items-center gap-2 mb-6">
-                        <span class="material-symbols-outlined text-emerald-500 text-[28px]">domain_add</span>
-                        <h3 class="text-lg font-bold text-slate-800">จัดการหน่วยงานย่อย (Sub-Admin)</h3>
-                    </div>
-
-                    <div class="bg-emerald-50 p-4 rounded-xl border border-emerald-100 mb-6">
-                        <h4 class="text-sm font-bold text-emerald-800 mb-3 flex items-center gap-1"><span class="material-symbols-outlined text-[18px]">add_circle</span> เพิ่มหน่วยงานย่อยใหม่</h4>
-                        <div class="space-y-3">
-                            <div>
-                                <label class="text-xs font-bold text-slate-600 mb-1 block">ชื่อหน่วยงาน (รพ.สต.)</label>
-                                <input type="text" id="sub-name" class="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500" placeholder="เช่น รพ.สต.บ้านบางแก้ว">
+                            <div class="pt-4 border-t border-slate-100">
+                                <h4 class="text-xs font-bold text-slate-700 mb-3">รหัสหน่วยงานย่อยที่ใช้งานอยู่ในปัจจุบัน:</h4>
+                                <div id="sub-agency-list" class="space-y-2"></div>
                             </div>
-                            <div>
-                                <label class="text-xs font-bold text-slate-600 mb-1 block">หมู่ที่รับผิดชอบ (คั่นด้วยลูกน้ำ , )</label>
-                                <input type="text" id="sub-villages" class="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500" placeholder="เช่น 1,2,3,4">
-                            </div>
-                            <div>
-                                <label class="text-xs font-bold text-slate-600 mb-1 block">รหัสผ่านลับ (Secret Code)</label>
-                                <input type="text" id="sub-token" class="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 font-mono" placeholder="ตั้งรหัสผ่านให้เจ้าหน้าที่">
-                            </div>
-                            <button onclick="createSubAgency()" id="btn-create-sub" class="w-full bg-[#00694a] hover:bg-[#005239] text-white px-4 py-2.5 rounded-lg text-sm font-bold shadow-sm transition-all active:scale-95 mt-2">
-                                บันทึกหน่วยงานย่อย
-                            </button>
-                        </div>
-                    </div>
-
-                    <div>
-                        <h4 class="text-sm font-bold text-slate-700 mb-3 border-b border-slate-100 pb-2">รายชื่อรหัสหน่วยงานย่อยทั้งหมด</h4>
-                        <div id="sub-agency-list" class="space-y-2">
-                            <p class="text-xs text-slate-400 text-center py-4">กำลังโหลดข้อมูล...</p>
                         </div>
                     </div>
                 </div>
 
             </div>
         </div>
+
     </main>
 
     <script>
@@ -200,127 +229,111 @@
         const db = firebase.firestore();
 
         let currentUserUid = "";
-        let currentUserRole = "VHV";
+        let currentUserRole = "ADMIN";
 
         function toggleSidebar() { document.getElementById('sidebar').classList.toggle('-translate-x-full'); }
 
-        document.addEventListener("DOMContentLoaded", () => {
-            document.getElementById('sidebar-hospital-name').innerText = DEFAULT_CONFIGS.HOSPITAL_NAME;
-
-            liff.init({ liffId: LIFF_ID }).then(() => {
-                const mockUid = localStorage.getItem('dev_mock_uid');
-                const savedUid = localStorage.getItem('orsomo_uid'); // 🌟 1. ดึงความจำเหมือนหน้าหลัก
-
-                if (mockUid) { 
-                    currentUserUid = mockUid;
-                    verifyAdminAccess(mockUid); 
-                } else if (liff.isLoggedIn()) { 
-                    liff.getProfile().then(p => {
-                        localStorage.setItem('orsomo_uid', p.userId); // 🌟 2. จำรหัสตอนล็อกอินไลน์
-                        currentUserUid = p.userId;
-                        verifyAdminAccess(p.userId);
-                    }).catch(() => bounceToLogin()); 
-                } else if (savedUid) {
-                    // 🌟 3. ถ้าเปิดผ่าน PWA ให้ข้ามการเช็คไลน์ แล้ววิ่งเข้าฟังก์ชันตรวจสอบสิทธิ์เลย
-                    currentUserUid = savedUid;
-                    verifyAdminAccess(savedUid);
-                } else { 
-                    bounceToLogin(); 
-                }
-            }).catch(() => bounceToLogin());
-        });
-
-        function bounceToLogin() { window.location.href = 'index.html'; }
-
-        async function verifyAdminAccess(uid) {
-            try {
-                const userDoc = await db.collection('VHVs').doc(String(uid)).get();
-                let hasAccess = false;
-                let hospital = DEFAULT_CONFIGS.HOSPITAL_NAME;
-
-                try {
-                    const sysSnapHospital = await db.collection('SystemConfig').doc('HOSPITAL_NAME').get();
-                    if(sysSnapHospital.exists) hospital = sysSnapHospital.data().value || hospital;
-                } catch(e) {}
-
-                if (userDoc.exists) {
-                const userData = userDoc.data();
-                const hName = document.getElementById('header-user-name');
-                if (hName) hName.innerText = userData.name || 'ผู้ดูแลระบบ';
-                const hPic = document.getElementById('header-profile-pic');
-                const hIcon = document.getElementById('header-profile-icon');
-                if (hPic && hIcon && userData.photoURL) {
-                    hPic.src = userData.photoURL;
-                    hPic.classList.remove('hidden');
-                    hIcon.classList.add('hidden');
-                }
-                    const role = String(userData.role || '').toUpperCase();
-                    
-                    // 🌟 อัปเดตรูปภาพจากฐานข้อมูลแทนการดึงจาก liff
-                    if(userData.profile_pic) {
-                        document.getElementById('header-profile-pic').src = userData.profile_pic;
-                        document.getElementById('header-profile-pic').classList.remove('hidden');
-                        document.getElementById('header-profile-icon').classList.add('hidden');
-                        
-                        document.getElementById('main-profile-pic').src = userData.profile_pic;
-                        document.getElementById('main-profile-pic').classList.remove('hidden');
-                        document.getElementById('main-profile-icon').classList.add('hidden');
-                    }
-
-                    if (role === 'ADMIN') {
-                        hasAccess = true; currentUserRole = 'ADMIN';
-                        hospital = userData.hospital_name || hospital;
-                        document.getElementById('profile-role').innerText = 'ผู้ดูแลระบบส่วนกลาง (ADMIN)';
-                        document.getElementById('profile-role').className = 'bg-amber-100 text-amber-700 px-3 py-1 rounded-lg text-xs font-bold mt-1 inline-block border border-amber-200';
-                        
-                        document.getElementById('system-config-card').classList.remove('hidden'); 
-                        document.getElementById('sub-agency-card').classList.remove('hidden');
-                        
-                    } else if (role === 'SUB_ADMIN') {
-                        hasAccess = true; currentUserRole = 'SUB_ADMIN';
-                        hospital = userData.hospital_name || hospital;
-                        document.getElementById('profile-role').innerText = 'เจ้าหน้าที่หน่วยงาน (SUB_ADMIN)';
-                        document.getElementById('profile-role').className = 'bg-blue-100 text-blue-700 px-3 py-1 rounded-lg text-xs font-bold mt-1 inline-block border border-blue-200';
-                        
-                        const navSet = document.getElementById('nav-settings');
-                        navSet.innerHTML = '<span class="flex items-center gap-3"><span class="material-symbols-outlined">manage_accounts</span> ข้อมูลส่วนตัว</span><span class="w-1.5 h-1.5 rounded-full bg-amber-400"></span>';
-                    }
-
-                    document.getElementById('profile-name').value = userData.name || '';
-                    document.getElementById('profile-phone').value = userData.phone || '';
-                }
-
-                if (hasAccess) {
-                    document.getElementById('sidebar-hospital-name').innerText = hospital;
-                    
-                    if (currentUserRole === 'ADMIN') {
-                        document.getElementById('sys-hospital').value = hospital;
-                        try {
-                            const sysSnapVCount = await db.collection('SystemConfig').doc('VILLAGE_COUNT').get();
-                            if(sysSnapVCount.exists) document.getElementById('sys-villages').value = sysSnapVCount.data().value || DEFAULT_CONFIGS.VILLAGE_COUNT;
-                            
-                            const sysSnapDP = await db.collection('SystemConfig').doc('DIAPER_PRICE').get();
-                            document.getElementById('sys-diaper-price').value = sysSnapDP.exists ? sysSnapDP.data().value : (DEFAULT_CONFIGS.DIAPER_PRICE || 9.50);
-
-                            const sysSnapUP = await db.collection('SystemConfig').doc('UNDERPAD_PRICE').get();
-                            document.getElementById('sys-underpad-price').value = sysSnapUP.exists ? sysSnapUP.data().value : (DEFAULT_CONFIGS.UNDERPAD_PRICE || 6.00);
-                        } catch(e) {}
-
-                        loadSubAgencies();
-                    }
-
-                    document.getElementById('loading-state').classList.add('hidden');
-                    document.getElementById('settings-content').classList.remove('hidden');
-                } else {
-                    window.location.href = 'dashboard.html'; 
-                }
-            } catch (error) { bounceToLogin(); }
+        function showToast(msg, type = 'info', action = null) {
+            let toast = document.getElementById('global-floating-toast');
+            if (!toast) {
+                toast = document.createElement('div');
+                toast.id = 'global-floating-toast';
+                document.body.appendChild(toast);
+            }
+            let bg = type === 'error' ? 'bg-rose-600 text-white' : 'bg-emerald-600 text-white';
+            toast.className = `fixed bottom-6 right-6 z-[9999] px-4 py-3 rounded-2xl shadow-xl font-bold text-xs sm:text-sm flex items-center gap-2 transition-all duration-300 ${bg}`;
+            toast.innerHTML = `<span>${msg}</span>`;
+            if (toast.timer) clearTimeout(toast.timer);
+            toast.timer = setTimeout(() => { 
+                toast.remove(); 
+                if (action === 'reload') window.location.reload();
+            }, 2500);
         }
 
-        // --- โค้ดฟังก์ชันเซฟการตั้งค่าต่างๆ คงเดิมไว้ ---
+        document.addEventListener("DOMContentLoaded", async () => {
+            try {
+                const authCtx = await OrsomoCore.Auth.guardPage({
+                    allowedRoles: ['ADMIN', 'SUB_ADMIN'],
+                    autoAdminShell: false,
+                    currentPage: 'admin_settings.html'
+                });
+                if (!authCtx) return;
+
+                currentUserUid = authCtx.uid;
+                currentUserRole = authCtx.role;
+
+                const u = authCtx.user || {};
+                document.getElementById('profile-name').value = u.name || '';
+                document.getElementById('profile-nickname').value = u.nickname || '';
+                document.getElementById('profile-phone').value = u.phone || '';
+                document.getElementById('profile-role').innerText = currentUserRole === 'ADMIN' ? 'ผู้ดูแลระบบส่วนกลาง (Admin)' : 'ผู้ดูแลระดับตำบล / รพ.สต. (Sub-Admin)';
+
+                const pSrc = u.profile_pic || u.photoURL;
+                if (pSrc) {
+                    document.getElementById('header-profile-pic').src = pSrc;
+                    document.getElementById('header-profile-pic').classList.remove('hidden');
+                    document.getElementById('header-profile-icon').classList.add('hidden');
+
+                    document.getElementById('main-profile-pic').src = pSrc;
+                    document.getElementById('main-profile-pic').classList.remove('hidden');
+                    document.getElementById('main-profile-icon').classList.add('hidden');
+                }
+
+                let hospital = u.hospital_name || DEFAULT_CONFIGS.HOSPITAL_NAME;
+                document.getElementById('sidebar-hospital-name').innerText = hospital;
+                document.getElementById('header-hospital-name').innerText = `Settings: ${hospital}`;
+
+                if (currentUserRole === 'SUB_ADMIN') {
+                    const adminSec = document.getElementById('admin-only-section');
+                    if (adminSec) adminSec.style.display = 'none';
+                    ['nav-finance', 'nav-inventory', 'nav-reports'].forEach(id => {
+                        const el = document.getElementById(id);
+                        if (el) el.style.display = 'none';
+                    });
+                } else {
+                    try {
+                        const sysSnapHospital = await db.collection('SystemConfig').doc('HOSPITAL_NAME').get();
+                        document.getElementById('sys-hospital').value = sysSnapHospital.exists ? sysSnapHospital.data().value : DEFAULT_CONFIGS.HOSPITAL_NAME;
+                        
+                        const sysSnapVCount = await db.collection('SystemConfig').doc('VILLAGE_COUNT').get();
+                        document.getElementById('sys-villages').value = sysSnapVCount.exists ? sysSnapVCount.data().value : DEFAULT_CONFIGS.VILLAGE_COUNT;
+                        
+                        const sysSnapDP = await db.collection('SystemConfig').doc('DIAPER_PRICE').get();
+                        document.getElementById('sys-diaper-price').value = sysSnapDP.exists ? sysSnapDP.data().value : (DEFAULT_CONFIGS.DIAPER_PRICE || 9.50);
+
+                        const sysSnapUP = await db.collection('SystemConfig').doc('UNDERPAD_PRICE').get();
+                        document.getElementById('sys-underpad-price').value = sysSnapUP.exists ? sysSnapUP.data().value : (DEFAULT_CONFIGS.UNDERPAD_PRICE || 6.00);
+
+                        // Jelly & Banner prices
+                        const sysSnapJelly = await db.collection('SystemConfig').doc('JELLY_PRICE').get();
+                        document.getElementById('sys-jelly-price').value = sysSnapJelly.exists ? sysSnapJelly.data().value : (DEFAULT_CONFIGS.JELLY_PRICE || 30.00);
+
+                        const sysSnapJellyQty = await db.collection('SystemConfig').doc('JELLY_DEFAULT_QTY').get();
+                        document.getElementById('sys-jelly-qty').value = sysSnapJellyQty.exists ? sysSnapJellyQty.data().value : (DEFAULT_CONFIGS.JELLY_DEFAULT_QTY || 1);
+
+                        const sysSnapBanner = await db.collection('SystemConfig').doc('BANNER_PRICE').get();
+                        document.getElementById('sys-banner-price').value = sysSnapBanner.exists ? sysSnapBanner.data().value : (DEFAULT_CONFIGS.BANNER_PRICE || 500.00);
+
+                    } catch(e) {
+                        console.warn("Load system config error:", e);
+                    }
+
+                    loadSubAgencies();
+                }
+
+                document.getElementById('loading-state').classList.add('hidden');
+                document.getElementById('settings-content').classList.remove('hidden');
+
+            } catch (err) {
+                console.error("Settings init error:", err);
+            }
+        });
+
         async function saveProfile() {
             const newName = document.getElementById('profile-name').value.trim();
+            const newNickname = document.getElementById('profile-nickname').value.trim();
             const newPhone = document.getElementById('profile-phone').value.trim();
+
             if(!newName) { showToast('กรุณาระบุชื่อ-นามสกุล', 'error'); return; }
 
             const btn = document.getElementById('btn-save-profile');
@@ -328,12 +341,20 @@
             btn.disabled = true;
 
             try {
-                await db.collection('VHVs').doc(currentUserUid).update({ name: newName, phone: newPhone });
+                await db.collection('VHVs').doc(currentUserUid).update({ 
+                    name: newName, 
+                    nickname: newNickname,
+                    phone: newPhone,
+                    updated_at: firebase.firestore.FieldValue.serverTimestamp()
+                });
                 showToast('อัปเดตข้อมูลส่วนตัวเรียบร้อยแล้ว!'); 
-            } catch(e) { showToast('เกิดข้อผิดพลาดในการบันทึกข้อมูล', 'error'); }
-
-            btn.innerHTML = 'บันทึกโปรไฟล์';
-            btn.disabled = false;
+            } catch(e) { 
+                console.error("Save profile error:", e);
+                showToast('เกิดข้อผิดพลาดในการบันทึกข้อมูล', 'error'); 
+            } finally {
+                btn.innerHTML = 'บันทึกโปรไฟล์';
+                btn.disabled = false;
+            }
         }
 
         async function saveSystemConfig() {
@@ -341,6 +362,9 @@
             const newCount = document.getElementById('sys-villages').value.trim();
             const dpPrice = document.getElementById('sys-diaper-price').value.trim();
             const upPrice = document.getElementById('sys-underpad-price').value.trim();
+            const jellyPrice = document.getElementById('sys-jelly-price').value.trim();
+            const jellyQty = document.getElementById('sys-jelly-qty').value.trim();
+            const bannerPrice = document.getElementById('sys-banner-price').value.trim();
             
             if(!newHosp || !newCount || !dpPrice || !upPrice) { showToast('กรุณากรอกข้อมูลให้ครบถ้วน', 'error'); return; }
 
@@ -353,10 +377,16 @@
                 await db.collection('SystemConfig').doc('VILLAGE_COUNT').set({ value: parseInt(newCount) });
                 await db.collection('SystemConfig').doc('DIAPER_PRICE').set({ value: parseFloat(dpPrice) });
                 await db.collection('SystemConfig').doc('UNDERPAD_PRICE').set({ value: parseFloat(upPrice) });
+
+                if (jellyPrice) await db.collection('SystemConfig').doc('JELLY_PRICE').set({ value: parseFloat(jellyPrice) });
+                if (jellyQty) await db.collection('SystemConfig').doc('JELLY_DEFAULT_QTY').set({ value: parseInt(jellyQty) });
+                if (bannerPrice) await db.collection('SystemConfig').doc('BANNER_PRICE').set({ value: parseFloat(bannerPrice) });
                 
                 showToast('บันทึกการตั้งค่าระบบเรียบร้อยแล้ว!', 'success', 'reload');
             } catch(e) {
-                showToast('เกิดข้อผิดพลาดในการบันทึกข้อมูล', 'error');
+                console.error("Save system config error:", e);
+                showToast('เกิดข้อผิดพลาดในการบันทึกข้อมูล', 'error'); 
+            } finally {
                 btn.innerHTML = 'บันทึกการตั้งค่าระบบ';
                 btn.disabled = false;
             }
@@ -431,7 +461,7 @@
 
                 if(centers.find(c => String(c.secret_code).trim() === subToken)) {
                     showToast('รหัสผ่านลับนี้ถูกใช้งานแล้ว กรุณาตั้งรหัสอื่น', 'error');
-                    btn.innerHTML = 'บันทึกหน่วยงานย่อย';
+                    btn.innerHTML = '+ สร้างรหัสหน่วยงานย่อย';
                     btn.disabled = false;
                     return;
                 }
@@ -452,10 +482,10 @@
                 loadSubAgencies(); 
             } catch(e) { 
                 showToast('เกิดข้อผิดพลาด กรุณาลองใหม่', 'error'); 
+            } finally {
+                btn.innerHTML = '+ สร้างรหัสหน่วยงานย่อย';
+                btn.disabled = false;
             }
-
-            btn.innerHTML = 'บันทึกหน่วยงานย่อย';
-            btn.disabled = false;
         }
 
         async function deleteSubAgency(code) {

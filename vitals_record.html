@@ -1,20 +1,22 @@
-    <!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="th">
 <head>
     <meta charset="utf-8"/>
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
-    <title>บันทึกสุขภาพ - อสม.สามารถ</title>
+    <title>บันทึกสุขภาพ (ความดัน/น้ำตาล) - อสม.สามารถ</title>
     <script src="https://cdn.tailwindcss.com?plugins=forms"></script>
     <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700&display=swap" rel="stylesheet"/>
     <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
     <script charset="utf-8" src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
 
     <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore-compat.js"></script>
     <script src="config.js"></script>
+    <script src="core.js"></script>
 
     <style>
-        body { font-family: 'Sarabun', sans-serif; background-color: #f0f9ff; -webkit-tap-highlight-color: transparent;}
+        body { font-family: 'Sarabun', sans-serif; background-color: #f0f9ff; -webkit-tap-highlight-color: transparent; }
         .material-symbols-outlined { font-variation-settings: 'FILL' 1, 'wght' 400, 'GRAD' 0, 'opsz' 24; }
         .loader-small { border: 3px solid #f3f3f3; border-bottom-color: #0284c7; border-radius: 50%; width: 24px; height: 24px; animation: spin 1s linear infinite; }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
@@ -24,12 +26,12 @@
 
     <header class="bg-[#0284c7] sticky top-0 z-50 shadow-md flex justify-between items-center w-full px-4 h-16 text-white">
         <div class="flex items-center gap-3">
-            <button onclick="goBack()" class="w-10 h-10 flex items-center justify-center rounded-full hover:bg-white/20 transition-colors active:scale-95">
+            <button type="button" onclick="goBack()" class="w-10 h-10 flex items-center justify-center rounded-full hover:bg-white/20 transition-colors active:scale-95">
                 <span class="material-symbols-outlined text-[24px]">arrow_back</span>
             </button>
             <div>
                 <h1 class="text-lg font-bold leading-tight">บันทึกข้อมูลสุขภาพ</h1>
-                <p class="text-[11px] text-sky-100 font-medium">ความดันโลหิต และ น้ำตาลในเลือด</p>
+                <p class="text-[11px] text-sky-100 font-medium">ความดันโลหิต ชีพจร และน้ำตาลในเลือด</p>
             </div>
         </div>
     </header>
@@ -38,10 +40,22 @@
         
         <div class="bg-white rounded-[20px] p-5 shadow-sm border border-slate-200 flex items-center gap-4 relative overflow-hidden">
             <div class="absolute top-0 right-0 w-24 h-24 bg-sky-50 rounded-bl-full -z-10"></div>
-            <div class="w-14 h-14 rounded-full bg-slate-100 text-slate-400 border-2 border-white shadow-sm flex items-center justify-center font-bold text-xl flex-shrink-0" id="patient-initial">?</div>
+            <div class="w-14 h-14 rounded-full bg-slate-100 text-slate-400 border-2 border-white shadow-sm flex items-center justify-center font-bold text-xl flex-shrink-0 overflow-hidden" id="patient-initial">?</div>
             <div class="flex-1 min-w-0">
-                <h2 class="text-lg font-bold text-slate-800 truncate" id="patient-name">กำลังโหลด...</h2>
+                <h2 class="text-lg font-bold text-slate-800 truncate" id="patient-name">กำลังตรวจสอบสิทธิ์...</h2>
                 <p class="text-xs text-slate-500 truncate mt-0.5">หมู่ที่ <span id="patient-village">-</span> • อายุ <span id="patient-age">-</span> ปี</p>
+            </div>
+        </div>
+
+        <!-- กล่องเตือนค่าวิกฤตสดหน้างาน -->
+        <div id="live-critical-alert" class="hidden bg-red-50 border-2 border-red-300 rounded-2xl p-4 text-red-800 shadow-sm">
+            <div class="flex items-start gap-2.5">
+                <span class="material-symbols-outlined text-red-600 text-[22px] shrink-0">emergency</span>
+                <div class="text-xs space-y-1">
+                    <p class="font-bold text-sm text-red-900" id="live-critical-title">พบค่าสัญญาณชีพวิกฤต!</p>
+                    <p id="live-critical-details" class="font-semibold text-red-700"></p>
+                    <p class="text-red-600">คำแนะนำ: ให้ผู้ป่วยนั่งพัก 5-10 นาทีแล้ววัดซ้ำ หากยังผิดปกติรุนแรง เมื่อกดบันทึก ระบบจะส่งแจ้งเตือน LINE ด่วนไปยังเจ้าหน้าที่ รพ.สต. ทันที</p>
+                </div>
             </div>
         </div>
 
@@ -60,23 +74,23 @@
                 
                 <div class="grid grid-cols-2 gap-4 mb-4">
                     <div>
-                        <label class="text-xs font-bold text-slate-500 mb-1 block">ตัวบน (SYS) <span class="text-red-500">*</span></label>
+                        <label class="text-xs font-bold text-slate-500 mb-1 block" for="vital-sys">ตัวบน (SYS)</label>
                         <div class="relative">
-                            <input type="number" id="vital-sys" class="w-full pl-4 pr-12 py-3 bg-slate-50 border border-slate-200 rounded-xl text-lg font-bold text-slate-800 focus:ring-2 focus:ring-red-500 outline-none" placeholder="120">
+                            <input type="number" id="vital-sys" oninput="previewCriticalVitals()" class="w-full pl-4 pr-12 py-3 bg-slate-50 border border-slate-200 rounded-xl text-lg font-bold text-slate-800 focus:ring-2 focus:ring-red-500 outline-none" placeholder="120">
                             <span class="absolute right-4 top-1/2 -translate-y-1/2 text-xs font-bold text-slate-400">mmHg</span>
                         </div>
                     </div>
                     <div>
-                        <label class="text-xs font-bold text-slate-500 mb-1 block">ตัวล่าง (DIA) <span class="text-red-500">*</span></label>
+                        <label class="text-xs font-bold text-slate-500 mb-1 block" for="vital-dia">ตัวล่าง (DIA)</label>
                         <div class="relative">
-                            <input type="number" id="vital-dia" class="w-full pl-4 pr-12 py-3 bg-slate-50 border border-slate-200 rounded-xl text-lg font-bold text-slate-800 focus:ring-2 focus:ring-red-500 outline-none" placeholder="80">
+                            <input type="number" id="vital-dia" oninput="previewCriticalVitals()" class="w-full pl-4 pr-12 py-3 bg-slate-50 border border-slate-200 rounded-xl text-lg font-bold text-slate-800 focus:ring-2 focus:ring-red-500 outline-none" placeholder="80">
                             <span class="absolute right-4 top-1/2 -translate-y-1/2 text-xs font-bold text-slate-400">mmHg</span>
                         </div>
                     </div>
                 </div>
 
                 <div>
-                    <label class="text-xs font-bold text-slate-500 mb-1 block">ชีพจร / อัตราการเต้นหัวใจ (HR)</label>
+                    <label class="text-xs font-bold text-slate-500 mb-1 block" for="vital-hr">ชีพจร / อัตราการเต้นหัวใจ (HR)</label>
                     <div class="relative">
                         <input type="number" id="vital-hr" class="w-full pl-4 pr-12 py-3 bg-slate-50 border border-slate-200 rounded-xl text-lg font-bold text-slate-800 focus:ring-2 focus:ring-emerald-500 outline-none" placeholder="75">
                         <span class="absolute right-4 top-1/2 -translate-y-1/2 text-xs font-bold text-slate-400">bpm</span>
@@ -87,22 +101,22 @@
             <hr class="border-slate-100 my-5">
 
             <!-- น้ำตาลในเลือด -->
-            <div>
+            <div class="mb-5">
                 <div class="flex items-center gap-2 mb-3">
                     <div class="w-8 h-8 rounded-full bg-blue-50 text-blue-500 flex items-center justify-center"><span class="material-symbols-outlined text-[18px]">water_drop</span></div>
                     <h3 class="font-bold text-slate-700">น้ำตาลในเลือด (Blood Sugar)</h3>
                 </div>
 
                 <div class="mb-4">
-                    <label class="text-xs font-bold text-slate-500 mb-1 block">ระดับน้ำตาล (DTX)</label>
+                    <label class="text-xs font-bold text-slate-500 mb-1 block" for="vital-sugar">ระดับน้ำตาลปลายนิ้ว (DTX)</label>
                     <div class="relative">
-                        <input type="number" id="vital-sugar" class="w-full pl-4 pr-12 py-3 bg-slate-50 border border-slate-200 rounded-xl text-lg font-bold text-slate-800 focus:ring-2 focus:ring-blue-500 outline-none" placeholder="90">
+                        <input type="number" id="vital-sugar" oninput="previewCriticalVitals()" class="w-full pl-4 pr-12 py-3 bg-slate-50 border border-slate-200 rounded-xl text-lg font-bold text-slate-800 focus:ring-2 focus:ring-blue-500 outline-none" placeholder="95">
                         <span class="absolute right-4 top-1/2 -translate-y-1/2 text-xs font-bold text-slate-400">mg/dL</span>
                     </div>
                 </div>
 
                 <div>
-                    <label class="text-xs font-bold text-slate-500 mb-2 block">สถานะการตรวจ</label>
+                    <label class="text-xs font-bold text-slate-500 mb-2 block">สถานะการตรวจน้ำตาล</label>
                     <div class="flex gap-4">
                         <label class="flex-1 relative cursor-pointer">
                             <input type="radio" name="meal_status" value="ก่อนอาหาร" class="peer sr-only" checked>
@@ -120,90 +134,112 @@
                 </div>
             </div>
 
+            <div>
+                <label class="text-xs font-bold text-slate-500 mb-1 block" for="vital-note">บันทึกอาการเบื้องต้น (ถ้ามี)</label>
+                <input type="text" id="vital-note" maxlength="500" class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-700 focus:ring-2 focus:ring-sky-500 outline-none" placeholder="เช่น เวียนศีรษะ ลืมทานยาความดันเมื่อเช้า...">
+            </div>
+
         </div>
 
-        <button onclick="saveVitals()" id="btn-save" class="w-full bg-[#0284c7] text-white py-4 rounded-xl font-bold shadow-lg hover:bg-[#0369a1] active:scale-95 transition-all flex items-center justify-center gap-2 text-lg">
+        <button type="button" onclick="saveVitals()" id="btn-save" class="w-full bg-[#0284c7] text-white py-4 rounded-xl font-bold shadow-lg hover:bg-[#0369a1] active:scale-95 transition-all flex items-center justify-center gap-2 text-lg">
             <span class="material-symbols-outlined">save</span> บันทึกข้อมูลสุขภาพ
         </button>
 
     </main>
 
     <script>
-        firebase.initializeApp(firebaseConfig);
-        firebase.firestore().enablePersistence({ synchronizeTabs: true }).catch(err => console.warn('Offline persistence error:', err.code));
-        const db = firebase.firestore();
-
+        let authCtx = null;
+        let db = null;
         const urlParams = new URLSearchParams(window.location.search);
         const patientId = urlParams.get('id');
         let currentPatientData = null;
 
-        // 🌟 ตัวแปรเก็บข้อมูลผู้ประเมิน 🌟
-        let currentUserUid = "";
-        let currentUserName = "เจ้าหน้าที่";
+        document.addEventListener('DOMContentLoaded', async function () {
+            document.getElementById('assess-date').value = OrsomoCore.DateUtils.toInputDateISO(new Date());
 
-        document.addEventListener("DOMContentLoaded", () => {
-            document.getElementById('assess-date').valueAsDate = new Date();
-
-            liff.init({ liffId: LIFF_ID }).then(() => {
-                const mockUid = localStorage.getItem('dev_mock_uid');
-                const savedUid = localStorage.getItem('orsomo_uid');
-                if (mockUid) {
-                    verifyUserAccess(mockUid);
-                } else if (liff.isLoggedIn()) {
-                    liff.getProfile().then(profile => {
-                        localStorage.setItem('orsomo_uid', profile.userId);
-                        verifyUserAccess(profile.userId);
-                    }).catch(err => console.error(err));
-                } else if (savedUid) {
-                    verifyUserAccess(savedUid);
-                } else { window.location.href = 'index.html'; }
-            }).catch(() => { window.location.href = 'index.html'; });
-
-            loadPatientData();
-        });
-
-        // 🌟 ดึงข้อมูลผู้ประเมินจาก Firebase VHVs 🌟
-        async function verifyUserAccess(uid) {
-            currentUserUid = uid;
-            try {
-                const userDoc = await db.collection('VHVs').doc(String(uid)).get();
-                if (userDoc.exists) {
-                    const data = userDoc.data();
-                    if(data.name) currentUserName = data.name;
-                }
-            } catch(e) { console.error(e); }
-        }
-
-        async function loadPatientData() {
-            if (!patientId) { goBack(); return; }
-            try {
-                const docRef = db.collection('Patients').doc(String(patientId));
-                const docSnap = await docRef.get();
-                if (docSnap.exists) {
-                    currentPatientData = docSnap.data();
-                    document.getElementById('patient-name').innerText = (currentPatientData.prefix || '') + (currentPatientData.name || '');
-                    document.getElementById('patient-village').innerText = currentPatientData.village_no || '-';
-                    document.getElementById('patient-age').innerText = currentPatientData.age || '-';
-                    document.getElementById('patient-initial').innerText = currentPatientData.name ? currentPatientData.name.substring(0, 1) : '?';
-                }
-            } catch (error) { console.error(error); }
-        }
-
-        async function saveVitals() {
-            const sysVal = document.getElementById('vital-sys').value;
-            const diaVal = document.getElementById('vital-dia').value;
-            const hrVal = document.getElementById('vital-hr').value;
-            const sugarVal = document.getElementById('vital-sugar').value;
-
-            // ตรวจสอบความถูกต้องเบื้องต้น (ถ้ากรอกความดัน ต้องกรอกทั้ง SYS และ DIA)
-            if ((sysVal && !diaVal) || (!sysVal && diaVal)) {
-                alert("กรุณากรอกข้อมูลความดันโลหิตให้ครบทั้งตัวบน (SYS) และตัวล่าง (DIA)");
+            if (!patientId) {
+                goBack();
                 return;
             }
 
-            // ถ้าไม่ได้กรอกอะไรเลย
+            try {
+                authCtx = await OrsomoCore.Auth.guardPage({
+                    allowedRoles: ['VHV', 'SUB_ADMIN', 'ADMIN'],
+                    loginUrl: 'index.html'
+                });
+                db = authCtx.db;
+                await loadPatientData();
+            } catch (err) {
+                console.warn('Vitals guard stopped:', err && err.message ? err.message : err);
+            }
+        });
+
+        async function loadPatientData() {
+            try {
+                const docSnap = await db.collection('Patients').doc(String(patientId)).get();
+                if (!docSnap.exists) {
+                    showToast('ไม่พบข้อมูลผู้ป่วยในระบบ', 'error', 'assessments.html');
+                    return;
+                }
+                currentPatientData = docSnap.data() || {};
+                if (!OrsomoCore.Auth.canAccessPatient(authCtx, currentPatientData, 'village')) {
+                    showToast('คุณไม่มีสิทธิ์เข้าถึงผู้ป่วยนอกเขตรับผิดชอบ', 'error', 'assessments.html');
+                    return;
+                }
+
+                document.getElementById('patient-name').innerText =
+                    (currentPatientData.prefix || '') + (currentPatientData.name || '-');
+                document.getElementById('patient-village').innerText = currentPatientData.village_no || '-';
+                document.getElementById('patient-age').innerText =
+                    OrsomoCore.DateUtils.calculateAge(currentPatientData.dob, currentPatientData.age);
+
+                const avatarEl = document.getElementById('patient-initial');
+                const avatarSrc = OrsomoCore.ImageStore.resolveImageUrl(currentPatientData.profile_thumb || currentPatientData.profile_pic || '');
+                if (avatarSrc) {
+                    avatarEl.innerHTML = `<img src="${avatarSrc}" alt="avatar" class="w-full h-full object-cover">`;
+                } else {
+                    avatarEl.innerText = currentPatientData.name ? String(currentPatientData.name).trim().charAt(0) : '?';
+                }
+            } catch (error) {
+                console.error(error);
+            }
+        }
+
+        function previewCriticalVitals() {
+            const sysVal = document.getElementById('vital-sys').value;
+            const diaVal = document.getElementById('vital-dia').value;
+            const sugarVal = document.getElementById('vital-sugar').value;
+
+            const crit = OrsomoCore.Alerts.evaluateCriticalVitals({
+                sys: sysVal,
+                dia: diaVal,
+                sugar: sugarVal
+            });
+            const alertBox = document.getElementById('live-critical-alert');
+            if (crit.isCritical) {
+                document.getElementById('live-critical-title').innerText = crit.alertTitle;
+                document.getElementById('live-critical-details').innerText = crit.alertDetails;
+                alertBox.classList.remove('hidden');
+            } else {
+                alertBox.classList.add('hidden');
+            }
+        }
+
+        async function saveVitals() {
+            if (!authCtx || !db) return;
+
+            const sysVal = document.getElementById('vital-sys').value.trim();
+            const diaVal = document.getElementById('vital-dia').value.trim();
+            const hrVal = document.getElementById('vital-hr').value.trim();
+            const sugarVal = document.getElementById('vital-sugar').value.trim();
+            const noteVal = document.getElementById('vital-note').value.trim();
+
+            if ((sysVal && !diaVal) || (!sysVal && diaVal)) {
+                showToast('กรุณากรอกความดันโลหิตให้ครบทั้งตัวบน (SYS) และตัวล่าง (DIA)', 'error');
+                return;
+            }
             if (!sysVal && !diaVal && !sugarVal) {
-                alert("กรุณากรอกข้อมูลความดันโลหิต หรือ ข้อมูลน้ำตาลในเลือด อย่างน้อย 1 รายการ");
+                showToast('กรุณากรอกข้อมูลความดันโลหิต หรือ น้ำตาลในเลือด อย่างน้อย 1 รายการ', 'error');
                 return;
             }
 
@@ -211,53 +247,64 @@
             btn.disabled = true;
             btn.innerHTML = '<div class="loader-small" style="border-width:2px; width:20px; height:20px; border-bottom-color:transparent;"></div> กำลังบันทึก...';
 
-            const assessDate = document.getElementById('assess-date').value;
-            const dateParts = assessDate.split('-');
-            const thaiYear = parseInt(dateParts[0]) + 543;
-            const formattedDate = `${dateParts[2]}/${dateParts[1]}/${thaiYear}`;
+            const assessDateInput = document.getElementById('assess-date').value;
+            const formattedDate = OrsomoCore.DateUtils.toThaiDate(assessDateInput || new Date());
+            const assessorName = OrsomoCore.UI.formatVHVName(authCtx.user);
 
-            // 🌟 1. สร้างก้อนข้อมูลสำหรับเก็บใน Collection Vitals 🌟
             const vitalsData = {
-                patient_id: patientId,
+                patient_id: String(patientId),
                 date: formattedDate,
                 sys: sysVal,
                 dia: diaVal,
                 hr: hrVal,
                 sugar: sugarVal,
                 meal: sugarVal ? document.querySelector('input[name="meal_status"]:checked').value : '',
-                assessor_uid: currentUserUid,      // เก็บ UID คนประเมิน
-                assessor_name: currentUserName,    // เก็บชื่อคนประเมิน
+                note: noteVal,
+                assessor_uid: authCtx.uid,
+                assessor_name: assessorName,
                 timestamp: firebase.firestore.FieldValue.serverTimestamp()
             };
 
             try {
                 const batch = db.batch();
-                
-                // เก็บลง Vitals
                 const newVitalsRef = db.collection('Vitals').doc();
                 batch.set(newVitalsRef, vitalsData);
-                
-                // อัปเดตลง Patients (last_assess)
+
+                // แยกบันทึกเฉพาะ last_vital_date โดยไม่เขียนทับ last_assess ของ ADL/2Q9Q (ข้อ 2.3 ก.)
                 const patientRef = db.collection('Patients').doc(String(patientId));
                 batch.update(patientRef, {
-                    last_assess: formattedDate
+                    last_vital_date: formattedDate,
+                    updated_at: firebase.firestore.FieldValue.serverTimestamp()
                 });
 
                 await batch.commit();
-                
-                alert("บันทึกข้อมูลสุขภาพสำเร็จ!");
-                window.location.href = `patient_profile.html?id=${patientId}`;
 
+                // ตรวจส่งแจ้งเตือน LINE ด่วนกรณีพบความดัน/น้ำตาลวิกฤต (ข้อ 5.4)
+                const critCheck = OrsomoCore.Alerts.evaluateCriticalVitals({
+                    sys: sysVal,
+                    dia: diaVal,
+                    sugar: sugarVal
+                });
+                if (critCheck.isCritical) {
+                    await OrsomoCore.Alerts.sendCriticalHealthAlert(db, {
+                        patient: currentPatientData,
+                        alertTitle: critCheck.alertTitle,
+                        alertDetails: critCheck.alertDetails + (noteVal ? ` (อาการ: ${noteVal})` : ''),
+                        assessorName: assessorName
+                    });
+                }
+
+                showToast('บันทึกสัญญาณชีพเรียบร้อยแล้ว', 'success', `patient_profile.html?id=${encodeURIComponent(patientId)}`);
             } catch (error) {
                 console.error(error);
-                alert("เกิดข้อผิดพลาดในการบันทึกข้อมูล กรุณาลองใหม่");
+                showToast('เกิดข้อผิดพลาดในการบันทึกข้อมูล กรุณาลองใหม่', 'error');
                 btn.disabled = false;
                 btn.innerHTML = '<span class="material-symbols-outlined">save</span> บันทึกข้อมูลสุขภาพ';
             }
         }
 
         function goBack() {
-            if(patientId) window.location.href = `patient_profile.html?id=${patientId}`;
+            if (patientId) window.location.href = `patient_profile.html?id=${encodeURIComponent(patientId)}`;
             else window.location.href = 'assessments.html';
         }
     </script>

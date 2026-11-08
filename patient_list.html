@@ -3,58 +3,117 @@
 <head>
     <meta charset="utf-8"/>
     <meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" name="viewport"/>
-    <title>รายชื่อผู้ป่วยทั้งหมด - อสม.สามารถ (Orsomo Smart)</title>
+    <title>ทะเบียนผู้ป่วย - อสม.สามารถ (Orsomo Smart)</title>
     <script src="https://cdn.tailwindcss.com?plugins=forms"></script>
     <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700&display=swap" rel="stylesheet"/>
     <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
-    
+
     <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore-compat.js"></script>
     <script charset="utf-8" src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
     <script src="config.js"></script>
+    <script src="core.js"></script>
 
     <style>
-        body { font-family: 'Sarabun', sans-serif; background-color: #f8fafc; padding-bottom: 90px; -webkit-tap-highlight-color: transparent;}
+        body { font-family: 'Sarabun', sans-serif; background-color: #f8fafc; padding-bottom: 92px; -webkit-tap-highlight-color: transparent; }
         .material-symbols-outlined { font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24; }
+        .scope-btn { flex: 1; padding: 10px 12px; border-radius: 12px; font-size: 12.5px; font-weight: 700; transition: all 0.2s; display: flex; align-items: center; justify-content: center; gap: 6px; }
+        .scope-btn.active { background-color: #00694a; color: #ffffff; box-shadow: 0 2px 8px rgba(0,105,74,0.2); }
+        .scope-btn:not(.active) { color: #475569; background-color: transparent; }
+        .group-pill { padding: 7px 14px; border-radius: 9999px; font-size: 12px; font-weight: 700; background-color: #ffffff; color: #475569; border: 1px solid #e2e8f0; white-space: nowrap; transition: all 0.2s; }
+        .group-pill.active { background-color: #0f172a; color: #ffffff; border-color: #0f172a; }
         .loader { border: 3px solid #d8e3fb; border-bottom-color: #00694a; border-radius: 50%; width: 36px; height: 36px; animation: spin 1s linear infinite; }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        .scrollbar-hidden::-webkit-scrollbar { display: none; }
+        .scrollbar-hidden { -ms-overflow-style: none; scrollbar-width: none; }
     </style>
 </head>
 <body class="text-[#111c2d]">
 
-    <header class="bg-[#00694a] sticky top-0 z-50 shadow-md flex items-center w-full px-4 h-16 text-white gap-3">
-        <button onclick="window.location.href='dashboard.html'" class="w-10 h-10 flex items-center justify-center rounded-full hover:bg-white/20 transition-colors">
-            <span class="material-symbols-outlined">arrow_back</span>
+    <header class="bg-[#00694a] sticky top-0 z-50 shadow-md flex items-center justify-between w-full px-4 h-16 text-white">
+        <div class="flex items-center gap-3">
+            <button onclick="window.location.href='dashboard.html'" class="w-10 h-10 flex items-center justify-center rounded-full hover:bg-white/20 transition-colors">
+                <span class="material-symbols-outlined">arrow_back</span>
+            </button>
+            <div>
+                <h1 class="text-base font-bold leading-tight">ทะเบียนผู้ป่วยในพื้นที่</h1>
+                <p id="header-sub-label" class="text-[11px] text-emerald-100">กำลังโหลดข้อมูล...</p>
+            </div>
+        </div>
+        <button onclick="window.location.href='patient_register.html'" class="bg-white/15 hover:bg-white/25 text-white px-3 py-1.5 rounded-xl text-xs font-bold flex items-center gap-1 transition-colors">
+            <span class="material-symbols-outlined text-[16px]">person_add</span> เพิ่มรายใหม่
         </button>
-        <h1 class="text-lg font-bold">รายชื่อผู้ป่วยทั้งหมด</h1>
     </header>
 
-    <main class="max-w-2xl mx-auto pt-6 pb-4">
-        
-        <div class="px-4 mb-6">
-            <div class="relative">
-                <span class="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-gray-500 text-[22px]">search</span>
-                <input type="text" id="search-input" oninput="filterPatients()" class="w-full pl-12 pr-4 py-4 bg-white border border-gray-200 rounded-[18px] text-[15px] focus:outline-none focus:ring-2 focus:ring-[#00694a] focus:border-transparent shadow-sm text-gray-700 placeholder-gray-400" placeholder="ค้นหาชื่อ, นามสกุล, บ้านเลขที่ หรือ หมู่ที่...">
-            </div>
-            
-            <div class="flex justify-between items-end mt-4 px-1">
-                <p class="text-[13px] font-bold text-gray-600">พบข้อมูล <span id="count-display" class="text-[#00694a]">0</span> รายการ</p>
-                <button onclick="sortByVillage()" class="flex items-center gap-1 text-[11px] font-bold text-gray-500 hover:text-[#00694a] bg-white px-3 py-1.5 rounded-full border border-gray-200 shadow-sm">
-                    <span class="material-symbols-outlined text-[16px]">sort</span> เรียงตามหมู่
+    <main class="max-w-2xl mx-auto pt-4 pb-6">
+
+        <!-- สวิตช์สลับมุมมอง: ที่ฉันดูแล vs ทั้งหมู่บ้านตัวเอง -->
+        <div class="px-4 mb-4">
+            <div class="bg-slate-200/70 p-1 rounded-2xl flex items-center gap-1 border border-slate-200">
+                <button type="button" id="scope-assigned" onclick="setScopeMode('assigned')" class="scope-btn active">
+                    <span class="material-symbols-outlined text-[16px]">assignment_ind</span>
+                    <span>ที่ฉันดูแล (<span id="count-scope-assigned">0</span>)</span>
+                </button>
+                <button type="button" id="scope-village" onclick="setScopeMode('village')" class="scope-btn">
+                    <span class="material-symbols-outlined text-[16px]">holiday_village</span>
+                    <span>ทั้งหมู่ที่ <span id="label-scope-village">-</span> (<span id="count-scope-village">0</span>)</span>
                 </button>
             </div>
         </div>
 
-        <div id="loading-state" class="flex flex-col items-center justify-center py-10 space-y-3">
+        <!-- ช่องค้นหาและกรองสถานะ -->
+        <div class="px-4 space-y-3 mb-4">
+            <div class="relative">
+                <span class="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 text-[21px]">search</span>
+                <input type="text" id="search-input" oninput="renderPatientList()" class="w-full pl-11 pr-4 py-3.5 bg-white border border-gray-200 rounded-[16px] text-[14px] focus:outline-none focus:ring-2 focus:ring-[#00694a] shadow-sm text-gray-700 placeholder-gray-400" placeholder="ค้นหาชื่อ, นามสกุล, บ้านเลขที่ หรือ เลขบัตร ปชช....">
+            </div>
+
+            <div class="grid grid-cols-2 gap-2.5">
+                <div>
+                    <label class="block text-[10px] font-bold text-slate-500 mb-1 pl-1">สถานะการติดตาม</label>
+                    <select id="status-filter" onchange="updateScopeCountsAndRender()" class="w-full px-3 py-2.5 bg-white border border-slate-200 rounded-xl text-xs font-bold text-slate-700 focus:ring-2 focus:ring-[#00694a] outline-none shadow-sm">
+                        <option value="Active" selected>กำลังดูแล (ปกติ)</option>
+                        <option value="ย้ายที่อยู่">ย้ายที่อยู่</option>
+                        <option value="เสียชีวิต">เสียชีวิต</option>
+                        <option value="เลิกติดตาม">เลิกติดตาม</option>
+                        <option value="ALL">ดูทุกสถานะรวมกัน</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-[10px] font-bold text-slate-500 mb-1 pl-1">การเรียงลำดับ</label>
+                    <select id="sort-select" onchange="renderPatientList()" class="w-full px-3 py-2.5 bg-white border border-slate-200 rounded-xl text-xs font-bold text-slate-700 focus:ring-2 focus:ring-[#00694a] outline-none shadow-sm">
+                        <option value="priority">ติดเตียง / ด่วนขึ้นก่อน</option>
+                        <option value="house">เรียงตามบ้านเลขที่</option>
+                        <option value="name">เรียงตามชื่อ ก-ฮ</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="flex gap-2 overflow-x-auto pb-1 scrollbar-hidden">
+                <button type="button" onclick="setGroupFilter('ALL', this)" class="group-pill active">ทุกกลุ่ม</button>
+                <button type="button" onclick="setGroupFilter('ติดเตียง', this)" class="group-pill">ติดเตียง</button>
+                <button type="button" onclick="setGroupFilter('ติดบ้าน', this)" class="group-pill">ติดบ้าน</button>
+                <button type="button" onclick="setGroupFilter('ติดสังคม', this)" class="group-pill">ติดสังคม</button>
+                <button type="button" onclick="setGroupFilter('UNASSESSED', this)" class="group-pill">ยังไม่ประเมิน</button>
+            </div>
+
+            <div class="flex justify-between items-center pt-1 px-1">
+                <p class="text-[12px] font-bold text-gray-600">แสดงผล <span id="count-display" class="text-[#00694a]">0</span> ราย</p>
+                <span id="status-summary-hint" class="text-[11px] text-slate-400">แตะรายชื่อเพื่อเปิดแฟ้มประวัติ</span>
+            </div>
+        </div>
+
+        <div id="loading-state" class="flex flex-col items-center justify-center py-12 space-y-3">
             <div class="loader"></div>
             <p class="text-xs text-gray-400 animate-pulse">กำลังโหลดข้อมูลจาก Firebase...</p>
         </div>
 
-        <div id="patient-list" class="space-y-4 px-4 hidden mb-6"></div>
-        
-        <div id="empty-state" class="hidden text-center py-14 space-y-3 text-gray-400">
+        <div id="patient-list" class="space-y-3 px-4 hidden mb-6"></div>
+
+        <div id="empty-state" class="hidden text-center py-14 space-y-2 text-gray-400 px-4">
             <span class="material-symbols-outlined text-[48px]">person_search</span>
-            <p class="text-[13px]">ไม่พบข้อมูลที่ค้นหา</p>
+            <p class="text-[13px] font-medium" id="empty-msg">ไม่พบรายชื่อผู้ป่วยที่ค้นหา</p>
         </div>
 
     </main>
@@ -79,156 +138,228 @@
     </nav>
 
     <script>
-        firebase.initializeApp(firebaseConfig);
-        firebase.firestore().enablePersistence({ synchronizeTabs: true }).catch(err => console.warn('Offline persistence error:', err.code));
-        const db = firebase.firestore();
+        let authCtx = null;
+        let db = null;
+        let permittedPatients = [];
+        let currentScope = sessionStorage.getItem('vhv_scope_mode') || '';
+        let currentGroupFilter = 'ALL';
 
-        let allPatients = []; 
-        let isSortedByVillage = false;
-        let currentUserUid = "";
-        let vhvCurrentVillage = ""; 
-
-        document.addEventListener("DOMContentLoaded", () => {
-            liff.init({ liffId: LIFF_ID }).then(() => {
-                const mockUid = localStorage.getItem('dev_mock_uid');
-                const savedUid = localStorage.getItem('orsomo_uid');
-                if (mockUid) {
-                    currentUserUid = mockUid;
-                    fetchVHVProfile(mockUid).then(() => fetchPatients());
-                } else if (liff.isLoggedIn()) {
-                    liff.getProfile().then(async p => {
-                        localStorage.setItem('orsomo_uid', p.userId);
-                        currentUserUid = p.userId;
-                        await fetchVHVProfile(currentUserUid); 
-                        fetchPatients(); 
-                    });
-                } else if (savedUid) {
-                    currentUserUid = savedUid;
-                    fetchVHVProfile(savedUid).then(() => fetchPatients());
-                } else { window.location.href = 'index.html'; }
-            }).catch(err => {
-                // กรณีโหลด LIFF ล้มเหลว
-                window.location.href = 'index.html';
-            });
-        });
-
-        // ดึงข้อมูลเขตพื้นที่รับผิดชอบของ อสม. จาก Firebase (ไม่พึ่ง GAS)
-        async function fetchVHVProfile(uid) {
+        document.addEventListener("DOMContentLoaded", async () => {
             try {
-                const docSnap = await db.collection('VHVs').doc(String(uid)).get();
-                if(docSnap.exists) {
-                    const data = docSnap.data();
-                    // ตรวจสอบสถานะการอนุมัติ
-                    if(data.status === 'Rejected' || data.status === 'Pending') {
-                        window.location.href = 'index.html';
-                        return;
-                    }
-                    vhvCurrentVillage = String(data.village_no || data.village || "").trim();
-                } else {
-                    // หากไม่พบข้อมูลบัญชี ให้กลับไปหน้าลงทะเบียน
-                    window.location.href = 'index.html';
-                }
-            } catch (error) { console.error("ดึงข้อมูล อสม. ล้มเหลว", error); }
-        }
+                authCtx = await OrsomoCore.Auth.guardPage({
+                    allowedRoles: ['VHV', 'SUB_ADMIN', 'ADMIN'],
+                    loginUrl: 'index.html'
+                });
+                db = authCtx.db;
+
+                const vLabel = authCtx.villageNo || '-';
+                document.getElementById('label-scope-village').innerText = vLabel;
+                document.getElementById('header-sub-label').innerText =
+                    (authCtx.villageNo ? `หมู่ที่ ${authCtx.villageNo} • ` : '') + authCtx.hospitalName;
+
+                await fetchPatients();
+            } catch (err) {
+                console.warn("Access check stopped:", err && err.message ? err.message : err);
+            }
+        });
 
         async function fetchPatients() {
             try {
                 const snapshot = await db.collection('Patients').get();
-                const rawPatients = [];
-                snapshot.forEach(doc => rawPatients.push(doc.data()));
-                
-                allPatients = rawPatients.filter(p => {
-                    const isActive = String(p.status || 'Active').trim().toLowerCase() === 'active';
-                    const isMyVillage = String(p.village_no).trim() === vhvCurrentVillage;
-                    const isAssignedToMe = (p.assigned_vhv_id && String(p.assigned_vhv_id) === String(currentUserUid));
-                    
-                    // แสดงเคสที่ได้รับมอบหมายตรง หรือ เคสในหมู่บ้านที่ยังไม่มีใครดูแล
-                    const shouldShow = isAssignedToMe || (!p.assigned_vhv_id && isMyVillage);
-
-                    return isActive && shouldShow && vhvCurrentVillage !== "";
+                const rawList = [];
+                snapshot.forEach(doc => {
+                    const d = doc.data() || {};
+                    rawList.push(Object.assign({}, d, { docId: doc.id }));
                 });
-                
-                renderPatientList();
+
+                // จำกัดสิทธิ์เฉพาะผู้ป่วยในหมู่บ้านตัวเอง หรือที่ได้รับมอบหมายตรง (รวมทุกสถานะเพื่อให้กรองดูย้าย/เสียชีวิต/เลิกติดตามได้)
+                permittedPatients = rawList.filter(p => {
+                    if (authCtx.role === 'ADMIN') return true;
+                    if (authCtx.role === 'SUB_ADMIN') {
+                        return authCtx.assignedVillages.includes(String(p.village_no || '').trim());
+                    }
+                    const sameVillage = authCtx.villageNo !== '' && String(p.village_no || '').trim() === authCtx.villageNo;
+                    const assignedToMe = String(p.assigned_vhv_id || '').trim() === authCtx.uid;
+                    return sameVillage || assignedToMe;
+                });
+
+                if (!currentScope) {
+                    const activeAssigned = permittedPatients.filter(p =>
+                        OrsomoCore.PatientValidator.isActiveStatus(p.status) &&
+                        String(p.assigned_vhv_id || '').trim() === authCtx.uid
+                    );
+                    currentScope = activeAssigned.length > 0 ? 'assigned' : 'village';
+                }
+
+                updateScopeCountsAndRender();
                 document.getElementById('loading-state').classList.add('hidden');
                 document.getElementById('patient-list').classList.remove('hidden');
             } catch (error) {
-                alert("ไม่สามารถเชื่อมต่อฐานข้อมูลได้");
+                console.error(error);
+                showToast("ไม่สามารถเชื่อมต่อฐานข้อมูลได้", "error");
             }
         }
 
-        function sortByVillage() {
-            isSortedByVillage = !isSortedByVillage;
-            if(isSortedByVillage) {
-                allPatients.sort((a, b) => {
-                    const vA = parseInt(String(a.village_no).replace(/\D/g, '')) || 999;
-                    const vB = parseInt(String(b.village_no).replace(/\D/g, '')) || 999;
-                    return vA - vB;
-                });
-            } else {
-                allPatients.sort((a, b) => parseInt(a.id) - parseInt(b.id)); // เรียงตาม ID เดิม
-            }
+        function setScopeMode(mode) {
+            currentScope = mode;
+            sessionStorage.setItem('vhv_scope_mode', mode);
+            updateScopeCountsAndRender();
+        }
+
+        function setGroupFilter(grp, btnEl) {
+            currentGroupFilter = grp;
+            document.querySelectorAll('.group-pill').forEach(b => b.classList.remove('active'));
+            if (btnEl) btnEl.classList.add('active');
             renderPatientList();
+        }
+
+        function matchesSelectedStatus(p, statusVal) {
+            if (statusVal === 'ALL') return true;
+            return OrsomoCore.PatientValidator.normalizeStatus(p.status) === statusVal;
+        }
+
+        function updateScopeCountsAndRender() {
+            const statusVal = document.getElementById('status-filter').value;
+            const byStatus = permittedPatients.filter(p => matchesSelectedStatus(p, statusVal));
+
+            const assignedCount = byStatus.filter(p => String(p.assigned_vhv_id || '').trim() === authCtx.uid).length;
+            const villageCount = byStatus.filter(p => {
+                if (authCtx.role !== 'VHV') return true;
+                return authCtx.villageNo !== '' && String(p.village_no || '').trim() === authCtx.villageNo;
+            }).length;
+
+            document.getElementById('count-scope-assigned').innerText = assignedCount;
+            document.getElementById('count-scope-village').innerText = villageCount;
+
+            document.getElementById('scope-assigned').classList.toggle('active', currentScope === 'assigned');
+            document.getElementById('scope-village').classList.toggle('active', currentScope !== 'assigned');
+
+            renderPatientList();
+        }
+
+        function sortPatientItems(list, sortMode) {
+            const groupRank = { 'ติดเตียง': 1, 'ติดบ้าน': 2, 'ติดสังคม': 3 };
+            return list.slice().sort((a, b) => {
+                if (sortMode === 'name') {
+                    return String(a.name || '').localeCompare(String(b.name || ''), 'th');
+                }
+                if (sortMode === 'house') {
+                    return String(a.house_no || '').localeCompare(String(b.house_no || ''), 'th', { numeric: true });
+                }
+                // ค่าเริ่มต้น: เรียงกลุ่มติดเตียง/ติดบ้านขึ้นก่อน ตามด้วยบ้านเลขที่
+                const rA = groupRank[a.group] || 4;
+                const rB = groupRank[b.group] || 4;
+                if (rA !== rB) return rA - rB;
+                return String(a.house_no || '').localeCompare(String(b.house_no || ''), 'th', { numeric: true });
+            });
         }
 
         function renderPatientList() {
             const container = document.getElementById('patient-list');
             const emptyState = document.getElementById('empty-state');
             const searchKeyword = document.getElementById('search-input').value.trim().toLowerCase();
+            const statusVal = document.getElementById('status-filter').value;
+            const sortMode = document.getElementById('sort-select').value;
             const countDisplay = document.getElementById('count-display');
-            
+
             container.innerHTML = '';
-            let displayCount = 0;
 
-            allPatients.forEach(p => {
-                const nameMatch = p.name ? p.name.toLowerCase().includes(searchKeyword) : false;
-                const houseMatch = p.house_no ? String(p.house_no).toLowerCase().includes(searchKeyword) : false;
-                const villageMatch = p.village_no ? String(p.village_no).toLowerCase().includes(searchKeyword) : false;
-                
-                if (searchKeyword && !nameMatch && !houseMatch && !villageMatch) return;
+            let filtered = permittedPatients.filter(p => {
+                if (!matchesSelectedStatus(p, statusVal)) return false;
 
-                displayCount++;
+                if (currentScope === 'assigned') {
+                    if (String(p.assigned_vhv_id || '').trim() !== authCtx.uid) return false;
+                } else if (authCtx.role === 'VHV') {
+                    if (authCtx.villageNo === '' || String(p.village_no || '').trim() !== authCtx.villageNo) return false;
+                }
 
+                if (currentGroupFilter !== 'ALL') {
+                    if (currentGroupFilter === 'UNASSESSED') {
+                        if (p.group && p.group !== 'ยังไม่ประเมิน' && p.group !== '-') return false;
+                    } else if (p.group !== currentGroupFilter) {
+                        return false;
+                    }
+                }
+
+                if (searchKeyword) {
+                    const fullName = `${p.prefix || ''}${p.name || ''}`.toLowerCase();
+                    const houseMatch = String(p.house_no || '').toLowerCase().includes(searchKeyword);
+                    const idMatch = String(p.id_card || '').toLowerCase().includes(searchKeyword);
+                    const vilMatch = String(p.village_no || '').toLowerCase().includes(searchKeyword);
+                    if (!fullName.includes(searchKeyword) && !houseMatch && !idMatch && !vilMatch) return false;
+                }
+                return true;
+            });
+
+            filtered = sortPatientItems(filtered, sortMode);
+            countDisplay.innerText = filtered.length;
+
+            if (filtered.length === 0) {
+                emptyState.classList.remove('hidden');
+                return;
+            }
+            emptyState.classList.add('hidden');
+
+            filtered.forEach(p => {
                 let badgeColor = 'bg-gray-100 text-gray-600';
                 if (p.group === 'ติดสังคม') badgeColor = 'bg-[#00694a] text-white';
                 else if (p.group === 'ติดบ้าน') badgeColor = 'bg-[#f59e0b] text-white';
                 else if (p.group === 'ติดเตียง') badgeColor = 'bg-[#dc2626] text-white';
 
-                let groupDisplay = (p.group !== 'ยังไม่ประเมิน' && p.group !== '-') ? p.group : 'ต้องประเมิน';
+                const groupDisplay = (p.group && p.group !== 'ยังไม่ประเมิน' && p.group !== '-') ? p.group : 'ต้องประเมิน';
+                const ageTxt = OrsomoCore.DateUtils.calculateAge(p.dob, p.age);
+                const statusMeta = OrsomoCore.PatientValidator.getStatusMeta(p.status);
+                const isInactive = statusMeta.value !== 'Active';
 
-                let avatarHtml = `<div class="w-14 h-14 rounded-[14px] bg-[#eef2ff] text-[#00694a] font-bold text-xl flex items-center justify-center flex-shrink-0">${p.name ? p.name.substring(0,1) : '?'}</div>`;
-                if(p.profile_pic && p.profile_pic.startsWith('http')) {
-                    avatarHtml = `<img src="${p.profile_pic}" class="w-14 h-14 rounded-[14px] object-cover flex-shrink-0 shadow-sm">`;
+                const avatarSrc = p.profile_thumb || p.profile_pic || '';
+                let avatarHtml = `<div class="w-[52px] h-[52px] rounded-[14px] bg-[#eef2ff] text-[#00694a] font-bold text-lg flex items-center justify-center shrink-0">${p.name ? String(p.name).trim().charAt(0) : '?'}</div>`;
+                if (avatarSrc && (avatarSrc.startsWith('http') || avatarSrc.startsWith('data:image'))) {
+                    avatarHtml = `<img src="${avatarSrc}" class="w-[52px] h-[52px] rounded-[14px] object-cover shrink-0 shadow-sm border border-slate-100">`;
                 }
 
-                // สัญลักษณ์ช่วยให้ อสม. ทราบว่านี่คือเคสที่ถูกแอดมินเจาะจงมอบหมายมา
-                let infoBadge = '';
-                if(p.assigned_vhv_id === currentUserUid) {
-                    infoBadge = `<span class="material-symbols-outlined text-emerald-500 text-[14px]" title="ได้รับมอบหมายตรง">assignment_ind</span>`;
-                }
+                const isMyCase = String(p.assigned_vhv_id || '').trim() === authCtx.uid;
+                const assignedBadge = isMyCase
+                    ? `<span class="inline-flex items-center gap-0.5 text-[10px] font-bold text-emerald-700 bg-emerald-50 px-1.5 py-0.5 rounded border border-emerald-200 shrink-0"><span class="material-symbols-outlined text-[12px]">assignment_ind</span> ดูแล</span>`
+                    : '';
 
+                const dp = OrsomoCore.DiaperAdapter.parse(p.diaper);
+                const diaperChip = dp.approve_status === 'อนุมัติแล้ว'
+                    ? `<span class="inline-flex items-center gap-0.5 text-[10px] font-bold text-blue-700 bg-blue-50 px-1.5 py-0.5 rounded border border-blue-200"><span class="material-symbols-outlined text-[11px]">wc</span> สิทธิ์ผ้าอ้อม</span>`
+                    : '';
+
+                const inactiveChip = isInactive
+                    ? `<span class="inline-flex items-center gap-0.5 text-[10px] font-bold px-2 py-0.5 rounded border ${statusMeta.colorClass}">${statusMeta.label}${p.status_date ? ' (' + p.status_date + ')' : ''}</span>`
+                    : '';
+
+                const phoneClean = String(p.caregiver_phone || '').replace(/[^\d+]/g, '');
+                const callBtnHtml = phoneClean
+                    ? `<a href="tel:${phoneClean}" onclick="event.stopPropagation()" class="w-8 h-8 rounded-full bg-blue-50 text-blue-600 flex items-center justify-center hover:bg-blue-100 border border-blue-100" title="โทรหาผู้ดูแล"><span class="material-symbols-outlined text-[16px]">call</span></a>`
+                    : '';
+
+                const safeDocId = encodeURIComponent(p.docId);
                 const cardHtml = `
-                    <div onclick="window.location.href='patient_profile.html?id=${p.id}'" class="bg-white rounded-[20px] p-4 shadow-sm border border-gray-100 flex items-center gap-4 cursor-pointer active:scale-[0.98] transition-transform">
+                    <div onclick="window.location.href='patient_profile.html?id=${safeDocId}'" class="bg-white rounded-[20px] p-4 shadow-sm border ${isInactive ? 'border-slate-200 opacity-85' : 'border-gray-100'} flex items-center gap-3.5 cursor-pointer active:scale-[0.98] transition-transform">
                         ${avatarHtml}
                         <div class="flex-1 min-w-0">
-                            <h3 class="font-bold text-[15px] text-gray-900 truncate flex items-center gap-1">${p.name || 'ไม่ระบุชื่อ'} ${infoBadge}</h3>
-                            <p class="text-xs text-gray-500 mt-1 truncate">บ้านเลขที่ ${p.house_no || '-'} • หมู่ ${p.village_no || '-'}</p>
+                            <div class="flex items-center gap-1.5 flex-wrap">
+                                <h3 class="font-bold text-[15px] text-gray-900 truncate">${p.prefix || ''}${p.name || 'ไม่ระบุชื่อ'}</h3>
+                                ${assignedBadge}
+                            </div>
+                            <p class="text-xs text-gray-500 mt-0.5 truncate">อายุ ${ageTxt} ปี • บ้านเลขที่ ${p.house_no || '-'} หมู่ ${p.village_no || '-'}</p>
+                            <div class="flex items-center gap-1.5 flex-wrap mt-1.5 empty:hidden">${inactiveChip}${diaperChip}</div>
                         </div>
-                        <div class="flex flex-col items-end justify-center gap-2 flex-shrink-0">
-                            <span class="${badgeColor} text-[10px] font-bold px-3 py-1 rounded-full shadow-sm">${groupDisplay}</span>
-                            <span class="text-[10px] text-gray-400 italic">ADL: ${p.adl || '-'}</span>
+                        <div class="flex flex-col items-end justify-center gap-1.5 shrink-0">
+                            <span class="${badgeColor} text-[10px] font-bold px-2.5 py-1 rounded-full shadow-sm">${groupDisplay}</span>
+                            <div class="flex items-center gap-1.5">
+                                <span class="text-[10px] text-gray-400 font-semibold">ADL: ${p.adl !== undefined && p.adl !== '' ? p.adl : '-'}</span>
+                                ${callBtnHtml}
+                            </div>
                         </div>
                     </div>
                 `;
                 container.insertAdjacentHTML('beforeend', cardHtml);
             });
-
-            countDisplay.innerText = displayCount;
-
-            if (displayCount === 0) emptyState.classList.remove('hidden');
-            else emptyState.classList.add('hidden');
         }
-
-        function filterPatients() { renderPatientList(); }
     </script>
 </body>
 </html>

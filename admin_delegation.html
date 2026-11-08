@@ -10,8 +10,10 @@
     <script charset="utf-8" src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
     
     <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore-compat.js"></script>
     <script src="config.js"></script>
+    <script src="core.js"></script>
     
     <style>
         body { font-family: 'Sarabun', sans-serif; background-color: #f4f7fa; }
@@ -66,17 +68,18 @@
             <button onclick="toggleSidebar()" class="lg:hidden text-slate-400 p-1"><span class="material-symbols-outlined">close</span></button>
         </div>
         <nav class="flex-1 px-4 py-6 space-y-2 overflow-y-auto">
-    <a href="admin_dashboard.html" class="flex items-center gap-3 px-4 py-3.5 text-slate-400 hover:bg-white/5 hover:text-white rounded-xl font-medium transition-all"><span class="material-symbols-outlined">dashboard</span> ภาพรวมระบบ</a>
-    <a href="admin_resources.html" class="flex items-center gap-3 px-4 py-3.5 text-slate-400 hover:bg-white/5 hover:text-white rounded-xl font-medium transition-all"><span class="material-symbols-outlined">inventory_2</span> บริหารทรัพยากร</a>
-    <a href="admin_inventory.html" id="nav-inventory" class="flex items-center gap-3 px-4 py-3.5 text-slate-400 hover:bg-white/5 hover:text-white rounded-xl font-medium transition-all"><span class="material-symbols-outlined">warehouse</span> ระบบคลังพัสดุ กปท.</a>
-    <a href="admin_datacenter.html" class="flex items-center gap-3 px-4 py-3.5 text-slate-400 hover:bg-white/5 hover:text-white rounded-xl font-medium transition-all"><span class="material-symbols-outlined">folder_shared</span> ศูนย์ข้อมูลผู้ป่วย</a>
-    <a href="admin_map.html" class="flex items-center gap-3 px-4 py-3.5 text-slate-400 hover:bg-white/5 hover:text-white rounded-xl font-medium transition-all"><span class="material-symbols-outlined">map</span> แผนที่พิกัดผู้ป่วย</a>
-    <a href="admin_delegation.html" class="flex items-center gap-3 px-4 py-3.5 text-slate-400 hover:bg-white/5 hover:text-white rounded-xl font-medium transition-all"><span class="material-symbols-outlined">assignment_ind</span> มอบหมายงาน อสม.</a>
-    <a href="admin_analytics.html" class="flex items-center gap-3 px-4 py-3.5 text-slate-400 hover:bg-white/5 hover:text-white rounded-xl font-medium transition-all"><span class="material-symbols-outlined">analytics</span> ศูนย์รายงาน (Export)</a>
-    <a href="admin_reports.html" id="nav-reports" class="flex items-center gap-3 px-4 py-3.5 text-slate-400 hover:bg-white/5 hover:text-white rounded-xl font-medium transition-all"><span class="material-symbols-outlined">gavel</span> บันทึกมติผ้าอ้อม</a>
-    <a href="admin_finance.html" id="nav-finance" class="flex items-center gap-3 px-4 py-3.5 text-slate-400 hover:bg-white/5 hover:text-white rounded-xl font-medium transition-all"><span class="material-symbols-outlined">account_balance_wallet</span> แผนการเงิน</a>
-    <a href="admin_settings.html" id="nav-settings" class="flex items-center gap-3 px-4 py-3.5 text-slate-400 hover:bg-white/5 hover:text-white rounded-xl font-medium transition-all"><span class="material-symbols-outlined">settings</span> ตั้งค่าระบบ</a>
-</nav>
+            <a href="admin_dashboard.html" class="flex items-center gap-3 px-4 py-3.5 text-slate-400 hover:bg-white/5 hover:text-white rounded-xl font-medium transition-all"><span class="material-symbols-outlined">dashboard</span> ภาพรวมระบบ</a>
+            <a href="admin_resources.html" class="flex items-center gap-3 px-4 py-3.5 text-slate-400 hover:bg-white/5 hover:text-white rounded-xl font-medium transition-all"><span class="material-symbols-outlined">inventory_2</span> บริหารทรัพยากร</a>
+            <a href="admin_inventory.html" id="nav-inventory" class="flex items-center gap-3 px-4 py-3.5 text-slate-400 hover:bg-white/5 hover:text-white rounded-xl font-medium transition-all"><span class="material-symbols-outlined">warehouse</span> ระบบคลังพัสดุ กปท.</a>
+            <a href="admin_equipment.html" id="nav-equipment" class="flex items-center gap-3 px-4 py-3.5 text-slate-400 hover:bg-white/5 hover:text-white rounded-xl font-medium transition-all"><span class="material-symbols-outlined">medical_services</span> ทะเบียนยืม-คืนอุปกรณ์</a>
+            <a href="admin_datacenter.html" class="flex items-center gap-3 px-4 py-3.5 text-slate-400 hover:bg-white/5 hover:text-white rounded-xl font-medium transition-all"><span class="material-symbols-outlined">folder_shared</span> ศูนย์ข้อมูลผู้ป่วย</a>
+            <a href="admin_map.html" class="flex items-center gap-3 px-4 py-3.5 text-slate-400 hover:bg-white/5 hover:text-white rounded-xl font-medium transition-all"><span class="material-symbols-outlined">map</span> แผนที่พิกัดผู้ป่วย</a>
+            <a href="admin_delegation.html" class="flex items-center gap-3 px-4 py-3.5 bg-white/10 text-white rounded-xl font-bold transition-all"><span class="material-symbols-outlined">assignment_ind</span> มอบหมายงาน อสม.</a>
+            <a href="admin_analytics.html" class="flex items-center gap-3 px-4 py-3.5 text-slate-400 hover:bg-white/5 hover:text-white rounded-xl font-medium transition-all"><span class="material-symbols-outlined">analytics</span> ศูนย์รายงาน (Export)</a>
+            <a href="admin_reports.html" id="nav-reports" class="flex items-center gap-3 px-4 py-3.5 text-slate-400 hover:bg-white/5 hover:text-white rounded-xl font-medium transition-all"><span class="material-symbols-outlined">gavel</span> บันทึกมติผ้าอ้อม</a>
+            <a href="admin_finance.html" id="nav-finance" class="flex items-center gap-3 px-4 py-3.5 text-slate-400 hover:bg-white/5 hover:text-white rounded-xl font-medium transition-all"><span class="material-symbols-outlined">account_balance_wallet</span> แผนการเงิน</a>
+            <a href="admin_settings.html" id="nav-settings" class="flex items-center gap-3 px-4 py-3.5 text-slate-400 hover:bg-white/5 hover:text-white rounded-xl font-medium transition-all"><span class="material-symbols-outlined">settings</span> ตั้งค่าระบบ</a>
+        </nav>
     </aside>
 
     <main class="flex-1 flex flex-col min-h-0 bg-slate-50 overflow-y-auto">
@@ -88,9 +91,20 @@
                     <p id="header-hospital-name" class="text-[11px] lg:text-xs text-slate-400 font-medium mt-0.5">จัดการผู้รับผิดชอบเคสและการติดตามสิทธิ์</p>
                 </div>
             </div>
+            
+            <div class="flex items-center gap-3 cursor-pointer" onclick="window.location.href='admin_settings.html'">
+                <div class="hidden md:block text-right">
+                    <p class="text-sm font-bold text-slate-700 leading-tight" id="header-user-name">กำลังโหลด...</p>
+                    <p class="text-[10px] text-slate-400">ไปที่ตั้งค่าข้อมูลส่วนตัว</p>
+                </div>
+                <div class="w-10 h-10 rounded-full bg-slate-200 border-2 border-white shadow-sm overflow-hidden flex items-center justify-center">
+                    <img id="header-profile-pic" src="" class="w-full h-full object-cover hidden">
+                    <span id="header-profile-icon" class="material-symbols-outlined text-slate-400">person</span>
+                </div>
+            </div>
         </header>
 
-        <div class="bg-white p-4 border-b border-slate-200 grid grid-cols-2 gap-3 shadow-sm z-10 sticky top-0 flex-shrink-0 w-full">
+        <div class="bg-white p-4 border-b border-slate-200 grid grid-cols-2 sm:grid-cols-4 gap-3 shadow-sm z-10 sticky top-0 flex-shrink-0 w-full">
             <button class="tab-btn active group" id="tab-new" onclick="switchTab('new')">
                 <span class="text-sm">📋 เคสใหม่</span>
                 <span class="text-xs font-normal text-slate-400 group-[.active]:text-emerald-600">(<span id="badge-new" class="font-bold">0</span> เคส)</span>
@@ -101,82 +115,74 @@
             </button>
             <button class="tab-btn group" id="tab-vhv" onclick="switchTab('vhv')">
                 <span class="text-sm">👥 ทำเนียบ อสม.</span>
-                <span class="text-xs font-normal text-slate-400 group-[.active]:text-emerald-600">(<span id="badge-vhv-count" class="font-bold">0</span> คน)</span>
+                <span class="text-xs font-normal text-slate-400 group-[.active]:text-emerald-600">(<span id="badge-vhv-count" class="font-bold">0</span> ท่าน)</span>
             </button>
             <button class="tab-btn group" id="tab-approve" onclick="switchTab('approve')">
-                <span class="text-sm">🔐 รออนุมัติสิทธิ์</span>
-                <span class="text-xs font-normal text-amber-500/70">(<span id="badge-pending-vhv" class="font-bold">0</span> คำขอ)</span>
-            </button>            
+                <span class="text-sm">⚠️ รออนุมัติ อสม.</span>
+                <span class="text-xs font-normal text-slate-400 group-[.active]:text-amber-600">(<span id="badge-pending-vhv" class="font-bold">0</span> คำขอ)</span>
+            </button>
         </div>
 
-        <div class="p-4 lg:p-6">
-            <div id="loading-state" class="flex flex-col items-center justify-center py-20 space-y-3">
-                <div class="loader-small"></div><p class="text-sm text-slate-400 animate-pulse">กำลังตรวจสอบข้อมูลจาก Firebase...</p>
-            </div>
+        <div id="filter-wrapper" class="p-4 bg-slate-50 border-b border-slate-200 hidden">
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-2 mb-2" id="filter-grid">
+                <input type="text" id="search-input" oninput="filterDataDisplay()" placeholder="ค้นหาชื่อผู้ป่วย, เลขบัตร, บ้านเลขที่..." class="w-full text-xs rounded-xl border-slate-200 focus:ring-emerald-500 shadow-sm bg-white p-2.5">
+                
+                <select id="village-filter" onchange="filterDataDisplay()" class="w-full text-xs rounded-xl border-slate-200 focus:ring-emerald-500 shadow-sm bg-white p-2.5">
+                    <option value="">ดูทุกหมู่บ้าน (ทั้งหมด)</option>
+                </select>
 
-            <div id="filter-wrapper" class="hidden flex flex-col gap-3 mb-5">
-                <div class="relative w-full">
-                    <span class="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-slate-400">search</span>
-                    <input type="text" id="search-input" oninput="filterDataDisplay()" class="w-full pl-12 pr-4 py-2.5 bg-white border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-emerald-500 shadow-sm outline-none" placeholder="ค้นหาชื่อ, เลขบัตร, บ้านเลขที่...">
+                <div id="wrap-group">
+                    <select id="group-filter" onchange="filterDataDisplay()" class="w-full text-xs rounded-xl border-slate-200 focus:ring-emerald-500 shadow-sm bg-white p-2.5">
+                        <option value="">ทุกกลุ่มสุขภาพ</option>
+                        <option value="ติดสังคม">🟢 ติดสังคม</option>
+                        <option value="ติดบ้าน">🟡 ติดบ้าน</option>
+                        <option value="ติดเตียง">🔴 ติดเตียง</option>
+                        <option value="ยังไม่ประเมิน">⚪ ยังไม่ประเมิน</option>
+                    </select>
                 </div>
-                <div class="grid grid-cols-1 md:grid-cols-3 gap-2" id="filter-grid">
-                    <div id="wrap-village">
-                        <select id="village-filter" onchange="filterDataDisplay()" class="w-full px-4 py-2.5 bg-white border border-slate-200 rounded-xl text-sm font-bold text-slate-600 focus:ring-2 focus:ring-emerald-500 shadow-sm outline-none">
-                            <option value="">ดูทุกหมู่ (ทั้งหมด)</option>
-                        </select>
-                    </div>
-                    <div id="wrap-group">
-                        <select id="group-filter" onchange="filterDataDisplay()" class="w-full px-4 py-2.5 bg-white border border-slate-200 rounded-xl text-sm font-bold text-slate-600 focus:ring-2 focus:ring-emerald-500 shadow-sm outline-none">
-                            <option value="">ทุกกลุ่มสุขภาพ</option>
-                            <option value="ติดสังคม">🟢 ติดสังคม</option>
-                            <option value="ติดบ้าน">🟡 ติดบ้าน</option>
-                            <option value="ติดเตียง">🔴 ติดเตียง</option>
-                            <option value="ยังไม่ประเมิน">⚪ ยังไม่ประเมิน</option>
-                        </select>
-                    </div>
-                    <div id="wrap-time">
-                        <select id="time-filter" onchange="filterDataDisplay()" class="w-full px-4 py-2.5 bg-white border border-slate-200 rounded-xl text-sm font-bold text-slate-600 focus:ring-2 focus:ring-emerald-500 shadow-sm outline-none">
-                            <option value="">ระยะเวลาค้างติดตาม (ทั้งหมด)</option>
-                            <option value="30">ค้างประเมินเกิน 1 เดือน (>30 วัน)</option>
-                            <option value="90">ค้างประเมินเกิน 3 เดือน (>90 วัน)</option>
-                            <option value="180">ค้างประเมินเกิน 6 เดือน (>180 วัน)</option>
-                        </select>
-                    </div>
-                </div>
-            </div>
 
-            <div id="content-new" class="hidden space-y-4">
-                <div id="new-list" class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5"></div>
-                <div id="empty-new" class="hidden text-center py-16 text-slate-400">
-                    <span class="material-symbols-outlined text-[48px] mb-2 text-slate-300">task</span>
-                    <p class="text-sm font-bold text-slate-600">ไม่พบเคสใหม่</p>
-                    <p class="text-xs mt-1">ไม่มีข้อมูลที่ตรงกับตัวกรอง หรือผู้ป่วยทั้งหมดได้รับการประเมินแล้ว</p>
+                <div id="wrap-time" class="hidden">
+                    <select id="time-filter" onchange="filterDataDisplay()" class="w-full text-xs rounded-xl border-slate-200 focus:ring-emerald-500 shadow-sm bg-white p-2.5">
+                        <option value="">ค้างติดตามทุกระยะเวลา</option>
+                        <option value="30">เกิน 1 เดือน (> 30 วัน)</option>
+                        <option value="60">เกิน 2 เดือน (> 60 วัน)</option>
+                        <option value="90">เกิน 3 เดือน (> 90 วัน)</option>
+                    </select>
                 </div>
-            </div>
-
-            <div id="content-reassess" class="hidden space-y-4">
-                <div id="reassess-list" class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5"></div>
-                <div id="empty-reassess" class="hidden text-center py-16 text-slate-400">
-                    <span class="material-symbols-outlined text-[48px] mb-2 text-slate-300">fact_check</span>
-                    <p class="text-sm font-bold text-slate-600">ไม่พบเคสค้างติดตาม</p>
-                    <p class="text-xs mt-1">ไม่มีข้อมูลที่ตรงกับตัวกรอง</p>
-                </div>
-            </div>
-
-            <div id="content-vhv" class="hidden space-y-4">
-                <div id="vhv-list" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5"></div>
-                <div id="empty-vhv" class="hidden text-center py-16 text-slate-400"><p class="text-sm">ไม่พบรายชื่อ อสม. ที่ค้นหา</p></div>
-            </div> 
-
-            <div id="content-approve" class="hidden space-y-4">
-                <div class="bg-amber-50 border border-amber-200 p-4 rounded-xl mb-4">
-                    <h3 class="text-sm font-bold text-amber-800">ระบบคัดกรองความปลอดภัย (Security Check)</h3>
-                    <p class="text-[11px] text-amber-700 mt-1">ผู้ที่ลงทะเบียนเข้ามาใหม่จะไม่สามารถเห็นข้อมูลชุมชนได้ จนกว่าแอดมินหรือ รพ.สต. จะกดยืนยันสถานะ "อนุมัติสิทธิ์" ให้บุคคลนี้</p>
-                </div>
-                <div id="pending-vhv-list" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5"></div>
-                <div id="empty-pending" class="hidden text-center py-16 text-slate-400"><p class="text-sm">ไม่มีคำขอลงทะเบียนใหม่ค้างอยู่</p></div>
             </div>
         </div>
+
+        <div class="p-4 lg:p-6 flex-1">
+            <div id="loading-state" class="text-center py-20 flex flex-col items-center justify-center">
+                <div class="loader-small mb-3"></div>
+                <p class="text-sm text-slate-400">กำลังซิงค์ฐานข้อมูล...</p>
+            </div>
+
+            <!-- TAB 1: เคสใหม่ -->
+            <div id="content-new" class="hidden">
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4" id="new-list"></div>
+                <div id="empty-new" class="hidden text-center py-16"><p class="text-slate-400 text-sm">✨ ไม่มีเคสใหม่ที่รอการลงพื้นที่</p></div>
+            </div>
+
+            <!-- TAB 2: เคสค้างติดตาม -->
+            <div id="content-reassess" class="hidden">
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4" id="reassess-list"></div>
+                <div id="empty-reassess" class="hidden text-center py-16"><p class="text-slate-400 text-sm">✨ ยอดเยี่ยม! ไม่มีเคสค้างติดตามประเมิน</p></div>
+            </div>
+
+            <!-- TAB 3: ทำเนียบ อสม. -->
+            <div id="content-vhv" class="hidden">
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4" id="vhv-list"></div>
+                <div id="empty-vhv" class="hidden text-center py-16"><p class="text-slate-400 text-sm">ไม่พบข้อมูล อสม.</p></div>
+            </div>
+
+            <!-- TAB 4: อนุมัติสิทธิ์ อสม. -->
+            <div id="content-approve" class="hidden">
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4" id="pending-vhv-list"></div>
+                <div id="empty-pending" class="hidden text-center py-16"><p class="text-slate-400 text-sm">✨ ไม่มีคำขอสมัครใช้งานใหม่</p></div>
+            </div>
+        </div>
+
     </main>
 
     <script>
@@ -184,120 +190,106 @@
         firebase.firestore().enablePersistence({ synchronizeTabs: true }).catch(err => console.warn('Offline persistence error:', err.code));
         const db = firebase.firestore();
 
-        let allPatients = []; let allVHVs = []; let newCases = []; let reassessCases = []; let currentTab = 'new';
-        let pendingVHVs = [];
         let currentUserRole = "ADMIN";
+        let currentUserUid = "";
+        let currentUserName = "";
         let assignedVillages = [];
+        let allPatients = [];
+        let allVHVs = [];
+        let pendingVHVs = [];
+        let newCases = [];
+        let reassessCases = [];
+        let currentTab = 'new';
 
         function toggleSidebar() { document.getElementById('sidebar').classList.toggle('-translate-x-full'); }
 
-        document.addEventListener("DOMContentLoaded", () => {
-            document.getElementById('sidebar-hospital-name').innerText = DEFAULT_CONFIGS.HOSPITAL_NAME;
-            document.getElementById('sidebar-system-name').innerText = DEFAULT_CONFIGS.SYSTEM_NAME;
-            
-            liff.init({ liffId: LIFF_ID }).then(() => {
-                const mockUid = localStorage.getItem('dev_mock_uid');
-                const savedUid = localStorage.getItem('orsomo_uid');
-                if (mockUid) { verifyAdminAccess(mockUid); } 
-                else if (liff.isLoggedIn()) { liff.getProfile().then(p => { localStorage.setItem('orsomo_uid', p.userId); verifyAdminAccess(p.userId); }).catch(() => bounceToLogin()); } 
-                else if (savedUid) { verifyAdminAccess(savedUid); }
-                else bounceToLogin();
-            }).catch(() => bounceToLogin());
-        });
-
-        function bounceToLogin() { window.location.href = 'index.html'; }
-
-        async function verifyAdminAccess(uid) {
+        document.addEventListener("DOMContentLoaded", async () => {
             try {
-                const userDoc = await db.collection('VHVs').doc(String(uid)).get();
-                let hasAccess = false;
-                let hospital = DEFAULT_CONFIGS.HOSPITAL_NAME;
+                const authCtx = await OrsomoCore.Auth.guardPage({
+                    allowedRoles: ['ADMIN', 'SUB_ADMIN'],
+                    autoAdminShell: false,
+                    currentPage: 'admin_delegation.html'
+                });
+                if (!authCtx) return;
+
+                currentUserUid = authCtx.uid;
+                currentUserRole = authCtx.role;
+                currentUserName = (authCtx.user && authCtx.user.name) || 'ผู้ดูแลระบบ';
+                assignedVillages = (authCtx.user && authCtx.user.assigned_villages) || [];
+
+                let hospital = (authCtx.user && authCtx.user.hospital_name) || DEFAULT_CONFIGS.HOSPITAL_NAME;
                 let vCount = DEFAULT_CONFIGS.VILLAGE_COUNT;
 
                 try {
-                    const sysSnap = await db.collection('SystemConfig').doc('HOSPITAL_NAME').get();
-                    if(sysSnap.exists) hospital = sysSnap.data().value || hospital;
-                    const sysCountSnap = await db.collection('SystemConfig').doc('VILLAGE_COUNT').get();
-                    if(sysCountSnap.exists) vCount = parseInt(sysCountSnap.data().value) || vCount;
+                    const sysSnapHospital = await db.collection('SystemConfig').doc('HOSPITAL_NAME').get();
+                    if(sysSnapHospital.exists) hospital = sysSnapHospital.data().value || hospital;
+                    const sysSnapVCount = await db.collection('SystemConfig').doc('VILLAGE_COUNT').get();
+                    if(sysSnapVCount.exists) vCount = parseInt(sysSnapVCount.data().value) || vCount;
                 } catch(e) {}
 
-                if (userDoc.exists) {
-                const userData = userDoc.data();
-                const hName = document.getElementById('header-user-name');
-                if (hName) hName.innerText = userData.name || 'ผู้ดูแลระบบ';
-                const hPic = document.getElementById('header-profile-pic');
-                const hIcon = document.getElementById('header-profile-icon');
-                if (hPic && hIcon && userData.photoURL) {
-                    hPic.src = userData.photoURL;
-                    hPic.classList.remove('hidden');
-                    hIcon.classList.add('hidden');
-                }
-                    const role = String(userData.role || '').toUpperCase();
-                    if (role === 'ADMIN') {
-                        hasAccess = true; currentUserRole = 'ADMIN'; hospital = userData.hospital_name || hospital;
-                    } else if (role === 'SUB_ADMIN') {
-                        hasAccess = true; currentUserRole = 'SUB_ADMIN'; hospital = userData.hospital_name || hospital;
-                        assignedVillages = userData.assigned_villages || [];
-                    }
+                document.getElementById('sidebar-hospital-name').innerText = hospital;
+                document.getElementById('header-hospital-name').innerText = `มอบหมายงาน อสม.: ${hospital}`;
+                document.getElementById('header-user-name').innerText = currentUserName;
+
+                if (authCtx.user && (authCtx.user.profile_pic || authCtx.user.photoURL)) {
+                    const pSrc = authCtx.user.profile_pic || authCtx.user.photoURL;
+                    document.getElementById('header-profile-pic').src = pSrc;
+                    document.getElementById('header-profile-pic').classList.remove('hidden');
+                    document.getElementById('header-profile-icon').classList.add('hidden');
                 }
 
-                if (hasAccess) {
-                    document.getElementById('sidebar-hospital-name').innerText = hospital;
-                    
-                    const villageSelect = document.getElementById('village-filter');
-                    
-                    if (currentUserRole === 'SUB_ADMIN') {
-                        const navSettings = document.getElementById('nav-settings');
-                        if (navSettings) navSettings.style.display = 'none';
-                        const navFinance = document.getElementById('nav-finance');
-                        if (navFinance) navFinance.style.display = 'none';
-                        
-                        // 🌟 ล็อกสิทธิ์การมองเห็นเมนูคลังพัสดุ 🌟
-                        const navInventory = document.getElementById('nav-inventory');
-                        if (navInventory) navInventory.style.display = 'none';
-                        const navReports = document.getElementById('nav-reports');
-                        if (navReports) navReports.style.display = 'none';
-                        
-                        assignedVillages.forEach(v => { villageSelect.insertAdjacentHTML('beforeend', `<option value="${v}">หมู่ที่ ${v}</option>`); });
-                    } else {
-                        for(let i=1; i<=vCount; i++){ villageSelect.insertAdjacentHTML('beforeend', `<option value="${i}">หมู่ที่ ${i}</option>`); }
-                    }
+                const villageSelect = document.getElementById('village-filter');
+                if (currentUserRole === 'SUB_ADMIN') {
+                    ['nav-settings', 'nav-finance', 'nav-inventory', 'nav-reports'].forEach(id => {
+                        const el = document.getElementById(id);
+                        if (el) el.style.display = 'none';
+                    });
+                    assignedVillages.forEach(v => { villageSelect.insertAdjacentHTML('beforeend', `<option value="${v}">หมู่ที่ ${v}</option>`); });
+                } else {
+                    for(let i=1; i<=vCount; i++){ villageSelect.insertAdjacentHTML('beforeend', `<option value="${i}">หมู่ที่ ${i}</option>`); }
+                }
 
-                    loadDataChannels();
-                } else { window.location.href = 'dashboard.html'; }
-            } catch (error) { bounceToLogin(); }
-        }
+                loadDataChannels();
 
-        function calculateDaysSince(dateStr) {
-            if (!dateStr || dateStr.trim() === '' || dateStr === '-') return -1;
-            let targetDate;
-            if (dateStr.includes('/')) {
-                const parts = dateStr.split(' ')[0].split('/');
-                let year = parseInt(parts[2]);
-                if (year > 2400) { year -= 543; }
-                targetDate = new Date(year, parseInt(parts[1]) - 1, parseInt(parts[0]));
-            } else { targetDate = new Date(dateStr); }
+            } catch (err) {
+                console.error("Delegation init error:", err);
+            }
+        });
 
-            if (isNaN(targetDate)) return -1;
-            const diffTime = Math.abs(new Date() - targetDate);
-            return Math.floor(diffTime / (1000 * 60 * 60 * 24));
+        function showToast(msg, type = 'info') {
+            let toast = document.getElementById('global-floating-toast');
+            if (!toast) {
+                toast = document.createElement('div');
+                toast.id = 'global-floating-toast';
+                document.body.appendChild(toast);
+            }
+            let bg = type === 'error' ? 'bg-rose-600 text-white' : 'bg-emerald-600 text-white';
+            toast.className = `fixed bottom-6 right-6 z-[9999] px-4 py-3 rounded-2xl shadow-xl font-bold text-xs sm:text-sm flex items-center gap-2 transition-all duration-300 ${bg}`;
+            toast.innerHTML = `<span>${msg}</span>`;
+            if (toast.timer) clearTimeout(toast.timer);
+            toast.timer = setTimeout(() => { toast.remove(); }, 3000);
         }
 
         async function loadDataChannels() {
             try {
-                const [pSnap, vSnap] = await Promise.all([ db.collection('Patients').get(), db.collection('VHVs').get() ]);
-                
+                const patientSnap = await db.collection('Patients').get();
                 allPatients = [];
-                pSnap.forEach(doc => {
+                patientSnap.forEach(doc => {
                     const data = doc.data();
                     let hasPermissionToView = true;
                     if (currentUserRole === 'SUB_ADMIN') hasPermissionToView = assignedVillages.includes(String(data.village_no).trim());
-                    if(hasPermissionToView) allPatients.push(data);
+                    if (hasPermissionToView) {
+                        data.docId = doc.id;
+                        if (!data.id) data.id = doc.id;
+                        allPatients.push(data);
+                    }
                 });
-                
+
+                const vhvSnap = await db.collection('VHVs').get();
                 allVHVs = []; pendingVHVs = [];
-                vSnap.forEach(doc => {
+                vhvSnap.forEach(doc => {
                     const v = doc.data();
+                    v.uid = doc.id;
                     const vRole = String(v.role || '').toUpperCase();
                     let hasPermissionToView = true;
                     if (currentUserRole === 'SUB_ADMIN') hasPermissionToView = assignedVillages.includes(String(v.village_no).trim());
@@ -313,7 +305,10 @@
                 document.getElementById('loading-state').classList.add('hidden');
                 document.getElementById('filter-wrapper').classList.remove('hidden');
                 switchTab(currentTab);
-            } catch (e) { showToast("ดึงฐานข้อมูลล้มเหลว", "error"); }
+            } catch (e) { 
+                console.error("Load channels error:", e);
+                showToast("ดึงฐานข้อมูลล้มเหลว", "error"); 
+            }
         }
 
         function switchTab(tab) {
@@ -339,21 +334,21 @@
                 filterWrap.classList.remove('hidden');
                 wrapGroup.classList.add('hidden');
                 wrapTime.classList.add('hidden');
-                filterGrid.className = "grid grid-cols-1 md:grid-cols-1 gap-2";
+                filterGrid.className = "grid grid-cols-1 md:grid-cols-2 gap-2";
                 searchInput.placeholder = "ค้นหาชื่อ อสม....";
                 filterDataDisplay();
             } else if (tab === 'new') {
                 filterWrap.classList.remove('hidden');
                 wrapGroup.classList.remove('hidden');
                 wrapTime.classList.add('hidden');
-                filterGrid.className = "grid grid-cols-1 md:grid-cols-2 gap-2";
+                filterGrid.className = "grid grid-cols-1 md:grid-cols-3 gap-2";
                 searchInput.placeholder = "ค้นหาชื่อผู้ป่วย, เลขบัตร, บ้านเลขที่...";
                 filterDataDisplay();
             } else if (tab === 'reassess') {
                 filterWrap.classList.remove('hidden');
                 wrapGroup.classList.remove('hidden');
                 wrapTime.classList.remove('hidden');
-                filterGrid.className = "grid grid-cols-1 md:grid-cols-3 gap-2";
+                filterGrid.className = "grid grid-cols-1 md:grid-cols-4 gap-2";
                 searchInput.placeholder = "ค้นหาชื่อผู้ป่วย, เลขบัตร, บ้านเลขที่...";
                 filterDataDisplay();
             }
@@ -368,12 +363,13 @@
             document.getElementById('empty-pending').classList.add('hidden');
 
             pendingVHVs.forEach(v => {
+                const displayName = OrsomoCore.UI.formatVHVName(v);
                 container.insertAdjacentHTML('beforeend', `
                     <div class="bg-white rounded-[20px] p-5 shadow-lg border border-amber-300 relative overflow-hidden">
                         <div class="absolute top-0 right-0 bg-amber-500 text-white text-[10px] font-bold px-3 py-1 rounded-bl-xl rounded-tr-[20px]">รอตรวจสอบ</div>
-                        <h3 class="font-bold text-slate-800 text-sm mt-2">${v.name} ${v.nickname ? `<span class="text-slate-500 font-medium">(${v.nickname})</span>` : ""}</h3>
-                        <p class="text-[11px] text-amber-700 bg-amber-50 font-bold px-2 py-0.5 rounded inline-block mt-1">ขอรับสิทธิ์ หมู่ที่ ${v.village_no}</p>
-                        <p class="text-[11px] text-slate-500 mt-2 flex items-center gap-1"><span class="material-symbols-outlined text-[14px]">call</span> ${v.phone}</p>
+                        <h3 class="font-bold text-slate-800 text-sm mt-2">${displayName}</h3>
+                        <p class="text-[11px] text-amber-700 bg-amber-50 font-bold px-2 py-0.5 rounded inline-block mt-1">ขอรับสิทธิ์ หมู่ที่ ${v.village_no || '-'}</p>
+                        <p class="text-[11px] text-slate-500 mt-2 flex items-center gap-1"><span class="material-symbols-outlined text-[14px]">call</span> ${v.phone || '-'}</p>
                         
                         <div class="flex gap-2 mt-4 pt-3 border-t border-slate-100">
                             <button onclick="manageVHVStatus('${v.uid}', 'Rejected')" class="flex-1 py-2 bg-red-50 text-red-600 font-bold text-xs rounded-xl hover:bg-red-100">ปฏิเสธ</button>
@@ -396,10 +392,15 @@
         function distributePatients() {
             newCases = []; reassessCases = [];
             allPatients.forEach(p => {
-                if (String(p.status || 'Active').trim().toLowerCase() !== 'active') return;
+                const pStatus = String(p.status || 'Active').trim().toLowerCase();
+                if (pStatus !== 'active') return;
                 const lastAssess = String(p.last_assess || '').trim();
-                if (lastAssess === '' || lastAssess === '-') { newCases.push(p); } 
-                else { p.days_passed = calculateDaysSince(p.last_assess); if (p.days_passed >= 0) reassessCases.push(p); }
+                if (lastAssess === '' || lastAssess === '-') { 
+                    newCases.push(p); 
+                } else { 
+                    p.days_passed = OrsomoCore.DateUtils.daysSince(p.last_assess); 
+                    if (p.days_passed >= 0) reassessCases.push(p); 
+                }
             });
             reassessCases.sort((a, b) => b.days_passed - a.days_passed);
             document.getElementById('badge-new').innerText = newCases.length;
@@ -424,7 +425,8 @@
             const filtered = allVHVs.filter(v => String(v.village_no) === String(patientVillage));
             filtered.forEach(v => {
                 const isSelected = String(v.uid) === String(assignedVhvId) ? 'selected' : '';
-                html += `<option value="${v.uid}" ${isSelected}>${v.name}</option>`;
+                const nameStr = OrsomoCore.UI.formatVHVName(v);
+                html += `<option value="${v.uid}" ${isSelected}>${nameStr}</option>`;
             });
             return html;
         }
@@ -449,6 +451,7 @@
             document.getElementById('empty-new').classList.add('hidden');
 
             data.forEach(p => {
+                const docId = p.docId || p.id;
                 const pGroup = (p.group && p.group !== '-' && p.group !== 'ยังไม่ประเมิน') ? p.group : 'ยังไม่ประเมิน';
                 let groupBadge = `<span class="bg-slate-100 text-slate-600 text-[10px] px-2 py-0.5 rounded border border-slate-200">${pGroup}</span>`;
                 if(pGroup === 'ติดเตียง') groupBadge = `<span class="bg-red-50 text-red-600 text-[10px] px-2 py-0.5 rounded border border-red-200">${pGroup}</span>`;
@@ -459,23 +462,24 @@
                     <div class="bg-white rounded-[20px] p-5 shadow-sm border border-amber-200 flex flex-col justify-between hover:shadow-md transition-shadow">
                         <div>
                             <div class="flex items-start justify-between mb-1">
-                                <h3 class="font-bold text-slate-800 text-sm">${p.name}</h3>
+                                <h3 class="font-bold text-slate-800 text-sm">${p.prefix||''}${p.name||'ไม่ระบุชื่อ'}</h3>
                                 ${groupBadge}
                             </div>
-                            <p class="text-[11px] text-slate-500 mb-0.5">ID: ${p.id_card || '-'}</p>
-                            <p class="text-[11px] text-slate-500">หมู่ที่ ${p.village_no} • บ้านเลขที่ ${p.house_no}</p>
+                            <p class="text-[11px] text-slate-500 mb-0.5">ID: ${p.id_card || p.id || '-'}</p>
+                            <p class="text-[11px] text-slate-500">หมู่ที่ ${p.village_no || '-'} • บ้านเลขที่ ${p.house_no || '-'}</p>
                             <div class="mt-3 border-t border-gray-100 pt-3">
                                 <label class="text-[11px] font-bold text-slate-500 block mb-2">เลือกงานที่มอบหมาย (เลือกได้หลายอย่าง):</label>
-                                <div class="grid grid-cols-1 gap-1.5 text-[11px] text-gray-700 mb-3" id="task-container_${p.id}">
-                                    <label class="flex items-center gap-2"><input type="checkbox" value="ประเมิน ADL" class="task-check-${p.id} rounded border-gray-300 text-emerald-600 focus:ring-emerald-500" checked> ประเมิน ADL</label>
-                                    <label class="flex items-center gap-2"><input type="checkbox" value="ประเมิน 2Q/9Q" class="task-check-${p.id} rounded border-gray-300 text-emerald-600 focus:ring-emerald-500"> ประเมิน 2Q/9Q</label>
-                                    <label class="flex items-center gap-2"><input type="checkbox" value="วัดความดัน/เบาหวาน" class="task-check-${p.id} rounded border-gray-300 text-emerald-600 focus:ring-emerald-500"> วัดความดัน/เบาหวาน</label>
+                                <div class="grid grid-cols-2 gap-1.5 text-[11px] text-gray-700 mb-3" id="task-container_${docId}">
+                                    <label class="flex items-center gap-1.5"><input type="checkbox" value="ประเมิน ADL" class="task-check-${docId} rounded border-gray-300 text-emerald-600 focus:ring-emerald-500" checked> ประเมิน ADL</label>
+                                    <label class="flex items-center gap-1.5"><input type="checkbox" value="ประเมิน 2Q/9Q" class="task-check-${docId} rounded border-gray-300 text-emerald-600 focus:ring-emerald-500"> ประเมิน 2Q/9Q</label>
+                                    <label class="flex items-center gap-1.5"><input type="checkbox" value="วัดความดัน/เบาหวาน" class="task-check-${docId} rounded border-gray-300 text-emerald-600 focus:ring-emerald-500"> วัดความดัน/เบาหวาน</label>
+                                    <label class="flex items-center gap-1.5"><input type="checkbox" value="เยี่ยมบ้านทั่วไป" class="task-check-${docId} rounded border-gray-300 text-emerald-600 focus:ring-emerald-500"> เยี่ยมบ้านทั่วไป</label>
                                 </div>
                                 <label class="text-[11px] font-bold text-slate-500 block mb-1">ระบุ อสม. มอบหมาย:</label>
-                                <select id="select_${p.id}" class="w-full text-xs rounded-lg border-slate-200 focus:ring-emerald-500">${generateVHVOptionsStrict(p.village_no, p.assigned_vhv_id)}</select>
+                                <select id="select_${docId}" class="w-full text-xs rounded-lg border-slate-200 focus:ring-emerald-500">${generateVHVOptionsStrict(p.village_no, p.assigned_vhv_id)}</select>
                             </div>
                         </div>
-                        <button onclick="saveAssignment('${p.id}')" id="btn_${p.id}" class="w-full mt-4 py-2 bg-navy text-white font-bold text-xs rounded-xl hover:bg-opacity-90">บันทึกการมอบหมายงาน</button>
+                        <button onclick="saveAssignment('${docId}')" id="btn_${docId}" class="w-full mt-4 py-2 bg-navy text-white font-bold text-xs rounded-xl hover:bg-opacity-90">บันทึกการมอบหมายงาน</button>
                     </div>
                 `);
             });
@@ -506,6 +510,7 @@
             document.getElementById('empty-reassess').classList.add('hidden');
 
             data.forEach(p => {
+                const docId = p.docId || p.id;
                 const pGroup = (p.group && p.group !== '-' && p.group !== 'ยังไม่ประเมิน') ? p.group : 'ยังไม่ประเมิน';
                 let groupBadge = `<span class="bg-slate-100 text-slate-600 text-[10px] px-2 py-0.5 rounded border border-slate-200">${pGroup}</span>`;
                 if(pGroup === 'ติดเตียง') groupBadge = `<span class="bg-red-50 text-red-600 text-[10px] px-2 py-0.5 rounded border border-red-200">${pGroup}</span>`;
@@ -516,23 +521,24 @@
                     <div class="bg-white rounded-[20px] p-5 shadow-sm border border-red-100 flex flex-col justify-between hover:shadow-md transition-shadow">
                         <div>
                             <div class="flex items-start justify-between mb-1">
-                                <h3 class="font-bold text-slate-800 text-sm">${p.name}</h3>
+                                <h3 class="font-bold text-slate-800 text-sm">${p.prefix||''}${p.name||'ไม่ระบุชื่อ'}</h3>
                                 <span class="bg-red-50 text-red-600 text-[10px] px-2 py-0.5 rounded font-bold border border-red-200 whitespace-nowrap">ค้าง ${p.days_passed} วัน</span>
                             </div>
                             <p class="text-[11px] text-slate-500 mb-0.5 flex items-center gap-1">${groupBadge}</p>
-                            <p class="text-[11px] text-slate-500">หมู่ที่ ${p.village_no} • บ้านเลขที่ ${p.house_no}<br>เยี่ยมล่าสุด: ${p.last_assess}</p>
+                            <p class="text-[11px] text-slate-500">หมู่ที่ ${p.village_no || '-'} • บ้านเลขที่ ${p.house_no || '-'}<br>เยี่ยมล่าสุด: ${p.last_assess || '-'}</p>
                             <div class="mt-3 border-t border-gray-100 pt-3">
                                 <label class="text-[11px] font-bold text-slate-500 block mb-2">เลือกงานที่มอบหมาย (เลือกได้หลายอย่าง):</label>
-                                <div class="grid grid-cols-1 gap-1.5 text-[11px] text-gray-700 mb-3" id="task-container_${p.id}">
-                                    <label class="flex items-center gap-2"><input type="checkbox" value="ประเมิน ADL" class="task-check-${p.id} rounded border-gray-300 text-emerald-600 focus:ring-emerald-500" checked> ประเมิน ADL</label>
-                                    <label class="flex items-center gap-2"><input type="checkbox" value="ประเมิน 2Q/9Q" class="task-check-${p.id} rounded border-gray-300 text-emerald-600 focus:ring-emerald-500"> ประเมิน 2Q/9Q</label>
-                                    <label class="flex items-center gap-2"><input type="checkbox" value="วัดความดัน/เบาหวาน" class="task-check-${p.id} rounded border-gray-300 text-emerald-600 focus:ring-emerald-500"> วัดความดัน/เบาหวาน</label>
+                                <div class="grid grid-cols-2 gap-1.5 text-[11px] text-gray-700 mb-3" id="task-container_${docId}">
+                                    <label class="flex items-center gap-1.5"><input type="checkbox" value="ประเมิน ADL" class="task-check-${docId} rounded border-gray-300 text-emerald-600 focus:ring-emerald-500" checked> ประเมิน ADL</label>
+                                    <label class="flex items-center gap-1.5"><input type="checkbox" value="ประเมิน 2Q/9Q" class="task-check-${docId} rounded border-gray-300 text-emerald-600 focus:ring-emerald-500"> ประเมิน 2Q/9Q</label>
+                                    <label class="flex items-center gap-1.5"><input type="checkbox" value="วัดความดัน/เบาหวาน" class="task-check-${docId} rounded border-gray-300 text-emerald-600 focus:ring-emerald-500"> วัดความดัน/เบาหวาน</label>
+                                    <label class="flex items-center gap-1.5"><input type="checkbox" value="เยี่ยมบ้านทั่วไป" class="task-check-${docId} rounded border-gray-300 text-emerald-600 focus:ring-emerald-500"> เยี่ยมบ้านทั่วไป</label>
                                 </div>
                                 <label class="text-[11px] font-bold text-slate-500 block mb-1">ระบุ อสม. มอบหมาย:</label>
-                                <select id="select_${p.id}" class="w-full text-xs rounded-lg border-slate-200 focus:ring-emerald-500">${generateVHVOptionsStrict(p.village_no, p.assigned_vhv_id)}</select>
+                                <select id="select_${docId}" class="w-full text-xs rounded-lg border-slate-200 focus:ring-emerald-500">${generateVHVOptionsStrict(p.village_no, p.assigned_vhv_id)}</select>
                             </div>
                         </div>
-                        <button onclick="saveAssignment('${p.id}')" id="btn_${p.id}" class="w-full mt-4 py-2 bg-[#00694a] text-white font-bold text-xs rounded-xl hover:bg-opacity-90">บันทึกการมอบหมายงาน</button>
+                        <button onclick="saveAssignment('${docId}')" id="btn_${docId}" class="w-full mt-4 py-2 bg-[#00694a] text-white font-bold text-xs rounded-xl hover:bg-opacity-90">บันทึกการมอบหมายงาน</button>
                     </div>
                 `);
             });
@@ -544,7 +550,8 @@
             const data = allVHVs.filter(v => {
                 if (vFilter !== '' && String(v.village_no) !== vFilter) return false;
                 const matchName = v.name ? String(v.name).toLowerCase().includes(searchKeyword) : false;
-                if (searchKeyword && !matchName) return false;
+                const matchNick = v.nickname ? String(v.nickname).toLowerCase().includes(searchKeyword) : false;
+                if (searchKeyword && !matchName && !matchNick) return false;
                 return true;
             });
 
@@ -560,29 +567,22 @@
 
             data.forEach(v => {
                 const count = vhvWorkloads[v.uid] || 0;
+                const displayName = OrsomoCore.UI.formatVHVName(v);
                 container.insertAdjacentHTML('beforeend', `
                     <div class="bg-white rounded-[20px] p-5 shadow-sm border border-slate-200 flex flex-col justify-between">
                         <div>
-                            <h3 class="font-bold text-slate-800 text-sm">${v.name}</h3>
-                            <p class="text-[10px] text-emerald-700 bg-emerald-50 font-bold px-2 py-0.5 rounded inline-block mt-1">หมู่ที่ ${v.village_no}</p>
+                            <h3 class="font-bold text-slate-800 text-sm">${displayName}</h3>
+                            <p class="text-[10px] text-emerald-700 bg-emerald-50 font-bold px-2 py-0.5 rounded inline-block mt-1">หมู่ที่ ${v.village_no || '-'}</p>
                         </div>
                         <div class="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between text-[11px]">
                             <a href="tel:${v.phone}" class="text-blue-600 hover:underline flex items-center gap-0.5 font-bold">
-                                <span class="material-symbols-outlined text-[13px]">call</span> ${v.phone}
+                                <span class="material-symbols-outlined text-[13px]">call</span> ${v.phone || '-'}
                             </a>
-                            <span class="font-bold text-navy bg-slate-100 px-2 py-1 rounded-lg">ดูแลตรงรหัส: ${count} ราย</span>
+                            <span class="font-bold text-navy bg-slate-100 px-2 py-1 rounded-lg">ดูแล: ${count} ราย</span>
                         </div>
                     </div>
                 `);
             });
-        }
-
-        function getTodayString() {
-            const today = new Date();
-            const dd = String(today.getDate()).padStart(2, '0');
-            const mm = String(today.getMonth() + 1).padStart(2, '0');
-            const yyyy = today.getFullYear() + 543;
-            return `${dd}/${mm}/${yyyy}`;
         }
 
         async function saveAssignment(patientId) {
@@ -597,14 +597,19 @@
 
             try {
                 const taskDesc = checkedTasks.join(', ');
-                const todayStr = getTodayString(); 
+                const todayStr = OrsomoCore.DateUtils.toThaiDate(new Date());
+
+                const assignedVhv = allVHVs.find(v => String(v.uid) === String(vhvId));
+                const vhvName = assignedVhv ? OrsomoCore.UI.formatVHVName(assignedVhv) : '';
 
                 await db.collection('Patients').doc(String(patientId)).update({ 
                     assigned_vhv_id: String(vhvId),
+                    assigned_vhv_name: vhvName,
                     needs_assessment: true,
                     task_desc: taskDesc,
                     tasks_required: checkedTasks,
-                    task_date: todayStr
+                    task_date: todayStr,
+                    assigned_by: currentUserUid || ''
                 });
                 
                 let lineToken = "";
@@ -614,7 +619,7 @@
                 } catch(err) {}
 
                 if (lineToken) {
-                    const p = allPatients.find(x => String(x.id) === String(patientId)); 
+                    const p = allPatients.find(x => String(x.docId || x.id) === String(patientId)); 
                     const pName = p ? p.name : 'ไม่ระบุชื่อ';
                     const pHouse = p ? p.house_no : '-';
                     const pVillage = p ? p.village_no : '-';
@@ -634,10 +639,11 @@
                     }).catch(e => console.log("ยิง Webhook ไม่สำเร็จ"));
                 }
 
-                showToast('มอบหมายงานสำเร็จ! (แจ้งเตือน LINE เรียบร้อย)');
+                showToast('มอบหมายงานสำเร็จ!');
                 loadDataChannels();
                 
             } catch(e) { 
+                console.error("Assignment error:", e);
                 showToast("เชื่อมต่อขัดข้อง กรุณาลองใหม่", "error"); 
                 btn.disabled = false; 
                 btn.innerText = 'บันทึกการมอบหมายงาน'; 

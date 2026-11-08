@@ -14,8 +14,10 @@
     <script charset="utf-8" src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
     
     <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore-compat.js"></script>
     <script src="config.js"></script>
+    <script src="core.js"></script>
     
     <style>
         body { font-family: 'Sarabun', sans-serif; background-color: #f4f7fa; }
@@ -49,6 +51,7 @@
     <a href="admin_analytics.html" class="flex items-center gap-3 px-4 py-3.5 text-slate-400 hover:bg-white/5 hover:text-white rounded-xl font-medium transition-all"><span class="material-symbols-outlined">analytics</span> ศูนย์รายงาน (Export)</a>
     <a href="admin_reports.html" id="nav-reports" class="flex items-center gap-3 px-4 py-3.5 text-slate-400 hover:bg-white/5 hover:text-white rounded-xl font-medium transition-all"><span class="material-symbols-outlined">gavel</span> บันทึกมติผ้าอ้อม</a>
     <a href="admin_finance.html" id="nav-finance" class="flex items-center justify-between px-4 py-3.5 bg-white/10 text-amber-400 rounded-xl font-bold transition-all"><span class="flex items-center gap-3"><span class="material-symbols-outlined">account_balance_wallet</span> แผนการเงิน</span><span class="w-1.5 h-1.5 rounded-full bg-amber-400"></span></a>
+    <a href="admin_equipment.html" id="nav-equipment" class="flex items-center gap-3 px-4 py-3.5 text-slate-400 hover:bg-white/5 hover:text-white rounded-xl font-medium transition-all"><span class="material-symbols-outlined">medical_services</span> กายอุปกรณ์</a>
     <a href="admin_settings.html" id="nav-settings" class="flex items-center gap-3 px-4 py-3.5 text-slate-400 hover:bg-white/5 hover:text-white rounded-xl font-medium transition-all"><span class="material-symbols-outlined">settings</span> ตั้งค่าระบบ</a>
 </nav>
     </aside>
@@ -60,6 +63,16 @@
                 <div>
                     <h2 class="text-base lg:text-lg font-bold text-slate-900 leading-tight">แผนการเงิน (Budget Plan)</h2>
                     <p id="header-hospital-name" class="text-[11px] lg:text-xs text-slate-400 font-medium mt-0.5">ศูนย์บันทึกมติผ้าอ้อมและจัดสรรงบประมาณ</p>
+                </div>
+            </div>
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-full bg-slate-100 border border-slate-200 overflow-hidden flex items-center justify-center">
+                    <img id="header-profile-pic" class="w-full h-full object-cover hidden" alt="Profile">
+                    <span id="header-profile-icon" class="material-symbols-outlined text-slate-400">person</span>
+                </div>
+                <div class="hidden sm:block text-right">
+                    <p id="header-user-name" class="text-xs font-bold text-slate-700">กำลังโหลด...</p>
+                    <p id="header-user-role" class="text-[10px] text-amber-600 font-medium">ผู้ดูแลระบบ (ADMIN)</p>
                 </div>
             </div>
         </header>
@@ -185,9 +198,15 @@
 
                             <!-- Section 3: รายละเอียดการขอรับงบประมาณ -->
                             <div class="mt-8 pt-8 border-t border-slate-200">
-                                <h3 class="text-lg font-bold text-slate-800 flex items-center gap-2 mb-4">
-                                    <span class="material-symbols-outlined text-indigo-500">list_alt</span> ส่วนที่ 3: รายละเอียดการขอรับงบประมาณ (รายโครงการ/กลุ่ม)
-                                </h3>
+                                <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 mb-4">
+                                    <h3 class="text-lg font-bold text-slate-800 flex items-center gap-2">
+                                        <span class="material-symbols-outlined text-indigo-500">list_alt</span> ส่วนที่ 3: รายละเอียดการขอรับงบประมาณ (รายโครงการ/กลุ่ม)
+                                    </h3>
+                                    <!-- Requirement 3.2 ข: นำยอดผ้าอ้อมจากระบบบันทึกมติมาออโต้ซิงก์ในตารางแผนการเงิน -->
+                                    <button onclick="pullDiaperProjectCost()" type="button" class="px-3.5 py-1.5 bg-blue-50 text-blue-700 hover:bg-blue-100 border border-blue-200 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all shadow-sm">
+                                        <span class="material-symbols-outlined text-[16px]">sync_alt</span> ดึงยอดรวมโครงการผ้าอ้อม (อัตโนมัติ)
+                                    </button>
+                                </div>
                                 <div class="bg-indigo-50/50 p-4 lg:p-6 rounded-2xl border border-indigo-100 mb-6">
                                     <div class="grid grid-cols-1 md:grid-cols-5 gap-4 items-end">
                                         <div class="md:col-span-2">
@@ -267,50 +286,46 @@
         
         function toggleSidebar() { document.getElementById('sidebar').classList.toggle('-translate-x-full'); }
 
+        let currentUserUid = "";
+        let currentUserName = "ผู้ดูแลระบบ";
+        let currentUserRole = "ADMIN";
+
+        function showToast(msg, type = 'info') {
+            if (window.OrsomoCore && OrsomoCore.UI && OrsomoCore.UI.showToast) {
+                OrsomoCore.UI.showToast(msg, type);
+            } else {
+                alert(msg);
+            }
+        }
+
         document.addEventListener("DOMContentLoaded", () => {
             document.getElementById('sidebar-hospital-name').innerText = DEFAULT_CONFIGS.HOSPITAL_NAME;
             document.getElementById('sidebar-system-name').innerText = DEFAULT_CONFIGS.SYSTEM_NAME;
-            
-            liff.init({ liffId: LIFF_ID }).then(() => {
-                const mockUid = localStorage.getItem('dev_mock_uid');
-                const savedUid = localStorage.getItem('orsomo_uid');
-                if (mockUid) {
-                    verifyAdminAccess(mockUid);
-                } else if (liff.isLoggedIn()) { 
-                    liff.getProfile().then(p => { localStorage.setItem('orsomo_uid', p.userId); verifyAdminAccess(p.userId); }).catch(() => bounceToLogin());
-                } else if (savedUid) {
-                    verifyAdminAccess(savedUid);
-                } else bounceToLogin();
-            }).catch(() => bounceToLogin());
+            verifyAdminAccess();
         });
 
-        function bounceToLogin() { window.location.href = 'index.html'; }
-
-        async function verifyAdminAccess(uid) {
+        async function verifyAdminAccess() {
             try {
-                const userDoc = await db.collection('VHVs').doc(String(uid)).get();
-                let hasAccess = false; 
-                let hospital = DEFAULT_CONFIGS.HOSPITAL_NAME;
+                // Strict Admin lock (SUB_ADMIN redirected to admin_dashboard.html)
+                const user = await OrsomoCore.Auth.guardPage({ allowedRoles: ['ADMIN'] });
+                currentUserUid = user.uid;
+                currentUserName = user.name || 'ผู้ดูแลระบบ';
+                currentUserRole = user.role || 'ADMIN';
 
-                if (userDoc.exists) {
-                    const userData = userDoc.data();
-                    if (userData.profile_pic) {
-                        const imgEl = document.getElementById('header-profile-img');
-                        if(imgEl) { imgEl.src = userData.profile_pic; imgEl.classList.remove('hidden'); }
-                        const txtEl = document.getElementById('header-profile-text');
-                        if(txtEl) txtEl.classList.add('hidden');
-                    }
-                    const role = String(userData.role || '').toUpperCase();
-                    if (role === 'ADMIN') {
-                        hasAccess = true; hospital = userData.hospital_name || hospital;
-                    } 
+                const hName = document.getElementById('header-user-name');
+                if (hName) hName.innerText = currentUserName;
+                const hPic = document.getElementById('header-profile-pic');
+                const hIcon = document.getElementById('header-profile-icon');
+                if (hPic && hIcon) {
+                    OrsomoCore.UI.resolveAvatar(user, hPic, hIcon);
                 }
 
-                if (hasAccess) {
-                    document.getElementById('sidebar-hospital-name').innerText = hospital;
-                    initFinance();
-                } else { window.location.href = 'dashboard.html'; }
-            } catch (error) { console.error(error); window.location.href = 'index.html'; }
+                document.getElementById('sidebar-hospital-name').innerText = user.hospital_name || DEFAULT_CONFIGS.HOSPITAL_NAME;
+                initFinance();
+            } catch (error) { 
+                console.error("Auth guard error:", error);
+                window.location.href = 'admin_dashboard.html'; 
+            }
         }
 
         // Notification Stubs (so header doesn't crash)
@@ -600,6 +615,113 @@
             requestedProjects = requestedProjects.filter(p => p.id !== id);
             renderProjects();
             syncProjectsToMatrix();
+        }
+
+        // ==========================================
+        // Requirement 3.2 ข, 1.2 ก, 5.2: นำยอดผ้าอ้อม แผ่นรองซับ เจลลี่ และป้ายโครงการ มาออโต้ซิงก์ในตารางแผนการเงิน
+        // ==========================================
+        async function pullDiaperProjectCost() {
+            try {
+                showToast('กำลังดึงข้อมูลผู้ป่วยและคำนวณงบประมาณผ้าอ้อม...', 'info');
+
+                let diaperPrice = DEFAULT_CONFIGS.DIAPER_PRICE || 9.50;
+                let underpadPrice = DEFAULT_CONFIGS.UNDERPAD_PRICE || 6.00;
+                let jellyPrice = DEFAULT_CONFIGS.JELLY_PRICE || 30.00;
+                let jellyDefaultQty = DEFAULT_CONFIGS.JELLY_DEFAULT_QTY || 1;
+                let bannerPrice = DEFAULT_CONFIGS.BANNER_PRICE || 500.00;
+
+                try {
+                    const snapDiaper = await db.collection('SystemConfig').doc('DIAPER_PRICE').get();
+                    if (snapDiaper.exists) diaperPrice = parseFloat(snapDiaper.data().value) || diaperPrice;
+                    const snapPad = await db.collection('SystemConfig').doc('UNDERPAD_PRICE').get();
+                    if (snapPad.exists) underpadPrice = parseFloat(snapPad.data().value) || underpadPrice;
+                    const snapJelly = await db.collection('SystemConfig').doc('JELLY_PRICE').get();
+                    if (snapJelly.exists) jellyPrice = parseFloat(snapJelly.data().value) || jellyPrice;
+                    const snapJellyQty = await db.collection('SystemConfig').doc('JELLY_DEFAULT_QTY').get();
+                    if (snapJellyQty.exists) jellyDefaultQty = parseInt(snapJellyQty.data().value) || jellyDefaultQty;
+                    const snapBanner = await db.collection('SystemConfig').doc('BANNER_PRICE').get();
+                    if (snapBanner.exists) bannerPrice = parseFloat(snapBanner.data().value) || bannerPrice;
+                } catch (eConfig) {
+                    console.warn("Using default pricing configs:", eConfig);
+                }
+
+                const snap = await db.collection('Patients').get();
+                let diaperPatientCount = 0;
+                let totalDiaperPcs = 0;
+                let totalPadPcs = 0;
+
+                snap.forEach(doc => {
+                    const p = doc.data();
+                    if (String(p.status || '').toLowerCase() !== 'active') return;
+                    
+                    let d = p.diaper;
+                    if (typeof d === 'string') {
+                        try { d = JSON.parse(d); } catch (e) { d = null; }
+                    }
+                    if (!d) return;
+
+                    const hasDiaper = (d.req_diaper === true || d.req_diaper === 'true' || (d.size && d.size !== '-' && d.size.trim() !== '') || (parseInt(d.approved_diaper) > 0));
+                    const hasPad = (d.req_underpad === true || d.req_underpad === 'true' || (parseInt(d.approved_underpad) > 0));
+
+                    if (hasDiaper || hasPad) {
+                        diaperPatientCount++;
+                        const dPerMonth = parseInt(d.approved_diaper) || (hasDiaper ? 90 : 0);
+                        const pPerMonth = parseInt(d.approved_underpad) || (hasPad ? 30 : 0);
+                        
+                        totalDiaperPcs += (dPerMonth * 12);
+                        totalPadPcs += (pPerMonth * 12);
+                    }
+                });
+
+                if (diaperPatientCount === 0) {
+                    return alert('ไม่พบข้อมูลผู้ป่วยที่มีความต้องการผ้าอ้อมหรือแผ่นรองซับในระบบ');
+                }
+
+                const totalJellyPcs = diaperPatientCount * jellyDefaultQty * 4; // 4 รอบ/ปี
+                const totalDiaperCost = totalDiaperPcs * diaperPrice;
+                const totalPadCost = totalPadPcs * underpadPrice;
+                const totalJellyCost = totalJellyPcs * jellyPrice;
+                const totalBannerCost = bannerPrice;
+                const grandTotal = Math.round((totalDiaperCost + totalPadCost + totalJellyCost + totalBannerCost) * 100) / 100;
+
+                const projectName = `โครงการสนับสนุนผ้าอ้อมผู้ใหญ่ แผ่นรองซับ และโภชนาการ กปท. (${diaperPatientCount} ราย)`;
+                
+                // Pre-fill inputs
+                document.getElementById('proj-cat').value = '7'; // (7) สนับสนุนตามมติคณะกรรมการฯ
+                document.getElementById('proj-name').value = projectName;
+                document.getElementById('proj-groups').value = '1';
+                document.getElementById('proj-amt').value = formatNum(grandTotal);
+
+                const confirmAdd = confirm(`คำนวณงบประมาณโครงการผ้าอ้อมเรียบร้อย:\n` +
+                    `- ผู้ป่วยที่ได้รับสิทธิ์: ${diaperPatientCount} ราย\n` +
+                    `- ผ้าอ้อมทั้งปี (${totalDiaperPcs.toLocaleString()} ชิ้น): ${formatNum(totalDiaperCost)} บาท\n` +
+                    `- แผ่นรองซับทั้งปี (${totalPadPcs.toLocaleString()} ชิ้น): ${formatNum(totalPadCost)} บาท\n` +
+                    `- เจลลี่โภชนาการ (${totalJellyPcs.toLocaleString()} ชิ้น): ${formatNum(totalJellyCost)} บาท\n` +
+                    `- ป้ายโครงการ: ${formatNum(totalBannerCost)} บาท\n` +
+                    `---------------------------------------\n` +
+                    `รวมเป็นเงินทั้งสิ้น: ${formatNum(grandTotal)} บาท\n\n` +
+                    `ต้องการบันทึกรายการนี้ลงในส่วนที่ 3 และซิงก์เข้ากระดานแผนการเงินทันทีหรือไม่?`);
+
+                if (confirmAdd) {
+                    const existingIdx = requestedProjects.findIndex(p => p.name.includes('โครงการสนับสนุนผ้าอ้อม'));
+                    if (existingIdx !== -1) {
+                        requestedProjects[existingIdx].totalAmt = grandTotal;
+                        requestedProjects[existingIdx].amtPerGroup = grandTotal;
+                        requestedProjects[existingIdx].name = projectName;
+                        renderProjects();
+                        syncProjectsToMatrix();
+                        showToast('อัปเดตยอดโครงการผ้าอ้อมในแผนการเงินเรียบร้อยแล้ว!', 'success');
+                    } else {
+                        addProject();
+                        showToast('เพิ่มโครงการผ้าอ้อมลงในแผนการเงินเรียบร้อยแล้ว!', 'success');
+                    }
+                } else {
+                    showToast('เตรียมตัวเลขในฟอร์มแล้ว คุณสามารถตรวจสอบและกด "เพิ่มรายการ" ได้เอง', 'info');
+                }
+            } catch (err) {
+                console.error("pullDiaperProjectCost error:", err);
+                alert('เกิดข้อผิดพลาดในการดึงข้อมูลโครงการผ้าอ้อม: ' + err.message);
+            }
         }
 
         function renderProjects() {

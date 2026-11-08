@@ -10,8 +10,10 @@
     <script charset="utf-8" src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
     
     <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore-compat.js"></script>
     <script src="config.js"></script>
+    <script src="core.js"></script>
     
     <style>
         body { font-family: 'Sarabun', sans-serif; background-color: #f4f7fa; }
@@ -36,17 +38,18 @@
             <button onclick="toggleSidebar()" class="lg:hidden text-slate-400 p-1"><span class="material-symbols-outlined">close</span></button>
         </div>
         <nav class="flex-1 px-4 py-6 space-y-2 overflow-y-auto">
-    <a href="admin_dashboard.html" class="flex items-center gap-3 px-4 py-3.5 text-slate-400 hover:bg-white/5 hover:text-white rounded-xl font-medium transition-all"><span class="material-symbols-outlined">dashboard</span> ภาพรวมระบบ</a>
-    <a href="admin_resources.html" class="flex items-center gap-3 px-4 py-3.5 text-slate-400 hover:bg-white/5 hover:text-white rounded-xl font-medium transition-all"><span class="material-symbols-outlined">inventory_2</span> บริหารทรัพยากร</a>
-    <a href="admin_inventory.html" id="nav-inventory" class="flex items-center gap-3 px-4 py-3.5 text-slate-400 hover:bg-white/5 hover:text-white rounded-xl font-medium transition-all"><span class="material-symbols-outlined">warehouse</span> ระบบคลังพัสดุ กปท.</a>
-    <a href="admin_datacenter.html" class="flex items-center gap-3 px-4 py-3.5 text-slate-400 hover:bg-white/5 hover:text-white rounded-xl font-medium transition-all"><span class="material-symbols-outlined">folder_shared</span> ศูนย์ข้อมูลผู้ป่วย</a>
-    <a href="admin_map.html" class="flex items-center gap-3 px-4 py-3.5 text-slate-400 hover:bg-white/5 hover:text-white rounded-xl font-medium transition-all"><span class="material-symbols-outlined">map</span> แผนที่พิกัดผู้ป่วย</a>
-    <a href="admin_delegation.html" class="flex items-center gap-3 px-4 py-3.5 text-slate-400 hover:bg-white/5 hover:text-white rounded-xl font-medium transition-all"><span class="material-symbols-outlined">assignment_ind</span> มอบหมายงาน อสม.</a>
-    <a href="admin_analytics.html" class="flex items-center gap-3 px-4 py-3.5 text-slate-400 hover:bg-white/5 hover:text-white rounded-xl font-medium transition-all"><span class="material-symbols-outlined">analytics</span> ศูนย์รายงาน (Export)</a>
-    <a href="admin_reports.html" id="nav-reports" class="flex items-center gap-3 px-4 py-3.5 text-slate-400 hover:bg-white/5 hover:text-white rounded-xl font-medium transition-all"><span class="material-symbols-outlined">gavel</span> บันทึกมติผ้าอ้อม</a>
-    <a href="admin_finance.html" id="nav-finance" class="flex items-center gap-3 px-4 py-3.5 text-slate-400 hover:bg-white/5 hover:text-white rounded-xl font-medium transition-all"><span class="material-symbols-outlined">account_balance_wallet</span> แผนการเงิน</a>
-    <a href="admin_settings.html" id="nav-settings" class="flex items-center gap-3 px-4 py-3.5 text-slate-400 hover:bg-white/5 hover:text-white rounded-xl font-medium transition-all"><span class="material-symbols-outlined">settings</span> ตั้งค่าระบบ</a>
-</nav>
+            <a href="admin_dashboard.html" class="flex items-center gap-3 px-4 py-3.5 text-slate-400 hover:bg-white/5 hover:text-white rounded-xl font-medium transition-all"><span class="material-symbols-outlined">dashboard</span> ภาพรวมระบบ</a>
+            <a href="admin_resources.html" class="flex items-center gap-3 px-4 py-3.5 text-slate-400 hover:bg-white/5 hover:text-white rounded-xl font-medium transition-all"><span class="material-symbols-outlined">inventory_2</span> บริหารทรัพยากร</a>
+            <a href="admin_equipment.html" id="nav-equipment" class="flex items-center gap-3 px-4 py-3.5 text-slate-400 hover:bg-white/5 hover:text-white rounded-xl font-medium transition-all"><span class="material-symbols-outlined">accessible</span> ระบบยืม-คืนอุปกรณ์</a>
+            <a href="admin_inventory.html" id="nav-inventory" class="flex items-center gap-3 px-4 py-3.5 text-white bg-white/10 rounded-xl font-medium transition-all"><span class="material-symbols-outlined text-amber-400">warehouse</span> ระบบคลังพัสดุ กปท.</a>
+            <a href="admin_datacenter.html" class="flex items-center gap-3 px-4 py-3.5 text-slate-400 hover:bg-white/5 hover:text-white rounded-xl font-medium transition-all"><span class="material-symbols-outlined">folder_shared</span> ศูนย์ข้อมูลผู้ป่วย</a>
+            <a href="admin_map.html" class="flex items-center gap-3 px-4 py-3.5 text-slate-400 hover:bg-white/5 hover:text-white rounded-xl font-medium transition-all"><span class="material-symbols-outlined">map</span> แผนที่พิกัดผู้ป่วย</a>
+            <a href="admin_delegation.html" class="flex items-center gap-3 px-4 py-3.5 text-slate-400 hover:bg-white/5 hover:text-white rounded-xl font-medium transition-all"><span class="material-symbols-outlined">assignment_ind</span> มอบหมายงาน อสม.</a>
+            <a href="admin_analytics.html" class="flex items-center gap-3 px-4 py-3.5 text-slate-400 hover:bg-white/5 hover:text-white rounded-xl font-medium transition-all"><span class="material-symbols-outlined">analytics</span> ศูนย์รายงาน (Export)</a>
+            <a href="admin_reports.html" id="nav-reports" class="flex items-center gap-3 px-4 py-3.5 text-slate-400 hover:bg-white/5 hover:text-white rounded-xl font-medium transition-all"><span class="material-symbols-outlined">gavel</span> บันทึกมติผ้าอ้อม</a>
+            <a href="admin_finance.html" id="nav-finance" class="flex items-center gap-3 px-4 py-3.5 text-slate-400 hover:bg-white/5 hover:text-white rounded-xl font-medium transition-all"><span class="material-symbols-outlined">account_balance_wallet</span> แผนการเงิน</a>
+            <a href="admin_settings.html" id="nav-settings" class="flex items-center gap-3 px-4 py-3.5 text-slate-400 hover:bg-white/5 hover:text-white rounded-xl font-medium transition-all"><span class="material-symbols-outlined">settings</span> ตั้งค่าระบบ</a>
+        </nav>
     </aside>
 
     <main class="flex-1 flex flex-col min-h-0 bg-slate-50 overflow-y-auto">
@@ -56,6 +59,16 @@
                 <div>
                     <h2 class="text-base lg:text-lg font-bold text-slate-900 leading-tight">ระบบคลังพัสดุ (Inventory)</h2>
                     <p id="header-hospital-name" class="text-[11px] lg:text-xs text-slate-400 font-medium mt-0.5">จัดการสต๊อกผ้าอ้อมและอุปกรณ์</p>
+                </div>
+            </div>
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-full bg-slate-100 border border-slate-200 overflow-hidden flex items-center justify-center">
+                    <img id="header-profile-pic" class="w-full h-full object-cover hidden" alt="Profile">
+                    <span id="header-profile-icon" class="material-symbols-outlined text-slate-400">person</span>
+                </div>
+                <div class="hidden sm:block text-right">
+                    <p id="header-user-name" class="text-xs font-bold text-slate-700">กำลังโหลด...</p>
+                    <p id="header-user-role" class="text-[10px] text-amber-600 font-medium">ผู้ดูแลระบบ (ADMIN)</p>
                 </div>
             </div>
         </header>
@@ -290,39 +303,29 @@
 
         document.addEventListener("DOMContentLoaded", () => {
             document.getElementById('sidebar-hospital-name').innerText = DEFAULT_CONFIGS.HOSPITAL_NAME;
-            liff.init({ liffId: LIFF_ID }).then(() => {
-                const mockUid = localStorage.getItem('dev_mock_uid');
-                const savedUid = localStorage.getItem('orsomo_uid');
-                if (mockUid) verifyAdminAccess(mockUid);
-                else if (liff.isLoggedIn()) liff.getProfile().then(p => { localStorage.setItem('orsomo_uid', p.userId); currentUserName = p.displayName; verifyAdminAccess(p.userId); }).catch(() => window.location.href='index.html');
-                else if (savedUid) verifyAdminAccess(savedUid);
-                else window.location.href='index.html';
-            }).catch(() => window.location.href='index.html');
+            verifyAdminAccess();
         });
 
-        async function verifyAdminAccess(uid) {
-            currentUserUid = uid;
+        async function verifyAdminAccess() {
             try {
-                const userDoc = await db.collection('VHVs').doc(String(uid)).get();
-                if (userDoc.exists) {
-                    const data = userDoc.data();
-                    if(data.name) currentUserName = data.name;
-                    currentUserRole = String(data.role || '').toUpperCase();
-                    
-                    // 🌟 ล็อกสิทธิ์: ให้เข้าได้เฉพาะ ADMIN ส่วนกลางเท่านั้น 🌟
-                    if (currentUserRole === 'ADMIN') {
-                        await initializeInventory();
-                        return;
-                    }
+                const user = await OrsomoCore.Auth.guardPage({ allowedRoles: ['ADMIN'] });
+                currentUserUid = user.uid;
+                currentUserName = user.name || 'ผู้ดูแลระบบ';
+                currentUserRole = user.role || 'ADMIN';
+
+                const hName = document.getElementById('header-user-name');
+                if (hName) hName.innerText = currentUserName;
+                const hPic = document.getElementById('header-profile-pic');
+                const hIcon = document.getElementById('header-profile-icon');
+                if (hPic && hIcon) {
+                    OrsomoCore.UI.resolveAvatar(user, hPic, hIcon);
                 }
-                
-                // ถ้าเป็น SUB_ADMIN (รพ.สต.) ให้เด้งกลับไปหน้าแดชบอร์ด, ถ้าเป็น อสม. ให้เด้งออกไปหน้าแรก
-                if (currentUserRole === 'SUB_ADMIN') {
-                    window.location.href = 'admin_dashboard.html';
-                } else {
-                    window.location.href = 'index.html';
-                }
-            } catch (error) { window.location.href = 'index.html'; }
+
+                await initializeInventory();
+            } catch (error) { 
+                console.error("Auth guard error:", error);
+                window.location.href = 'index.html'; 
+            }
         }
 
         // ==========================================
@@ -534,8 +537,8 @@
 
                     let rawSize = (hist && hist.size && hist.size !== '-') ? String(hist.size).toUpperCase() : String(d.size||'L').toUpperCase();
                     let baseSize = 'L';
-                    if (rawSize.includes('XXL')) baseSize = 'XXL';
-                    else if (rawSize.includes('XL')) baseSize = 'XL';
+                    // Requirement 4.2.2: ผ้าอ้อมมีเฉพาะ S, M, L, XL (ไม่มี XXL) แปลง XXL เก่าเป็น XL เพื่อตัดสต๊อกถูกต้อง
+                    if (rawSize.includes('XXL') || rawSize.includes('XL')) baseSize = 'XL';
                     else if (rawSize.includes('S')) baseSize = 'S';
                     else if (rawSize.includes('M')) baseSize = 'M';
                     else if (rawSize.includes('L')) baseSize = 'L';
@@ -652,6 +655,20 @@
                 if(!invItem || invItem.balance < item.qty) {
                     return showToast(`สต๊อก "${item.name}" มีไม่พอตัดจ่าย! (คงเหลือ ${invItem ? invItem.balance : 0})`, 'error');
                 }
+            }
+
+            // 🌟 Requirement 4.2.2: ตรวจสอบการตัดสต๊อกซ้ำซ้อนในรอบเดียวกัน 🌟
+            try {
+                const existingOut = await db.collection('Inventory_Transactions')
+                    .where('type', '==', 'OUT_ROUND')
+                    .where('round', '==', String(round))
+                    .get();
+                if (!existingOut.empty) {
+                    const alreadyConfirmed = confirm(`⚠️ คำเตือน: ระบบพบประวัติการตัดสต๊อกตามมติรอบ "${round}" ไปแล้ว ${existingOut.size} ครั้ง!\n\nคุณแน่ใจหรือไม่ว่าต้องการตัดสต๊อกซ้ำอีกครั้ง?`);
+                    if (!alreadyConfirmed) return;
+                }
+            } catch (errCheck) {
+                console.warn('Check existing transaction check warning:', errCheck);
             }
 
             if(!confirm('ยืนยันการตัดสต๊อกทั้งหมดตามมติรอบ ' + round + ' ใช่หรือไม่?')) return;
