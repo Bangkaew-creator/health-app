@@ -326,24 +326,32 @@
     </main>
 
     <!-- Modal: ใบรับรองแพทย์ -->
-    <div id="cert-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
-        <div class="bg-white rounded-3xl max-w-lg w-full p-6 shadow-2xl relative border border-slate-100">
-            <div class="flex items-center justify-between pb-3 border-b border-slate-100">
+    <div id="cert-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4" onclick="if(event.target === this) closeCertModal()">
+        <div class="bg-white rounded-3xl max-w-xl w-full p-6 shadow-2xl relative border border-slate-100 flex flex-col max-h-[90vh]">
+            <div class="flex items-center justify-between pb-3 border-b border-slate-100 shrink-0">
                 <h3 class="font-bold text-slate-800 text-sm flex items-center gap-2">
                     <span class="material-symbols-outlined text-amber-500">medical_services</span> ใบรับรองแพทย์ / เอกสารประเมินสิทธิ์
                 </h3>
-                <button onclick="closeCertModal()" class="text-slate-400 hover:text-slate-600 p-1">
-                    <span class="material-symbols-outlined">close</span>
+                <button type="button" onclick="closeCertModal()" class="text-slate-400 hover:text-slate-600 p-1.5 rounded-lg hover:bg-slate-100 transition-colors">
+                    <span class="material-symbols-outlined text-[20px]">close</span>
                 </button>
             </div>
-            <div class="py-4 text-center">
-                <p id="cert-modal-patient" class="text-xs font-bold text-navy mb-3"></p>
-                <div class="max-h-[60vh] overflow-auto rounded-2xl border border-slate-200 bg-slate-50 p-2 flex items-center justify-center">
-                    <img id="cert-modal-img" src="" alt="ใบรับรองแพทย์" class="max-h-full max-w-full object-contain rounded-xl">
+            <div class="py-4 text-center overflow-hidden flex flex-col flex-1">
+                <p id="cert-modal-patient" class="text-xs font-bold text-navy mb-3 shrink-0"></p>
+                <div class="overflow-auto rounded-2xl border border-slate-200 bg-slate-50 p-2 flex items-center justify-center min-h-[260px] flex-1">
+                    <div id="cert-modal-loading" class="hidden flex flex-col items-center justify-center py-12 text-slate-400 gap-2">
+                        <div class="w-8 h-8 border-3 border-amber-500 border-t-transparent rounded-full animate-spin"></div>
+                        <span class="text-xs font-medium">กำลังโหลดรูปภาพใบรับรองแพทย์...</span>
+                    </div>
+                    <img id="cert-modal-img" src="" alt="ใบรับรองแพทย์" class="max-h-[60vh] max-w-full object-contain rounded-xl shadow-sm hidden">
                 </div>
             </div>
-            <div class="pt-3 border-t border-slate-100 text-right">
-                <button onclick="closeCertModal()" class="px-5 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-xl text-xs transition-colors">ปิด</button>
+            <div class="pt-3 border-t border-slate-100 flex items-center justify-between shrink-0">
+                <a id="cert-modal-open-link" href="#" target="_blank" class="hidden px-3.5 py-2 bg-blue-50 text-blue-700 hover:bg-blue-100 font-bold rounded-xl text-xs transition-colors inline-flex items-center gap-1.5 border border-blue-200">
+                    <span class="material-symbols-outlined text-[16px]">open_in_new</span> ดูรูปเต็ม
+                </a>
+                <div class="flex-1"></div>
+                <button type="button" onclick="closeCertModal()" class="px-5 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-xl text-xs transition-colors">ปิด</button>
             </div>
         </div>
     </div>
@@ -645,7 +653,7 @@
                 if (calcDiaper > 0) calcLines.push(`ผ้าอ้อม ${item.size}: <strong class="text-navy">${calcDiaper}</strong> ชิ้น`);
                 if (calcPad > 0) calcLines.push(`แผ่นรอง: <strong class="text-emerald-700">${calcPad}</strong> ชิ้น`);
 
-                const hasCert = Boolean(d.has_medical_cert || d.medical_cert || p.medical_cert || d.cert_img || p.cert_img);
+                const hasCert = Boolean(item.cachedCertImg || d.has_medical_cert || d.medical_cert || p.medical_cert || d.cert_img || p.cert_img);
                 const adlScore = (p.adl !== undefined && p.adl !== null && p.adl !== '') ? p.adl : '-';
                 const indication = d.indication || p.disease || 'ไม่ระบุ';
                 const assessor = d.assessor_name || p.assigned_vhv_name || 'ไม่ระบุ';
@@ -779,27 +787,113 @@
         }
 
         // Modal ใบรับรองแพทย์
-        function openCertModal(docId) {
+        async function openCertModal(docId) {
             const item = allResourcePatients.find(x => x.docId === docId);
             if (!item) return;
-            const p = item.patient;
-            const d = item.diaper;
-            const imgUrl = d.cert_img || p.medical_cert || p.cert_img || '';
+            const p = item.patient || {};
+            const d = item.diaper || {};
+
+            const modal = document.getElementById('cert-modal');
+            const patientNameEl = document.getElementById('cert-modal-patient');
+            const imgEl = document.getElementById('cert-modal-img');
+            const loadingEl = document.getElementById('cert-modal-loading');
+            const openLink = document.getElementById('cert-modal-open-link');
+
+            patientNameEl.innerText = `ผู้ป่วย: ${p.prefix || ''}${p.name || ''} (หมู่ที่ ${item.village_no || '-'})`;
+            imgEl.src = '';
+            imgEl.classList.add('hidden');
+            if (openLink) {
+                openLink.classList.add('hidden');
+                openLink.href = '#';
+            }
+            if (loadingEl) loadingEl.classList.remove('hidden');
+            modal.classList.remove('hidden');
+
+            // 1. ตรวจสอบจากแคช หรือฟิลด์เดิมในเอกสาร Patients
+            let imgUrl = item.cachedCertImg || d.cert_img || d.medical_cert || p.medical_cert || p.cert_img || '';
+
+            // 2. หากไม่มีใน Patients ให้ค้นหาจากคอลเลกชัน Patient_Images (ระบบแยกเก็บรูปฟรี 0 บาท)
             if (!imgUrl) {
-                if (typeof showToast === 'function') showToast('ไม่พบไฟล์รูปใบรับรองแพทย์', 'error');
-                else alert('ไม่พบไฟล์รูปใบรับรองแพทย์');
+                try {
+                    // เรียกผ่าน ImageStore กลางของระบบ
+                    if (window.OrsomoCore && OrsomoCore.ImageStore && typeof OrsomoCore.ImageStore.getPatientImages === 'function') {
+                        const imgs = await OrsomoCore.ImageStore.getPatientImages(db, docId, p);
+                        if (imgs && imgs.medical_cert) {
+                            imgUrl = imgs.medical_cert;
+                        }
+                    }
+
+                    // Fallback ค้นหาเอกสารตรงจาก docId ใน Patient_Images
+                    if (!imgUrl) {
+                        const snap = await db.collection('Patient_Images').doc(String(docId).trim()).get();
+                        if (snap.exists) {
+                            const data = snap.data() || {};
+                            imgUrl = data.medical_cert || data.cert_img || data.image || '';
+                        }
+                    }
+
+                    // Fallback ค้นหาตามฟิลด์ patient_id
+                    if (!imgUrl) {
+                        const qSnap = await db.collection('Patient_Images').where('patient_id', '==', String(docId).trim()).get();
+                        if (!qSnap.empty) {
+                            for (const doc of qSnap.docs) {
+                                const data = doc.data() || {};
+                                if (data.medical_cert || data.cert_img) {
+                                    imgUrl = data.medical_cert || data.cert_img;
+                                    break;
+                                }
+                            }
+                        }
+                    }
+
+                    if (imgUrl && window.OrsomoCore && OrsomoCore.ImageStore) {
+                        imgUrl = OrsomoCore.ImageStore.resolveImageUrl(imgUrl);
+                    }
+                } catch (err) {
+                    console.error('Error loading cert image:', err);
+                }
+            }
+
+            if (loadingEl) loadingEl.classList.add('hidden');
+
+            if (!imgUrl) {
+                modal.classList.add('hidden');
+                if (typeof showToast === 'function') showToast('ไม่พบไฟล์รูปใบรับรองแพทย์ในระบบ', 'error');
+                else alert('ไม่พบไฟล์รูปใบรับรองแพทย์ในระบบ');
                 return;
             }
 
-            document.getElementById('cert-modal-patient').innerText = `ผู้ป่วย: ${p.prefix || ''}${p.name || ''} (หมู่ที่ ${item.village_no || '-'})`;
-            document.getElementById('cert-modal-img').src = imgUrl;
-            document.getElementById('cert-modal').classList.remove('hidden');
+            // แคชรูปไว้บน item เพื่อเปิดซ้ำได้ทันที
+            item.cachedCertImg = imgUrl;
+
+            imgEl.src = imgUrl;
+            imgEl.classList.remove('hidden');
+            if (openLink) {
+                openLink.href = imgUrl;
+                openLink.classList.remove('hidden');
+            }
         }
 
         function closeCertModal() {
-            document.getElementById('cert-modal').classList.add('hidden');
-            document.getElementById('cert-modal-img').src = '';
+            const modal = document.getElementById('cert-modal');
+            if (modal) modal.classList.add('hidden');
+            const imgEl = document.getElementById('cert-modal-img');
+            if (imgEl) {
+                imgEl.src = '';
+                imgEl.classList.add('hidden');
+            }
+            const openLink = document.getElementById('cert-modal-open-link');
+            if (openLink) {
+                openLink.classList.add('hidden');
+                openLink.href = '#';
+            }
+            const loadingEl = document.getElementById('cert-modal-loading');
+            if (loadingEl) loadingEl.classList.add('hidden');
         }
+
+        document.addEventListener('keydown', function (e) {
+            if (e.key === 'Escape') closeCertModal();
+        });
 
         // ส่งออก Excel รายการที่เลือก
         function exportToExcel() {
