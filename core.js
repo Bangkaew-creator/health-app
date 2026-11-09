@@ -102,13 +102,14 @@
                 const authUser = await Auth.ensureAnonymousSignIn();
                 if (!authUser || !authUser.uid) return null;
 
-                const cacheKey = authUser.uid + ':' + String(liffUid);
+                const cleanLiffUid = String(liffUid).trim();
+                const cacheKey = authUser.uid + ':' + cleanLiffUid;
                 if (!forceWrite && sessionStorage.getItem('orsomo_auth_bound') === cacheKey) {
                     return authUser.uid;
                 }
 
                 await db.collection('Auth_Sessions').doc(authUser.uid).set({
-                    liff_uid: String(liffUid).trim(),
+                    liff_uid: cleanLiffUid,
                     updated_at: firebase.firestore.FieldValue.serverTimestamp()
                 }, { merge: true });
 
@@ -117,6 +118,35 @@
             } catch (err) {
                 console.warn('Auth_Sessions bind info:', err && err.message ? err.message : err);
                 return null;
+            }
+        },
+
+        repairSession: async function (db) {
+            try {
+                const resolved = await Auth.resolveLiffUid();
+                const uid = String(resolved.uid || '').trim();
+                if (!uid) return null;
+                const dbInst = db || Auth.ensureFirebase();
+                sessionStorage.removeItem('orsomo_auth_bound');
+                return await Auth.bindAuthSession(dbInst, uid, true);
+            } catch (err) {
+                console.warn('repairSession warning:', err);
+                return null;
+            }
+        },
+
+        withAutoSessionRetry: async function (db, operationFn) {
+            try {
+                return await operationFn();
+            } catch (err) {
+                const msg = String((err && err.message) || err || '').toLowerCase();
+                const isPermDenied = err && (err.code === 'permission-denied' || msg.includes('insufficient permissions') || msg.includes('permission denied'));
+                if (isPermDenied) {
+                    console.warn('Permission issue detected. Executing automatic session self-heal & retry...');
+                    await Auth.repairSession(db);
+                    return await operationFn();
+                }
+                throw err;
             }
         },
 
@@ -206,7 +236,7 @@
                 throw new Error('UNAUTHENTICATED');
             }
 
-            await Auth.bindAuthSession(db, uid);
+            await Auth.bindAuthSession(db, uid, true);
 
             const userDoc = await db.collection('VHVs').doc(uid).get();
             if (!userDoc.exists) {

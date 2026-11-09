@@ -17,7 +17,7 @@
     <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore-compat.js"></script>
     <script src="config.js"></script>
-    <script src="core.js"></script>
+    <script src="core.js?v=20261109_auth"></script>
     
     <style>
         body { font-family: 'Sarabun', sans-serif; background-color: #f8fafc; }
@@ -214,6 +214,43 @@
                                 <h4 class="text-xs font-bold text-slate-700 mb-3">รหัสหน่วยงานย่อยที่ใช้งานอยู่ในปัจจุบัน:</h4>
                                 <div id="sub-agency-list" class="space-y-2"></div>
                             </div>
+                        </div>
+                    </div>
+
+                    <!-- การตรวจสอบและรีเซตเซสชันความปลอดภัยระบบ -->
+                    <div class="bg-white rounded-[24px] p-6 shadow-sm border border-slate-200 relative overflow-hidden">
+                        <div class="flex items-center gap-3 mb-6 pb-4 border-b border-slate-100">
+                            <div class="w-10 h-10 rounded-2xl bg-indigo-50 flex items-center justify-center text-indigo-600">
+                                <span class="material-symbols-outlined text-[24px]">verified_user</span>
+                            </div>
+                            <div>
+                                <h3 class="font-bold text-slate-800 text-sm">การตรวจสอบและรีเซตเซสชันความปลอดภัย (Auth & Session Health)</h3>
+                                <p class="text-xs text-slate-500">สำหรับผู้ดูแลระบบ: ตรวจสอบความถูกต้องของสิทธิ์ผู้ใช้ และรีเซตเซสชัน Anonymous Auth -> LINE ID เพื่อป้องกันปัญหา Missing or insufficient permissions</p>
+                            </div>
+                        </div>
+
+                        <div class="space-y-4">
+                            <div class="p-4 bg-slate-50 rounded-2xl border border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                                <div>
+                                    <h4 class="text-xs font-bold text-slate-800">รีเซตและซิงค์เซสชันความปลอดภัยของผู้ดูแลระบบ</h4>
+                                    <p class="text-[11px] text-slate-500 mt-0.5">ล้างแคชเซสชันเดิมในเบราว์เซอร์ และบังคับผูกเซสชันลงใน Auth_Sessions ใหม่ทันที</p>
+                                </div>
+                                <button type="button" onclick="resetCurrentAdminSession()" id="btn-reset-session" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold transition-all shadow-sm shrink-0 flex items-center gap-1.5 cursor-pointer">
+                                    <span class="material-symbols-outlined text-[16px]">sync</span> รีเซตเซสชันเครื่องนี้
+                                </button>
+                            </div>
+
+                            <div class="p-4 bg-slate-50 rounded-2xl border border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                                <div>
+                                    <h4 class="text-xs font-bold text-slate-800">ตรวจสอบสถานะบัญชี อสม. และ รพ.สต. ทั้งหมด (Account Health Check)</h4>
+                                    <p class="text-[11px] text-slate-500 mt-0.5">ตรวจสอบบัญชีที่มีสถานะ Active, Pending, หรือบทบาทที่ไม่ถูกต้องในฐานข้อมูล</p>
+                                </div>
+                                <button type="button" onclick="checkAllAccountsHealth()" id="btn-check-accounts" class="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold transition-all shadow-sm shrink-0 flex items-center gap-1.5 cursor-pointer">
+                                    <span class="material-symbols-outlined text-[16px]">health_and_safety</span> ตรวจสอบสิทธิ์บัญชี
+                                </button>
+                            </div>
+
+                            <div id="auth-check-result" class="hidden p-4 rounded-2xl text-xs"></div>
                         </div>
                     </div>
                 </div>
@@ -517,6 +554,95 @@
                     loadSubAgencies();
                 }
             } catch(e) { showToast('ลบข้อมูลไม่สำเร็จ', 'error'); }
+        }
+
+        async function resetCurrentAdminSession() {
+            const btn = document.getElementById('btn-reset-session');
+            if (btn) {
+                btn.disabled = true;
+                btn.innerHTML = '<span class="material-symbols-outlined text-[16px] animate-spin">sync</span> กำลังรีเซต...';
+            }
+            try {
+                const res = await OrsomoCore.Auth.repairSession(db);
+                if (res) {
+                    showToast('รีเซตเซสชันและผูกสิทธิ์ความปลอดภัยสำเร็จ', 'success');
+                } else {
+                    showToast('ไม่สามารถระบุตัวตน LINE ID ได้', 'error');
+                }
+            } catch (e) {
+                console.error(e);
+                showToast('รีเซตเซสชันล้มเหลว: ' + e.message, 'error');
+            } finally {
+                if (btn) {
+                    btn.disabled = false;
+                    btn.innerHTML = '<span class="material-symbols-outlined text-[16px]">sync</span> รีเซตเซสชันเครื่องนี้';
+                }
+            }
+        }
+
+        async function checkAllAccountsHealth() {
+            const btn = document.getElementById('btn-check-accounts');
+            const resEl = document.getElementById('auth-check-result');
+            if (btn) {
+                btn.disabled = true;
+                btn.innerHTML = '<span class="material-symbols-outlined text-[16px] animate-spin">hourglass_empty</span> กำลังตรวจสอบ...';
+            }
+            resEl.classList.add('hidden');
+
+            try {
+                const snap = await db.collection('VHVs').get();
+                let activeCount = 0;
+                let pendingCount = 0;
+                let rejectedCount = 0;
+                let adminCount = 0;
+                let subAdminCount = 0;
+                let vhvCount = 0;
+                let abnormalAccounts = [];
+
+                snap.forEach(doc => {
+                    const u = doc.data() || {};
+                    const role = String(u.role || '').toUpperCase();
+                    const status = String(u.status || '').toLowerCase();
+
+                    if (role === 'ADMIN') adminCount++;
+                    else if (role === 'SUB_ADMIN') subAdminCount++;
+                    else if (role === 'VHV') vhvCount++;
+                    else abnormalAccounts.push(`${u.name || doc.id} (บทบาทไม่ถูกต้อง: ${u.role})`);
+
+                    if (status === 'active') activeCount++;
+                    else if (status === 'pending') pendingCount++;
+                    else rejectedCount++;
+                });
+
+                resEl.className = "p-4 rounded-2xl text-xs bg-slate-100 border border-slate-200 text-slate-800 space-y-2 block";
+                resEl.innerHTML = `
+                    <div class="font-bold text-sm text-navy mb-1 flex items-center gap-1.5">
+                        <span class="material-symbols-outlined text-[18px] text-emerald-600">task_alt</span> สรุปผลการตรวจสอบบัญชีผู้ใช้งาน (${snap.size} บัญชี)
+                    </div>
+                    <div class="grid grid-cols-2 sm:grid-cols-3 gap-2 py-2">
+                        <div class="bg-white p-2.5 rounded-xl border border-slate-200"><span class="text-slate-500">Active (ใช้งานได้):</span> <strong class="text-emerald-600">${activeCount}</strong></div>
+                        <div class="bg-white p-2.5 rounded-xl border border-slate-200"><span class="text-slate-500">Pending (รออนุมัติ):</span> <strong class="text-amber-600">${pendingCount}</strong></div>
+                        <div class="bg-white p-2.5 rounded-xl border border-slate-200"><span class="text-slate-500">Rejected (ระงับ):</span> <strong class="text-rose-600">${rejectedCount}</strong></div>
+                        <div class="bg-white p-2.5 rounded-xl border border-slate-200"><span class="text-slate-500">ผู้ดูแลส่วนกลาง (ADMIN):</span> <strong class="text-blue-600">${adminCount}</strong></div>
+                        <div class="bg-white p-2.5 rounded-xl border border-slate-200"><span class="text-slate-500">รพ.สต. (SUB_ADMIN):</span> <strong class="text-purple-600">${subAdminCount}</strong></div>
+                        <div class="bg-white p-2.5 rounded-xl border border-slate-200"><span class="text-slate-500">อสม. (VHV):</span> <strong class="text-slate-700">${vhvCount}</strong></div>
+                    </div>
+                    ${abnormalAccounts.length > 0 ? `
+                        <div class="p-2 bg-rose-50 border border-rose-200 rounded-xl text-rose-800">
+                            <strong>พบบัญชีผิดปกติ:</strong> ${abnormalAccounts.join(', ')}
+                        </div>
+                    ` : `<div class="text-emerald-700 font-medium">✓ บัญชีทั้งหมดมีบทบาทและสถานะถูกต้องตามมาตรฐานความปลอดภัย</div>`}
+                `;
+            } catch (err) {
+                console.error(err);
+                resEl.className = "p-4 rounded-2xl text-xs bg-rose-50 border border-rose-200 text-rose-800 block";
+                resEl.innerText = "เกิดข้อผิดพลาดในการตรวจสอบ: " + err.message;
+            } finally {
+                if (btn) {
+                    btn.disabled = false;
+                    btn.innerHTML = '<span class="material-symbols-outlined text-[16px]">health_and_safety</span> ตรวจสอบสิทธิ์บัญชี';
+                }
+            }
         }
     </script>
 </body>
