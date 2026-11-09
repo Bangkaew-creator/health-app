@@ -5,8 +5,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
     <title>บริหารทรัพยากร - อสม.สามารถ (Orsomo Smart)</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700&display=swap" rel="stylesheet"/>
+    <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700;800&display=swap" rel="stylesheet"/>
     <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+    <script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
     <script charset="utf-8" src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
     
     <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-app-compat.js"></script>
@@ -19,27 +20,36 @@
         body { font-family: 'Sarabun', sans-serif; background-color: #f4f7fa; }
         .material-symbols-outlined { font-variation-settings: 'FILL' 1, 'wght' 400, 'GRAD' 0, 'opsz' 24; }
         .bg-navy { background-color: #0f172a; }
-        .tab-btn { padding: 12px 24px; font-weight: bold; font-size: 14px; border-bottom: 3px solid transparent; color: #64748b; transition: all 0.2s; cursor: pointer; }
-        .tab-btn.active { color: #d97706; border-bottom-color: #d97706; }
-        .neo-card { background: #ffffff; border-radius: 20px; box-shadow: 4px 4px 12px #e2e8f0, -4px -4px 12px #ffffff; border: 1px solid rgba(255, 255, 255, 0.7); }
-        .loader-small { border: 2px solid #f3f3f3; border-bottom-color: #d97706; border-radius: 50%; width: 24px; height: 24px; animation: spin 1s linear infinite; }
+        .text-navy { color: #0f172a; }
+        .neo-card { background: #ffffff; border-radius: 24px; box-shadow: 0 4px 20px -2px rgba(15, 23, 42, 0.05); border: 1px solid #e2e8f0; }
+        .loader-small { border: 2px solid #f3f3f3; border-bottom-color: #d97706; border-radius: 50%; width: 26px; height: 26px; animation: spin 1s linear infinite; }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
     </style>
 </head>
-<body class="flex h-[100dvh] overflow-hidden text-slate-800 relative">
+<body class="flex h-[100dvh] overflow-hidden text-slate-800 relative orsomo-admin-responsive">
 
+    <!-- Sidebar Overlay -->
     <div id="sidebar-overlay" class="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-40 hidden lg:hidden" onclick="toggleSidebar()"></div>
-    <aside id="sidebar" class="fixed inset-y-0 left-0 w-72 bg-navy text-white flex flex-col z-50 transform -translate-x-full lg:translate-x-0 lg:static transition-transform duration-300 ease-in-out">
+    
+    <!-- Sidebar Navigation -->
+    <aside id="sidebar" class="fixed inset-y-0 left-0 w-72 bg-navy text-white flex flex-col z-50 transform -translate-x-full lg:translate-x-0 lg:static transition-transform duration-300 ease-in-out shadow-2xl lg:shadow-none">
         <div class="p-6 flex items-center justify-between border-b border-slate-700/40">
             <div class="flex items-center gap-3">
-                <div class="w-11 h-11 rounded-xl bg-white/10 flex items-center justify-center border border-amber-400/30"><span class="material-symbols-outlined text-amber-400 text-[26px]">local_hospital</span></div>
-                <div><h1 id="sidebar-hospital-name" class="font-bold text-[15px] tracking-wide text-white">กำลังโหลด...</h1><p id="sidebar-system-name" class="text-[10px] text-amber-400 font-medium">ระบบบริหารจัดการ</p></div>
+                <div class="w-11 h-11 rounded-xl bg-white/10 flex items-center justify-center border border-amber-400/30">
+                    <span class="material-symbols-outlined text-amber-400 text-[26px]">local_hospital</span>
+                </div>
+                <div>
+                    <h1 id="sidebar-hospital-name" class="font-bold text-[15px] tracking-wide text-white truncate max-w-[170px]">กำลังโหลด...</h1>
+                    <p id="sidebar-system-name" class="text-[10px] text-amber-400 font-medium">ระบบบริหารจัดการ</p>
+                </div>
             </div>
-            <button onclick="toggleSidebar()" class="lg:hidden text-slate-400 p-1"><span class="material-symbols-outlined">close</span></button>
+            <button onclick="toggleSidebar()" class="lg:hidden text-slate-400 p-1 hover:text-white transition-colors">
+                <span class="material-symbols-outlined">close</span>
+            </button>
         </div>
         <nav class="flex-1 px-4 py-6 space-y-2 overflow-y-auto">
             <a href="admin_dashboard.html" class="flex items-center gap-3 px-4 py-3.5 text-slate-400 hover:bg-white/5 hover:text-white rounded-xl font-medium transition-all"><span class="material-symbols-outlined">dashboard</span> ภาพรวมระบบ</a>
-            <a href="admin_resources.html" class="flex items-center gap-3 px-4 py-3.5 text-white bg-white/10 rounded-xl font-medium transition-all"><span class="material-symbols-outlined text-amber-400">inventory_2</span> บริหารทรัพยากร</a>
+            <a href="admin_resources.html" class="flex items-center gap-3 px-4 py-3.5 text-white bg-white/10 rounded-xl font-medium transition-all shadow-inner"><span class="material-symbols-outlined text-amber-400">inventory_2</span> บริหารทรัพยากร</a>
             <a href="admin_inventory.html" id="nav-inventory" class="flex items-center gap-3 px-4 py-3.5 text-slate-400 hover:bg-white/5 hover:text-white rounded-xl font-medium transition-all"><span class="material-symbols-outlined">warehouse</span> ระบบคลังพัสดุ กปท.</a>
             <a href="admin_equipment.html" id="nav-equipment" class="flex items-center gap-3 px-4 py-3.5 text-slate-400 hover:bg-white/5 hover:text-white rounded-xl font-medium transition-all"><span class="material-symbols-outlined">medical_services</span> ทะเบียนยืม-คืนอุปกรณ์</a>
             <a href="admin_datacenter.html" class="flex items-center gap-3 px-4 py-3.5 text-slate-400 hover:bg-white/5 hover:text-white rounded-xl font-medium transition-all"><span class="material-symbols-outlined">folder_shared</span> ศูนย์ข้อมูลผู้ป่วย</a>
@@ -52,11 +62,21 @@
         </nav>
     </aside>
 
-    <main class="flex-1 flex flex-col min-h-0 bg-slate-50">
-        <header class="h-20 min-h-[80px] bg-white shadow-sm flex items-center justify-between px-6 lg:px-8 z-10 flex-shrink-0 border-b border-slate-100">
+    <!-- Main Content Area -->
+    <main class="flex-1 flex flex-col min-h-0 bg-slate-50 overflow-hidden">
+        <!-- Header -->
+        <header class="h-20 min-h-[80px] bg-white shadow-xs flex items-center justify-between px-6 lg:px-8 z-10 flex-shrink-0 border-b border-slate-200/80">
             <div class="flex items-center">
-                <button onclick="toggleSidebar()" class="lg:hidden p-2.5 -ml-2 mr-3 text-slate-600 hover:bg-slate-100 rounded-xl transition-colors"><span class="material-symbols-outlined text-[26px]">menu</span></button>
-                <div><h2 class="text-base lg:text-lg font-bold text-slate-900 leading-tight">บริหารทรัพยากร</h2><p id="header-hospital-name" class="text-[11px] lg:text-xs text-slate-400 font-medium mt-0.5">อนุมัติและคาดการณ์งบประมาณ</p></div>
+                <button onclick="toggleSidebar()" class="lg:hidden p-2.5 -ml-2 mr-3 text-slate-600 hover:bg-slate-100 rounded-xl transition-colors">
+                    <span class="material-symbols-outlined text-[26px]">menu</span>
+                </button>
+                <div>
+                    <h2 class="text-base lg:text-lg font-bold text-slate-900 leading-tight flex items-center gap-2">
+                        <span>บริหารทรัพยากร</span>
+                        <span class="text-xs bg-amber-50 text-amber-700 font-bold px-2.5 py-0.5 rounded-full border border-amber-200">สำรวจและคาดการณ์โควตา</span>
+                    </h2>
+                    <p id="header-hospital-name" class="text-[11px] lg:text-xs text-slate-400 font-medium mt-0.5">วางแผนพัสดุและงบประมาณระดับพื้นที่</p>
+                </div>
             </div>
             <div class="flex items-center gap-3">
                 <div class="w-10 h-10 rounded-full bg-slate-100 border border-slate-200 overflow-hidden flex items-center justify-center">
@@ -70,68 +90,244 @@
             </div>
         </header>
 
-        <div class="flex-1 overflow-y-auto pb-20">
-            <div class="p-4 lg:p-6 pb-2">
-                <div class="neo-card p-5 lg:p-6 border-t-4 border-navy">
-                    <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-4 mb-4 border-b border-slate-100 pb-4">
-                        <div>
-                            <h3 class="text-base font-bold text-navy flex items-center gap-2"><span class="material-symbols-outlined text-amber-500">account_balance_wallet</span> คาดการณ์งบประมาณและทรัพยากร</h3>
-                            <p class="text-[11px] text-slate-500 mt-1">คำนวณจากผู้ป่วยสถานะ <strong class="text-blue-600">Active</strong> ในเขตพื้นที่ของคุณที่ได้รับอนุมัติแล้ว</p>
+        <!-- Scrollable Body -->
+        <div class="flex-1 overflow-y-auto p-4 lg:p-6 space-y-6 pb-20">
+
+            <!-- Banner: เกณฑ์โควตามาตรฐานตั้งต้น -->
+            <div class="bg-gradient-to-r from-blue-900 via-indigo-900 to-slate-900 text-white rounded-3xl p-5 shadow-sm border border-blue-800">
+                <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+                    <div class="space-y-1 max-w-xl">
+                        <div class="flex items-center gap-2">
+                            <span class="material-symbols-outlined text-amber-300 text-[22px]">verified</span>
+                            <h3 class="font-bold text-sm tracking-wide text-white">เกณฑ์โควตามาตรฐานตั้งต้น (Standard Baseline Quotas)</h3>
                         </div>
-                        <div class="flex items-center gap-2 bg-slate-50 p-2 rounded-xl border border-slate-200">
-                            <label class="text-sm font-bold text-slate-700 pl-2">ระยะเวลาคำนวณ</label>
-                            <input type="number" id="forecast-days" value="30" oninput="calculateBudget()" class="w-20 px-2 py-1.5 border border-slate-300 rounded-lg text-center font-bold text-navy">
-                            <span class="text-sm text-slate-500 pr-2">วัน</span>
-                        </div>
+                        <p class="text-xs text-blue-200 leading-relaxed">
+                            ระบบคำนวณความต้องการให้อัตโนมัติตามสิทธิ์ประเมินของผู้ป่วยทุกคน (ทั้งเก่าและใหม่) โดยแยกอิสระจากมติจัดสรรของคณะกรรมการกองทุน กปท.
+                        </p>
                     </div>
-                    
-                    <div class="grid grid-cols-1 xl:grid-cols-3 gap-6">
-                        <div class="bg-slate-50 p-4 rounded-xl border border-slate-200 flex flex-col justify-center">
-                            <p class="text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-3">1. ราคาวัสดุอ้างอิง (จาก Config)</p>
-                            <div class="space-y-2">
-                                <div class="flex justify-between items-center bg-white p-2.5 rounded border border-slate-100"><span class="text-xs font-bold text-slate-600">ผ้าอ้อมผู้ใหญ่</span><span class="text-sm font-black text-navy"><span id="label-price-diaper">0.00</span> ฿</span></div>
-                                <div class="flex justify-between items-center bg-white p-2.5 rounded border border-slate-100"><span class="text-xs font-bold text-slate-600">แผ่นรองซับ</span><span class="text-sm font-black text-emerald-700"><span id="label-price-underpad">0.00</span> ฿</span></div>
+                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-2.5 text-xs">
+                        <div class="bg-white/10 backdrop-blur-xs rounded-2xl p-3 border border-white/10 flex items-center gap-3">
+                            <span class="material-symbols-outlined text-sky-300 text-[24px]">water_drop</span>
+                            <div>
+                                <p class="text-[11px] text-blue-200">1. รับเฉพาะผ้าอ้อม</p>
+                                <p class="font-bold text-white text-xs">3 ชิ้น/วัน <span class="text-blue-300 font-normal">(90 ชิ้น/ด.)</span></p>
                             </div>
                         </div>
-
-                        <div class="bg-blue-50/50 p-4 rounded-xl border border-blue-100 flex flex-col justify-center">
-                            <p class="text-[11px] font-bold text-blue-800 uppercase tracking-wider mb-3">2. จำนวนชิ้นรวมที่ต้องใช้ตามเวลาที่กำหนด</p>
-                            <div class="grid grid-cols-3 lg:grid-cols-5 gap-2 text-center">
-                                <div class="bg-white p-2 rounded-lg border border-slate-100"><span class="text-[10px] text-slate-400 block">ไซส์ S</span><span class="font-bold text-navy text-base" id="sum-s">0</span></div>
-                                <div class="bg-white p-2 rounded-lg border border-slate-100"><span class="text-[10px] text-slate-400 block">ไซส์ M</span><span class="font-bold text-navy text-base" id="sum-m">0</span></div>
-                                <div class="bg-white p-2 rounded-lg border border-slate-100"><span class="text-[10px] text-slate-400 block">ไซส์ L</span><span class="font-bold text-navy text-base" id="sum-l">0</span></div>
-                                <div class="bg-white p-2 rounded-lg border border-slate-100"><span class="text-[10px] text-slate-400 block">ไซส์ XL</span><span class="font-bold text-navy text-base" id="sum-xl">0</span></div>
-                                <div class="bg-white p-2 rounded-lg border border-emerald-100"><span class="text-[10px] text-emerald-600 font-bold block">แผ่นรอง</span><span class="font-bold text-emerald-700 text-base" id="sum-pad">0</span></div>
+                        <div class="bg-white/10 backdrop-blur-xs rounded-2xl p-3 border border-white/10 flex items-center gap-3">
+                            <span class="material-symbols-outlined text-emerald-300 text-[24px]">layers</span>
+                            <div>
+                                <p class="text-[11px] text-blue-200">2. รับเฉพาะแผ่นรอง</p>
+                                <p class="font-bold text-white text-xs">6 ชิ้น/วัน <span class="text-blue-300 font-normal">(180 ชิ้น/ด.)</span></p>
                             </div>
                         </div>
-
-                        <div class="bg-gradient-to-br from-amber-50 to-orange-50 p-4 rounded-xl border border-amber-200 flex flex-col justify-center items-center text-center shadow-sm">
-                            <p class="text-[11px] font-bold text-amber-800 uppercase tracking-wider mb-1">3. งบประมาณที่ต้องใช้รวม (THB)</p>
-                            <h3 class="text-3xl font-black text-amber-600 tracking-tight" id="sum-cost">0.00 <span class="text-base text-amber-500 font-bold">฿</span></h3>
+                        <div class="bg-white/10 backdrop-blur-xs rounded-2xl p-3 border border-white/10 flex items-center gap-3">
+                            <span class="material-symbols-outlined text-amber-300 text-[24px]">all_inclusive</span>
+                            <div>
+                                <p class="text-[11px] text-blue-200">3. รับทั้ง 2 อย่าง</p>
+                                <p class="font-bold text-white text-xs">ผ้าอ้อม 1 + แผ่นรอง 3 <span class="text-blue-300 font-normal">ชิ้น/วัน</span></p>
+                            </div>
                         </div>
                     </div>
                 </div>
             </div>
 
-            <div class="bg-white px-6 lg:px-8 border-y border-slate-200 flex flex-shrink-0 sticky top-0 z-10 shadow-sm mt-4">
-                <button class="tab-btn active" id="tab-pending" onclick="switchTab('pending')">รอการอนุมัติ <span id="badge-pending" class="ml-2 bg-amber-100 text-amber-700 py-0.5 px-2 rounded-full text-[10px]">0</span></button>
-                <button class="tab-btn" id="tab-approved" onclick="switchTab('approved')">อนุมัติแล้ว <span id="badge-approved" class="ml-2 bg-slate-100 text-slate-600 py-0.5 px-2 rounded-full text-[10px]">0</span></button>
+            <!-- 3 Forecast Simulator Cards -->
+            <div class="grid grid-cols-1 lg:grid-cols-12 gap-5">
+
+                <!-- Card 1: ตัวกำหนดระยะเวลาคำนวณ -->
+                <div class="lg:col-span-4 bg-white rounded-3xl p-5 shadow-sm border border-slate-200 flex flex-col justify-between">
+                    <div>
+                        <div class="flex items-center justify-between pb-3 border-b border-slate-100">
+                            <h3 class="font-bold text-slate-800 text-sm flex items-center gap-2">
+                                <span class="material-symbols-outlined text-amber-500">date_range</span> ระยะเวลาคำนวณพัสดุ
+                            </h3>
+                            <span class="text-[11px] text-slate-400">กรอกปรับได้อิสระ</span>
+                        </div>
+                        <div class="mt-4 space-y-3">
+                            <div class="flex items-center gap-3">
+                                <input type="number" id="calc-days" value="30" min="1" max="365" oninput="recalculate()" class="w-24 text-center font-extrabold text-2xl text-navy bg-blue-50 border-2 border-blue-200 rounded-2xl py-2 outline-none focus:ring-2 focus:ring-blue-500"/>
+                                <div>
+                                    <p class="text-sm font-bold text-slate-800">วัน <span class="text-slate-400 font-normal text-xs">(ช่วงเวลาที่วางแผนจัดหา)</span></p>
+                                    <p class="text-xs text-slate-500">คิดเป็นประมาณ <span id="label-months" class="font-bold text-blue-600">1.0</span> เดือน</p>
+                                </div>
+                            </div>
+                            <div class="flex flex-wrap gap-1.5 pt-1">
+                                <button type="button" onclick="setQuickDays(30)" class="px-2.5 py-1 text-xs font-bold rounded-xl bg-slate-100 hover:bg-blue-50 hover:text-blue-700 text-slate-600 border border-slate-200 transition-colors">30 วัน (1 ด.)</button>
+                                <button type="button" onclick="setQuickDays(60)" class="px-2.5 py-1 text-xs font-bold rounded-xl bg-slate-100 hover:bg-blue-50 hover:text-blue-700 text-slate-600 border border-slate-200 transition-colors">60 วัน (2 ด.)</button>
+                                <button type="button" onclick="setQuickDays(90)" class="px-2.5 py-1 text-xs font-bold rounded-xl bg-slate-100 hover:bg-blue-50 hover:text-blue-700 text-slate-600 border border-slate-200 transition-colors">90 วัน (1 ไตรมาส)</button>
+                                <button type="button" onclick="setQuickDays(180)" class="px-2.5 py-1 text-xs font-bold rounded-xl bg-slate-100 hover:bg-blue-50 hover:text-blue-700 text-slate-600 border border-slate-200 transition-colors">180 วัน (ครึ่งปี)</button>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="mt-4 pt-3 border-t border-slate-100 flex justify-between items-center text-xs text-slate-500">
+                        <span>ราคากลางอ้างอิง:</span>
+                        <span class="font-bold text-slate-700">ผ้าอ้อม <span id="label-price-diaper">9.50</span> ฿ | แผ่นรอง <span id="label-price-underpad">6.00</span> ฿</span>
+                    </div>
+                </div>
+
+                <!-- Card 2: สรุปปริมาณพัสดุรวมที่ต้องเตรียม -->
+                <div class="lg:col-span-5 bg-white rounded-3xl p-5 shadow-sm border border-slate-200 flex flex-col justify-between">
+                    <div>
+                        <div class="flex items-center justify-between pb-3 border-b border-slate-100">
+                            <h3 class="font-bold text-slate-800 text-sm flex items-center gap-2">
+                                <span class="material-symbols-outlined text-blue-600">pie_chart</span> ปริมาณพัสดุที่ต้องเตรียม (ตามรายชื่อที่เลือก)
+                            </h3>
+                            <span id="selected-badge" class="bg-blue-50 text-blue-700 font-bold px-2.5 py-0.5 rounded-full text-xs border border-blue-200">เลือก 0 คน</span>
+                        </div>
+                        <div class="grid grid-cols-5 gap-2 mt-4 text-center">
+                            <div class="bg-slate-50 p-2.5 rounded-2xl border border-slate-100">
+                                <span class="text-[11px] text-slate-400 font-medium block">ไซส์ S</span>
+                                <span id="sum-s" class="text-lg font-black text-slate-800 block mt-0.5">0</span>
+                            </div>
+                            <div class="bg-slate-50 p-2.5 rounded-2xl border border-slate-100">
+                                <span class="text-[11px] text-slate-400 font-medium block">ไซส์ M</span>
+                                <span id="sum-m" class="text-lg font-black text-slate-800 block mt-0.5">0</span>
+                            </div>
+                            <div class="bg-slate-50 p-2.5 rounded-2xl border border-slate-100">
+                                <span class="text-[11px] text-slate-400 font-medium block">ไซส์ L</span>
+                                <span id="sum-l" class="text-lg font-black text-blue-700 block mt-0.5">0</span>
+                            </div>
+                            <div class="bg-slate-50 p-2.5 rounded-2xl border border-slate-100">
+                                <span class="text-[11px] text-slate-400 font-medium block">ไซส์ XL</span>
+                                <span id="sum-xl" class="text-lg font-black text-slate-800 block mt-0.5">0</span>
+                            </div>
+                            <div class="bg-emerald-50 p-2.5 rounded-2xl border border-emerald-100">
+                                <span class="text-[11px] text-emerald-700 font-bold block">แผ่นรอง</span>
+                                <span id="sum-pad" class="text-lg font-black text-emerald-800 block mt-0.5">0</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="mt-4 pt-3 border-t border-slate-100 flex justify-between items-center text-xs">
+                        <span class="text-slate-500">ยอดรวมผ้าอ้อมทุกไซส์:</span>
+                        <span id="sum-diaper-all" class="font-extrabold text-navy text-sm">0 ชิ้น</span>
+                    </div>
+                </div>
+
+                <!-- Card 3: งบประมาณรวม -->
+                <div class="lg:col-span-3 bg-gradient-to-br from-amber-500 to-orange-600 text-white rounded-3xl p-5 shadow-sm border border-amber-400 flex flex-col justify-between">
+                    <div>
+                        <div class="flex items-center justify-between pb-3 border-b border-white/20">
+                            <h3 class="font-bold text-white text-sm flex items-center gap-2">
+                                <span class="material-symbols-outlined text-white">account_balance_wallet</span> คาดการณ์งบประมาณ
+                            </h3>
+                        </div>
+                        <div class="mt-4 text-center">
+                            <p class="text-xs text-amber-100 font-medium">งบประมาณรวมที่ต้องใช้</p>
+                            <h4 id="sum-budget" class="text-3xl font-black text-white mt-1 tracking-tight">0.00</h4>
+                            <span class="text-xs text-amber-200 font-bold">บาท (THB)</span>
+                        </div>
+                    </div>
+                    <div class="mt-4 pt-3 border-t border-white/20 text-center text-[11px] text-amber-100">
+                        คำนวณจาก (ผ้าอ้อม × ราคา) + (แผ่นรอง × ราคา)
+                    </div>
+                </div>
             </div>
 
-            <div class="p-4 lg:p-6 relative min-h-[300px]">
-                <div id="loading-state" class="absolute inset-0 flex flex-col items-center justify-center bg-slate-50 z-20">
-                    <div class="loader-small mb-3"></div><p class="text-sm text-slate-400 animate-pulse">กำลังโหลดข้อมูลทรัพยากร...</p>
+            <!-- Filter & Action Controls -->
+            <div class="bg-white rounded-3xl p-5 shadow-sm border border-slate-200/80 space-y-4">
+                <div class="flex flex-col md:flex-row md:items-center justify-between gap-3">
+                    <div class="flex items-center gap-2">
+                        <span class="material-symbols-outlined text-slate-400">filter_list</span>
+                        <h3 class="font-bold text-slate-800 text-sm">ค้นหาและตัวกรองข้อมูล</h3>
+                        <span id="role-scope-indicator" class="text-[11px] bg-slate-100 text-slate-700 font-bold px-2.5 py-0.5 rounded-full border border-slate-200">
+                            กำลังโหลดขอบเขตข้อมูล...
+                        </span>
+                    </div>
+                    <div class="flex flex-wrap items-center gap-2 text-xs">
+                        <button type="button" onclick="selectAllVisible(true)" class="px-3 py-1.5 rounded-xl font-bold bg-slate-100 hover:bg-slate-200 text-slate-700 transition-colors">
+                            เลือกทั้งหมด
+                        </button>
+                        <button type="button" onclick="selectAllVisible(false)" class="px-3 py-1.5 rounded-xl font-bold bg-slate-100 hover:bg-slate-200 text-slate-700 transition-colors">
+                            ล้างการเลือก
+                        </button>
+                        <button type="button" onclick="exportToExcel()" class="px-3 py-1.5 rounded-xl font-bold bg-emerald-600 hover:bg-emerald-700 text-white transition-colors flex items-center gap-1 shadow-xs">
+                            <span class="material-symbols-outlined text-[16px]">download</span> ส่งออก Excel
+                        </button>
+                        <button type="button" id="btn-sync-baselines" onclick="syncAllBaselineQuotasToDB()" class="px-3 py-1.5 rounded-xl font-bold bg-blue-700 hover:bg-blue-800 text-white transition-colors flex items-center gap-1 shadow-xs" title="บันทึกฟิลด์โควตามาตรฐานลงฐานข้อมูลผู้ป่วยทุกคน">
+                            <span class="material-symbols-outlined text-[16px]">sync</span> บันทึกโควตาลงฐานข้อมูล
+                        </button>
+                    </div>
                 </div>
-                
-                <div id="request-list" class="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6 hidden"></div>
-                <div id="empty-state" class="hidden text-center py-24"><h3 class="text-lg font-bold text-slate-500">ไม่มีรายการในหมวดหมู่นี้</h3></div>
+
+                <div class="grid grid-cols-1 md:grid-cols-4 gap-3 text-xs">
+                    <!-- ค้นหา -->
+                    <div class="relative md:col-span-2">
+                        <span class="material-symbols-outlined absolute left-3 top-2.5 text-slate-400 text-[18px]">search</span>
+                        <input type="text" id="search-input" oninput="applyFilters()" placeholder="ค้นด้วยชื่อ, สกุล หรือ เลขบัตร ปชช. 13 หลัก..." class="w-full pl-9 pr-3 py-2 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-blue-500 font-medium text-slate-800"/>
+                    </div>
+
+                    <!-- กรองหมู่บ้าน -->
+                    <div>
+                        <select id="village-filter" onchange="applyFilters()" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-blue-500 font-bold text-slate-700">
+                            <option value="all">ทุกหมู่บ้านในเขตรับผิดชอบ</option>
+                        </select>
+                    </div>
+
+                    <!-- กรองประเภทความต้องการ -->
+                    <div>
+                        <select id="type-filter" onchange="applyFilters()" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-blue-500 font-bold text-slate-700">
+                            <option value="all">ทุกประเภทความต้องการ</option>
+                            <option value="diaper_only">รับเฉพาะผ้าอ้อม (3 ชิ้น/วัน)</option>
+                            <option value="underpad_only">รับเฉพาะแผ่นรองซับ (6 ชิ้น/วัน)</option>
+                            <option value="both">รับทั้ง 2 อย่าง (1+3 ชิ้น/วัน)</option>
+                        </select>
+                    </div>
+                </div>
             </div>
+
+            <!-- ตารางข้อมูลรายชื่อผู้ป่วย -->
+            <div class="bg-white rounded-3xl shadow-sm border border-slate-200/80 overflow-hidden relative min-h-[300px]">
+                <div id="loading-state" class="absolute inset-0 flex flex-col items-center justify-center bg-white/80 backdrop-blur-2xs z-20">
+                    <div class="loader-small mb-3"></div>
+                    <p class="text-xs text-slate-500 animate-pulse font-medium">กำลังโหลดและคำนวณข้อมูลทรัพยากร...</p>
+                </div>
+
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left border-collapse text-xs">
+                        <thead>
+                            <tr class="bg-slate-50/80 border-b border-slate-200 text-slate-600 font-bold text-[11px] uppercase tracking-wider">
+                                <th class="p-4 text-center w-12">
+                                    <input type="checkbox" id="check-all" onchange="toggleCheckAll(this)" checked class="rounded w-4 h-4 text-blue-600 focus:ring-blue-500 cursor-pointer"/>
+                                </th>
+                                <th class="p-4">ผู้ป่วย / ข้อมูลทั่วไป</th>
+                                <th class="p-4 text-center">สิทธิ์ความต้องการ</th>
+                                <th class="p-4 text-center">โควตามาตรฐานตั้งต้น</th>
+                                <th class="p-4 text-center bg-blue-50/50 text-navy">ยอดคำนวณตาม <span id="col-days-label">30</span> วัน</th>
+                                <th class="p-4">ข้อมูลทางคลินิก (ADL / ข้อบ่งชี้)</th>
+                                <th class="p-4 text-center">เอกสารประเมิน</th>
+                                <th class="p-4 text-center w-14">แฟ้มประวัติ</th>
+                            </tr>
+                        </thead>
+                        <tbody id="patient-table-body" class="divide-y divide-slate-100">
+                            <!-- Rows injected dynamically -->
+                        </tbody>
+                    </table>
+                </div>
+
+                <div id="empty-state" class="hidden text-center py-20 text-slate-400">
+                    <span class="material-symbols-outlined text-[48px] text-slate-300 mb-2">person_search</span>
+                    <p class="text-sm font-bold text-slate-600">ไม่พบรายชื่อผู้ป่วยตามเงื่อนไขที่เลือก</p>
+                    <p class="text-xs text-slate-400 mt-1">ลองเปลี่ยนคำค้นหาหรือตัวกรองหมู่บ้านใหม่อีกครั้ง</p>
+                </div>
+
+                <!-- Footer ตาราง -->
+                <div class="p-4 bg-slate-50 border-t border-slate-200 flex flex-col sm:flex-row items-center justify-between text-xs text-slate-500 gap-2">
+                    <div>
+                        แสดง <span id="shown-count" class="font-bold text-slate-800">0</span> จากผู้ป่วยที่เข้าเกณฑ์ทั้งหมด <span id="total-count" class="font-bold text-slate-800">0</span> ราย
+                    </div>
+                    <div class="flex items-center gap-1.5 text-[11px]">
+                        <span class="material-symbols-outlined text-amber-500 text-[16px]">info</span>
+                        <span>หน้านี้ใช้เพื่อการสำรวจและบริหารจัดการความต้องการพัสดุในพื้นที่ (ไม่มีผลกับการตัดรอบงบประมาณของกองทุน กปท.)</span>
+                    </div>
+                </div>
+            </div>
+
         </div>
     </main>
 
     <!-- Modal: ใบรับรองแพทย์ -->
     <div id="cert-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
-        <div class="bg-white rounded-2xl max-w-lg w-full p-5 shadow-2xl relative">
+        <div class="bg-white rounded-3xl max-w-lg w-full p-6 shadow-2xl relative border border-slate-100">
             <div class="flex items-center justify-between pb-3 border-b border-slate-100">
                 <h3 class="font-bold text-slate-800 text-sm flex items-center gap-2">
                     <span class="material-symbols-outlined text-amber-500">medical_services</span> ใบรับรองแพทย์ / เอกสารประเมินสิทธิ์
@@ -142,12 +338,12 @@
             </div>
             <div class="py-4 text-center">
                 <p id="cert-modal-patient" class="text-xs font-bold text-navy mb-3"></p>
-                <div class="max-h-[60vh] overflow-auto rounded-xl border border-slate-200 bg-slate-50 p-2 flex items-center justify-center">
-                    <img id="cert-modal-img" src="" alt="ใบรับรองแพทย์" class="max-h-full max-w-full object-contain rounded-lg">
+                <div class="max-h-[60vh] overflow-auto rounded-2xl border border-slate-200 bg-slate-50 p-2 flex items-center justify-center">
+                    <img id="cert-modal-img" src="" alt="ใบรับรองแพทย์" class="max-h-full max-w-full object-contain rounded-xl">
                 </div>
             </div>
             <div class="pt-3 border-t border-slate-100 text-right">
-                <button onclick="closeCertModal()" class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-xl text-xs transition-colors">ปิด</button>
+                <button onclick="closeCertModal()" class="px-5 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-xl text-xs transition-colors">ปิด</button>
             </div>
         </div>
     </div>
@@ -163,25 +359,25 @@
         } catch (e) {}
         const db = firebase.firestore();
 
-        let allRequests = [];
-        let activeApprovedPatients = [];
-        let currentTab = 'pending';
-        let configDiaperPrice = DEFAULT_CONFIGS.DIAPER_PRICE;
-        let configUnderpadPrice = DEFAULT_CONFIGS.UNDERPAD_PRICE;
+        let allResourcePatients = [];
+        let selectedPatientDocIds = new Set();
+        let configDiaperPrice = DEFAULT_CONFIGS.DIAPER_PRICE || 9.50;
+        let configUnderpadPrice = DEFAULT_CONFIGS.UNDERPAD_PRICE || 6.00;
         
         let currentUserRole = "ADMIN";
         let assignedVillages = [];
+        let currentUser = null;
 
-        function toggleSidebar() { document.getElementById('sidebar').classList.toggle('-translate-x-full'); }
-
-        function cleanAndParseJSON(rawStr) {
-            return OrsomoCore.DiaperAdapter.parse(rawStr);
+        function toggleSidebar() { 
+            const sb = document.getElementById('sidebar');
+            const ov = document.getElementById('sidebar-overlay');
+            if (sb) sb.classList.toggle('-translate-x-full'); 
+            if (ov) ov.classList.toggle('hidden');
         }
 
         document.addEventListener("DOMContentLoaded", () => {
             document.getElementById('sidebar-hospital-name').innerText = DEFAULT_CONFIGS.HOSPITAL_NAME;
             document.getElementById('sidebar-system-name').innerText = DEFAULT_CONFIGS.SYSTEM_NAME;
-
             verifyAdminAccess();
         });
 
@@ -189,50 +385,66 @@
 
         async function verifyAdminAccess() {
             try {
-                const user = await OrsomoCore.Auth.guardPage({ allowedRoles: ['ADMIN', 'SUB_ADMIN'] });
-                currentUserRole = user.role || 'ADMIN';
-                assignedVillages = user.assigned_villages || [];
+                currentUser = await OrsomoCore.Auth.guardPage({ 
+                    allowedRoles: ['ADMIN', 'SUB_ADMIN'],
+                    autoAdminShell: false,
+                    currentPage: 'admin_resources.html'
+                });
+                currentUserRole = currentUser.role || 'ADMIN';
+                assignedVillages = (currentUser.assigned_villages || []).map(String);
 
                 const hName = document.getElementById('header-user-name');
-                if (hName) hName.innerText = user.name || 'ผู้ดูแลระบบ';
+                if (hName) hName.innerText = currentUser.name || 'ผู้ใช้งาน';
                 const hRole = document.getElementById('header-user-role');
-                if (hRole) hRole.innerText = user.role === 'ADMIN' ? 'ผู้ดูแลระบบ (ADMIN)' : 'ผู้ช่วยผู้ดูแล (SUB-ADMIN)';
+                if (hRole) {
+                    hRole.innerText = currentUserRole === 'ADMIN' ? 'ผู้ดูแลระบบส่วนกลาง (ADMIN)' : 'ผู้ช่วยผู้ดูแล / รพ.สต. (SUB-ADMIN)';
+                }
 
                 const hPic = document.getElementById('header-profile-pic');
                 const hIcon = document.getElementById('header-profile-icon');
                 if (hPic && hIcon) {
-                    OrsomoCore.UI.resolveAvatar(user, hPic, hIcon);
+                    OrsomoCore.UI.resolveAvatar(currentUser, hPic, hIcon);
                 }
 
-                let hospital = user.hospital_name || DEFAULT_CONFIGS.HOSPITAL_NAME;
+                let hospital = currentUser.hospital_name || DEFAULT_CONFIGS.HOSPITAL_NAME;
 
                 try {
                     const sysSnapHospital = await db.collection('SystemConfig').doc('HOSPITAL_NAME').get();
-                    if(sysSnapHospital.exists) hospital = sysSnapHospital.data().value || hospital;
+                    if (sysSnapHospital.exists) hospital = sysSnapHospital.data().value || hospital;
                     
                     const sysSnapDiaper = await db.collection('SystemConfig').doc('DIAPER_PRICE').get();
-                    if(sysSnapDiaper.exists) configDiaperPrice = parseFloat(sysSnapDiaper.data().value) || configDiaperPrice;
+                    if (sysSnapDiaper.exists) configDiaperPrice = parseFloat(sysSnapDiaper.data().value) || configDiaperPrice;
 
                     const sysSnapUnderpad = await db.collection('SystemConfig').doc('UNDERPAD_PRICE').get();
-                    if(sysSnapUnderpad.exists) configUnderpadPrice = parseFloat(sysSnapUnderpad.data().value) || configUnderpadPrice;
+                    if (sysSnapUnderpad.exists) configUnderpadPrice = parseFloat(sysSnapUnderpad.data().value) || configUnderpadPrice;
                 } catch(e) {}
 
                 document.getElementById('sidebar-hospital-name').innerText = hospital;
+                document.getElementById('header-hospital-name').innerText = hospital;
                 document.getElementById('label-price-diaper').innerText = configDiaperPrice.toFixed(2);
                 document.getElementById('label-price-underpad').innerText = configUnderpadPrice.toFixed(2);
                 
-                if (currentUserRole === 'SUB_ADMIN') {
-                    const navSettings = document.getElementById('nav-settings');
-                    if (navSettings) navSettings.style.display = 'none';
-                    const navFinance = document.getElementById('nav-finance');
-                    if (navFinance) navFinance.style.display = 'none';
-                    const navInventory = document.getElementById('nav-inventory');
-                    if (navInventory) navInventory.style.display = 'none';
-                    const navReports = document.getElementById('nav-reports');
-                    if (navReports) navReports.style.display = 'none';
+                // อัปเดต Indicator ขอบเขตข้อมูล
+                const scopeEl = document.getElementById('role-scope-indicator');
+                if (scopeEl) {
+                    if (currentUserRole === 'SUB_ADMIN') {
+                        scopeEl.innerText = `เขตรับผิดชอบ: ${hospital} (หมู่ที่ ${assignedVillages.join(', ') || '-'})`;
+                        scopeEl.className = "text-[11px] bg-emerald-50 text-emerald-700 font-bold px-2.5 py-0.5 rounded-full border border-emerald-200";
+                    } else {
+                        scopeEl.innerText = `เขตรับผิดชอบ: ทุกหมู่บ้านทั้งตำบล (สิทธิ์ส่วนกลาง)`;
+                        scopeEl.className = "text-[11px] bg-blue-50 text-blue-700 font-bold px-2.5 py-0.5 rounded-full border border-blue-200";
+                    }
                 }
 
-                loadResourceData();
+                // ซ่อนเมนูเฉพาะส่วนกลางเมื่อผู้ใช้เป็น SUB_ADMIN
+                if (currentUserRole === 'SUB_ADMIN') {
+                    ['nav-finance', 'nav-inventory', 'nav-reports', 'nav-settings'].forEach(id => {
+                        const el = document.getElementById(id);
+                        if (el) el.style.display = 'none';
+                    });
+                }
+
+                await loadResourceData();
             } catch (error) { 
                 console.error("Auth guard error:", error);
                 if (error && (error.message === 'ROLE_FORBIDDEN' || error.message === 'UNAUTHENTICATED' || error.message === 'USER_NOT_ACTIVE')) {
@@ -241,178 +453,345 @@
             }
         }
 
+        // ฟังก์ชันคำนวณโควตาตั้งต้นมาตรฐาน
+        function computeBaselineDailyQuota(d) {
+            if (window.OrsomoCore && OrsomoCore.DiaperAdapter && typeof OrsomoCore.DiaperAdapter.getBaselineQuota === 'function') {
+                return OrsomoCore.DiaperAdapter.getBaselineQuota(d);
+            }
+            const reqDiaper = Boolean(d.req_diaper);
+            const reqUnderpad = Boolean(d.req_underpad);
+
+            if (reqDiaper && !reqUnderpad) {
+                return {
+                    req_type: 'diaper_only',
+                    req_type_label: 'เฉพาะผ้าอ้อม',
+                    diaper_daily: 3,
+                    underpad_daily: 0,
+                    diaper_monthly: 90,
+                    underpad_monthly: 0,
+                    quota_desc: 'ผ้าอ้อม 3 ชิ้น/วัน (90 ชิ้น/ด.)'
+                };
+            }
+            if (!reqDiaper && reqUnderpad) {
+                return {
+                    req_type: 'underpad_only',
+                    req_type_label: 'เฉพาะแผ่นรองซับ',
+                    diaper_daily: 0,
+                    underpad_daily: 6,
+                    diaper_monthly: 0,
+                    underpad_monthly: 180,
+                    quota_desc: 'แผ่นรอง 6 ชิ้น/วัน (180 ชิ้น/ด.)'
+                };
+            }
+            if (reqDiaper && reqUnderpad) {
+                return {
+                    req_type: 'both',
+                    req_type_label: 'ผ้าอ้อม + แผ่นรองซับ',
+                    diaper_daily: 1,
+                    underpad_daily: 3,
+                    diaper_monthly: 30,
+                    underpad_monthly: 90,
+                    quota_desc: 'ผ้าอ้อม 1 + แผ่นรอง 3 ชิ้น/วัน (30+90 ชิ้น/ด.)'
+                };
+            }
+            return {
+                req_type: 'none',
+                req_type_label: 'ไม่ขอรับ',
+                diaper_daily: 0,
+                underpad_daily: 0,
+                diaper_monthly: 0,
+                underpad_monthly: 0,
+                quota_desc: '-'
+            };
+        }
+
         async function loadResourceData() {
             try {
+                document.getElementById('loading-state').classList.remove('hidden');
                 const snapshot = await db.collection('Patients').get();
-                allRequests = [];
-                activeApprovedPatients = [];
+                allResourcePatients = [];
+                selectedPatientDocIds.clear();
+
+                const villageSet = new Set();
 
                 snapshot.forEach(doc => {
                     const p = doc.data();
-                    p.id = doc.id;
+                    p.docId = doc.id;
                     const isActive = String(p.status || 'Active').trim().toLowerCase() === 'active';
-                    
-                    let hasPermissionToView = true;
-                    if (currentUserRole === 'SUB_ADMIN') {
-                        hasPermissionToView = assignedVillages.includes(String(p.village_no).trim());
+                    if (!isActive) return;
+
+                    const vNo = String(p.village_no !== undefined && p.village_no !== null ? p.village_no : '').trim();
+                    if (vNo) villageSet.add(vNo);
+
+                    // กรองสิทธิ์ตามหมู่บ้านสำหรับ SUB_ADMIN
+                    if (currentUserRole === 'SUB_ADMIN' && !assignedVillages.includes(vNo)) {
+                        return;
                     }
 
-                    if (hasPermissionToView) {
-                        const d = OrsomoCore.DiaperAdapter.parse(p.diaper); 
-                        
-                        if (d && (d.req_diaper || d.req_underpad)) {
-                            allRequests.push({ patient: p, detail: d, isActive: isActive });
-                            
-                            if (isActive && d.approve_status === 'อนุมัติแล้ว') {
-                                activeApprovedPatients.push({ 
-                                    size: String(d.size || 'L').toUpperCase().trim(),
-                                    diaperQty: parseInt(d.approved_diaper) || 0,
-                                    underpadQty: parseInt(d.approved_underpad) || 0
-                                });
-                            }
-                        }
+                    const d = OrsomoCore.DiaperAdapter.parse(p.diaper);
+                    if (d && (d.req_diaper || d.req_underpad)) {
+                        const quota = computeBaselineDailyQuota(d);
+                        allResourcePatients.push({
+                            docId: doc.id,
+                            patient: p,
+                            diaper: d,
+                            quota: quota,
+                            village_no: vNo,
+                            size: OrsomoCore.DiaperAdapter.normalizeSize(d.size || p.size || 'L')
+                        });
+                        selectedPatientDocIds.add(doc.id); // ค่าเริ่มต้น: ติ๊กเลือกทั้งหมด
                     }
                 });
-                
+
+                // จัดเรียงรายชื่อตามหมู่บ้านและชื่อ
+                allResourcePatients.sort((a, b) => {
+                    const vA = parseInt(a.village_no) || 0;
+                    const vB = parseInt(b.village_no) || 0;
+                    if (vA !== vB) return vA - vB;
+                    return String(a.patient.name || '').localeCompare(String(b.patient.name || ''), 'th');
+                });
+
+                // สร้างตัวเลือกหมู่บ้านใน Dropdown
+                populateVillageDropdown(Array.from(villageSet));
+
                 document.getElementById('loading-state').classList.add('hidden');
-                calculateBudget(); 
-                updateBadges(); 
-                renderList();
+                applyFilters();
             } catch (error) { 
                 console.error("Load resource error:", error);
-                showToast("ดึงข้อมูลทรัพยากรล้มเหลว", "error"); 
+                document.getElementById('loading-state').classList.add('hidden');
+                if (typeof showToast === 'function') showToast("ดึงข้อมูลทรัพยากรล้มเหลว", "error");
             }
         }
 
-        function calculateBudget() {
-            const targetDays = parseInt(document.getElementById('forecast-days').value) || 0;
-            let totalS = 0, totalM = 0, totalL = 0, totalXL = 0, totalPad = 0;
+        function populateVillageDropdown(allVillages) {
+            const vSelect = document.getElementById('village-filter');
+            if (!vSelect) return;
 
-            activeApprovedPatients.forEach(p => {
-                const calcDiaper = Math.ceil((p.diaperQty / 30) * targetDays);
-                if (calcDiaper > 0) {
-                    if (p.size === 'S') totalS += calcDiaper;
-                    else if (p.size === 'M') totalM += calcDiaper;
-                    else if (p.size === 'XL') totalXL += calcDiaper;
-                    else totalL += calcDiaper;
-                }
-                totalPad += Math.ceil((p.underpadQty / 30) * targetDays);
+            let villagesToShow = allVillages;
+            if (currentUserRole === 'SUB_ADMIN') {
+                villagesToShow = allVillages.filter(v => assignedVillages.includes(String(v).trim()));
+            }
+            villagesToShow.sort((a, b) => (parseInt(a) || 0) - (parseInt(b) || 0));
+
+            vSelect.innerHTML = '<option value="all">ทุกหมู่บ้านในเขตรับผิดชอบ</option>';
+            villagesToShow.forEach(v => {
+                vSelect.insertAdjacentHTML('beforeend', `<option value="${v}">หมู่ที่ ${v}</option>`);
             });
-
-            document.getElementById('sum-s').innerText = totalS.toLocaleString();
-            document.getElementById('sum-m').innerText = totalM.toLocaleString();
-            document.getElementById('sum-l').innerText = totalL.toLocaleString();
-            document.getElementById('sum-xl').innerText = totalXL.toLocaleString();
-            document.getElementById('sum-pad').innerText = totalPad.toLocaleString();
-
-            const totalCost = ((totalS + totalM + totalL + totalXL) * configDiaperPrice) + (totalPad * configUnderpadPrice);
-            document.getElementById('sum-cost').innerHTML = totalCost.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2}) + ' <span class="text-base text-amber-500 font-bold">฿</span>';
         }
 
-        function switchTab(tab) {
-            document.getElementById('tab-pending').classList.remove('active');
-            document.getElementById('tab-approved').classList.remove('active');
-            document.getElementById(`tab-${tab}`).classList.add('active');
-            currentTab = tab; renderList();
+        function setQuickDays(days) {
+            document.getElementById('calc-days').value = days;
+            recalculate();
         }
 
-        function updateBadges() {
-            document.getElementById('badge-pending').innerText = allRequests.filter(r => r.detail.approve_status !== 'อนุมัติแล้ว').length;
-            document.getElementById('badge-approved').innerText = allRequests.filter(r => r.detail.approve_status === 'อนุมัติแล้ว').length;
+        function recalculate() {
+            const days = parseInt(document.getElementById('calc-days').value) || 0;
+            const daysLabel = document.getElementById('col-days-label');
+            if (daysLabel) daysLabel.innerText = days;
+            const monthsLabel = document.getElementById('label-months');
+            if (monthsLabel) monthsLabel.innerText = (days / 30).toFixed(1);
+            applyFilters();
         }
 
-        function renderList() {
-            const container = document.getElementById('request-list');
+        function applyFilters() {
+            const days = parseInt(document.getElementById('calc-days').value) || 30;
+            const search = (document.getElementById('search-input').value || '').trim().toLowerCase();
+            const villageFilter = document.getElementById('village-filter').value;
+            const typeFilter = document.getElementById('type-filter').value;
+
+            const tbody = document.getElementById('patient-table-body');
             const emptyState = document.getElementById('empty-state');
-            container.innerHTML = '';
+            tbody.innerHTML = '';
 
-            const filteredData = allRequests.filter(r => {
-                const isApproved = r.detail.approve_status === 'อนุมัติแล้ว';
-                return currentTab === 'pending' ? !isApproved : isApproved;
-            });
+            let shownCount = 0;
 
-            if (filteredData.length === 0) { container.classList.add('hidden'); emptyState.classList.remove('hidden'); return; }
-            emptyState.classList.add('hidden'); container.classList.remove('hidden');
+            allResourcePatients.forEach(item => {
+                const p = item.patient;
+                const d = item.diaper;
+                const q = item.quota;
 
-            filteredData.forEach(r => {
-                const p = r.patient; const d = r.detail;
-                
-                let requestTags = '';
-                if (d.req_diaper) requestTags += `<span class="bg-blue-50 text-blue-700 text-[11px] font-bold px-2 py-1 rounded">ผ้าอ้อม ${d.size || '?'}</span> `;
-                if (d.req_underpad) requestTags += `<span class="bg-emerald-50 text-emerald-700 text-[11px] font-bold px-2 py-1 rounded">แผ่นรองซับ</span>`;
+                // กรองค้นหา
+                if (search) {
+                    const name = String(p.name || '').toLowerCase();
+                    const idCard = String(p.id_card || '');
+                    if (!name.includes(search) && !idCard.includes(search)) return;
+                }
 
-                const isPending = currentTab === 'pending';
-                const statusBadge = !r.isActive ? `<span class="bg-red-50 text-red-600 text-[10px] font-bold px-2 py-0.5 rounded border border-red-200 mt-1 inline-block">ยุติการดูแล</span>` : '';
+                // กรองหมู่บ้าน
+                if (villageFilter !== 'all' && String(item.village_no) !== villageFilter) {
+                    return;
+                }
 
-                // Requirement 4.1.3: ข้อมูลทางการแพทย์, ADL, ผู้ประเมิน และใบรับรองแพทย์
-                const indication = d.indication || p.disease || 'ไม่ระบุ';
+                // กรองประเภทความต้องการ
+                if (typeFilter !== 'all' && q.req_type !== typeFilter) {
+                    return;
+                }
+
+                shownCount++;
+                const isSelected = selectedPatientDocIds.has(item.docId);
+                const calcDiaper = q.diaper_daily * days;
+                const calcPad = q.underpad_daily * days;
+
+                let needBadge = '';
+                if (q.req_type === 'both') {
+                    needBadge = '<span class="bg-amber-50 text-amber-800 font-bold px-2.5 py-1 rounded-full text-[11px] border border-amber-200 inline-block">ผ้าอ้อม + แผ่นรอง</span>';
+                } else if (q.req_type === 'diaper_only') {
+                    needBadge = `<span class="bg-blue-50 text-blue-800 font-bold px-2.5 py-1 rounded-full text-[11px] border border-blue-200 inline-block">ผ้าอ้อมอย่างเดียว (${item.size})</span>`;
+                } else {
+                    needBadge = '<span class="bg-emerald-50 text-emerald-800 font-bold px-2.5 py-1 rounded-full text-[11px] border border-emerald-200 inline-block">แผ่นรองซับอย่างเดียว</span>';
+                }
+
+                let calcLines = [];
+                if (calcDiaper > 0) calcLines.push(`ผ้าอ้อม ${item.size}: <strong class="text-navy">${calcDiaper}</strong> ชิ้น`);
+                if (calcPad > 0) calcLines.push(`แผ่นรอง: <strong class="text-emerald-700">${calcPad}</strong> ชิ้น`);
+
+                const hasCert = Boolean(d.has_medical_cert || d.medical_cert || p.medical_cert || d.cert_img || p.cert_img);
                 const adlScore = (p.adl !== undefined && p.adl !== null && p.adl !== '') ? p.adl : '-';
-                const assessorName = d.assessor_name || p.assigned_vhv_name || 'ไม่ระบุ';
-                const assessorAgency = d.assessor_agency || p.assigned_vhv_agency || '-';
-                const hasCert = !!(d.cert_img || p.medical_cert || p.cert_img);
+                const indication = d.indication || p.disease || 'ไม่ระบุ';
+                const assessor = d.assessor_name || p.assigned_vhv_name || 'ไม่ระบุ';
 
-                const certBtn = hasCert ? `
-                    <button type="button" onclick="openCertModal('${p.id}')" class="mt-2 text-[11px] bg-amber-50 hover:bg-amber-100 text-amber-700 font-bold px-2.5 py-1 rounded-lg border border-amber-200 inline-flex items-center gap-1 transition-colors">
-                        <span class="material-symbols-outlined text-[15px]">medical_services</span> ดูใบรับรองแพทย์
-                    </button>
-                ` : '';
-
-                const actionSection = isPending ? `
-                    <div class="mt-4 pt-4 border-t border-slate-100 space-y-3">
-                        ${d.req_diaper ? `<div class="flex items-center justify-between"><label class="text-sm font-bold text-slate-600">ผ้าอ้อม (ชิ้น/เดือน)</label><input type="number" id="diaper_${p.id}" class="w-20 px-2 py-1 border border-slate-200 rounded text-center focus:ring-amber-500 font-bold" value="${d.approved_diaper || 60}" placeholder="0"></div>` : ''}
-                        ${d.req_underpad ? `<div class="flex items-center justify-between"><label class="text-sm font-bold text-slate-600">แผ่นรอง (ชิ้น/เดือน)</label><input type="number" id="underpad_${p.id}" class="w-20 px-2 py-1 border border-slate-200 rounded text-center focus:ring-amber-500 font-bold" value="${d.approved_underpad || 30}" placeholder="0"></div>` : ''}
-                        <button onclick="approveRequest('${p.id}', ${d.req_diaper ? 'true' : 'false'}, ${d.req_underpad ? 'true' : 'false'})" id="btn_${p.id}" class="w-full mt-2 py-2.5 bg-navy text-white text-sm font-bold rounded-lg hover:bg-opacity-90 transition-all active:scale-95 shadow-sm">บันทึกอนุมัติ</button>
-                    </div>
-                ` : `
-                    <div class="mt-4 pt-4 border-t border-slate-100 bg-slate-50 rounded-xl p-3 relative group">
-                        <button onclick="revokeApproval('${p.id}')" class="absolute -top-3 -right-2 bg-red-100 text-red-600 w-8 h-8 rounded-full flex items-center justify-center hover:bg-red-500 hover:text-white transition-colors shadow-sm opacity-0 group-hover:opacity-100" title="ดึงกลับไปแก้ไข">
-                            <span class="material-symbols-outlined text-[16px]">edit</span>
-                        </button>
-                        <p class="text-[10px] text-slate-500 mb-2">อนุมัติเมื่อ: <strong class="text-slate-700">${d.approve_date || '-'}</strong></p>
-                        <div class="flex gap-2 text-center">
-                            ${d.req_diaper ? `<div class="flex-1 bg-white p-2 rounded border border-slate-100"><p class="text-[9px] text-slate-400">ผ้าอ้อม/ด.</p><p class="font-bold text-navy text-base">${d.approved_diaper || 0} ชิ้น</p></div>` : ''}
-                            ${d.req_underpad ? `<div class="flex-1 bg-white p-2 rounded border border-slate-100"><p class="text-[9px] text-slate-400">แผ่นรอง/ด.</p><p class="font-bold text-navy text-base">${d.approved_underpad || 0} ชิ้น</p></div>` : ''}
-                        </div>
-                    </div>
-                `;
-
-                container.insertAdjacentHTML('beforeend', `
-                    <div class="bg-white rounded-[20px] p-5 shadow-sm border border-slate-200 hover:shadow-md transition-shadow relative group">
-                        <div class="flex justify-between items-start pr-8">
-                            <div>
-                                <h3 class="font-bold text-[15px] text-slate-800">${p.prefix || ''}${p.name || 'ไม่ระบุชื่อ'}</h3>
-                                <p class="text-[11px] text-slate-500">หมู่ ${p.village_no || '-'} • เลขที่ ${p.house_no || '-'}</p>
-                            </div>
-                            <button onclick="window.open('patient_profile.html?id=${p.id}', '_blank')" class="absolute top-4 right-4 text-blue-600 bg-blue-50 hover:bg-blue-500 hover:text-white p-2 rounded-xl transition-colors flex items-center justify-center shadow-sm" title="ดูแฟ้มประวัติ">
-                                <span class="material-symbols-outlined text-[20px]">folder_open</span>
+                const tr = document.createElement('tr');
+                tr.className = "hover:bg-slate-50 transition-colors " + (isSelected ? "bg-amber-50/40" : "");
+                tr.innerHTML = `
+                    <td class="p-4 text-center">
+                        <input type="checkbox" onchange="toggleSelectPatient('${item.docId}', this)" ${isSelected ? 'checked' : ''} class="row-checkbox rounded w-4 h-4 text-blue-600 focus:ring-blue-500 cursor-pointer"/>
+                    </td>
+                    <td class="p-4">
+                        <p class="font-bold text-slate-800 text-sm">${p.prefix || ''}${p.name || 'ไม่ระบุชื่อ'}</p>
+                        <p class="text-[11px] text-slate-500">ID: ${p.id_card || '-'} • หมู่ ${item.village_no || '-'} (บ้านเลขที่ ${p.house_no || '-'})</p>
+                    </td>
+                    <td class="p-4 text-center">${needBadge}</td>
+                    <td class="p-4 text-center font-bold text-slate-700 text-xs">${q.quota_desc}</td>
+                    <td class="p-4 text-center bg-blue-50/30">
+                        <p class="text-xs font-medium">${calcLines.join('<br>') || '-'}</p>
+                    </td>
+                    <td class="p-4">
+                        <p class="text-slate-700 font-medium text-xs">${indication}</p>
+                        <p class="text-[11px] text-slate-500 mt-0.5">คะแนน ADL: <strong class="text-navy bg-white px-1.5 py-0.5 rounded border border-slate-200">${adlScore}</strong> | ผู้ประเมิน: ${assessor}</p>
+                    </td>
+                    <td class="p-4 text-center">
+                        ${hasCert ? `
+                            <button type="button" onclick="openCertModal('${item.docId}')" class="bg-amber-50 hover:bg-amber-100 text-amber-800 font-bold px-2.5 py-1 rounded-xl border border-amber-200 inline-flex items-center gap-1 transition-colors text-[11px] cursor-pointer">
+                                <span class="material-symbols-outlined text-[15px] text-amber-600">description</span> ใบรับรอง
                             </button>
-                        </div>
-                        ${statusBadge}
-                        <div class="mt-3">${requestTags}</div>
-
-                        <!-- รายละเอียดเพื่อการพิจารณา (Requirement 4.1.3) -->
-                        <div class="mt-3 p-3 bg-slate-50/70 rounded-xl border border-slate-100 text-xs space-y-1">
-                            <p class="text-slate-600"><span class="font-bold text-slate-500">ข้อบ่งชี้:</span> <span class="text-slate-800">${indication}</span></p>
-                            <p class="text-slate-600"><span class="font-bold text-slate-500">คะแนน ADL:</span> <span class="font-bold text-navy bg-white px-1.5 py-0.5 rounded border border-slate-200">${adlScore}</span></p>
-                            <p class="text-slate-600"><span class="font-bold text-slate-500">ผู้ประเมินสิทธิ์:</span> <span class="text-slate-800">${assessorName}</span> <span class="text-slate-400">(${assessorAgency})</span></p>
-                            ${certBtn}
-                        </div>
-
-                        ${actionSection}
-                    </div>
-                `);
+                        ` : `<span class="text-slate-400 text-[11px]">ไม่มีไฟล์</span>`}
+                    </td>
+                    <td class="p-4 text-center">
+                        <button type="button" onclick="window.open('patient_profile.html?id=' + encodeURIComponent('${item.docId}'), '_blank')" class="text-slate-400 hover:text-blue-700 p-1.5 rounded-xl hover:bg-blue-50 transition-colors cursor-pointer" title="ดูแฟ้มประวัติผู้ป่วย">
+                            <span class="material-symbols-outlined text-[20px]">folder_open</span>
+                        </button>
+                    </td>
+                `;
+                tbody.appendChild(tr);
             });
+
+            if (shownCount === 0) {
+                emptyState.classList.remove('hidden');
+            } else {
+                emptyState.classList.add('hidden');
+            }
+
+            document.getElementById('shown-count').innerText = shownCount;
+            document.getElementById('total-count').innerText = allResourcePatients.length;
+
+            syncCheckAllMasterState();
+            recalculateSummary();
         }
 
-        function openCertModal(id) {
-            const req = allRequests.find(r => r.patient && r.patient.id === id);
-            if (!req) return;
-            const p = req.patient;
-            const d = req.detail;
-            const imgUrl = d.cert_img || p.medical_cert || p.cert_img || '';
-            if (!imgUrl) return showToast('ไม่พบไฟล์ใบรับรองแพทย์', 'error');
+        function toggleSelectPatient(docId, cb) {
+            if (cb.checked) {
+                selectedPatientDocIds.add(docId);
+            } else {
+                selectedPatientDocIds.delete(docId);
+            }
+            const tr = cb.closest('tr');
+            if (tr) {
+                if (cb.checked) tr.classList.add('bg-amber-50/40');
+                else tr.classList.remove('bg-amber-50/40');
+            }
+            syncCheckAllMasterState();
+            recalculateSummary();
+        }
 
-            document.getElementById('cert-modal-patient').innerText = `ผู้ป่วย: ${p.prefix || ''}${p.name || ''} (หมู่ ${p.village_no || '-'})`;
+        function syncCheckAllMasterState() {
+            const master = document.getElementById('check-all');
+            const rowCheckboxes = document.querySelectorAll('.row-checkbox');
+            if (!master || rowCheckboxes.length === 0) return;
+            const checkedCount = Array.from(rowCheckboxes).filter(cb => cb.checked).length;
+            master.checked = checkedCount === rowCheckboxes.length && rowCheckboxes.length > 0;
+            master.indeterminate = checkedCount > 0 && checkedCount < rowCheckboxes.length;
+        }
+
+        function toggleCheckAll(master) {
+            const rowCheckboxes = document.querySelectorAll('.row-checkbox');
+            rowCheckboxes.forEach(cb => {
+                cb.checked = master.checked;
+            });
+            if (master.checked) {
+                allResourcePatients.forEach(i => selectedPatientDocIds.add(i.docId));
+            } else {
+                selectedPatientDocIds.clear();
+            }
+            applyFilters();
+        }
+
+        function selectAllVisible(status) {
+            allResourcePatients.forEach(i => {
+                if (status) selectedPatientDocIds.add(i.docId);
+                else selectedPatientDocIds.delete(i.docId);
+            });
+            applyFilters();
+        }
+
+        function recalculateSummary() {
+            const days = parseInt(document.getElementById('calc-days').value) || 0;
+            let sumS = 0, sumM = 0, sumL = 0, sumXL = 0, sumPad = 0;
+            let selCount = 0;
+
+            allResourcePatients.forEach(item => {
+                if (selectedPatientDocIds.has(item.docId)) {
+                    selCount++;
+                    const q = item.quota;
+                    const dQty = q.diaper_daily * days;
+                    const pQty = q.underpad_daily * days;
+
+                    if (dQty > 0) {
+                        if (item.size === 'S') sumS += dQty;
+                        else if (item.size === 'M') sumM += dQty;
+                        else if (item.size === 'XL') sumXL += dQty;
+                        else sumL += dQty;
+                    }
+                    sumPad += pQty;
+                }
+            });
+
+            const sumDiaperTotal = sumS + sumM + sumL + sumXL;
+            const totalBudget = (sumDiaperTotal * configDiaperPrice) + (sumPad * configUnderpadPrice);
+
+            document.getElementById('selected-badge').innerText = `เลือก ${selCount} คน`;
+            document.getElementById('sum-s').innerText = sumS.toLocaleString();
+            document.getElementById('sum-m').innerText = sumM.toLocaleString();
+            document.getElementById('sum-l').innerText = sumL.toLocaleString();
+            document.getElementById('sum-xl').innerText = sumXL.toLocaleString();
+            document.getElementById('sum-pad').innerText = sumPad.toLocaleString();
+            document.getElementById('sum-diaper-all').innerText = sumDiaperTotal.toLocaleString() + ' ชิ้น';
+            document.getElementById('sum-budget').innerText = totalBudget.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+        }
+
+        // Modal ใบรับรองแพทย์
+        function openCertModal(docId) {
+            const item = allResourcePatients.find(x => x.docId === docId);
+            if (!item) return;
+            const p = item.patient;
+            const d = item.diaper;
+            const imgUrl = d.cert_img || p.medical_cert || p.cert_img || '';
+            if (!imgUrl) {
+                if (typeof showToast === 'function') showToast('ไม่พบไฟล์รูปใบรับรองแพทย์', 'error');
+                else alert('ไม่พบไฟล์รูปใบรับรองแพทย์');
+                return;
+            }
+
+            document.getElementById('cert-modal-patient').innerText = `ผู้ป่วย: ${p.prefix || ''}${p.name || ''} (หมู่ที่ ${item.village_no || '-'})`;
             document.getElementById('cert-modal-img').src = imgUrl;
             document.getElementById('cert-modal').classList.remove('hidden');
         }
@@ -422,71 +801,118 @@
             document.getElementById('cert-modal-img').src = '';
         }
 
-        async function approveRequest(id, hasDiaper, hasUnderpad) {
-            const diaperQty = hasDiaper ? document.getElementById(`diaper_${id}`).value : 0;
-            const underpadQty = hasUnderpad ? document.getElementById(`underpad_${id}`).value : 0;
-            if ((hasDiaper && !diaperQty) || (hasUnderpad && !underpadQty)) return showToast('กรุณาระบุจำนวนชิ้นให้ครบถ้วน', 'error');
-
-            const btn = document.getElementById(`btn_${id}`);
-            btn.disabled = true; btn.innerHTML = 'กำลังบันทึก...';
-
-            try {
-                const docRef = db.collection('Patients').doc(String(id));
-                const docSnap = await docRef.get();
-                
-                if(docSnap.exists) {
-                    let p = docSnap.data();
-                    let diaperObj = OrsomoCore.DiaperAdapter.parse(p.diaper) || {};
-                    
-                    diaperObj.approve_status = 'อนุมัติแล้ว';
-                    
-                    const now = new Date();
-                    const day = String(now.getDate()).padStart(2, '0');
-                    const month = String(now.getMonth() + 1).padStart(2, '0');
-                    const year = now.getFullYear() + 543;
-                    diaperObj.approve_date = `${day}/${month}/${year}`;
-                    
-                    diaperObj.approved_diaper = parseInt(diaperQty) || 0;
-                    diaperObj.approved_underpad = parseInt(underpadQty) || 0;
-
-                    await docRef.update({ diaper: JSON.stringify(diaperObj) });
-                    
-                    showToast('อนุมัติรายการและอัปเดตงบประมาณสำเร็จ!');
-                    await loadResourceData(); 
-                } else {
-                    showToast('ไม่พบข้อมูลผู้ป่วยในระบบ', 'error');
-                    btn.disabled = false; btn.innerHTML = 'บันทึกอนุมัติ';
-                }
-            } catch (error) { 
-                console.error("Approve request error:", error);
-                showToast('การเชื่อมต่อขัดข้อง กรุณาลองใหม่', 'error'); 
-                btn.disabled = false; btn.innerHTML = 'บันทึกอนุมัติ'; 
+        // ส่งออก Excel รายการที่เลือก
+        function exportToExcel() {
+            const days = parseInt(document.getElementById('calc-days').value) || 30;
+            const selectedList = allResourcePatients.filter(i => selectedPatientDocIds.has(i.docId));
+            if (selectedList.length === 0) {
+                if (typeof showToast === 'function') showToast('กรุณาติ๊กเลือกรายชื่อที่ต้องการส่งออกอย่างน้อย 1 รายการ', 'error');
+                else alert('กรุณาเลือกรายชื่ออย่างน้อย 1 รายการ');
+                return;
             }
+
+            const exportRows = selectedList.map((item, idx) => {
+                const p = item.patient;
+                const q = item.quota;
+                const dQty = q.diaper_daily * days;
+                const pQty = q.underpad_daily * days;
+
+                return {
+                    "ลำดับ": idx + 1,
+                    "ชื่อ-นามสกุล": `${p.prefix || ''}${p.name || ''}`,
+                    "เลขประจำตัวประชาชน": p.id_card || '-',
+                    "หมู่ที่": item.village_no || '-',
+                    "บ้านเลขที่": p.house_no || '-',
+                    "ประเภทสิทธิ์": q.req_type_label,
+                    "โควตามาตรฐาน": q.quota_desc,
+                    "ระยะเวลาคำนวณ (วัน)": days,
+                    "ไซส์ผ้าอ้อม": item.size,
+                    "จำนวนผ้าอ้อม (ชิ้น)": dQty,
+                    "จำนวนแผ่นรองซับ (ชิ้น)": pQty,
+                    "คะแนน ADL": p.adl || '-',
+                    "ข้อบ่งชี้ทางการแพทย์": item.diaper.indication || p.disease || '-'
+                };
+            });
+
+            const ws = XLSX.utils.json_to_sheet(exportRows);
+            const wb = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(wb, ws, "โควตาทรัพยากร");
+            const filename = `แผนโควตาทรัพยากร_${days}วัน_${new Date().toISOString().slice(0,10)}.xlsx`;
+            XLSX.writeFile(wb, filename);
+
+            if (typeof showToast === 'function') showToast(`ส่งออกข้อมูล ${selectedList.length} รายเรียบร้อยแล้ว`, 'success');
         }
 
-        async function revokeApproval(id) {
-            if (!confirm('ต้องการยกเลิกการอนุมัติ เพื่อกลับไปแก้ไขจำนวนใหม่ ใช่หรือไม่?')) return;
+        // ซิงค์บันทึกโควตาตั้งต้นลง Firestore ให้แก่ผู้ป่วยทั้งเก่าและใหม่
+        async function syncAllBaselineQuotasToDB() {
+            if (!confirm(`ยืนยันการบันทึกฟิลด์โควตามาตรฐานตั้งต้น (3ชิ้น/วัน, 6ชิ้น/วัน, 1+3ชิ้น/วัน) ลงในฐานข้อมูลผู้ป่วยทั้งหมด (${allResourcePatients.length} ราย) ใช่หรือไม่?`)) {
+                return;
+            }
+
+            const btn = document.getElementById('btn-sync-baselines');
+            if (btn) {
+                btn.disabled = true;
+                btn.innerHTML = '<span class="material-symbols-outlined text-[16px] animate-spin">sync</span> กำลังบันทึก...';
+            }
 
             try {
-                const docRef = db.collection('Patients').doc(String(id));
-                const docSnap = await docRef.get();
-                
-                if(docSnap.exists) {
-                    let p = docSnap.data();
-                    let diaperObj = OrsomoCore.DiaperAdapter.parse(p.diaper) || {};
-                    
-                    diaperObj.approve_status = 'รออนุมัติ';
-                    diaperObj.approved_diaper = 0;
-                    diaperObj.approved_underpad = 0;
-
-                    await docRef.update({ diaper: JSON.stringify(diaperObj) });
-                    
-                    showToast('ดึงรายการกลับไปที่ "รอการอนุมัติ" สำเร็จ! เข้าไปแก้ไขตัวเลขได้เลยครับ');
-                    await loadResourceData(); 
+                // Ensure auth session is bound
+                const resolved = await OrsomoCore.Auth.resolveLiffUid();
+                if (resolved && resolved.uid) {
+                    await OrsomoCore.Auth.bindAuthSession(db, resolved.uid, true);
                 }
-            } catch (error) { 
-                console.error("Revoke approval error:", error);
-                showToast('การเชื่อมต่อขัดข้อง กรุณาลองใหม่', 'error'); 
+
+                let batch = db.batch();
+                let batchCount = 0;
+                let updatedCount = 0;
+
+                for (const item of allResourcePatients) {
+                    const q = item.quota;
+                    const docRef = db.collection('Patients').doc(String(item.docId));
+                    
+                    let nextDiaper = Object.assign({}, item.diaper, {
+                        baseline_diaper_daily: q.diaper_daily,
+                        baseline_underpad_daily: q.underpad_daily,
+                        baseline_diaper_monthly: q.diaper_monthly,
+                        baseline_underpad_monthly: q.underpad_monthly,
+                        baseline_quota_desc: q.quota_desc
+                    });
+
+                    batch.update(docRef, {
+                        diaper: JSON.stringify(nextDiaper),
+                        updated_at: new Date().toISOString()
+                    });
+
+                    batchCount++;
+                    updatedCount++;
+
+                    if (batchCount === 450) {
+                        await batch.commit();
+                        batch = db.batch();
+                        batchCount = 0;
+                    }
+                }
+
+                if (batchCount > 0) {
+                    await batch.commit();
+                }
+
+                if (typeof showToast === 'function') {
+                    showToast(`บันทึกโควตาตั้งต้นลงฐานข้อมูลเรียบร้อยแล้ว (${updatedCount} ราย)`, 'success');
+                } else {
+                    alert(`บันทึกโควตาตั้งต้นลงฐานข้อมูลเรียบร้อยแล้ว (${updatedCount} ราย)`);
+                }
+                await loadResourceData();
+
+            } catch (err) {
+                console.error("Sync baselines error:", err);
+                if (typeof showToast === 'function') showToast("บันทึกล้มเหลว: " + err.message, "error");
+                else alert("บันทึกล้มเหลว: " + err.message);
+            } finally {
+                if (btn) {
+                    btn.disabled = false;
+                    btn.innerHTML = '<span class="material-symbols-outlined text-[16px]">sync</span> บันทึกโควตาลงฐานข้อมูล';
+                }
             }
         }
     </script>

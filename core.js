@@ -601,6 +601,14 @@
                 delete parsed.medical_cert;
             }
 
+            // คำนวณและฝังโควตามาตรฐานตั้งต้นเสมอ (3ชิ้น/วัน, 6ชิ้น/วัน, 1+3ชิ้น/วัน)
+            const quota = DiaperAdapter.getBaselineQuota(parsed);
+            parsed.baseline_diaper_daily = quota.diaper_daily;
+            parsed.baseline_underpad_daily = quota.underpad_daily;
+            parsed.baseline_diaper_monthly = quota.diaper_monthly;
+            parsed.baseline_underpad_monthly = quota.underpad_monthly;
+            parsed.baseline_quota_desc = quota.quota_desc;
+
             // บันทึกเป็น Object มาตรฐานของ Firestore (ข้อ 2.1 ก.)
             return parsed;
         },
@@ -637,6 +645,55 @@
             }
             dp.allocations = (dp.allocations || []).filter(function (r) { return String(r).trim() !== rk; });
             return DiaperAdapter.normalizeForSave(dp);
+        },
+
+        getBaselineQuota: function (rawDiaper) {
+            const dp = DiaperAdapter.parse(rawDiaper);
+            const reqDiaper = Boolean(dp.req_diaper);
+            const reqUnderpad = Boolean(dp.req_underpad);
+
+            if (reqDiaper && !reqUnderpad) {
+                return {
+                    req_type: 'diaper_only',
+                    req_type_label: 'เฉพาะผ้าอ้อม',
+                    diaper_daily: 3,
+                    underpad_daily: 0,
+                    diaper_monthly: 90,
+                    underpad_monthly: 0,
+                    quota_desc: 'ผ้าอ้อม 3 ชิ้น/วัน (90 ชิ้น/ด.)'
+                };
+            }
+            if (!reqDiaper && reqUnderpad) {
+                return {
+                    req_type: 'underpad_only',
+                    req_type_label: 'เฉพาะแผ่นรองซับ',
+                    diaper_daily: 0,
+                    underpad_daily: 6,
+                    diaper_monthly: 0,
+                    underpad_monthly: 180,
+                    quota_desc: 'แผ่นรอง 6 ชิ้น/วัน (180 ชิ้น/ด.)'
+                };
+            }
+            if (reqDiaper && reqUnderpad) {
+                return {
+                    req_type: 'both',
+                    req_type_label: 'ผ้าอ้อม + แผ่นรองซับ',
+                    diaper_daily: 1,
+                    underpad_daily: 3,
+                    diaper_monthly: 30,
+                    underpad_monthly: 90,
+                    quota_desc: 'ผ้าอ้อม 1 + แผ่นรอง 3 ชิ้น/วัน (30+90 ชิ้น/ด.)'
+                };
+            }
+            return {
+                req_type: 'none',
+                req_type_label: 'ไม่ขอรับ',
+                diaper_daily: 0,
+                underpad_daily: 0,
+                diaper_monthly: 0,
+                underpad_monthly: 0,
+                quota_desc: '-'
+            };
         },
 
         calculateProjectBudget: function (counts, prices) {
