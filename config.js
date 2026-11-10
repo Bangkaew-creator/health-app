@@ -18,37 +18,178 @@ const firebaseConfig = {
   appId: "1:1090261739518:web:9e7c9eef5a1ad4f3ad82af"
 };
 
-// ปิดช่องโหว่บัญชีจำลอง (Mockup Account) ถาวรทันทีที่โหลดหน้าเว็บ และตรวจสอบเวอร์ชันแคชอัตโนมัติ
-const ORSOMO_BUILD_VERSION = "20261109_v3";
+// ==========================================
+// 🛡️ ระบบล้างแคชรุ่นก่อน Auth & ปิด Offline Persistence ที่ค้างบนมือถืออัตโนมัติ
+// ==========================================
+const ORSOMO_BUILD_VERSION = "20261110_v4";
 window.ORSOMO_BUILD_VERSION = ORSOMO_BUILD_VERSION;
 
-try {
-    localStorage.removeItem("dev_mock_uid");
-    const prevBuildVer = localStorage.getItem("orsomo_build_ver");
-    if (prevBuildVer !== ORSOMO_BUILD_VERSION) {
-        localStorage.setItem("orsomo_build_ver", ORSOMO_BUILD_VERSION);
-        try { sessionStorage.removeItem("orsomo_auth_bound"); } catch (e) {}
-        if (typeof navigator !== "undefined" && "serviceWorker" in navigator) {
-            navigator.serviceWorker.getRegistrations().then(function(regs) {
-                regs.forEach(function(r) { r.unregister(); });
-            }).catch(function() {});
+// ฟังก์ชันต่อท้ายเลขเวอร์ชันให้ลิงก์ภายในทั้งหมด เพื่อบังคับให้มือถือโหลดไฟล์ HTML ใหม่เสมอ
+window.OrsomoAppendVer = function(url) {
+    if (!url || typeof url !== "string") return url;
+    const trimmed = url.trim();
+    if (!trimmed || trimmed === "reload" || trimmed === "back" || trimmed.startsWith("#") || trimmed.startsWith("javascript:") || trimmed.startsWith("http://") || trimmed.startsWith("https://")) {
+        return url;
+    }
+    const hashParts = trimmed.split("#");
+    const baseAndQuery = hashParts[0];
+    const hashSuffix = hashParts.length > 1 ? "#" + hashParts.slice(1).join("#") : "";
+    if (!/\.html(\?|$)/i.test(baseAndQuery)) return url;
+    if (baseAndQuery.indexOf("_v=" + ORSOMO_BUILD_VERSION) !== -1) return url;
+
+    const cleanQuery = baseAndQuery
+        .replace(/([?&])_v=[^&]*(&|$)/g, function(match, p1, p2) {
+            return p2 === "&" ? p1 : "";
+        })
+        .replace(/[?&]$/, "");
+    const sep = cleanQuery.indexOf("?") === -1 ? "?" : "&";
+    return cleanQuery + sep + "_v=" + ORSOMO_BUILD_VERSION + hashSuffix;
+};
+
+(function initPreAuthMigrationAndCacheGuard() {
+    try {
+        // 1. ปิด enablePersistence ของ Firestore ทันที เพื่อไม่ให้มือถือใช้คิว IndexedDB เก่าจากเวอร์ชันก่อน Auth
+        if (typeof firebase !== "undefined" && firebase.firestore && firebase.firestore.Firestore && firebase.firestore.Firestore.prototype) {
+            firebase.firestore.Firestore.prototype.enablePersistence = function() {
+                return Promise.resolve();
+            };
         }
-        if (typeof window !== "undefined" && "caches" in window) {
-            caches.keys().then(function(keys) {
-                keys.forEach(function(k) { caches.delete(k); });
-            }).catch(function() {});
+    } catch (e) {}
+
+    try {
+        // 2. ล้างกุญแจจำลองและกุญแจล็อก Multi-tab ของ Firestore ที่ค้างใน localStorage
+        localStorage.removeItem("dev_mock_uid");
+        for (let i = localStorage.length - 1; i >= 0; i--) {
+            const k = localStorage.key(i);
+            if (k && (k.indexOf("firestore_") === 0 || k.indexOf("firebase:previous_websocket_failure") === 0)) {
+                localStorage.removeItem(k);
+            }
         }
-        const reloadFlagKey = "orsomo_reloaded_" + ORSOMO_BUILD_VERSION;
-        if (!sessionStorage.getItem(reloadFlagKey)) {
-            sessionStorage.setItem(reloadFlagKey, "1");
+    } catch (e) {}
+
+    try {
+        // 3. ลบฐานข้อมูล IndexedDB ของ Firestore ที่สร้างไว้ตั้งแต่เวอร์ชันก่อน Auth (แต่เก็บ Auth และ orsomo_uid ไว้)
+        if (typeof indexedDB !== "undefined") {
+            try { indexedDB.deleteDatabase("firestore/[DEFAULT]/orsomo-smart/main"); } catch (e) {}
+            if (typeof indexedDB.databases === "function") {
+                indexedDB.databases().then(function(dbs) {
+                    (dbs || []).forEach(function(dbInfo) {
+                        if (dbInfo && dbInfo.name && dbInfo.name.indexOf("firestore/") === 0) {
+                            try { indexedDB.deleteDatabase(dbInfo.name); } catch (e) {}
+                        }
+                    });
+                }).catch(function() {});
+            }
+        }
+    } catch (e) {}
+
+    try {
+        const prevBuildVer = localStorage.getItem("orsomo_build_ver");
+        const isVersionUpgrade = prevBuildVer !== ORSOMO_BUILD_VERSION;
+
+        if (isVersionUpgrade) {
+            localStorage.setItem("orsomo_build_ver", ORSOMO_BUILD_VERSION);
+            localStorage.setItem("orsomo_needs_auth_reset", "1");
+            try { sessionStorage.removeItem("orsomo_auth_bound"); } catch (e) {}
+
+            // ยกเลิก Service Worker เก่าทั้งหมด
+            if (typeof navigator !== "undefined" && "serviceWorker" in navigator) {
+                navigator.serviceWorker.getRegistrations().then(function(regs) {
+                    regs.forEach(function(r) { r.unregister(); });
+                }).catch(function() {});
+            }
+            // ล้าง CacheStorage ของ PWA ทั้งหมด
+            if (typeof window !== "undefined" && "caches" in window) {
+                caches.keys().then(function(keys) {
+                    keys.forEach(function(k) { caches.delete(k); });
+                }).catch(function() {});
+            }
+
+            // สั่งดึงไฟล์ใหม่ทับ HTTP Disk Cache ของเบราว์เซอร์ทุกหน้าในระบบ
+            if (typeof fetch === "function") {
+                const allAppAssets = [
+                    "config.js",
+                    "core.js",
+                    "index.html",
+                    "dashboard.html",
+                    "patient_list.html",
+                    "patient_profile.html",
+                    "patient_edit.html",
+                    "patient_register.html",
+                    "patient_images.html",
+                    "assessments.html",
+                    "adl_assessment.html",
+                    "depression_assessment.html",
+                    "vitals_record.html",
+                    "home_visit.html",
+                    "map_overview.html",
+                    "vhv_settings.html",
+                    "admin_dashboard.html",
+                    "admin_datacenter.html",
+                    "admin_reports.html",
+                    "admin_resources.html",
+                    "admin_analytics.html",
+                    "admin_delegation.html",
+                    "admin_equipment.html",
+                    "admin_finance.html",
+                    "admin_inventory.html",
+                    "admin_map.html",
+                    "admin_settings.html"
+                ];
+                allAppAssets.forEach(function(asset) {
+                    fetch(asset, { cache: "reload", credentials: "same-origin" }).catch(function() {});
+                });
+            }
+        }
+
+        // 4. ตรวจสอบว่าหน้า HTML ปัจจุบันเป็นไฟล์เก่าที่ติดแคชในมือถือหรือไม่
+        const searchStr = String(window.location.search || "");
+        const hashStr = String(window.location.hash || "");
+        const isLiffCallback = searchStr.indexOf("code=") !== -1 ||
+            searchStr.indexOf("state=") !== -1 ||
+            searchStr.indexOf("liffClientId=") !== -1 ||
+            searchStr.indexOf("liffRedirectUri=") !== -1 ||
+            hashStr.indexOf("access_token=") !== -1 ||
+            hashStr.indexOf("id_token=") !== -1;
+
+        const scripts = Array.from(document.getElementsByTagName("script"));
+        const hasCurrentVerScript = scripts.some(function(s) {
+            const src = s.getAttribute("src") || "";
+            return src.indexOf("config.js") !== -1 && src.indexOf(ORSOMO_BUILD_VERSION) !== -1;
+        });
+
+        const pathKey = "orsomo_page_ver_" + (window.location.pathname || "root");
+        const pageAlreadyReloaded = sessionStorage.getItem(pathKey) === ORSOMO_BUILD_VERSION;
+
+        if (!isLiffCallback && (!hasCurrentVerScript || isVersionUpgrade) && !pageAlreadyReloaded) {
+            sessionStorage.setItem(pathKey, ORSOMO_BUILD_VERSION);
+            const targetUrl = window.OrsomoAppendVer(window.location.pathname + window.location.search + window.location.hash);
             fetch(window.location.href, { cache: "reload", credentials: "same-origin" })
                 .catch(function() {})
                 .finally(function() {
-                    window.location.reload();
+                    if (targetUrl && targetUrl !== (window.location.pathname + window.location.search + window.location.hash)) {
+                        window.location.replace(targetUrl);
+                    } else {
+                        window.location.reload();
+                    }
                 });
         }
-    }
-} catch (e) {}
+    } catch (e) {}
+})();
+
+// ดักจับการคลิกลิงก์ <a href="...html"> ทุกจุดให้แนบเลขเวอร์ชันอัตโนมัติ ป้องกันการเปิดเจอหน้า HTML เก่าในแคชมือถือ
+document.addEventListener("click", function(e) {
+    try {
+        const anchor = e.target && e.target.closest ? e.target.closest("a[href]") : null;
+        if (!anchor) return;
+        const rawHref = anchor.getAttribute("href");
+        if (!rawHref || rawHref.startsWith("#") || rawHref.startsWith("javascript:") || anchor.target === "_blank") return;
+        const updatedHref = window.OrsomoAppendVer(rawHref);
+        if (updatedHref && updatedHref !== rawHref) {
+            anchor.setAttribute("href", updatedHref);
+        }
+    } catch (err) {}
+}, true);
 
 // ==========================================
 // ค่าเริ่มต้นของระบบ (Default Fallback)
@@ -99,7 +240,7 @@ window.showToast = function(message, type = 'success', redirectUrl = null) {
                 if (redirectUrl) {
                     if (redirectUrl === 'reload') window.location.reload();
                     else if (redirectUrl === 'back') window.history.back();
-                    else window.location.href = redirectUrl;
+                    else window.location.href = window.OrsomoAppendVer ? window.OrsomoAppendVer(redirectUrl) : redirectUrl;
                 }
             }, 300);
         }, 3000);

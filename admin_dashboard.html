@@ -18,8 +18,8 @@
     <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-messaging-compat.js"></script>
-    <script src="config.js?v=20261109_v3"></script>
-    <script src="core.js?v=20261109_v3"></script>
+    <script src="config.js?v=20261110_v4"></script>
+    <script src="core.js?v=20261110_v4"></script>
     
     <style>
         body { font-family: 'Sarabun', sans-serif; background-color: #f8fafc; }
@@ -242,9 +242,6 @@
                 firebase.initializeApp(firebaseConfig);
             }
         } catch (e) {}
-        try {
-            firebase.firestore().enablePersistence({ synchronizeTabs: true }).catch(err => {});
-        } catch (e) {}
         const db = firebase.firestore();
 
         let currentUserRole = "ADMIN";
@@ -257,9 +254,7 @@
 
         document.addEventListener("DOMContentLoaded", async () => {
             // ปลุก Service Worker (ถ้ามีไฟล์)
-            if ('serviceWorker' in navigator && window.location.protocol === 'https:') {
-                navigator.serviceWorker.register('./firebase-messaging-sw.js').catch(() => {});
-            }
+            
 
             try {
                 const authCtx = await OrsomoCore.Auth.guardPage({

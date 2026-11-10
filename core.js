@@ -23,6 +23,8 @@
     let _activeLiffUid = '';
     let _memoryBoundKey = '';
     let _memoryBoundAt = 0;
+    let _cachedIdToken = '';
+    let _cachedAuthUid = '';
     let _interceptorInstalled = false;
     let _rawDocSet = null;
 
@@ -41,13 +43,17 @@
             } catch (e) {}
         }
         uid = String(uid || '').trim();
+        if (uid === 'U_DEV_ADMIN_MOCK') {
+            clearStoredUid();
+            return '';
+        }
         if (uid) setStoredUid(uid);
         return uid;
     }
 
     function setStoredUid(uid) {
         const clean = String(uid || '').trim();
-        if (!clean) return;
+        if (!clean || clean === 'U_DEV_ADMIN_MOCK') return;
         _activeLiffUid = clean;
         try { localStorage.setItem('orsomo_uid', clean); } catch (e) {}
         try { sessionStorage.setItem('orsomo_uid', clean); } catch (e) {}
@@ -84,6 +90,131 @@
             msg.includes('missing or insufficient permissions');
     }
 
+    function isServerTimestampFieldValue(val) {
+        if (!val || typeof val !== 'object') return false;
+        try {
+            if (typeof val.isEqual === 'function' && typeof firebase !== 'undefined' && firebase.firestore && firebase.firestore.FieldValue) {
+                if (val.isEqual(firebase.firestore.FieldValue.serverTimestamp())) return true;
+            }
+        } catch (e) {}
+        const m = String(val._methodName || (val._delegate && val._delegate._methodName) || '');
+        return m.indexOf('serverTimestamp') !== -1;
+    }
+
+    function isDeleteFieldValue(val) {
+        if (!val || typeof val !== 'object') return false;
+        try {
+            if (typeof val.isEqual === 'function' && typeof firebase !== 'undefined' && firebase.firestore && firebase.firestore.FieldValue) {
+                if (val.isEqual(firebase.firestore.FieldValue.delete())) return true;
+            }
+        } catch (e) {}
+        const m = String(val._methodName || (val._delegate && val._delegate._methodName) || '');
+        return m.indexOf('delete') !== -1;
+    }
+
+    function getIncrementOperand(val) {
+        if (!val || typeof val !== 'object') return null;
+        const m = String(val._methodName || (val._delegate && val._delegate._methodName) || '');
+        if (m.indexOf('increment') !== -1) {
+            const op = val._operand !== undefined ? val._operand : (val._delegate && val._delegate._operand);
+            if (typeof op === 'number' && Number.isFinite(op)) return op;
+        }
+        return null;
+    }
+
+    function toFirestoreRestValue(val) {
+        if (val === null || val === undefined) return { nullValue: null };
+        if (isServerTimestampFieldValue(val)) return { timestampValue: new Date().toISOString() };
+        if (val instanceof Date) {
+            return { timestampValue: isNaN(val.getTime()) ? new Date().toISOString() : val.toISOString() };
+        }
+        if (typeof val === 'object' && typeof val.toDate === 'function') {
+            try {
+                const d = val.toDate();
+                if (d instanceof Date && !isNaN(d.getTime())) return { timestampValue: d.toISOString() };
+            } catch (e) {}
+            return { timestampValue: new Date().toISOString() };
+        }
+        if (typeof val === 'boolean') return { booleanValue: val };
+        if (typeof val === 'number') {
+            if (!Number.isFinite(val)) return { nullValue: null };
+            return Number.isInteger(val) ? { integerValue: String(val) } : { doubleValue: val };
+        }
+        if (typeof val === 'string') return { stringValue: val };
+        if (Array.isArray(val)) {
+            return {
+                arrayValue: {
+                    values: val.map(function (item) { return toFirestoreRestValue(item); })
+                }
+            };
+        }
+        if (typeof val === 'object') {
+            const fields = {};
+            Object.keys(val).forEach(function (k) {
+                const v = val[k];
+                if (v !== undefined && !isDeleteFieldValue(v)) {
+                    fields[k] = toFirestoreRestValue(v);
+                }
+            });
+            return { mapValue: { fields: fields } };
+        }
+        return { stringValue: String(val) };
+    }
+
+    function buildFirestoreRestWrite(op) {
+        if (!op || !op.docPath || typeof firebaseConfig === 'undefined' || !firebaseConfig.projectId) return null;
+        const cleanPath = String(op.docPath).replace(/^\/+/, '');
+        const fullDocName = 'projects/' + firebaseConfig.projectId + '/databases/(default)/documents/' + cleanPath;
+
+        if (op.type === 'delete') {
+            return { delete: fullDocName };
+        }
+
+        const isMerge = op.type === 'update' || Boolean(op.options && op.options.merge);
+        const rawData = op.data || {};
+        const fields = {};
+        const maskPaths = [];
+        const updateTransforms = [];
+
+        Object.keys(rawData).forEach(function (k) {
+            const v = rawData[k];
+            const escapedKey = /^[a-zA-Z_][a-zA-Z0-9_]*$/.test(k) ? k : ('`' + k.replace(/`/g, '\\`') + '`');
+
+            const incVal = getIncrementOperand(v);
+            if (incVal !== null) {
+                updateTransforms.push({
+                    fieldPath: escapedKey,
+                    increment: Number.isInteger(incVal) ? { integerValue: String(incVal) } : { doubleValue: incVal }
+                });
+                return;
+            }
+
+            if (isDeleteFieldValue(v)) {
+                if (isMerge) maskPaths.push(escapedKey);
+                return;
+            }
+
+            if (v === undefined) return;
+
+            fields[k] = toFirestoreRestValue(v);
+            if (isMerge) maskPaths.push(escapedKey);
+        });
+
+        const writeObj = {
+            update: {
+                name: fullDocName,
+                fields: fields
+            }
+        };
+        if (isMerge) {
+            writeObj.updateMask = { fieldPaths: maskPaths };
+        }
+        if (updateTransforms.length > 0) {
+            writeObj.updateTransforms = updateTransforms;
+        }
+        return writeObj;
+    }
+
     function isActiveStatusNormalized(statusVal) {
         if (statusVal === true) return true;
         const s = String(statusVal || '').trim().toLowerCase();
@@ -114,6 +245,120 @@
         getStoredUid: getStoredUid,
         setStoredUid: setStoredUid,
 
+        restSignUpAnonymous: async function () {
+            if (typeof fetch !== 'function' || typeof firebaseConfig === 'undefined' || !firebaseConfig.apiKey) {
+                return null;
+            }
+            try {
+                const res = await fetch('https://identitytoolkit.googleapis.com/v1/accounts:signUp?key=' + encodeURIComponent(firebaseConfig.apiKey), {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ returnSecureToken: true })
+                });
+                if (!res.ok) return null;
+                const data = await res.json();
+                if (data && data.idToken && data.localId) {
+                    _cachedIdToken = data.idToken;
+                    _cachedAuthUid = data.localId;
+                    return {
+                        uid: data.localId,
+                        getIdToken: async function () { return _cachedIdToken; }
+                    };
+                }
+            } catch (e) {
+                console.warn('REST anonymous signUp fallback warning:', e);
+            }
+            return null;
+        },
+
+        getValidIdToken: async function (forceRefresh) {
+            try {
+                if (typeof firebase !== 'undefined' && typeof firebase.auth === 'function' && firebase.auth().currentUser) {
+                    const tok = await firebase.auth().currentUser.getIdToken(Boolean(forceRefresh));
+                    if (tok) {
+                        _cachedIdToken = tok;
+                        _cachedAuthUid = firebase.auth().currentUser.uid;
+                        return tok;
+                    }
+                }
+            } catch (e) {}
+            if (!forceRefresh && _cachedIdToken) return _cachedIdToken;
+            const restUser = await Auth.restSignUpAnonymous();
+            return restUser ? _cachedIdToken : '';
+        },
+
+        restCommitWrites: async function (opsList) {
+            if (!Array.isArray(opsList) || opsList.length === 0) return;
+            if (typeof fetch !== 'function' || typeof firebaseConfig === 'undefined' || !firebaseConfig.projectId) {
+                throw new Error('REST commit unavailable');
+            }
+
+            // บังคับยืนยัน Session สดใหม่ก่อนส่งคำสั่งผ่าน REST API
+            await Auth.repairSession(_dbInstance);
+            let idToken = await Auth.getValidIdToken(false);
+            if (!idToken) {
+                idToken = await Auth.getValidIdToken(true);
+            }
+            if (!idToken) {
+                throw new Error('Missing or insufficient permissions (Unable to acquire Auth token)');
+            }
+
+            const writes = opsList.map(buildFirestoreRestWrite).filter(Boolean);
+            if (writes.length === 0) return;
+
+            const commitUrl = 'https://firestore.googleapis.com/v1/projects/' +
+                encodeURIComponent(firebaseConfig.projectId) +
+                '/databases/(default)/documents:commit';
+
+            let res = await fetch(commitUrl, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': 'Bearer ' + idToken
+                },
+                body: JSON.stringify({ writes: writes })
+            });
+
+            if (!res.ok && (res.status === 401 || res.status === 403)) {
+                // หาก Token เดิมมีปัญหา ให้ขอ Anonymous Token ใหม่ผ่าน REST ทันทีแล้วผูก Auth_Sessions ใหม่
+                const freshAnon = await Auth.restSignUpAnonymous();
+                const targetLiffUid = getStoredUid();
+                if (freshAnon && freshAnon.uid && targetLiffUid) {
+                    const sessionUrl = 'https://firestore.googleapis.com/v1/projects/' +
+                        encodeURIComponent(firebaseConfig.projectId) +
+                        '/databases/(default)/documents/Auth_Sessions/' +
+                        encodeURIComponent(freshAnon.uid);
+                    await fetch(sessionUrl, {
+                        method: 'PATCH',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': 'Bearer ' + _cachedIdToken
+                        },
+                        body: JSON.stringify({
+                            fields: {
+                                liff_uid: { stringValue: targetLiffUid },
+                                updated_at: { timestampValue: new Date().toISOString() }
+                            }
+                        })
+                    });
+                    res = await fetch(commitUrl, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': 'Bearer ' + _cachedIdToken
+                        },
+                        body: JSON.stringify({ writes: writes })
+                    });
+                }
+            }
+
+            if (!res.ok) {
+                const errText = await res.text().catch(function () { return ''; });
+                throw new Error('FirebaseError: Missing or insufficient permissions (' + res.status + ' ' + errText.substring(0, 120) + ')');
+            }
+            return await res.json().catch(function () { return {}; });
+        },
+
         installFirestoreWriteInterceptor: function (db) {
             if (_interceptorInstalled || !db) return;
             try {
@@ -132,13 +377,47 @@
                 const origDocSet = docProto.set;
                 const origDocUpdate = docProto.update;
                 const origDocDelete = docProto.delete;
+                const origDocGet = docProto.get;
                 const origColAdd = colProto.add;
+                const origColGet = colProto.get;
                 const origBatchSet = batchProto.set;
                 const origBatchUpdate = batchProto.update;
                 const origBatchDelete = batchProto.delete;
                 const origBatchCommit = batchProto.commit;
 
                 _rawDocSet = origDocSet;
+
+                if (typeof origDocGet === 'function') {
+                    docProto.get = async function () {
+                        const docRef = this;
+                        const args = arguments;
+                        try {
+                            return await origDocGet.apply(docRef, args);
+                        } catch (err) {
+                            if (isPermissionDeniedError(err)) {
+                                await Auth.repairSession(docRef.firestore || _dbInstance);
+                                return await origDocGet.apply(docRef, args);
+                            }
+                            throw err;
+                        }
+                    };
+                }
+
+                if (typeof origColGet === 'function') {
+                    colProto.get = async function () {
+                        const colRef = this;
+                        const args = arguments;
+                        try {
+                            return await origColGet.apply(colRef, args);
+                        } catch (err) {
+                            if (isPermissionDeniedError(err)) {
+                                await Auth.repairSession(colRef.firestore || _dbInstance);
+                                return await origColGet.apply(colRef, args);
+                            }
+                            throw err;
+                        }
+                    };
+                }
 
                 docProto.set = async function (data, options) {
                     const docRef = this;
@@ -147,58 +426,139 @@
                         return origDocSet.apply(docRef, arguments);
                     }
                     const args = arguments;
-                    return Auth.withAutoSessionRetry(docRef.firestore || _dbInstance, async function () {
-                        await Auth.ensureSessionReadyForWrite(docRef.firestore || _dbInstance);
+                    const targetDb = docRef.firestore || _dbInstance;
+                    await Auth.ensureSessionReadyForWrite(targetDb);
+                    try {
                         return await origDocSet.apply(docRef, args);
-                    });
+                    } catch (err) {
+                        if (isPermissionDeniedError(err)) {
+                            console.warn('doc.set permission-denied. Repairing session & executing fallback...', path);
+                            try {
+                                await Auth.repairSession(targetDb);
+                                return await origDocSet.apply(docRef, args);
+                            } catch (retryErr) {
+                                if (isPermissionDeniedError(retryErr)) {
+                                    await Auth.restCommitWrites([{ type: 'set', docPath: path, data: data, options: options }]);
+                                    return;
+                                }
+                                throw retryErr;
+                            }
+                        }
+                        throw err;
+                    }
                 };
 
-                docProto.update = async function () {
+                docProto.update = async function (data) {
                     const docRef = this;
                     const path = String(docRef.path || '');
                     if (path.indexOf('Auth_Sessions/') === 0) {
                         return origDocUpdate.apply(docRef, arguments);
                     }
                     const args = arguments;
-                    return Auth.withAutoSessionRetry(docRef.firestore || _dbInstance, async function () {
-                        await Auth.ensureSessionReadyForWrite(docRef.firestore || _dbInstance);
+                    const targetDb = docRef.firestore || _dbInstance;
+                    await Auth.ensureSessionReadyForWrite(targetDb);
+                    try {
                         return await origDocUpdate.apply(docRef, args);
-                    });
+                    } catch (err) {
+                        if (isPermissionDeniedError(err)) {
+                            console.warn('doc.update permission-denied. Repairing session & executing fallback...', path);
+                            try {
+                                await Auth.repairSession(targetDb);
+                                return await origDocUpdate.apply(docRef, args);
+                            } catch (retryErr) {
+                                if (isPermissionDeniedError(retryErr)) {
+                                    await Auth.restCommitWrites([{ type: 'update', docPath: path, data: data }]);
+                                    return;
+                                }
+                                throw retryErr;
+                            }
+                        }
+                        throw err;
+                    }
                 };
 
                 docProto.delete = async function () {
                     const docRef = this;
+                    const path = String(docRef.path || '');
                     const args = arguments;
-                    return Auth.withAutoSessionRetry(docRef.firestore || _dbInstance, async function () {
-                        await Auth.ensureSessionReadyForWrite(docRef.firestore || _dbInstance);
+                    const targetDb = docRef.firestore || _dbInstance;
+                    await Auth.ensureSessionReadyForWrite(targetDb);
+                    try {
                         return await origDocDelete.apply(docRef, args);
-                    });
+                    } catch (err) {
+                        if (isPermissionDeniedError(err)) {
+                            console.warn('doc.delete permission-denied. Repairing session & executing fallback...', path);
+                            try {
+                                await Auth.repairSession(targetDb);
+                                return await origDocDelete.apply(docRef, args);
+                            } catch (retryErr) {
+                                if (isPermissionDeniedError(retryErr)) {
+                                    await Auth.restCommitWrites([{ type: 'delete', docPath: path }]);
+                                    return;
+                                }
+                                throw retryErr;
+                            }
+                        }
+                        throw err;
+                    }
                 };
 
-                colProto.add = async function () {
+                colProto.add = async function (data) {
                     const colRef = this;
                     const args = arguments;
-                    return Auth.withAutoSessionRetry(colRef.firestore || _dbInstance, async function () {
-                        await Auth.ensureSessionReadyForWrite(colRef.firestore || _dbInstance);
+                    const targetDb = colRef.firestore || _dbInstance;
+                    await Auth.ensureSessionReadyForWrite(targetDb);
+                    try {
                         return await origColAdd.apply(colRef, args);
-                    });
+                    } catch (err) {
+                        if (isPermissionDeniedError(err)) {
+                            console.warn('col.add permission-denied. Repairing session & executing fallback...', colRef.path);
+                            try {
+                                await Auth.repairSession(targetDb);
+                                return await origColAdd.apply(colRef, args);
+                            } catch (retryErr) {
+                                if (isPermissionDeniedError(retryErr)) {
+                                    const newDocRef = colRef.doc();
+                                    await Auth.restCommitWrites([{ type: 'set', docPath: newDocRef.path, data: data }]);
+                                    return newDocRef;
+                                }
+                                throw retryErr;
+                            }
+                        }
+                        throw err;
+                    }
                 };
 
-                batchProto.set = function () {
+                batchProto.set = function (docRef, data, options) {
                     if (!this._orsomoOps) this._orsomoOps = [];
-                    this._orsomoOps.push({ type: 'set', args: Array.from(arguments) });
+                    this._orsomoOps.push({
+                        type: 'set',
+                        docPath: docRef && docRef.path ? docRef.path : '',
+                        data: data,
+                        options: options,
+                        args: Array.from(arguments)
+                    });
                     return origBatchSet.apply(this, arguments);
                 };
 
-                batchProto.update = function () {
+                batchProto.update = function (docRef, data) {
                     if (!this._orsomoOps) this._orsomoOps = [];
-                    this._orsomoOps.push({ type: 'update', args: Array.from(arguments) });
+                    this._orsomoOps.push({
+                        type: 'update',
+                        docPath: docRef && docRef.path ? docRef.path : '',
+                        data: data,
+                        args: Array.from(arguments)
+                    });
                     return origBatchUpdate.apply(this, arguments);
                 };
 
-                batchProto.delete = function () {
+                batchProto.delete = function (docRef) {
                     if (!this._orsomoOps) this._orsomoOps = [];
-                    this._orsomoOps.push({ type: 'delete', args: Array.from(arguments) });
+                    this._orsomoOps.push({
+                        type: 'delete',
+                        docPath: docRef && docRef.path ? docRef.path : '',
+                        args: Array.from(arguments)
+                    });
                     return origBatchDelete.apply(this, arguments);
                 };
 
@@ -213,14 +573,22 @@
                     } catch (err) {
                         if (isPermissionDeniedError(err) && recordedOps.length > 0 && targetDb) {
                             console.warn('Batch commit permission-denied. Re-binding session and replaying batch...');
-                            await Auth.repairSession(targetDb);
-                            const retryBatch = targetDb.batch();
-                            recordedOps.forEach(function (op) {
-                                if (op.type === 'set') origBatchSet.apply(retryBatch, op.args);
-                                else if (op.type === 'update') origBatchUpdate.apply(retryBatch, op.args);
-                                else if (op.type === 'delete') origBatchDelete.apply(retryBatch, op.args);
-                            });
-                            return await origBatchCommit.call(retryBatch);
+                            try {
+                                await Auth.repairSession(targetDb);
+                                const retryBatch = targetDb.batch();
+                                recordedOps.forEach(function (op) {
+                                    if (op.type === 'set') origBatchSet.apply(retryBatch, op.args);
+                                    else if (op.type === 'update') origBatchUpdate.apply(retryBatch, op.args);
+                                    else if (op.type === 'delete') origBatchDelete.apply(retryBatch, op.args);
+                                });
+                                return await origBatchCommit.call(retryBatch);
+                            } catch (retryErr) {
+                                if (isPermissionDeniedError(retryErr)) {
+                                    await Auth.restCommitWrites(recordedOps);
+                                    return;
+                                }
+                                throw retryErr;
+                            }
                         }
                         throw err;
                     }
@@ -237,24 +605,16 @@
             if (!firebase.apps || firebase.apps.length === 0) {
                 firebase.initializeApp(firebaseConfig);
             }
+            // ลงทะเบียน Auth Component ก่อนเรียกใช้ Firestore เสมอ เพื่อให้ Firestore แนบ Token ทุกคำสั่ง
+            try {
+                if (typeof firebase.auth === 'function') {
+                    firebase.auth();
+                }
+            } catch (e) {}
             if (!_dbInstance) {
                 _dbInstance = firebase.firestore();
             }
-            if (!_persistenceInitialized) {
-                _persistenceInitialized = true;
-                try {
-                    const p = _dbInstance.enablePersistence({ synchronizeTabs: true });
-                    if (p && typeof p.catch === 'function') {
-                        p.catch(function (err) {
-                            if (err && err.code !== 'failed-precondition' && err.code !== 'unimplemented') {
-                                console.warn('Firestore persistence warning:', err.code);
-                            }
-                        });
-                    }
-                } catch (e) {
-                    // Suppress synchronous "Firestore has already been started" errors
-                }
-            }
+            _persistenceInitialized = true;
             Auth.installFirestoreWriteInterceptor(_dbInstance);
             return _dbInstance;
         },
@@ -287,14 +647,37 @@
         ensureAnonymousSignIn: async function (forceTokenRefresh) {
             try {
                 await Auth.ensureAuthSdk();
-                if (typeof firebase === 'undefined' || typeof firebase.auth !== 'function') return null;
+                if (typeof firebase === 'undefined' || typeof firebase.auth !== 'function') {
+                    return await Auth.restSignUpAnonymous();
+                }
                 if (!firebase.apps || firebase.apps.length === 0) {
                     firebase.initializeApp(firebaseConfig);
                 }
                 const auth = firebase.auth();
 
+                // ถ้าระบบเพิ่งอัปเกรดจากเวอร์ชันก่อน Auth ให้รีเซ็ต Anonymous Auth เก่าที่ค้างในมือถือ 1 ครั้งเพื่อเริ่ม Token ใหม่เหมือนเครื่องคอมพิวเตอร์
+                let needsAuthReset = false;
+                try {
+                    needsAuthReset = localStorage.getItem('orsomo_needs_auth_reset') === '1';
+                    if (needsAuthReset) {
+                        localStorage.removeItem('orsomo_needs_auth_reset');
+                    }
+                } catch (e) {}
+
+                if (needsAuthReset) {
+                    try {
+                        await Promise.race([
+                            auth.signOut(),
+                            new Promise(function (r) { setTimeout(r, 1200); })
+                        ]);
+                        _authStateReadyPromise = null;
+                        _cachedIdToken = '';
+                        _cachedAuthUid = '';
+                    } catch (e) {}
+                }
+
                 // รอให้ Firebase Auth โหลดสถานะเดิมจาก IndexedDB ให้เสร็จก่อน (ป้องกัน Race Condition บนมือถือ)
-                if (!auth.currentUser) {
+                if (!auth.currentUser && !needsAuthReset) {
                     if (!_authStateReadyPromise) {
                         _authStateReadyPromise = new Promise(function (resolve) {
                             let settled = false;
@@ -304,7 +687,7 @@
                                     resolve(u || null);
                                 }
                             };
-                            const timer = setTimeout(function () { done(auth.currentUser); }, 2000);
+                            const timer = setTimeout(function () { done(auth.currentUser); }, 1800);
                             try {
                                 const unsub = auth.onAuthStateChanged(function (u) {
                                     clearTimeout(timer);
@@ -325,21 +708,43 @@
 
                 let user = auth.currentUser;
                 if (!user) {
-                    const cred = await auth.signInAnonymously();
-                    user = cred ? cred.user : auth.currentUser;
+                    try {
+                        const signInPromise = auth.signInAnonymously();
+                        const cred = await Promise.race([
+                            signInPromise,
+                            new Promise(function (_, reject) {
+                                setTimeout(function () { reject(new Error('AUTH_TIMEOUT')); }, 4500);
+                            })
+                        ]);
+                        user = cred ? cred.user : auth.currentUser;
+                    } catch (signInErr) {
+                        // กรณี WebView มือถือติดล็อก IndexedDB ให้สลับไปใช้ SESSION/NONE Persistence หรือ REST ทันที
+                        try {
+                            if (firebase.auth && firebase.auth.Auth && firebase.auth.Auth.Persistence) {
+                                await auth.setPersistence(firebase.auth.Auth.Persistence.SESSION);
+                                const cred2 = await auth.signInAnonymously();
+                                user = cred2 ? cred2.user : auth.currentUser;
+                            }
+                        } catch (fallbackErr) {}
+                    }
                 }
 
                 if (user && typeof user.getIdToken === 'function') {
-                    await user.getIdToken(Boolean(forceTokenRefresh));
+                    const tok = await user.getIdToken(Boolean(forceTokenRefresh || needsAuthReset));
+                    if (tok) {
+                        _cachedIdToken = tok;
+                        _cachedAuthUid = user.uid;
+                    }
+                    _lastAuthError = null;
+                    return user;
                 }
 
-                _lastAuthError = null;
-                return user || null;
+                return await Auth.restSignUpAnonymous();
             } catch (err) {
                 const code = err && err.code ? err.code : String(err);
                 _lastAuthError = code;
                 console.warn('Anonymous Auth info:', code);
-                return null;
+                return await Auth.restSignUpAnonymous();
             }
         },
 
@@ -350,7 +755,10 @@
 
             try {
                 const dbInst = db || Auth.ensureFirebase();
-                const authUser = await Auth.ensureAnonymousSignIn(Boolean(forceWrite));
+                let authUser = await Auth.ensureAnonymousSignIn(Boolean(forceWrite));
+                if (!authUser || !authUser.uid) {
+                    authUser = await Auth.restSignUpAnonymous();
+                }
                 if (!authUser || !authUser.uid) return null;
 
                 const cacheKey = authUser.uid + ':' + targetUid;
@@ -361,21 +769,26 @@
 
                 let idToken = '';
                 try {
-                    idToken = await authUser.getIdToken(Boolean(forceWrite));
-                } catch (e) {}
+                    idToken = typeof authUser.getIdToken === 'function'
+                        ? await authUser.getIdToken(Boolean(forceWrite))
+                        : _cachedIdToken;
+                } catch (e) {
+                    idToken = _cachedIdToken;
+                }
 
-                // 1. ยิงตรงผ่าน Firestore REST API เพื่อให้มั่นใจ 100% ว่าเซิร์ฟเวอร์มีเอกสาร Auth_Sessions ทันทีโดยไม่ติดคิว IndexedDB บนมือถือ
+                // 1. ยิงตรงผ่าน Firestore REST API และตรวจสอบสถานะ 200 OK เพื่อให้มั่นใจ 100% ว่าเซิร์ฟเวอร์มีเอกสาร Auth_Sessions
+                let restBoundOk = false;
                 if (idToken && typeof fetch === 'function' && typeof firebaseConfig !== 'undefined' && firebaseConfig.projectId) {
-                    const restUrl = 'https://firestore.googleapis.com/v1/projects/' +
-                        encodeURIComponent(firebaseConfig.projectId) +
-                        '/databases/(default)/documents/Auth_Sessions/' +
-                        encodeURIComponent(authUser.uid);
-                    try {
-                        await fetch(restUrl, {
+                    const sendRestBind = async function (uidToBind, tokenToUse) {
+                        const restUrl = 'https://firestore.googleapis.com/v1/projects/' +
+                            encodeURIComponent(firebaseConfig.projectId) +
+                            '/databases/(default)/documents/Auth_Sessions/' +
+                            encodeURIComponent(uidToBind);
+                        return await fetch(restUrl, {
                             method: 'PATCH',
                             headers: {
                                 'Content-Type': 'application/json',
-                                'Authorization': 'Bearer ' + idToken
+                                'Authorization': 'Bearer ' + tokenToUse
                             },
                             body: JSON.stringify({
                                 fields: {
@@ -384,13 +797,29 @@
                                 }
                             })
                         });
+                    };
+
+                    try {
+                        let patchRes = await sendRestBind(authUser.uid, idToken);
+                        if (patchRes && patchRes.ok) {
+                            restBoundOk = true;
+                        } else if (patchRes && (patchRes.status === 401 || patchRes.status === 403)) {
+                            // หาก Token ของเครื่องเก่าหมดอายุหรือถูกปฏิเสธ ให้สร้าง Anonymous Session ใหม่ทันที
+                            const freshUser = await Auth.restSignUpAnonymous();
+                            if (freshUser && freshUser.uid && _cachedIdToken) {
+                                authUser = freshUser;
+                                idToken = _cachedIdToken;
+                                patchRes = await sendRestBind(authUser.uid, idToken);
+                                if (patchRes && patchRes.ok) restBoundOk = true;
+                            }
+                        }
                     } catch (restErr) {
                         console.warn('REST Auth_Sessions bind fallback:', restErr);
                     }
                 }
 
-                // 2. อัปเดตผ่าน SDK ควบคู่กัน (ใช้ rawDocSet และมี Timeout ป้องกันคิวออฟไลน์ค้าง)
-                if (dbInst) {
+                // 2. อัปเดตผ่าน SDK ควบคู่กัน (มี Timeout ป้องกันคิวค้าง)
+                if (dbInst && authUser && authUser.uid) {
                     const sessionDocRef = dbInst.collection('Auth_Sessions').doc(authUser.uid);
                     const sessionPayload = {
                         liff_uid: targetUid,
@@ -402,13 +831,14 @@
 
                     await Promise.race([
                         sdkWritePromise.catch(function () {}),
-                        new Promise(function (r) { setTimeout(r, 2000); })
+                        new Promise(function (r) { setTimeout(r, restBoundOk ? 600 : 1800); })
                     ]);
                 }
 
-                _memoryBoundKey = cacheKey;
+                const finalKey = authUser.uid + ':' + targetUid;
+                _memoryBoundKey = finalKey;
                 _memoryBoundAt = Date.now();
-                try { sessionStorage.setItem('orsomo_auth_bound', cacheKey); } catch (e) {}
+                try { sessionStorage.setItem('orsomo_auth_bound', finalKey); } catch (e) {}
                 return authUser.uid;
             } catch (err) {
                 console.warn('Auth_Sessions bind info:', err && err.message ? err.message : err);
@@ -548,12 +978,16 @@
                 currentPage: ''
             }, options || {});
 
+            const toVerUrl = function (u) {
+                return (typeof window.OrsomoAppendVer === 'function') ? window.OrsomoAppendVer(u) : u;
+            };
+
             const db = Auth.ensureFirebase();
             const resolved = await Auth.resolveLiffUid();
             const uid = String(resolved.uid || '').trim();
 
             if (!uid) {
-                window.location.replace(opts.loginUrl);
+                window.location.replace(toVerUrl(opts.loginUrl));
                 throw new Error('UNAUTHENTICATED');
             }
 
@@ -573,7 +1007,10 @@
             }
 
             if (!userDoc || !userDoc.exists) {
-                window.location.replace(opts.loginUrl);
+                if (!resolved.profile) {
+                    clearStoredUid();
+                }
+                window.location.replace(toVerUrl(opts.loginUrl));
                 throw new Error('USER_NOT_REGISTERED');
             }
 
@@ -583,14 +1020,14 @@
 
             // บล็อกบัญชี Pending / Rejected / อื่นๆ ที่ไม่ใช่ Active 100%
             if (!isActiveAccount) {
-                window.location.replace(opts.loginUrl);
+                window.location.replace(toVerUrl(opts.loginUrl));
                 throw new Error('USER_NOT_ACTIVE');
             }
 
             if (Array.isArray(opts.allowedRoles) && opts.allowedRoles.length > 0 && !opts.allowedRoles.includes(roleUpper)) {
-                const fallbackUrl = (roleUpper === 'ADMIN' || roleUpper === 'SUB_ADMIN')
+                const fallbackUrl = toVerUrl((roleUpper === 'ADMIN' || roleUpper === 'SUB_ADMIN')
                     ? 'admin_dashboard.html'
-                    : (roleUpper === 'VHV' ? 'dashboard.html' : opts.loginUrl);
+                    : (roleUpper === 'VHV' ? 'dashboard.html' : opts.loginUrl));
                 if (typeof window.showToast === 'function') {
                     window.showToast('บัญชีของคุณไม่มีสิทธิ์เข้าถึงหน้านี้', 'error', fallbackUrl);
                 } else {

@@ -16,8 +16,8 @@
     <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore-compat.js"></script>
-    <script src="config.js?v=20261109_v3"></script>
-    <script src="core.js?v=20261109_v3"></script>
+    <script src="config.js?v=20261110_v4"></script>
+    <script src="core.js?v=20261110_v4"></script>
 
     <style>
         body { font-family: 'Sarabun', sans-serif; background-color: #f8fafc; -webkit-tap-highlight-color: transparent; }
@@ -254,10 +254,13 @@
                     const isActive = userData.status === true || ['active', 'approved', 'อนุมัติ', 'อนุมัติแล้ว', 'ปกติ', 'กำลังปฏิบัติงาน'].includes(status);
 
                     if (isActive) {
+                        const toVerUrl = function(u) {
+                            return (typeof window.OrsomoAppendVer === 'function') ? window.OrsomoAppendVer(u) : u;
+                        };
                         if (role === 'ADMIN' || role === 'SUB_ADMIN' || role === 'SUB-ADMIN') {
-                            window.location.replace('admin_dashboard.html');
+                            window.location.replace(toVerUrl('admin_dashboard.html'));
                         } else {
-                            window.location.replace('dashboard.html');
+                            window.location.replace(toVerUrl('dashboard.html'));
                         }
                     } else if (status === 'pending' || status === 'รอตรวจสอบ' || status === 'รออนุมัติ') {
                         document.getElementById('pending-screen').classList.remove('hidden');
