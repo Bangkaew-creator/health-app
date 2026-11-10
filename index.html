@@ -16,8 +16,8 @@
     <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore-compat.js"></script>
-    <script src="config.js"></script>
-    <script src="core.js?v=20261109_auth"></script>
+    <script src="config.js?v=20261109_v3"></script>
+    <script src="core.js?v=20261109_v3"></script>
 
     <style>
         body { font-family: 'Sarabun', sans-serif; background-color: #f8fafc; -webkit-tap-highlight-color: transparent; }
@@ -148,18 +148,19 @@
 
             try {
                 await liff.init({ liffId: LIFF_ID });
-                const savedUid = localStorage.getItem('orsomo_uid') || '';
+                const savedUid = OrsomoCore.Auth.getStoredUid() || localStorage.getItem('orsomo_uid') || '';
 
                 if (liff.isLoggedIn()) {
                     try {
                         const profile = await liff.getProfile();
                         currentResolvedUid = profile.userId;
                         currentResolvedPic = profile.pictureUrl || '';
-                        localStorage.setItem('orsomo_uid', profile.userId);
+                        OrsomoCore.Auth.setStoredUid(profile.userId);
                         await processLoginRouting(profile.userId);
                     } catch (profileErr) {
                         if (savedUid) {
                             currentResolvedUid = savedUid;
+                            OrsomoCore.Auth.setStoredUid(savedUid);
                             await processLoginRouting(savedUid);
                         } else {
                             await showRegistrationUI();
@@ -167,6 +168,7 @@
                     }
                 } else if (savedUid) {
                     currentResolvedUid = savedUid;
+                    OrsomoCore.Auth.setStoredUid(savedUid);
                     await processLoginRouting(savedUid);
                 } else {
                     const isPWA = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
@@ -232,24 +234,32 @@
 
         async function processLoginRouting(uid) {
             try {
+                OrsomoCore.Auth.setStoredUid(uid);
                 await OrsomoCore.Auth.bindAuthSession(db, uid, true);
                 await loadBootstrapVillageCount();
 
-                const userDoc = await db.collection('VHVs').doc(String(uid)).get();
+                let userDoc = null;
+                try {
+                    userDoc = await db.collection('VHVs').doc(String(uid)).get();
+                } catch (readErr) {
+                    await OrsomoCore.Auth.repairSession(db);
+                    userDoc = await db.collection('VHVs').doc(String(uid)).get();
+                }
                 hideAllScreens();
 
                 if (userDoc.exists) {
                     const userData = userDoc.data() || {};
                     const status = String(userData.status || '').trim().toLowerCase();
-                    const role = String(userData.role || '').trim().toUpperCase();
+                    const role = String(userData.role || 'VHV').trim().toUpperCase();
+                    const isActive = userData.status === true || ['active', 'approved', 'อนุมัติ', 'อนุมัติแล้ว', 'ปกติ', 'กำลังปฏิบัติงาน'].includes(status);
 
-                    if (status === 'active') {
-                        if (role === 'ADMIN' || role === 'SUB_ADMIN') {
+                    if (isActive) {
+                        if (role === 'ADMIN' || role === 'SUB_ADMIN' || role === 'SUB-ADMIN') {
                             window.location.replace('admin_dashboard.html');
                         } else {
                             window.location.replace('dashboard.html');
                         }
-                    } else if (status === 'pending') {
+                    } else if (status === 'pending' || status === 'รอตรวจสอบ' || status === 'รออนุมัติ') {
                         document.getElementById('pending-screen').classList.remove('hidden');
                     } else {
                         document.getElementById('rejected-screen').classList.remove('hidden');

@@ -18,9 +18,36 @@ const firebaseConfig = {
   appId: "1:1090261739518:web:9e7c9eef5a1ad4f3ad82af"
 };
 
-// ปิดช่องโหว่บัญชีจำลอง (Mockup Account) ถาวรทันทีที่โหลดหน้าเว็บ
+// ปิดช่องโหว่บัญชีจำลอง (Mockup Account) ถาวรทันทีที่โหลดหน้าเว็บ และตรวจสอบเวอร์ชันแคชอัตโนมัติ
+const ORSOMO_BUILD_VERSION = "20261109_v3";
+window.ORSOMO_BUILD_VERSION = ORSOMO_BUILD_VERSION;
+
 try {
     localStorage.removeItem("dev_mock_uid");
+    const prevBuildVer = localStorage.getItem("orsomo_build_ver");
+    if (prevBuildVer !== ORSOMO_BUILD_VERSION) {
+        localStorage.setItem("orsomo_build_ver", ORSOMO_BUILD_VERSION);
+        try { sessionStorage.removeItem("orsomo_auth_bound"); } catch (e) {}
+        if (typeof navigator !== "undefined" && "serviceWorker" in navigator) {
+            navigator.serviceWorker.getRegistrations().then(function(regs) {
+                regs.forEach(function(r) { r.unregister(); });
+            }).catch(function() {});
+        }
+        if (typeof window !== "undefined" && "caches" in window) {
+            caches.keys().then(function(keys) {
+                keys.forEach(function(k) { caches.delete(k); });
+            }).catch(function() {});
+        }
+        const reloadFlagKey = "orsomo_reloaded_" + ORSOMO_BUILD_VERSION;
+        if (!sessionStorage.getItem(reloadFlagKey)) {
+            sessionStorage.setItem(reloadFlagKey, "1");
+            fetch(window.location.href, { cache: "reload", credentials: "same-origin" })
+                .catch(function() {})
+                .finally(function() {
+                    window.location.reload();
+                });
+        }
+    }
 } catch (e) {}
 
 // ==========================================
@@ -89,7 +116,7 @@ window.showToast = function(message, type = 'success', redirectUrl = null) {
     if (!hasScriptTag) {
         window.__orsomoCoreLoading = true;
         const script = document.createElement('script');
-        script.src = 'core.js';
+        script.src = 'core.js?v=' + ORSOMO_BUILD_VERSION;
         script.defer = false;
         (document.head || document.documentElement).appendChild(script);
     }

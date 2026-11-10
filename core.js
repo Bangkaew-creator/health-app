@@ -18,7 +18,91 @@
     let _dbInstance = null;
     let _persistenceInitialized = false;
     let _authSdkPromise = null;
+    let _authStateReadyPromise = null;
     let _lastAuthError = null;
+    let _activeLiffUid = '';
+    let _memoryBoundKey = '';
+    let _memoryBoundAt = 0;
+    let _interceptorInstalled = false;
+    let _rawDocSet = null;
+
+    function getStoredUid() {
+        if (_activeLiffUid) return _activeLiffUid;
+        let uid = '';
+        try { uid = localStorage.getItem('orsomo_uid') || ''; } catch (e) {}
+        if (!uid) {
+            try { uid = sessionStorage.getItem('orsomo_uid') || ''; } catch (e) {}
+        }
+        if (!uid) {
+            try {
+                if (typeof window.name === 'string' && window.name.indexOf('ORSOMO_UID:') === 0) {
+                    uid = window.name.substring('ORSOMO_UID:'.length).trim();
+                }
+            } catch (e) {}
+        }
+        uid = String(uid || '').trim();
+        if (uid) setStoredUid(uid);
+        return uid;
+    }
+
+    function setStoredUid(uid) {
+        const clean = String(uid || '').trim();
+        if (!clean) return;
+        _activeLiffUid = clean;
+        try { localStorage.setItem('orsomo_uid', clean); } catch (e) {}
+        try { sessionStorage.setItem('orsomo_uid', clean); } catch (e) {}
+        try {
+            if (!window.name || window.name.indexOf('ORSOMO_UID:') === 0) {
+                window.name = 'ORSOMO_UID:' + clean;
+            }
+        } catch (e) {}
+    }
+
+    function clearStoredUid() {
+        _activeLiffUid = '';
+        _memoryBoundKey = '';
+        _memoryBoundAt = 0;
+        try { localStorage.removeItem('orsomo_uid'); } catch (e) {}
+        try { localStorage.removeItem('dev_mock_uid'); } catch (e) {}
+        try { sessionStorage.removeItem('orsomo_uid'); } catch (e) {}
+        try { sessionStorage.removeItem('orsomo_auth_bound'); } catch (e) {}
+        try {
+            if (typeof window.name === 'string' && window.name.indexOf('ORSOMO_UID:') === 0) {
+                window.name = '';
+            }
+        } catch (e) {}
+    }
+
+    function isPermissionDeniedError(err) {
+        if (!err) return false;
+        const code = String(err.code || '').toLowerCase();
+        const msg = String(err.message || err || '').toLowerCase();
+        return code === 'permission-denied' ||
+            code === 'unauthenticated' ||
+            msg.includes('insufficient permissions') ||
+            msg.includes('permission denied') ||
+            msg.includes('missing or insufficient permissions');
+    }
+
+    function isActiveStatusNormalized(statusVal) {
+        if (statusVal === true) return true;
+        const s = String(statusVal || '').trim().toLowerCase();
+        return ['active', 'approved', 'อนุมัติ', 'อนุมัติแล้ว', 'ปกติ', 'กำลังปฏิบัติงาน'].includes(s);
+    }
+
+    function normalizeUserRole(roleVal) {
+        const r = String(roleVal || '').trim().toUpperCase();
+        if (!r || r === 'อสม.' || r === 'อสม' || r === 'อาสาสมัครสาธารณสุข' || r === 'USER' || r === 'MEMBER') {
+            return 'VHV';
+        }
+        if (r === 'ADMIN' || r === 'CENTRAL_ADMIN' || r === 'SUPER_ADMIN' || r === 'แอดมิน') {
+            return 'ADMIN';
+        }
+        if (r === 'SUB_ADMIN' || r === 'SUB-ADMIN' || r === 'SUBADMIN' || r === 'รพ.สต.' || r === 'เจ้าหน้าที่') {
+            return 'SUB_ADMIN';
+        }
+        return r;
+    }
 
     // ========================================================================
     // 1. ระบบเชื่อมต่อฐานข้อมูลและล็อกสิทธิ์ผู้ใช้งาน (Auth & Role Guard)
@@ -27,6 +111,125 @@
         getLastAuthError: function () {
             return _lastAuthError;
         },
+        getStoredUid: getStoredUid,
+        setStoredUid: setStoredUid,
+
+        installFirestoreWriteInterceptor: function (db) {
+            if (_interceptorInstalled || !db) return;
+            try {
+                const sampleCol = db.collection('_orsomo_init_');
+                const sampleDoc = sampleCol.doc('_orsomo_init_');
+                const sampleBatch = db.batch();
+
+                const docProto = Object.getPrototypeOf(sampleDoc);
+                const colProto = Object.getPrototypeOf(sampleCol);
+                const batchProto = Object.getPrototypeOf(sampleBatch);
+
+                if (!docProto || !colProto || !batchProto || docProto.__orsomoWrapped) return;
+                docProto.__orsomoWrapped = true;
+                _interceptorInstalled = true;
+
+                const origDocSet = docProto.set;
+                const origDocUpdate = docProto.update;
+                const origDocDelete = docProto.delete;
+                const origColAdd = colProto.add;
+                const origBatchSet = batchProto.set;
+                const origBatchUpdate = batchProto.update;
+                const origBatchDelete = batchProto.delete;
+                const origBatchCommit = batchProto.commit;
+
+                _rawDocSet = origDocSet;
+
+                docProto.set = async function (data, options) {
+                    const docRef = this;
+                    const path = String(docRef.path || '');
+                    if (path.indexOf('Auth_Sessions/') === 0) {
+                        return origDocSet.apply(docRef, arguments);
+                    }
+                    const args = arguments;
+                    return Auth.withAutoSessionRetry(docRef.firestore || _dbInstance, async function () {
+                        await Auth.ensureSessionReadyForWrite(docRef.firestore || _dbInstance);
+                        return await origDocSet.apply(docRef, args);
+                    });
+                };
+
+                docProto.update = async function () {
+                    const docRef = this;
+                    const path = String(docRef.path || '');
+                    if (path.indexOf('Auth_Sessions/') === 0) {
+                        return origDocUpdate.apply(docRef, arguments);
+                    }
+                    const args = arguments;
+                    return Auth.withAutoSessionRetry(docRef.firestore || _dbInstance, async function () {
+                        await Auth.ensureSessionReadyForWrite(docRef.firestore || _dbInstance);
+                        return await origDocUpdate.apply(docRef, args);
+                    });
+                };
+
+                docProto.delete = async function () {
+                    const docRef = this;
+                    const args = arguments;
+                    return Auth.withAutoSessionRetry(docRef.firestore || _dbInstance, async function () {
+                        await Auth.ensureSessionReadyForWrite(docRef.firestore || _dbInstance);
+                        return await origDocDelete.apply(docRef, args);
+                    });
+                };
+
+                colProto.add = async function () {
+                    const colRef = this;
+                    const args = arguments;
+                    return Auth.withAutoSessionRetry(colRef.firestore || _dbInstance, async function () {
+                        await Auth.ensureSessionReadyForWrite(colRef.firestore || _dbInstance);
+                        return await origColAdd.apply(colRef, args);
+                    });
+                };
+
+                batchProto.set = function () {
+                    if (!this._orsomoOps) this._orsomoOps = [];
+                    this._orsomoOps.push({ type: 'set', args: Array.from(arguments) });
+                    return origBatchSet.apply(this, arguments);
+                };
+
+                batchProto.update = function () {
+                    if (!this._orsomoOps) this._orsomoOps = [];
+                    this._orsomoOps.push({ type: 'update', args: Array.from(arguments) });
+                    return origBatchUpdate.apply(this, arguments);
+                };
+
+                batchProto.delete = function () {
+                    if (!this._orsomoOps) this._orsomoOps = [];
+                    this._orsomoOps.push({ type: 'delete', args: Array.from(arguments) });
+                    return origBatchDelete.apply(this, arguments);
+                };
+
+                batchProto.commit = async function () {
+                    const batchInstance = this;
+                    const targetDb = batchInstance._firestore || _dbInstance || Auth.ensureFirebase();
+                    const recordedOps = Array.isArray(batchInstance._orsomoOps) ? batchInstance._orsomoOps.slice() : [];
+
+                    await Auth.ensureSessionReadyForWrite(targetDb);
+                    try {
+                        return await origBatchCommit.call(batchInstance);
+                    } catch (err) {
+                        if (isPermissionDeniedError(err) && recordedOps.length > 0 && targetDb) {
+                            console.warn('Batch commit permission-denied. Re-binding session and replaying batch...');
+                            await Auth.repairSession(targetDb);
+                            const retryBatch = targetDb.batch();
+                            recordedOps.forEach(function (op) {
+                                if (op.type === 'set') origBatchSet.apply(retryBatch, op.args);
+                                else if (op.type === 'update') origBatchUpdate.apply(retryBatch, op.args);
+                                else if (op.type === 'delete') origBatchDelete.apply(retryBatch, op.args);
+                            });
+                            return await origBatchCommit.call(retryBatch);
+                        }
+                        throw err;
+                    }
+                };
+            } catch (err) {
+                console.warn('Firestore write interceptor init warning:', err);
+            }
+        },
+
         ensureFirebase: function () {
             if (typeof firebase === 'undefined') {
                 throw new Error('Firebase SDK is not loaded');
@@ -52,6 +255,7 @@
                     // Suppress synchronous "Firestore has already been started" errors
                 }
             }
+            Auth.installFirestoreWriteInterceptor(_dbInstance);
             return _dbInstance;
         },
 
@@ -68,6 +272,7 @@
                 if (existing) {
                     existing.addEventListener('load', function () { resolve(); });
                     existing.addEventListener('error', function () { resolve(); });
+                    setTimeout(resolve, 2500);
                     return;
                 }
                 const script = document.createElement('script');
@@ -79,15 +284,57 @@
             return _authSdkPromise;
         },
 
-        ensureAnonymousSignIn: async function () {
+        ensureAnonymousSignIn: async function (forceTokenRefresh) {
             try {
                 await Auth.ensureAuthSdk();
                 if (typeof firebase === 'undefined' || typeof firebase.auth !== 'function') return null;
+                if (!firebase.apps || firebase.apps.length === 0) {
+                    firebase.initializeApp(firebaseConfig);
+                }
                 const auth = firebase.auth();
-                if (auth.currentUser) return auth.currentUser;
-                const cred = await auth.signInAnonymously();
+
+                // รอให้ Firebase Auth โหลดสถานะเดิมจาก IndexedDB ให้เสร็จก่อน (ป้องกัน Race Condition บนมือถือ)
+                if (!auth.currentUser) {
+                    if (!_authStateReadyPromise) {
+                        _authStateReadyPromise = new Promise(function (resolve) {
+                            let settled = false;
+                            const done = function (u) {
+                                if (!settled) {
+                                    settled = true;
+                                    resolve(u || null);
+                                }
+                            };
+                            const timer = setTimeout(function () { done(auth.currentUser); }, 2000);
+                            try {
+                                const unsub = auth.onAuthStateChanged(function (u) {
+                                    clearTimeout(timer);
+                                    if (typeof unsub === 'function') unsub();
+                                    done(u);
+                                }, function () {
+                                    clearTimeout(timer);
+                                    done(null);
+                                });
+                            } catch (e) {
+                                clearTimeout(timer);
+                                done(auth.currentUser);
+                            }
+                        });
+                    }
+                    await _authStateReadyPromise;
+                }
+
+                let user = auth.currentUser;
+                if (!user) {
+                    const cred = await auth.signInAnonymously();
+                    user = cred ? cred.user : auth.currentUser;
+                }
+
+                if (user && typeof user.getIdToken === 'function') {
+                    await user.getIdToken(Boolean(forceTokenRefresh));
+                }
+
                 _lastAuthError = null;
-                return cred ? cred.user : null;
+                return user || null;
             } catch (err) {
                 const code = err && err.code ? err.code : String(err);
                 _lastAuthError = code;
@@ -97,23 +344,71 @@
         },
 
         bindAuthSession: async function (db, liffUid, forceWrite) {
-            if (!db || !liffUid) return null;
+            const targetUid = String(liffUid || getStoredUid() || '').trim();
+            if (!targetUid) return null;
+            setStoredUid(targetUid);
+
             try {
-                const authUser = await Auth.ensureAnonymousSignIn();
+                const dbInst = db || Auth.ensureFirebase();
+                const authUser = await Auth.ensureAnonymousSignIn(Boolean(forceWrite));
                 if (!authUser || !authUser.uid) return null;
 
-                const cleanLiffUid = String(liffUid).trim();
-                const cacheKey = authUser.uid + ':' + cleanLiffUid;
-                if (!forceWrite && sessionStorage.getItem('orsomo_auth_bound') === cacheKey) {
+                const cacheKey = authUser.uid + ':' + targetUid;
+                const nowMs = Date.now();
+                if (!forceWrite && _memoryBoundKey === cacheKey && (nowMs - _memoryBoundAt) < 180000) {
                     return authUser.uid;
                 }
 
-                await db.collection('Auth_Sessions').doc(authUser.uid).set({
-                    liff_uid: cleanLiffUid,
-                    updated_at: firebase.firestore.FieldValue.serverTimestamp()
-                }, { merge: true });
+                let idToken = '';
+                try {
+                    idToken = await authUser.getIdToken(Boolean(forceWrite));
+                } catch (e) {}
 
-                sessionStorage.setItem('orsomo_auth_bound', cacheKey);
+                // 1. ยิงตรงผ่าน Firestore REST API เพื่อให้มั่นใจ 100% ว่าเซิร์ฟเวอร์มีเอกสาร Auth_Sessions ทันทีโดยไม่ติดคิว IndexedDB บนมือถือ
+                if (idToken && typeof fetch === 'function' && typeof firebaseConfig !== 'undefined' && firebaseConfig.projectId) {
+                    const restUrl = 'https://firestore.googleapis.com/v1/projects/' +
+                        encodeURIComponent(firebaseConfig.projectId) +
+                        '/databases/(default)/documents/Auth_Sessions/' +
+                        encodeURIComponent(authUser.uid);
+                    try {
+                        await fetch(restUrl, {
+                            method: 'PATCH',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'Authorization': 'Bearer ' + idToken
+                            },
+                            body: JSON.stringify({
+                                fields: {
+                                    liff_uid: { stringValue: targetUid },
+                                    updated_at: { timestampValue: new Date().toISOString() }
+                                }
+                            })
+                        });
+                    } catch (restErr) {
+                        console.warn('REST Auth_Sessions bind fallback:', restErr);
+                    }
+                }
+
+                // 2. อัปเดตผ่าน SDK ควบคู่กัน (ใช้ rawDocSet และมี Timeout ป้องกันคิวออฟไลน์ค้าง)
+                if (dbInst) {
+                    const sessionDocRef = dbInst.collection('Auth_Sessions').doc(authUser.uid);
+                    const sessionPayload = {
+                        liff_uid: targetUid,
+                        updated_at: firebase.firestore.FieldValue.serverTimestamp()
+                    };
+                    const sdkWritePromise = _rawDocSet
+                        ? _rawDocSet.call(sessionDocRef, sessionPayload, { merge: true })
+                        : sessionDocRef.set(sessionPayload, { merge: true });
+
+                    await Promise.race([
+                        sdkWritePromise.catch(function () {}),
+                        new Promise(function (r) { setTimeout(r, 2000); })
+                    ]);
+                }
+
+                _memoryBoundKey = cacheKey;
+                _memoryBoundAt = Date.now();
+                try { sessionStorage.setItem('orsomo_auth_bound', cacheKey); } catch (e) {}
                 return authUser.uid;
             } catch (err) {
                 console.warn('Auth_Sessions bind info:', err && err.message ? err.message : err);
@@ -121,13 +416,41 @@
             }
         },
 
+        ensureSessionReadyForWrite: async function (db) {
+            try {
+                let uid = getStoredUid();
+                if (!uid) {
+                    const resolved = await Auth.resolveLiffUid();
+                    uid = String((resolved && resolved.uid) || '').trim();
+                }
+                if (uid) {
+                    await Auth.bindAuthSession(db || _dbInstance, uid, false);
+                } else {
+                    await Auth.ensureAnonymousSignIn(false);
+                }
+            } catch (e) {
+                console.warn('ensureSessionReadyForWrite warning:', e);
+            }
+        },
+
         repairSession: async function (db) {
             try {
-                const resolved = await Auth.resolveLiffUid();
-                const uid = String(resolved.uid || '').trim();
-                if (!uid) return null;
+                let uid = getStoredUid();
+                if (!uid) {
+                    const resolved = await Auth.resolveLiffUid();
+                    uid = String((resolved && resolved.uid) || '').trim();
+                }
                 const dbInst = db || Auth.ensureFirebase();
-                sessionStorage.removeItem('orsomo_auth_bound');
+                _memoryBoundKey = '';
+                _memoryBoundAt = 0;
+                try { sessionStorage.removeItem('orsomo_auth_bound'); } catch (e) {}
+
+                // บังคับรีเฟรช ID Token ใหม่ เพื่อให้ Firestore WebChannel อัปเดตสิทธิ์ทันที
+                const user = await Auth.ensureAnonymousSignIn(true);
+                if (user) {
+                    await new Promise(function (r) { setTimeout(r, 180); });
+                }
+                if (!uid) return user ? user.uid : null;
                 return await Auth.bindAuthSession(dbInst, uid, true);
             } catch (err) {
                 console.warn('repairSession warning:', err);
@@ -139,9 +462,7 @@
             try {
                 return await operationFn();
             } catch (err) {
-                const msg = String((err && err.message) || err || '').toLowerCase();
-                const isPermDenied = err && (err.code === 'permission-denied' || msg.includes('insufficient permissions') || msg.includes('permission denied'));
-                if (isPermDenied) {
+                if (isPermissionDeniedError(err)) {
                     console.warn('Permission issue detected. Executing automatic session self-heal & retry...');
                     await Auth.repairSession(db);
                     return await operationFn();
@@ -152,7 +473,7 @@
 
         resolveLiffUid: async function () {
             try { localStorage.removeItem('dev_mock_uid'); } catch (e) {}
-            const savedUid = localStorage.getItem('orsomo_uid') || '';
+            const savedUid = getStoredUid();
 
             if (typeof liff === 'undefined') {
                 return { uid: savedUid, profile: null };
@@ -163,7 +484,7 @@
                 if (liff.isLoggedIn()) {
                     const profile = await liff.getProfile();
                     if (profile && profile.userId) {
-                        localStorage.setItem('orsomo_uid', profile.userId);
+                        setStoredUid(profile.userId);
                         return { uid: profile.userId, profile: profile };
                     }
                 }
@@ -236,20 +557,32 @@
                 throw new Error('UNAUTHENTICATED');
             }
 
+            setStoredUid(uid);
             await Auth.bindAuthSession(db, uid, true);
 
-            const userDoc = await db.collection('VHVs').doc(uid).get();
-            if (!userDoc.exists) {
+            let userDoc = null;
+            try {
+                userDoc = await db.collection('VHVs').doc(uid).get();
+            } catch (readErr) {
+                if (isPermissionDeniedError(readErr)) {
+                    await Auth.repairSession(db);
+                    userDoc = await db.collection('VHVs').doc(uid).get();
+                } else {
+                    throw readErr;
+                }
+            }
+
+            if (!userDoc || !userDoc.exists) {
                 window.location.replace(opts.loginUrl);
                 throw new Error('USER_NOT_REGISTERED');
             }
 
             const userData = userDoc.data() || {};
-            const statusLower = String(userData.status || '').trim().toLowerCase();
-            const roleUpper = String(userData.role || 'VHV').trim().toUpperCase();
+            const isActiveAccount = isActiveStatusNormalized(userData.status);
+            const roleUpper = normalizeUserRole(userData.role);
 
             // บล็อกบัญชี Pending / Rejected / อื่นๆ ที่ไม่ใช่ Active 100%
-            if (statusLower !== 'active') {
+            if (!isActiveAccount) {
                 window.location.replace(opts.loginUrl);
                 throw new Error('USER_NOT_ACTIVE');
             }
@@ -326,9 +659,7 @@
 
         logout: function (redirectUrl) {
             try {
-                localStorage.removeItem('orsomo_uid');
-                localStorage.removeItem('dev_mock_uid');
-                sessionStorage.removeItem('orsomo_auth_bound');
+                clearStoredUid();
                 if (typeof liff !== 'undefined' && liff.isLoggedIn && liff.isLoggedIn()) {
                     liff.logout();
                 }
@@ -1518,6 +1849,13 @@
             }
         }
     };
+
+    // ติดตั้งตัวดักจับคำสั่งบันทึกฐานข้อมูลอัตโนมัติทันทีที่โหลดโมดูล
+    try {
+        if (typeof firebase !== 'undefined' && typeof firebaseConfig !== 'undefined') {
+            Auth.ensureFirebase();
+        }
+    } catch (e) {}
 
     window.OrsomoCore = {
         Auth: Auth,
