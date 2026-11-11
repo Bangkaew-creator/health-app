@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="th">
 <head>
     <meta charset="utf-8"/>
@@ -12,8 +12,8 @@
     <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore-compat.js"></script>
-    <script src="config.js?v=20261110_v4"></script>
-    <script src="core.js?v=20261110_v4"></script>
+    <script src="config.js?v=20261111_v1"></script>
+    <script src="core.js?v=20261111_v1"></script>
 
     <style>
         body { font-family: 'Sarabun', sans-serif; background-color: #f8fafc; -webkit-tap-highlight-color: transparent; }
@@ -459,8 +459,9 @@
 
                 showToast('บันทึกผลคัดกรองซึมเศร้าเรียบร้อยแล้ว', 'success', `patient_profile.html?id=${encodeURIComponent(patientId)}`);
             } catch (error) {
-                console.error(error);
-                showToast('เกิดข้อผิดพลาดในการบันทึกข้อมูล กรุณาลองใหม่', 'error');
+                console.error('depression save error:', error);
+                const errMsg = error && (error.message || error.code || String(error));
+                showToast('เกิดข้อผิดพลาดในการบันทึกข้อมูล: ' + (errMsg || 'กรุณาลองใหม่'), 'error');
                 btn.disabled = false;
                 btn.innerHTML = '<span class="material-symbols-outlined">save</span> บันทึกข้อมูล';
             }

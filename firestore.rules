@@ -146,39 +146,34 @@ service cloud.firestore {
       return get(/databases/$(database)/documents/Auth_Sessions/$(request.auth.uid)).data;
     }
 
-    function hasValidSessionLiffUid() {
+    function getSessionLiffUid() {
       return hasSession() &&
         ('liff_uid' in getSessionData()) &&
         (getSessionData().liff_uid is string) &&
         getSessionData().liff_uid.size() >= 1 &&
-        getSessionData().liff_uid.size() <= 128;
+        getSessionData().liff_uid.size() <= 128
+          ? getSessionData().liff_uid
+          : '';
     }
 
     function currentLiffUid() {
-      return hasValidSessionLiffUid() ? getSessionData().liff_uid : '';
+      return (isAuthenticated() && exists(/databases/$(database)/documents/VHVs/$(request.auth.uid)))
+        ? request.auth.uid
+        : getSessionLiffUid();
     }
 
     function isSessionOwner(liffUid) {
       return (isAuthenticated() && request.auth.uid == liffUid) ||
-        (hasValidSessionLiffUid() && currentLiffUid() == liffUid);
-    }
-
-    function hasVhvDirectAccount() {
-      return isAuthenticated() &&
-        exists(/databases/$(database)/documents/VHVs/$(request.auth.uid));
+        (hasSession() && getSessionLiffUid() == liffUid);
     }
 
     function hasVhvAccount() {
-      return hasVhvDirectAccount() || (
-        hasValidSessionLiffUid() &&
-        exists(/databases/$(database)/documents/VHVs/$(currentLiffUid()))
-      );
+      return currentLiffUid() != '' &&
+        exists(/databases/$(database)/documents/VHVs/$(currentLiffUid()));
     }
 
     function currentVhvData() {
-      return hasVhvDirectAccount()
-        ? get(/databases/$(database)/documents/VHVs/$(request.auth.uid)).data
-        : get(/databases/$(database)/documents/VHVs/$(currentLiffUid())).data;
+      return get(/databases/$(database)/documents/VHVs/$(currentLiffUid())).data;
     }
 
     function isActiveVhvStatus(vhv) {
@@ -228,36 +223,37 @@ service cloud.firestore {
       );
     }
 
+    function isUserActiveWithRoles(allowedRoles) {
+      return hasVhvAccount() &&
+        isActiveVhvStatus(currentVhvData()) &&
+        hasVhvRole(currentVhvData(), allowedRoles);
+    }
+
     function isApprovedUser() {
-      return hasVhvAccount() &&
-        isActiveVhvStatus(currentVhvData()) &&
-        hasVhvRole(currentVhvData(), [
-          'ADMIN', 'admin', 'Admin',
-          'SUB_ADMIN', 'sub_admin', 'Sub_Admin',
-          'VHV', 'vhv', 'Vhv'
-        ]);
-    }
-
-    function isAdmin() {
-      return hasVhvAccount() &&
-        isActiveVhvStatus(currentVhvData()) &&
-        hasVhvRole(currentVhvData(), ['ADMIN', 'admin', 'Admin']);
-    }
-
-    function isSubAdmin() {
-      return hasVhvAccount() &&
-        isActiveVhvStatus(currentVhvData()) &&
-        hasVhvRole(currentVhvData(), ['SUB_ADMIN', 'sub_admin', 'Sub_Admin']);
+      return isUserActiveWithRoles([
+        'ADMIN', 'admin', 'Admin',
+        'SUB_ADMIN', 'sub_admin', 'Sub_Admin',
+        'VHV', 'vhv', 'Vhv'
+      ]);
     }
 
     function isStaff() {
-      return isAdmin() || isSubAdmin();
+      return isUserActiveWithRoles([
+        'ADMIN', 'admin', 'Admin',
+        'SUB_ADMIN', 'sub_admin', 'Sub_Admin'
+      ]);
+    }
+
+    function isAdmin() {
+      return isUserActiveWithRoles(['ADMIN', 'admin', 'Admin']);
+    }
+
+    function isSubAdmin() {
+      return isUserActiveWithRoles(['SUB_ADMIN', 'sub_admin', 'Sub_Admin']);
     }
 
     function isActiveVHV() {
-      return hasVhvAccount() &&
-        isActiveVhvStatus(currentVhvData()) &&
-        hasVhvRole(currentVhvData(), ['VHV', 'vhv', 'Vhv']);
+      return isUserActiveWithRoles(['VHV', 'vhv', 'Vhv']);
     }
 
     // ===============================================================
@@ -412,7 +408,7 @@ service cloud.firestore {
     // 1. User Accounts & Roles (VHVs, Sub-Admins, Central Admins)
     match /VHVs/{liffUid} {
       // Approved users can read individual profiles; Pending/unregistered users can check ONLY their own status.
-      allow get: if isAuthenticated() && (isApprovedUser() || isSessionOwner(liffUid));
+      allow get: if isAuthenticated() && (isSessionOwner(liffUid) || isApprovedUser());
       allow list: if isApprovedUser();
 
       allow create: if isAdmin() || (
@@ -507,30 +503,26 @@ service cloud.firestore {
     // 4. Patient Registry & Care Profiles
     match /Patients/{patientId} {
       allow read: if isApprovedUser();
-      allow create, update: if isStaff() || (isActiveVHV() && canVhvWritePatient());
+      allow create, update: if isApprovedUser() && (canVhvWritePatient() || isStaff());
       allow delete: if isStaff() || (isActiveVHV() && !isExistingDiaperApproved());
     }
 
     // 5. Patient Home, Profile, Medical Cert, Medication & Delivery Proof Images
     match /Patient_Images/{imageId} {
-      allow read: if isApprovedUser();
-      allow create, update, delete: if isStaff() || isActiveVHV();
+      allow read, write: if isApprovedUser();
     }
 
     // 6. Clinical Assessments, Vitals & Home Visits
     match /Assessments/{assessId} {
-      allow read: if isApprovedUser();
-      allow create, update, delete: if isStaff() || isActiveVHV();
+      allow read, write: if isApprovedUser();
     }
 
     match /Vitals/{vitalId} {
-      allow read: if isApprovedUser();
-      allow create, update, delete: if isStaff() || isActiveVHV();
+      allow read, write: if isApprovedUser();
     }
 
     match /Home_Visits/{visitId} {
-      allow read: if isApprovedUser();
-      allow create, update, delete: if isStaff() || isActiveVHV();
+      allow read, write: if isApprovedUser();
     }
 
     // 7. Central Inventory & Stock Transactions
