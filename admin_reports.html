@@ -13,8 +13,8 @@
     <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore-compat.js"></script>
-    <script src="config.js?v=20261111_v3"></script>
-    <script src="core.js?v=20261111_v3"></script>
+    <script src="config.js?v=20261111_v4"></script>
+    <script src="core.js?v=20261111_v4"></script>
     
     <style>
         body { font-family: 'Sarabun', sans-serif; background-color: #f4f7fa; }
@@ -281,19 +281,51 @@
                             <input type="date" id="input-delivery-date" class="w-full px-3.5 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold text-slate-800 outline-none focus:ring-2 focus:ring-blue-500">
                         </div>
 
-                        <div class="grid grid-cols-2 gap-3">
-                            <div class="bg-blue-50/60 p-3 rounded-xl border border-blue-100">
-                                <label class="block text-xs font-bold text-blue-900 mb-1">จำนวนผ้าอ้อมผู้ใหญ่</label>
-                                <div class="flex items-center gap-1.5">
-                                    <input type="number" id="input-diaper-qty" value="90" min="0" class="w-full px-3 py-1.5 bg-white border border-slate-200 rounded-lg text-center font-bold text-blue-700 text-sm outline-none focus:ring-2 focus:ring-blue-500">
-                                    <span class="text-xs text-slate-500 font-medium">ชิ้น</span>
+                        <!-- เกณฑ์กรณีขออย่างใดอย่างหนึ่ง -->
+                        <div class="space-y-1">
+                            <label class="block text-xs font-bold text-slate-700">เกณฑ์จำนวนชิ้น: <span class="text-blue-700 font-semibold">กรณีขออย่างใดอย่างหนึ่ง</span></label>
+                            <div class="grid grid-cols-2 gap-3">
+                                <div class="bg-blue-50/60 p-3 rounded-xl border border-blue-100">
+                                    <label class="block text-[11px] font-bold text-blue-900 mb-1">ผ้าอ้อม (ขอเฉพาะผ้าอ้อม)</label>
+                                    <div class="flex items-center gap-1.5">
+                                        <input type="number" id="input-diaper-qty" value="90" min="0" class="w-full px-3 py-1.5 bg-white border border-slate-200 rounded-lg text-center font-bold text-blue-700 text-sm outline-none focus:ring-2 focus:ring-blue-500">
+                                        <span class="text-xs text-slate-500 font-medium">ชิ้น</span>
+                                    </div>
+                                    <p class="text-[10px] text-blue-600 mt-1 font-medium text-center">เกณฑ์ปกติ 3 ชิ้น/วัน</p>
+                                </div>
+                                <div class="bg-emerald-50/60 p-3 rounded-xl border border-emerald-100">
+                                    <label class="block text-[11px] font-bold text-emerald-900 mb-1">แผ่นรองซับ (ขอเฉพาะแผ่นรอง)</label>
+                                    <div class="flex items-center gap-1.5">
+                                        <input type="number" id="input-underpad-qty" value="90" min="0" class="w-full px-3 py-1.5 bg-white border border-slate-200 rounded-lg text-center font-bold text-emerald-700 text-sm outline-none focus:ring-2 focus:ring-emerald-500">
+                                        <span class="text-xs text-slate-500 font-medium">ชิ้น</span>
+                                    </div>
+                                    <p class="text-[10px] text-emerald-600 mt-1 font-medium text-center">เกณฑ์ปกติ 6 ชิ้น/วัน</p>
                                 </div>
                             </div>
-                            <div class="bg-emerald-50/60 p-3 rounded-xl border border-emerald-100">
-                                <label class="block text-xs font-bold text-emerald-900 mb-1">จำนวนแผ่นรองซับ</label>
-                                <div class="flex items-center gap-1.5">
-                                    <input type="number" id="input-underpad-qty" value="90" min="0" class="w-full px-3 py-1.5 bg-white border border-slate-200 rounded-lg text-center font-bold text-emerald-700 text-sm outline-none focus:ring-2 focus:ring-emerald-500">
-                                    <span class="text-xs text-slate-500 font-medium">ชิ้น</span>
+                        </div>
+
+                        <!-- เกณฑ์กรณีขอทั้ง 2 อย่าง -->
+                        <div class="space-y-1 p-3 rounded-xl bg-amber-50/60 border border-amber-200">
+                            <div class="flex items-center justify-between">
+                                <label class="block text-xs font-bold text-amber-900">เกณฑ์จำนวนชิ้น: <span class="text-navy font-black">กรณีขอทั้ง 2 อย่าง</span></label>
+                                <span class="text-[10px] bg-amber-200/80 text-amber-950 px-2 py-0.5 rounded-full font-bold">ผ้าอ้อม 1 + แผ่นรอง 3 ชิ้น/วัน</span>
+                            </div>
+                            <div class="grid grid-cols-2 gap-3 mt-1.5">
+                                <div class="bg-white p-2.5 rounded-xl border border-amber-200">
+                                    <label class="block text-[11px] font-bold text-slate-700 mb-1">ผ้าอ้อม (ขอ 2 อย่าง)</label>
+                                    <div class="flex items-center gap-1.5">
+                                        <input type="number" id="input-dual-diaper-qty" value="90" min="0" class="w-full px-3 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-center font-bold text-blue-700 text-sm outline-none focus:ring-2 focus:ring-amber-500">
+                                        <span class="text-xs text-slate-500 font-medium">ชิ้น</span>
+                                    </div>
+                                    <p class="text-[10px] text-slate-500 mt-1 text-center font-medium">1 ชิ้น/วัน (90 ชิ้น/ไตรมาส)</p>
+                                </div>
+                                <div class="bg-white p-2.5 rounded-xl border border-amber-200">
+                                    <label class="block text-[11px] font-bold text-slate-700 mb-1">แผ่นรองซับ (ขอ 2 อย่าง)</label>
+                                    <div class="flex items-center gap-1.5">
+                                        <input type="number" id="input-dual-underpad-qty" value="270" min="0" class="w-full px-3 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-center font-bold text-emerald-700 text-sm outline-none focus:ring-2 focus:ring-amber-500">
+                                        <span class="text-xs text-slate-500 font-medium">ชิ้น</span>
+                                    </div>
+                                    <p class="text-[10px] text-slate-500 mt-1 text-center font-medium">3 ชิ้น/วัน (270 ชิ้น/ไตรมาส)</p>
                                 </div>
                             </div>
                         </div>
@@ -302,7 +334,7 @@
                             <p class="font-bold text-slate-800 flex items-center gap-1"><span class="material-symbols-outlined text-[16px] text-amber-500">info</span> กติกาการจัดสรรตามความต้องการ:</p>
                             <p>• ผู้ขอผ้าอ้อมอย่างเดียว: ได้รับผ้าอ้อมตามจำนวนที่ตั้ง (แผ่นรอง 0)</p>
                             <p>• ผู้ขอแผ่นรองซับอย่างเดียว: ได้รับแผ่นรองซับตามจำนวนที่ตั้ง (ผ้าอ้อม 0)</p>
-                            <p>• <strong class="text-blue-800">ผู้ขอทั้ง 2 อย่าง:</strong> จะได้รับทั้ง 2 อย่าง <strong class="text-navy">อย่างละเท่ากับจำนวนที่กำหนดไว้ด้านบน</strong></p>
+                            <p>• <strong class="text-blue-800">ผู้ขอทั้ง 2 อย่าง:</strong> ได้รับผ้าอ้อมและแผ่นรองซับ <strong class="text-navy">ตามจำนวนที่ระบุในช่อง 'กรณีขอทั้ง 2 อย่าง'</strong> (เกณฑ์: ผ้าอ้อม 1 ชิ้น/วัน และแผ่นรองซับ 3 ชิ้น/วัน)</p>
                         </div>
                     </div>
 
@@ -321,19 +353,47 @@
                             <input type="date" id="edit-delivery-date" class="w-full px-3.5 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold text-slate-800 outline-none focus:ring-2 focus:ring-blue-500">
                         </div>
 
-                        <div class="grid grid-cols-2 gap-3">
-                            <div class="bg-blue-50/60 p-3 rounded-xl border border-blue-100">
-                                <label class="block text-xs font-bold text-blue-900 mb-1">แก้ไขจำนวนผ้าอ้อม</label>
-                                <div class="flex items-center gap-1.5">
-                                    <input type="number" id="edit-diaper-qty" value="90" min="0" class="w-full px-3 py-1.5 bg-white border border-slate-200 rounded-lg text-center font-bold text-blue-700 text-sm outline-none focus:ring-2 focus:ring-blue-500">
-                                    <span class="text-xs text-slate-500 font-medium">ชิ้น</span>
+                        <!-- แก้ไข: กรณีขออย่างใดอย่างหนึ่ง -->
+                        <div class="space-y-1">
+                            <label class="block text-xs font-bold text-slate-700">แก้ไขจำนวน: กรณีขออย่างใดอย่างหนึ่ง</label>
+                            <div class="grid grid-cols-2 gap-3">
+                                <div class="bg-blue-50/60 p-3 rounded-xl border border-blue-100">
+                                    <label class="block text-[11px] font-bold text-blue-900 mb-1">ผ้าอ้อม (ขอเฉพาะผ้าอ้อม)</label>
+                                    <div class="flex items-center gap-1.5">
+                                        <input type="number" id="edit-diaper-qty" value="90" min="0" class="w-full px-3 py-1.5 bg-white border border-slate-200 rounded-lg text-center font-bold text-blue-700 text-sm outline-none focus:ring-2 focus:ring-blue-500">
+                                        <span class="text-xs text-slate-500 font-medium">ชิ้น</span>
+                                    </div>
+                                </div>
+                                <div class="bg-emerald-50/60 p-3 rounded-xl border border-emerald-100">
+                                    <label class="block text-[11px] font-bold text-emerald-900 mb-1">แผ่นรองซับ (ขอเฉพาะแผ่นรอง)</label>
+                                    <div class="flex items-center gap-1.5">
+                                        <input type="number" id="edit-underpad-qty" value="90" min="0" class="w-full px-3 py-1.5 bg-white border border-slate-200 rounded-lg text-center font-bold text-emerald-700 text-sm outline-none focus:ring-2 focus:ring-emerald-500">
+                                        <span class="text-xs text-slate-500 font-medium">ชิ้น</span>
+                                    </div>
                                 </div>
                             </div>
-                            <div class="bg-emerald-50/60 p-3 rounded-xl border border-emerald-100">
-                                <label class="block text-xs font-bold text-emerald-900 mb-1">แก้ไขจำนวนแผ่นรองซับ</label>
-                                <div class="flex items-center gap-1.5">
-                                    <input type="number" id="edit-underpad-qty" value="90" min="0" class="w-full px-3 py-1.5 bg-white border border-slate-200 rounded-lg text-center font-bold text-emerald-700 text-sm outline-none focus:ring-2 focus:ring-emerald-500">
-                                    <span class="text-xs text-slate-500 font-medium">ชิ้น</span>
+                        </div>
+
+                        <!-- แก้ไข: กรณีขอทั้ง 2 อย่าง -->
+                        <div class="space-y-1 p-3 rounded-xl bg-amber-50/60 border border-amber-200">
+                            <div class="flex items-center justify-between">
+                                <label class="block text-xs font-bold text-amber-900">แก้ไขจำนวน: <span class="text-navy font-bold">กรณีขอทั้ง 2 อย่าง</span></label>
+                                <span class="text-[10px] bg-amber-200/80 text-amber-950 px-2 py-0.5 rounded-full font-bold">ผ้าอ้อม 1 + แผ่นรอง 3 ชิ้น/วัน</span>
+                            </div>
+                            <div class="grid grid-cols-2 gap-3 mt-1.5">
+                                <div class="bg-white p-2.5 rounded-xl border border-amber-200">
+                                    <label class="block text-[11px] font-bold text-slate-700 mb-1">ผ้าอ้อม (ขอ 2 อย่าง)</label>
+                                    <div class="flex items-center gap-1.5">
+                                        <input type="number" id="edit-dual-diaper-qty" value="90" min="0" class="w-full px-3 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-center font-bold text-blue-700 text-sm outline-none focus:ring-2 focus:ring-amber-500">
+                                        <span class="text-xs text-slate-500 font-medium">ชิ้น</span>
+                                    </div>
+                                </div>
+                                <div class="bg-white p-2.5 rounded-xl border border-amber-200">
+                                    <label class="block text-[11px] font-bold text-slate-700 mb-1">แผ่นรองซับ (ขอ 2 อย่าง)</label>
+                                    <div class="flex items-center gap-1.5">
+                                        <input type="number" id="edit-dual-underpad-qty" value="270" min="0" class="w-full px-3 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-center font-bold text-emerald-700 text-sm outline-none focus:ring-2 focus:ring-amber-500">
+                                        <span class="text-xs text-slate-500 font-medium">ชิ้น</span>
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -1313,11 +1373,17 @@
                         d.alloc_history[round].signed_doc_img = batchDocImageBase64;
                     }
 
+                    const cleanD = (typeof OrsomoCore !== 'undefined' && OrsomoCore.DiaperAdapter)
+                        ? OrsomoCore.DiaperAdapter.normalizeForSave(d)
+                        : d;
+
                     const docRef = db.collection('Patients').doc(String(patientId));
-                    batch.update(docRef, { diaper: JSON.stringify(d) });
+                    await docRef.update({
+                        diaper: cleanD,
+                        updated_at: firebase.firestore.FieldValue.serverTimestamp()
+                    });
                 }
 
-                await batch.commit();
                 showToast(`บันทึกยืนยันการรับมอบย้อนหลัง ${checkedBoxes.length} รายเรียบร้อยแล้ว!`);
                 closeBatchDeliveryModal();
                 await loadReportData();
@@ -1437,15 +1503,21 @@
             const dateInp = document.getElementById('edit-delivery-date');
             const dQtyInp = document.getElementById('edit-diaper-qty');
             const pQtyInp = document.getElementById('edit-underpad-qty');
+            const dualDQtyInp = document.getElementById('edit-dual-diaper-qty');
+            const dualPQtyInp = document.getElementById('edit-dual-underpad-qty');
 
             if (foundData) {
                 if (dateInp) dateInp.value = foundData.delivered_at || new Date().toISOString().split('T')[0];
                 if (dQtyInp) dQtyInp.value = foundData.diaper_qty !== undefined ? foundData.diaper_qty : 90;
                 if (pQtyInp) pQtyInp.value = foundData.underpad_qty !== undefined ? foundData.underpad_qty : 90;
+                if (dualDQtyInp) dualDQtyInp.value = foundData.diaper_qty !== undefined ? foundData.diaper_qty : 90;
+                if (dualPQtyInp) dualPQtyInp.value = foundData.underpad_qty !== undefined ? foundData.underpad_qty : 270;
             } else {
                 if (dateInp) dateInp.value = new Date().toISOString().split('T')[0];
                 if (dQtyInp) dQtyInp.value = 90;
                 if (pQtyInp) pQtyInp.value = 90;
+                if (dualDQtyInp) dualDQtyInp.value = 90;
+                if (dualPQtyInp) dualPQtyInp.value = 270;
             }
         }
 
@@ -1507,6 +1579,8 @@
             const delivDate = document.getElementById('input-delivery-date').value || new Date().toISOString().split('T')[0];
             const targetDiaperQty = parseInt(document.getElementById('input-diaper-qty').value) || 0;
             const targetUnderpadQty = parseInt(document.getElementById('input-underpad-qty').value) || 0;
+            const targetDualDiaperQty = parseInt(document.getElementById('input-dual-diaper-qty').value) || 0;
+            const targetDualUnderpadQty = parseInt(document.getElementById('input-dual-underpad-qty').value) || 0;
 
             if (!round || !fy) {
                 return showToast('กรุณาระบุรอบที่ และ ปีงบประมาณ ให้ครบถ้วน', 'error');
@@ -1524,73 +1598,85 @@
                 if (resolved && resolved.uid) {
                     await OrsomoCore.Auth.bindAuthSession(db, resolved.uid, true);
                 }
-                let batch = db.batch();
-                let batchCount = 0;
+
                 let successCount = 0;
+                let errorMessages = [];
                 const nowISO = new Date().toISOString();
 
-                for (const rawData of selectedList) {
-                    let diaperObj = rawData.detail || {};
-
-                    diaperObj.committee_status = 'จัดสรรแล้ว';
-                    diaperObj.fy = fy;
-                    diaperObj.round = round;
-                    diaperObj.alloc_days = '90';
-
-                    if (!diaperObj.allocations) diaperObj.allocations = [];
-                    if (!diaperObj.allocations.includes(allocStr)) diaperObj.allocations.push(allocStr);
-
-                    if (!diaperObj.alloc_history) diaperObj.alloc_history = {};
-
-                    const hasDiaper = (diaperObj.req_diaper === true || diaperObj.req_diaper === 'true' || (diaperObj.size && diaperObj.size !== '-' && diaperObj.size.trim() !== '') || (parseInt(diaperObj.approved_diaper) > 0));
-                    const hasUnderpad = (diaperObj.req_underpad === true || diaperObj.req_underpad === 'true' || (parseInt(diaperObj.approved_underpad) > 0));
-
-                    let dQty = 0;
-                    let pQty = 0;
-                    if (hasDiaper && hasUnderpad) {
-                        dQty = targetDiaperQty;
-                        pQty = targetUnderpadQty;
-                    } else if (hasDiaper) {
-                        dQty = targetDiaperQty;
-                        pQty = 0;
-                    } else if (hasUnderpad) {
-                        dQty = 0;
-                        pQty = targetUnderpadQty;
-                    } else {
-                        dQty = targetDiaperQty;
-                        pQty = targetUnderpadQty;
+                // อัปเดตรายชื่อผู้ป่วยแบบแยกทีละรายการ เพื่อไม่ให้ชนเพดาน 20-lookup รวมของ Firestore rules
+                for (let i = 0; i < selectedList.length; i++) {
+                    const rawData = selectedList[i];
+                    if (btn) {
+                        btn.innerHTML = `<span class="material-symbols-outlined text-[16px] animate-spin">sync</span> กำลังบันทึก (${i + 1}/${selectedList.length})...`;
                     }
 
-                    diaperObj.alloc_history[allocStr] = {
-                        diaper_qty: dQty,
-                        underpad_qty: pQty,
-                        size: diaperObj.size || 'L',
-                        delivered_at: delivDate,
-                        recorded_at: nowISO
-                    };
+                    try {
+                        let diaperObj = rawData.detail || {};
 
-                    const ref = db.collection('Patients').doc(String(rawData.id));
-                    batch.update(ref, { diaper: JSON.stringify(diaperObj) });
-                    batchCount++;
-                    successCount++;
+                        diaperObj.committee_status = 'จัดสรรแล้ว';
+                        diaperObj.fy = fy;
+                        diaperObj.round = round;
+                        diaperObj.alloc_days = '90';
 
-                    if (batchCount === 450) {
-                        await batch.commit();
-                        batch = db.batch();
-                        batchCount = 0;
+                        if (!diaperObj.allocations) diaperObj.allocations = [];
+                        if (!diaperObj.allocations.includes(allocStr)) diaperObj.allocations.push(allocStr);
+
+                        if (!diaperObj.alloc_history) diaperObj.alloc_history = {};
+
+                        const hasDiaper = (diaperObj.req_diaper === true || diaperObj.req_diaper === 'true' || (diaperObj.size && diaperObj.size !== '-' && diaperObj.size.trim() !== '') || (parseInt(diaperObj.approved_diaper) > 0));
+                        const hasUnderpad = (diaperObj.req_underpad === true || diaperObj.req_underpad === 'true' || (parseInt(diaperObj.approved_underpad) > 0));
+
+                        let dQty = 0;
+                        let pQty = 0;
+                        if (hasDiaper && hasUnderpad) {
+                            dQty = targetDualDiaperQty;
+                            pQty = targetDualUnderpadQty;
+                        } else if (hasDiaper) {
+                            dQty = targetDiaperQty;
+                            pQty = 0;
+                        } else if (hasUnderpad) {
+                            dQty = 0;
+                            pQty = targetUnderpadQty;
+                        } else {
+                            dQty = targetDualDiaperQty || targetDiaperQty;
+                            pQty = targetDualUnderpadQty || targetUnderpadQty;
+                        }
+
+                        diaperObj.alloc_history[allocStr] = {
+                            diaper_qty: dQty,
+                            underpad_qty: pQty,
+                            size: diaperObj.size || 'L',
+                            delivered_at: delivDate,
+                            recorded_at: nowISO
+                        };
+
+                        const cleanDiaper = (typeof OrsomoCore !== 'undefined' && OrsomoCore.DiaperAdapter)
+                            ? OrsomoCore.DiaperAdapter.normalizeForSave(diaperObj)
+                            : diaperObj;
+
+                        const ref = db.collection('Patients').doc(String(rawData.id));
+                        await ref.update({
+                            diaper: cleanDiaper,
+                            updated_at: firebase.firestore.FieldValue.serverTimestamp()
+                        });
+                        successCount++;
+                    } catch (itemErr) {
+                        console.error("confirmAddRoundDelivery item error for", rawData.id, itemErr);
+                        errorMessages.push(itemErr && itemErr.message ? itemErr.message : String(itemErr));
                     }
                 }
 
-                if (batchCount > 0) {
-                    await batch.commit();
+                if (successCount > 0) {
+                    showToast(`บันทึกรอบส่งมอบ ${allocStr} เรียบร้อยแล้ว (${successCount}/${selectedList.length} คน)`, 'success');
+                    closeCommitteeModal();
+                    selectedPatientIds.clear();
+                    document.getElementById('check-all').checked = false;
+                    updateSelectCount();
+                    await loadReportData();
+                } else {
+                    const firstErr = errorMessages[0] || 'ไม่สามารถบันทึกข้อมูลได้';
+                    showToast("บันทึกล้มเหลว: " + firstErr, "error");
                 }
-
-                showToast(`บันทึกรอบส่งมอบ ${allocStr} เรียบร้อยแล้ว (${successCount} คน)`, 'success');
-                closeCommitteeModal();
-                selectedPatientIds.clear();
-                document.getElementById('check-all').checked = false;
-                updateSelectCount();
-                await loadReportData();
 
             } catch (err) {
                 console.error("confirmAddRoundDelivery error:", err);
@@ -1619,6 +1705,8 @@
             const delivDate = document.getElementById('edit-delivery-date').value;
             const targetDiaperQty = parseInt(document.getElementById('edit-diaper-qty').value) || 0;
             const targetUnderpadQty = parseInt(document.getElementById('edit-underpad-qty').value) || 0;
+            const targetDualDiaperQty = parseInt(document.getElementById('edit-dual-diaper-qty').value) || 0;
+            const targetDualUnderpadQty = parseInt(document.getElementById('edit-dual-underpad-qty').value) || 0;
 
             const btn = document.getElementById('btn-confirm-edit-round');
             if (btn) {
@@ -1631,69 +1719,80 @@
                 if (resolved && resolved.uid) {
                     await OrsomoCore.Auth.bindAuthSession(db, resolved.uid, true);
                 }
-                let batch = db.batch();
-                let batchCount = 0;
+
                 let successCount = 0;
+                let errorMessages = [];
                 const nowISO = new Date().toISOString();
 
-                for (const rawData of selectedList) {
-                    let diaperObj = rawData.detail || {};
-
-                    if (!diaperObj.allocations) diaperObj.allocations = [];
-                    if (!diaperObj.allocations.includes(targetRound)) {
-                        diaperObj.allocations.push(targetRound);
-                    }
-                    if (!diaperObj.alloc_history) diaperObj.alloc_history = {};
-
-                    const hasDiaper = (diaperObj.req_diaper === true || diaperObj.req_diaper === 'true' || (diaperObj.size && diaperObj.size !== '-' && diaperObj.size.trim() !== '') || (parseInt(diaperObj.approved_diaper) > 0));
-                    const hasUnderpad = (diaperObj.req_underpad === true || diaperObj.req_underpad === 'true' || (parseInt(diaperObj.approved_underpad) > 0));
-
-                    let dQty = 0;
-                    let pQty = 0;
-                    if (hasDiaper && hasUnderpad) {
-                        dQty = targetDiaperQty;
-                        pQty = targetUnderpadQty;
-                    } else if (hasDiaper) {
-                        dQty = targetDiaperQty;
-                        pQty = 0;
-                    } else if (hasUnderpad) {
-                        dQty = 0;
-                        pQty = targetUnderpadQty;
-                    } else {
-                        dQty = targetDiaperQty;
-                        pQty = targetUnderpadQty;
+                for (let i = 0; i < selectedList.length; i++) {
+                    const rawData = selectedList[i];
+                    if (btn) {
+                        btn.innerHTML = `<span class="material-symbols-outlined text-[16px] animate-spin">sync</span> กำลังแก้ไข (${i + 1}/${selectedList.length})...`;
                     }
 
-                    diaperObj.alloc_history[targetRound] = {
-                        diaper_qty: dQty,
-                        underpad_qty: pQty,
-                        size: diaperObj.size || 'L',
-                        delivered_at: delivDate,
-                        recorded_at: nowISO
-                    };
+                    try {
+                        let diaperObj = rawData.detail || {};
 
-                    const ref = db.collection('Patients').doc(String(rawData.id));
-                    batch.update(ref, { diaper: JSON.stringify(diaperObj) });
-                    batchCount++;
-                    successCount++;
+                        if (!diaperObj.allocations) diaperObj.allocations = [];
+                        if (!diaperObj.allocations.includes(targetRound)) {
+                            diaperObj.allocations.push(targetRound);
+                        }
+                        if (!diaperObj.alloc_history) diaperObj.alloc_history = {};
 
-                    if (batchCount === 450) {
-                        await batch.commit();
-                        batch = db.batch();
-                        batchCount = 0;
+                        const hasDiaper = (diaperObj.req_diaper === true || diaperObj.req_diaper === 'true' || (diaperObj.size && diaperObj.size !== '-' && diaperObj.size.trim() !== '') || (parseInt(diaperObj.approved_diaper) > 0));
+                        const hasUnderpad = (diaperObj.req_underpad === true || diaperObj.req_underpad === 'true' || (parseInt(diaperObj.approved_underpad) > 0));
+
+                        let dQty = 0;
+                        let pQty = 0;
+                        if (hasDiaper && hasUnderpad) {
+                            dQty = targetDualDiaperQty;
+                            pQty = targetDualUnderpadQty;
+                        } else if (hasDiaper) {
+                            dQty = targetDiaperQty;
+                            pQty = 0;
+                        } else if (hasUnderpad) {
+                            dQty = 0;
+                            pQty = targetUnderpadQty;
+                        } else {
+                            dQty = targetDualDiaperQty || targetDiaperQty;
+                            pQty = targetDualUnderpadQty || targetUnderpadQty;
+                        }
+
+                        diaperObj.alloc_history[targetRound] = {
+                            diaper_qty: dQty,
+                            underpad_qty: pQty,
+                            size: diaperObj.size || 'L',
+                            delivered_at: delivDate,
+                            recorded_at: nowISO
+                        };
+
+                        const cleanDiaper = (typeof OrsomoCore !== 'undefined' && OrsomoCore.DiaperAdapter)
+                            ? OrsomoCore.DiaperAdapter.normalizeForSave(diaperObj)
+                            : diaperObj;
+
+                        const ref = db.collection('Patients').doc(String(rawData.id));
+                        await ref.update({
+                            diaper: cleanDiaper,
+                            updated_at: firebase.firestore.FieldValue.serverTimestamp()
+                        });
+                        successCount++;
+                    } catch (itemErr) {
+                        console.error("confirmEditRoundDelivery item error for", rawData.id, itemErr);
+                        errorMessages.push(itemErr && itemErr.message ? itemErr.message : String(itemErr));
                     }
                 }
 
-                if (batchCount > 0) {
-                    await batch.commit();
+                if (successCount > 0) {
+                    showToast(`แก้ไขข้อมูลรอบ ${targetRound} เรียบร้อยแล้ว (${successCount}/${selectedList.length} คน)`, 'success');
+                    closeCommitteeModal();
+                    selectedPatientIds.clear();
+                    document.getElementById('check-all').checked = false;
+                    updateSelectCount();
+                    await loadReportData();
+                } else {
+                    const firstErr = errorMessages[0] || 'ไม่สามารถแก้ไขข้อมูลได้';
+                    showToast("แก้ไขล้มเหลว: " + firstErr, "error");
                 }
-
-                showToast(`แก้ไขข้อมูลรอบ ${targetRound} เรียบร้อยแล้ว (${successCount} คน)`, 'success');
-                closeCommitteeModal();
-                selectedPatientIds.clear();
-                document.getElementById('check-all').checked = false;
-                updateSelectCount();
-                await loadReportData();
 
             } catch (err) {
                 console.error("confirmEditRoundDelivery error:", err);
@@ -1729,56 +1828,67 @@
                 if (resolved && resolved.uid) {
                     await OrsomoCore.Auth.bindAuthSession(db, resolved.uid, true);
                 }
-                let batch = db.batch();
-                let batchCount = 0;
+
                 let successCount = 0;
+                let errorMessages = [];
 
-                for (const rawData of selectedList) {
-                    let diaperObj = rawData.detail || {};
-
-                    if (diaperObj.allocations && Array.isArray(diaperObj.allocations)) {
-                        diaperObj.allocations = diaperObj.allocations.filter(r => r !== targetRound);
-                    }
-                    if (diaperObj.alloc_history && diaperObj.alloc_history[targetRound]) {
-                        delete diaperObj.alloc_history[targetRound];
+                for (let i = 0; i < selectedList.length; i++) {
+                    const rawData = selectedList[i];
+                    if (btn) {
+                        btn.innerHTML = `<span class="material-symbols-outlined text-[16px] animate-spin">sync</span> กำลังตัดลด (${i + 1}/${selectedList.length})...`;
                     }
 
-                    // Sync committee status and round pointers
-                    if (!diaperObj.allocations || diaperObj.allocations.length === 0) {
-                        diaperObj.committee_status = 'รออนุมัติ';
-                        diaperObj.round = '';
-                        diaperObj.fy = '';
-                    } else {
-                        const latestRemaining = diaperObj.allocations[diaperObj.allocations.length - 1];
-                        const parts = latestRemaining.split('/');
-                        if (parts.length === 2) {
-                            diaperObj.round = parts[0];
-                            diaperObj.fy = parts[1];
+                    try {
+                        let diaperObj = rawData.detail || {};
+
+                        if (diaperObj.allocations && Array.isArray(diaperObj.allocations)) {
+                            diaperObj.allocations = diaperObj.allocations.filter(r => r !== targetRound);
                         }
-                    }
+                        if (diaperObj.alloc_history && diaperObj.alloc_history[targetRound]) {
+                            delete diaperObj.alloc_history[targetRound];
+                        }
 
-                    const ref = db.collection('Patients').doc(String(rawData.id));
-                    batch.update(ref, { diaper: JSON.stringify(diaperObj) });
-                    batchCount++;
-                    successCount++;
+                        // Sync committee status and round pointers
+                        if (!diaperObj.allocations || diaperObj.allocations.length === 0) {
+                            diaperObj.committee_status = 'รออนุมัติ';
+                            diaperObj.round = '';
+                            diaperObj.fy = '';
+                        } else {
+                            const latestRemaining = diaperObj.allocations[diaperObj.allocations.length - 1];
+                            const parts = latestRemaining.split('/');
+                            if (parts.length === 2) {
+                                diaperObj.round = parts[0];
+                                diaperObj.fy = parts[1];
+                            }
+                        }
 
-                    if (batchCount === 450) {
-                        await batch.commit();
-                        batch = db.batch();
-                        batchCount = 0;
+                        const cleanDiaper = (typeof OrsomoCore !== 'undefined' && OrsomoCore.DiaperAdapter)
+                            ? OrsomoCore.DiaperAdapter.normalizeForSave(diaperObj)
+                            : diaperObj;
+
+                        const ref = db.collection('Patients').doc(String(rawData.id));
+                        await ref.update({
+                            diaper: cleanDiaper,
+                            updated_at: firebase.firestore.FieldValue.serverTimestamp()
+                        });
+                        successCount++;
+                    } catch (itemErr) {
+                        console.error("confirmDeductRoundDelivery item error for", rawData.id, itemErr);
+                        errorMessages.push(itemErr && itemErr.message ? itemErr.message : String(itemErr));
                     }
                 }
 
-                if (batchCount > 0) {
-                    await batch.commit();
+                if (successCount > 0) {
+                    showToast(`ตัดลดรอบ ${targetRound} ออกจากประวัติเรียบร้อยแล้ว (${successCount}/${selectedList.length} คน)`, 'success');
+                    closeCommitteeModal();
+                    selectedPatientIds.clear();
+                    document.getElementById('check-all').checked = false;
+                    updateSelectCount();
+                    await loadReportData();
+                } else {
+                    const firstErr = errorMessages[0] || 'ไม่สามารถตัดลดรอบได้';
+                    showToast("ตัดลดรอบล้มเหลว: " + firstErr, "error");
                 }
-
-                showToast(`ตัดลดรอบ ${targetRound} ออกจากประวัติเรียบร้อยแล้ว (${successCount} คน)`, 'success');
-                closeCommitteeModal();
-                selectedPatientIds.clear();
-                document.getElementById('check-all').checked = false;
-                updateSelectCount();
-                await loadReportData();
 
             } catch (err) {
                 console.error("confirmDeductRoundDelivery error:", err);

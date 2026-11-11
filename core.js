@@ -310,53 +310,61 @@
                 encodeURIComponent(firebaseConfig.projectId) +
                 '/databases/(default)/documents:commit';
 
-            let res = await fetch(commitUrl, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': 'Bearer ' + idToken
-                },
-                body: JSON.stringify({ writes: writes })
-            });
+            // ส่งคำสั่งแบบย่อยทีละรายการ (Single Write) เพื่อป้องกันการชนเพดาน 20 document lookups รวมของกฎ Firestore rules
+            for (let i = 0; i < writes.length; i++) {
+                const singleWrite = writes[i];
+                let res = await fetch(commitUrl, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': 'Bearer ' + idToken
+                    },
+                    body: JSON.stringify({ writes: [singleWrite] })
+                });
 
-            if (!res.ok && (res.status === 401 || res.status === 403)) {
-                // หาก Token เดิมมีปัญหา ให้ขอ Anonymous Token ใหม่ผ่าน REST ทันทีแล้วผูก Auth_Sessions ใหม่
-                const freshAnon = await Auth.restSignUpAnonymous();
-                const targetLiffUid = getStoredUid();
-                if (freshAnon && freshAnon.uid && targetLiffUid) {
-                    const sessionUrl = 'https://firestore.googleapis.com/v1/projects/' +
-                        encodeURIComponent(firebaseConfig.projectId) +
-                        '/databases/(default)/documents/Auth_Sessions/' +
-                        encodeURIComponent(freshAnon.uid);
-                    await fetch(sessionUrl, {
-                        method: 'PATCH',
-                        headers: {
-                            'Content-Type': 'application/json',
-                            'Authorization': 'Bearer ' + _cachedIdToken
-                        },
-                        body: JSON.stringify({
-                            fields: {
-                                liff_uid: { stringValue: targetLiffUid },
-                                updated_at: { timestampValue: new Date().toISOString() }
-                            }
-                        })
-                    });
-                    res = await fetch(commitUrl, {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                            'Authorization': 'Bearer ' + _cachedIdToken
-                        },
-                        body: JSON.stringify({ writes: writes })
-                    });
+                if (!res.ok && (res.status === 401 || res.status === 403)) {
+                    // หาก Token เดิมมีปัญหา ให้ขอ Anonymous Token ใหม่ผ่าน REST ทันทีแล้วผูก Auth_Sessions ใหม่
+                    const freshAnon = await Auth.restSignUpAnonymous();
+                    const targetLiffUid = getStoredUid();
+                    if (freshAnon && freshAnon.uid && targetLiffUid) {
+                        const sessionUrl = 'https://firestore.googleapis.com/v1/projects/' +
+                            encodeURIComponent(firebaseConfig.projectId) +
+                            '/databases/(default)/documents/Auth_Sessions/' +
+                            encodeURIComponent(freshAnon.uid);
+                        await fetch(sessionUrl, {
+                            method: 'PATCH',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'Authorization': 'Bearer ' + _cachedIdToken
+                            },
+                            body: JSON.stringify({
+                                fields: {
+                                    liff_uid: { stringValue: targetLiffUid },
+                                    updated_at: { timestampValue: new Date().toISOString() }
+                                }
+                            })
+                        });
+                        idToken = _cachedIdToken;
+                        res = await fetch(commitUrl, {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'Authorization': 'Bearer ' + idToken
+                            },
+                            body: JSON.stringify({ writes: [singleWrite] })
+                        });
+                    }
+                }
+
+                if (!res.ok) {
+                    const errText = await res.text().catch(function () { return ''; });
+                    if (res.status === 429 || errText.indexOf('RESOURCE_EXHAUSTED') !== -1 || errText.indexOf('Quota exceeded') !== -1) {
+                        throw new Error('โควตาการใช้งานรายวันของ Firebase (ฟรี) เต็มแล้ว ระบบจะรีเซ็ตอัตโนมัติเวลา 15:00 น.');
+                    }
+                    throw new Error('FirebaseError: Missing or insufficient permissions (' + res.status + ' ' + errText.substring(0, 120) + ')');
                 }
             }
-
-            if (!res.ok) {
-                const errText = await res.text().catch(function () { return ''; });
-                throw new Error('FirebaseError: Missing or insufficient permissions (' + res.status + ' ' + errText.substring(0, 120) + ')');
-            }
-            return await res.json().catch(function () { return {}; });
+            return {};
         },
 
         installFirestoreWriteInterceptor: function (db) {
@@ -572,16 +580,22 @@
                         return await origBatchCommit.call(batchInstance);
                     } catch (err) {
                         if (isPermissionDeniedError(err) && recordedOps.length > 0 && targetDb) {
-                            console.warn('Batch commit permission-denied. Re-binding session and replaying batch...');
+                            console.warn('Batch commit permission-denied. Retrying operations individually to bypass multi-document batch lookup limits...');
                             try {
                                 await Auth.repairSession(targetDb);
-                                const retryBatch = targetDb.batch();
-                                recordedOps.forEach(function (op) {
-                                    if (op.type === 'set') origBatchSet.apply(retryBatch, op.args);
-                                    else if (op.type === 'update') origBatchUpdate.apply(retryBatch, op.args);
-                                    else if (op.type === 'delete') origBatchDelete.apply(retryBatch, op.args);
-                                });
-                                return await origBatchCommit.call(retryBatch);
+                                // แยกย่อยรันทีละรายการ (Individual Write) เพื่อไม่ให้ชนข้อจำกัด 20-lookup ของ Firestore สำหรับ Batch
+                                for (const op of recordedOps) {
+                                    const cleanPath = String(op.docPath || '').replace(/^\/+/, '');
+                                    const docRef = targetDb.doc(cleanPath);
+                                    if (op.type === 'set') {
+                                        await docRef.set(op.data, op.options);
+                                    } else if (op.type === 'update') {
+                                        await docRef.update(op.data);
+                                    } else if (op.type === 'delete') {
+                                        await docRef.delete();
+                                    }
+                                }
+                                return;
                             } catch (retryErr) {
                                 if (isPermissionDeniedError(retryErr)) {
                                     await Auth.restCommitWrites(recordedOps);

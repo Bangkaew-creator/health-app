@@ -157,14 +157,20 @@ service cloud.firestore {
     }
 
     function currentLiffUid() {
-      return (isAuthenticated() && exists(/databases/$(database)/documents/VHVs/$(request.auth.uid)))
-        ? request.auth.uid
-        : getSessionLiffUid();
+      return hasSession()
+        ? getSessionLiffUid()
+        : (
+            (isAuthenticated() && exists(/databases/$(database)/documents/VHVs/$(request.auth.uid)))
+              ? request.auth.uid
+              : ''
+          );
     }
 
     function isSessionOwner(liffUid) {
-      return (isAuthenticated() && request.auth.uid == liffUid) ||
-        (hasSession() && getSessionLiffUid() == liffUid);
+      return isAuthenticated() && (
+        request.auth.uid == liffUid ||
+        (liffUid != '' && currentLiffUid() == liffUid)
+      );
     }
 
     function hasVhvAccount() {
