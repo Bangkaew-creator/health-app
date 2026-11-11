@@ -13,8 +13,8 @@
     <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore-compat.js"></script>
-    <script src="config.js?v=20261111_v4"></script>
-    <script src="core.js?v=20261111_v4"></script>
+    <script src="config.js?v=20261111_v5"></script>
+    <script src="core.js?v=20261111_v5"></script>
     
     <style>
         body { font-family: 'Sarabun', sans-serif; background-color: #f4f7fa; }
@@ -113,8 +113,15 @@
 
                     <div class="grid grid-cols-1 lg:grid-cols-4 gap-4">
                         <div class="lg:col-span-3 bg-blue-50/50 p-3 lg:p-4 rounded-xl border border-blue-100 flex flex-col justify-center">
-                            <div class="flex justify-between items-center mb-3">
-                                <p class="text-[11px] font-bold text-blue-800 uppercase tracking-wider">จำนวนวัสดุรวมที่ต้องใช้</p>
+                            <div class="flex justify-between items-center mb-3 flex-wrap gap-2">
+                                <div class="flex items-center gap-2">
+                                    <p class="text-[11px] font-bold text-blue-800 uppercase tracking-wider flex items-center gap-1">
+                                        <span class="material-symbols-outlined text-[15px] text-blue-600">compare_arrows</span> เปรียบเทียบจำนวนที่ต้องใช้ กับ คลังพัสดุ กปท.
+                                    </p>
+                                    <a href="admin_inventory.html" target="_blank" class="text-[10px] font-bold text-blue-700 bg-blue-100 hover:bg-blue-200 border border-blue-300 px-2 py-0.5 rounded-full transition-colors flex items-center gap-1" title="เปิดระบบคลังพัสดุ กปท. ในแท็บใหม่">
+                                        <span class="material-symbols-outlined text-[12px]">inventory_2</span> ดูคลังพัสดุ
+                                    </a>
+                                </div>
                                 <div class="flex items-center gap-2">
                                     <button type="button" id="btn-clear-selected" onclick="clearAllSelections()" class="hidden text-[10px] font-bold text-rose-600 hover:text-rose-700 bg-rose-50 hover:bg-rose-100 border border-rose-200 px-2 py-0.5 rounded-full transition-colors flex items-center gap-0.5">
                                         <span class="material-symbols-outlined text-[12px]">close</span> ล้างที่เลือกทั้งหมด
@@ -122,13 +129,67 @@
                                     <span class="bg-blue-600 text-white text-[10px] font-bold px-2.5 py-0.5 rounded-full shadow-sm">เลือกไว้ <span id="summary-selected-count">0</span> คน</span>
                                 </div>
                             </div>
-                            <div class="grid grid-cols-3 sm:grid-cols-6 gap-2 text-center">
-                                <div class="bg-white p-2 rounded-lg border border-slate-100"><span class="text-[10px] text-slate-400 block">ไซส์ S</span><span class="font-bold text-navy text-sm lg:text-base" id="sum-s">0</span></div>
-                                <div class="bg-white p-2 rounded-lg border border-slate-100"><span class="text-[10px] text-slate-400 block">ไซส์ M</span><span class="font-bold text-navy text-sm lg:text-base" id="sum-m">0</span></div>
-                                <div class="bg-white p-2 rounded-lg border border-slate-100"><span class="text-[10px] text-slate-400 block">ไซส์ L</span><span class="font-bold text-navy text-sm lg:text-base" id="sum-l">0</span></div>
-                                <div class="bg-white p-2 rounded-lg border border-slate-100"><span class="text-[10px] text-slate-400 block">ไซส์ XL</span><span class="font-bold text-navy text-sm lg:text-base" id="sum-xl">0</span></div>
-                                <div class="bg-white p-2 rounded-lg border border-emerald-100"><span class="text-[10px] text-emerald-600 font-bold block">แผ่นรอง</span><span class="font-bold text-emerald-700 text-sm lg:text-base" id="sum-pad">0</span></div>
-                                <div class="bg-white p-2 rounded-lg border border-purple-100"><span class="text-[10px] text-purple-600 font-bold block">ปิโตรเลียมเจลลี่</span><span class="font-bold text-purple-700 text-sm lg:text-base" id="sum-jelly">0</span></div>
+                            <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2 text-center">
+                                <div class="bg-white p-2.5 rounded-xl border border-slate-200 shadow-2xs flex flex-col justify-between">
+                                    <div>
+                                        <span class="text-[10px] font-bold text-slate-500 block">ไซส์ S</span>
+                                        <div class="my-1"><span class="font-black text-navy text-sm lg:text-base" id="sum-s">0</span> <span class="text-[10px] text-slate-400">ชิ้น</span></div>
+                                    </div>
+                                    <div class="pt-1 border-t border-slate-100">
+                                        <span class="text-[10px] text-slate-400 block">คลัง: <strong id="inv-s" class="text-slate-700">0</strong></span>
+                                        <span id="badge-s" class="text-[9px] font-bold px-1.5 py-0.5 rounded-full inline-block mt-0.5 bg-slate-100 text-slate-500">-</span>
+                                    </div>
+                                </div>
+                                <div class="bg-white p-2.5 rounded-xl border border-slate-200 shadow-2xs flex flex-col justify-between">
+                                    <div>
+                                        <span class="text-[10px] font-bold text-slate-500 block">ไซส์ M</span>
+                                        <div class="my-1"><span class="font-black text-navy text-sm lg:text-base" id="sum-m">0</span> <span class="text-[10px] text-slate-400">ชิ้น</span></div>
+                                    </div>
+                                    <div class="pt-1 border-t border-slate-100">
+                                        <span class="text-[10px] text-slate-400 block">คลัง: <strong id="inv-m" class="text-slate-700">0</strong></span>
+                                        <span id="badge-m" class="text-[9px] font-bold px-1.5 py-0.5 rounded-full inline-block mt-0.5 bg-slate-100 text-slate-500">-</span>
+                                    </div>
+                                </div>
+                                <div class="bg-white p-2.5 rounded-xl border border-slate-200 shadow-2xs flex flex-col justify-between">
+                                    <div>
+                                        <span class="text-[10px] font-bold text-slate-500 block">ไซส์ L</span>
+                                        <div class="my-1"><span class="font-black text-navy text-sm lg:text-base" id="sum-l">0</span> <span class="text-[10px] text-slate-400">ชิ้น</span></div>
+                                    </div>
+                                    <div class="pt-1 border-t border-slate-100">
+                                        <span class="text-[10px] text-slate-400 block">คลัง: <strong id="inv-l" class="text-slate-700">0</strong></span>
+                                        <span id="badge-l" class="text-[9px] font-bold px-1.5 py-0.5 rounded-full inline-block mt-0.5 bg-slate-100 text-slate-500">-</span>
+                                    </div>
+                                </div>
+                                <div class="bg-white p-2.5 rounded-xl border border-slate-200 shadow-2xs flex flex-col justify-between">
+                                    <div>
+                                        <span class="text-[10px] font-bold text-slate-500 block">ไซส์ XL</span>
+                                        <div class="my-1"><span class="font-black text-navy text-sm lg:text-base" id="sum-xl">0</span> <span class="text-[10px] text-slate-400">ชิ้น</span></div>
+                                    </div>
+                                    <div class="pt-1 border-t border-slate-100">
+                                        <span class="text-[10px] text-slate-400 block">คลัง: <strong id="inv-xl" class="text-slate-700">0</strong></span>
+                                        <span id="badge-xl" class="text-[9px] font-bold px-1.5 py-0.5 rounded-full inline-block mt-0.5 bg-slate-100 text-slate-500">-</span>
+                                    </div>
+                                </div>
+                                <div class="bg-white p-2.5 rounded-xl border border-emerald-200 shadow-2xs flex flex-col justify-between">
+                                    <div>
+                                        <span class="text-[10px] font-bold text-emerald-700 block">แผ่นรองซับ</span>
+                                        <div class="my-1"><span class="font-black text-emerald-700 text-sm lg:text-base" id="sum-pad">0</span> <span class="text-[10px] text-emerald-600">ชิ้น</span></div>
+                                    </div>
+                                    <div class="pt-1 border-t border-emerald-100">
+                                        <span class="text-[10px] text-slate-400 block">คลัง: <strong id="inv-pad" class="text-slate-700">0</strong></span>
+                                        <span id="badge-pad" class="text-[9px] font-bold px-1.5 py-0.5 rounded-full inline-block mt-0.5 bg-slate-100 text-slate-500">-</span>
+                                    </div>
+                                </div>
+                                <div class="bg-white p-2.5 rounded-xl border border-purple-200 shadow-2xs flex flex-col justify-between">
+                                    <div>
+                                        <span class="text-[10px] font-bold text-purple-700 block">ปิโตรเลียมเจลลี่</span>
+                                        <div class="my-1"><span class="font-black text-purple-700 text-sm lg:text-base" id="sum-jelly">0</span> <span class="text-[10px] text-purple-600">กระปุก</span></div>
+                                    </div>
+                                    <div class="pt-1 border-t border-purple-100">
+                                        <span class="text-[10px] text-slate-400 block">คลัง: <strong id="inv-jelly" class="text-slate-700">0</strong></span>
+                                        <span id="badge-jelly" class="text-[9px] font-bold px-1.5 py-0.5 rounded-full inline-block mt-0.5 bg-slate-100 text-slate-500">-</span>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                         <div class="bg-gradient-to-br from-amber-50 to-orange-50 p-3 lg:p-4 rounded-xl border border-amber-200 flex flex-col justify-center items-center text-center shadow-sm">
@@ -288,7 +349,7 @@
                                 <div class="bg-blue-50/60 p-3 rounded-xl border border-blue-100">
                                     <label class="block text-[11px] font-bold text-blue-900 mb-1">ผ้าอ้อม (ขอเฉพาะผ้าอ้อม)</label>
                                     <div class="flex items-center gap-1.5">
-                                        <input type="number" id="input-diaper-qty" value="90" min="0" class="w-full px-3 py-1.5 bg-white border border-slate-200 rounded-lg text-center font-bold text-blue-700 text-sm outline-none focus:ring-2 focus:ring-blue-500">
+                                        <input type="number" id="input-diaper-qty" value="90" min="0" oninput="renderModalInventoryCheck()" class="w-full px-3 py-1.5 bg-white border border-slate-200 rounded-lg text-center font-bold text-blue-700 text-sm outline-none focus:ring-2 focus:ring-blue-500">
                                         <span class="text-xs text-slate-500 font-medium">ชิ้น</span>
                                     </div>
                                     <p class="text-[10px] text-blue-600 mt-1 font-medium text-center">เกณฑ์ปกติ 3 ชิ้น/วัน</p>
@@ -296,7 +357,7 @@
                                 <div class="bg-emerald-50/60 p-3 rounded-xl border border-emerald-100">
                                     <label class="block text-[11px] font-bold text-emerald-900 mb-1">แผ่นรองซับ (ขอเฉพาะแผ่นรอง)</label>
                                     <div class="flex items-center gap-1.5">
-                                        <input type="number" id="input-underpad-qty" value="90" min="0" class="w-full px-3 py-1.5 bg-white border border-slate-200 rounded-lg text-center font-bold text-emerald-700 text-sm outline-none focus:ring-2 focus:ring-emerald-500">
+                                        <input type="number" id="input-underpad-qty" value="90" min="0" oninput="renderModalInventoryCheck()" class="w-full px-3 py-1.5 bg-white border border-slate-200 rounded-lg text-center font-bold text-emerald-700 text-sm outline-none focus:ring-2 focus:ring-emerald-500">
                                         <span class="text-xs text-slate-500 font-medium">ชิ้น</span>
                                     </div>
                                     <p class="text-[10px] text-emerald-600 mt-1 font-medium text-center">เกณฑ์ปกติ 6 ชิ้น/วัน</p>
@@ -314,7 +375,7 @@
                                 <div class="bg-white p-2.5 rounded-xl border border-amber-200">
                                     <label class="block text-[11px] font-bold text-slate-700 mb-1">ผ้าอ้อม (ขอ 2 อย่าง)</label>
                                     <div class="flex items-center gap-1.5">
-                                        <input type="number" id="input-dual-diaper-qty" value="90" min="0" class="w-full px-3 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-center font-bold text-blue-700 text-sm outline-none focus:ring-2 focus:ring-amber-500">
+                                        <input type="number" id="input-dual-diaper-qty" value="90" min="0" oninput="renderModalInventoryCheck()" class="w-full px-3 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-center font-bold text-blue-700 text-sm outline-none focus:ring-2 focus:ring-amber-500">
                                         <span class="text-xs text-slate-500 font-medium">ชิ้น</span>
                                     </div>
                                     <p class="text-[10px] text-slate-500 mt-1 text-center font-medium">1 ชิ้น/วัน (90 ชิ้น/ไตรมาส)</p>
@@ -322,7 +383,7 @@
                                 <div class="bg-white p-2.5 rounded-xl border border-amber-200">
                                     <label class="block text-[11px] font-bold text-slate-700 mb-1">แผ่นรองซับ (ขอ 2 อย่าง)</label>
                                     <div class="flex items-center gap-1.5">
-                                        <input type="number" id="input-dual-underpad-qty" value="270" min="0" class="w-full px-3 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-center font-bold text-emerald-700 text-sm outline-none focus:ring-2 focus:ring-amber-500">
+                                        <input type="number" id="input-dual-underpad-qty" value="270" min="0" oninput="renderModalInventoryCheck()" class="w-full px-3 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-center font-bold text-emerald-700 text-sm outline-none focus:ring-2 focus:ring-amber-500">
                                         <span class="text-xs text-slate-500 font-medium">ชิ้น</span>
                                     </div>
                                     <p class="text-[10px] text-slate-500 mt-1 text-center font-medium">3 ชิ้น/วัน (270 ชิ้น/ไตรมาส)</p>
@@ -360,14 +421,14 @@
                                 <div class="bg-blue-50/60 p-3 rounded-xl border border-blue-100">
                                     <label class="block text-[11px] font-bold text-blue-900 mb-1">ผ้าอ้อม (ขอเฉพาะผ้าอ้อม)</label>
                                     <div class="flex items-center gap-1.5">
-                                        <input type="number" id="edit-diaper-qty" value="90" min="0" class="w-full px-3 py-1.5 bg-white border border-slate-200 rounded-lg text-center font-bold text-blue-700 text-sm outline-none focus:ring-2 focus:ring-blue-500">
+                                        <input type="number" id="edit-diaper-qty" value="90" min="0" oninput="renderModalInventoryCheck()" class="w-full px-3 py-1.5 bg-white border border-slate-200 rounded-lg text-center font-bold text-blue-700 text-sm outline-none focus:ring-2 focus:ring-blue-500">
                                         <span class="text-xs text-slate-500 font-medium">ชิ้น</span>
                                     </div>
                                 </div>
                                 <div class="bg-emerald-50/60 p-3 rounded-xl border border-emerald-100">
                                     <label class="block text-[11px] font-bold text-emerald-900 mb-1">แผ่นรองซับ (ขอเฉพาะแผ่นรอง)</label>
                                     <div class="flex items-center gap-1.5">
-                                        <input type="number" id="edit-underpad-qty" value="90" min="0" class="w-full px-3 py-1.5 bg-white border border-slate-200 rounded-lg text-center font-bold text-emerald-700 text-sm outline-none focus:ring-2 focus:ring-emerald-500">
+                                        <input type="number" id="edit-underpad-qty" value="90" min="0" oninput="renderModalInventoryCheck()" class="w-full px-3 py-1.5 bg-white border border-slate-200 rounded-lg text-center font-bold text-emerald-700 text-sm outline-none focus:ring-2 focus:ring-emerald-500">
                                         <span class="text-xs text-slate-500 font-medium">ชิ้น</span>
                                     </div>
                                 </div>
@@ -384,14 +445,14 @@
                                 <div class="bg-white p-2.5 rounded-xl border border-amber-200">
                                     <label class="block text-[11px] font-bold text-slate-700 mb-1">ผ้าอ้อม (ขอ 2 อย่าง)</label>
                                     <div class="flex items-center gap-1.5">
-                                        <input type="number" id="edit-dual-diaper-qty" value="90" min="0" class="w-full px-3 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-center font-bold text-blue-700 text-sm outline-none focus:ring-2 focus:ring-amber-500">
+                                        <input type="number" id="edit-dual-diaper-qty" value="90" min="0" oninput="renderModalInventoryCheck()" class="w-full px-3 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-center font-bold text-blue-700 text-sm outline-none focus:ring-2 focus:ring-amber-500">
                                         <span class="text-xs text-slate-500 font-medium">ชิ้น</span>
                                     </div>
                                 </div>
                                 <div class="bg-white p-2.5 rounded-xl border border-amber-200">
                                     <label class="block text-[11px] font-bold text-slate-700 mb-1">แผ่นรองซับ (ขอ 2 อย่าง)</label>
                                     <div class="flex items-center gap-1.5">
-                                        <input type="number" id="edit-dual-underpad-qty" value="270" min="0" class="w-full px-3 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-center font-bold text-emerald-700 text-sm outline-none focus:ring-2 focus:ring-amber-500">
+                                        <input type="number" id="edit-dual-underpad-qty" value="270" min="0" oninput="renderModalInventoryCheck()" class="w-full px-3 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-center font-bold text-emerald-700 text-sm outline-none focus:ring-2 focus:ring-amber-500">
                                         <span class="text-xs text-slate-500 font-medium">ชิ้น</span>
                                     </div>
                                 </div>
@@ -420,6 +481,22 @@
                                 <strong id="deduct-target-count" class="underline text-rose-950 font-black">0</strong> คน 
                                 และปรับปรุงสถานะผู้ป่วยให้ถูกต้องอัตโนมัติ
                             </p>
+                        </div>
+                    </div>
+
+                    <!-- การตรวจสอบความเพียงพอกับคลังพัสดุ กปท. -->
+                    <div id="modal-inventory-check-card" class="mt-4 p-3.5 rounded-2xl border transition-all bg-slate-50 border-slate-200">
+                        <div class="flex items-center justify-between mb-2">
+                            <span class="text-xs font-bold text-slate-800 flex items-center gap-1.5">
+                                <span class="material-symbols-outlined text-blue-600 text-[18px]">inventory</span>
+                                ตรวจสอบความพร้อมกับคลังพัสดุ กปท.
+                            </span>
+                            <a href="admin_inventory.html" target="_blank" class="text-[10px] font-bold text-blue-600 hover:text-blue-800 flex items-center gap-0.5 hover:underline">
+                                เปิดคลังพัสดุ <span class="material-symbols-outlined text-[12px]">open_in_new</span>
+                            </a>
+                        </div>
+                        <div id="modal-inventory-check-content" class="text-xs space-y-2">
+                            <div class="text-slate-400 text-center py-1">กำลังคำนวณเปรียบเทียบกับคลัง...</div>
                         </div>
                     </div>
                 </div>
@@ -565,6 +642,36 @@
         let configJellyQty = DEFAULT_CONFIGS.JELLY_DEFAULT_QTY || 1;
         let configBannerPrice = DEFAULT_CONFIGS.BANNER_PRICE || 500.00;
 
+        // ยอดคงเหลือในคลังพัสดุ กปท. สำหรับเปรียบเทียบความเพียงพอแบบ Real-time
+        let centralInventory = {
+            item_s: 0,
+            item_m: 0,
+            item_l: 0,
+            item_xl: 0,
+            item_pad: 0,
+            item_jelly: 0
+        };
+
+        function updateInventoryStatusBadge(badgeId, invElId, requiredQty, stockQty, unit = 'ชิ้น') {
+            const badgeEl = document.getElementById(badgeId);
+            const invEl = document.getElementById(invElId);
+            const available = Number(stockQty) || 0;
+            if (invEl) invEl.innerText = available.toLocaleString();
+            if (!badgeEl) return;
+
+            if (requiredQty === 0) {
+                badgeEl.className = 'text-[9px] font-bold px-1.5 py-0.5 rounded-full inline-block mt-0.5 bg-slate-100 text-slate-500';
+                badgeEl.innerText = '-';
+            } else if (available >= requiredQty) {
+                badgeEl.className = 'text-[9px] font-bold px-1.5 py-0.5 rounded-full inline-block mt-0.5 bg-emerald-100 text-emerald-800 border border-emerald-200';
+                badgeEl.innerHTML = '✓ พอในคลัง';
+            } else {
+                const diff = requiredQty - available;
+                badgeEl.className = 'text-[9px] font-bold px-1.5 py-0.5 rounded-full inline-block mt-0.5 bg-rose-100 text-rose-700 border border-rose-200 animate-pulse';
+                badgeEl.innerHTML = `⚠️ ขาดอีก ${diff.toLocaleString()} ${unit}`;
+            }
+        }
+
         function showToast(msg, type = 'success') {
             let container = document.getElementById('toast-container');
             if (!container) {
@@ -661,10 +768,24 @@
 
         async function loadReportData() {
             try {
-                const [patientsSnap, vhvsSnap] = await Promise.all([
+                const [patientsSnap, vhvsSnap, inventorySnap] = await Promise.all([
                     db.collection('Patients').get(),
-                    db.collection('VHVs').get()
+                    db.collection('VHVs').get(),
+                    db.collection('Inventory_Items').get().catch(function (err) {
+                        console.warn("Inventory fetch warning:", err);
+                        return null;
+                    })
                 ]);
+
+                if (inventorySnap && !inventorySnap.empty) {
+                    inventorySnap.forEach(doc => {
+                        const d = doc.data() || {};
+                        const id = doc.id;
+                        if (centralInventory.hasOwnProperty(id)) {
+                            centralInventory[id] = Number(d.balance) || 0;
+                        }
+                    });
+                }
                 
                 allPatients = [];
                 let uniqueAllocations = new Set();
@@ -1030,6 +1151,14 @@
             document.getElementById('sum-l').innerText = totalL.toLocaleString();
             document.getElementById('sum-xl').innerText = totalXL.toLocaleString();
             document.getElementById('sum-pad').innerText = totalPad.toLocaleString();
+
+            // อัปเดตยอดคงเหลือคลังพัสดุและป้ายสถานะความเพียงพอแบบเรียลไทม์ (กปท.)
+            updateInventoryStatusBadge('badge-s', 'inv-s', totalS, centralInventory.item_s, 'ชิ้น');
+            updateInventoryStatusBadge('badge-m', 'inv-m', totalM, centralInventory.item_m, 'ชิ้น');
+            updateInventoryStatusBadge('badge-l', 'inv-l', totalL, centralInventory.item_l, 'ชิ้น');
+            updateInventoryStatusBadge('badge-xl', 'inv-xl', totalXL, centralInventory.item_xl, 'ชิ้น');
+            updateInventoryStatusBadge('badge-pad', 'inv-pad', totalPad, centralInventory.item_pad, 'ชิ้น');
+            updateInventoryStatusBadge('badge-jelly', 'inv-jelly', totalJelly, centralInventory.item_jelly, 'กระปุก');
 
             // Requirement 1.2 ก, 3.2 ข, 5.2: คำนวณปิโตรเลียมเจลลี่ และป้ายโครงการ กปท.
             const totalJelly = diaperPatientsCount * (configJellyQty || 1);
@@ -1438,6 +1567,7 @@
             if (mode === 'edit' || mode === 'deduct') {
                 populateModalRoundDropdowns();
             }
+            renderModalInventoryCheck();
         }
 
         function populateModalRoundDropdowns() {
@@ -1519,6 +1649,136 @@
                 if (dualDQtyInp) dualDQtyInp.value = 90;
                 if (dualPQtyInp) dualPQtyInp.value = 270;
             }
+            renderModalInventoryCheck();
+        }
+
+        function renderModalInventoryCheck() {
+            const container = document.getElementById('modal-inventory-check-content');
+            if (!container) return;
+
+            const selectedList = getSelectedPatientRawList();
+            if (selectedList.length === 0) {
+                container.innerHTML = '<span class="text-slate-400">ยังไม่มีรายชื่อที่เลือก</span>';
+                return;
+            }
+
+            let diaperSingle = 90;
+            let padSingle = 90;
+            let diaperDual = 90;
+            let padDual = 270;
+
+            if (currentModalMode === 'edit') {
+                diaperSingle = parseInt(document.getElementById('edit-diaper-qty').value, 10) || 0;
+                padSingle = parseInt(document.getElementById('edit-underpad-qty').value, 10) || 0;
+                diaperDual = parseInt(document.getElementById('edit-dual-diaper-qty').value, 10) || 0;
+                padDual = parseInt(document.getElementById('edit-dual-underpad-qty').value, 10) || 0;
+            } else if (currentModalMode === 'add') {
+                diaperSingle = parseInt(document.getElementById('input-diaper-qty').value, 10) || 0;
+                padSingle = parseInt(document.getElementById('input-underpad-qty').value, 10) || 0;
+                diaperDual = parseInt(document.getElementById('input-dual-diaper-qty').value, 10) || 0;
+                padDual = parseInt(document.getElementById('input-dual-underpad-qty').value, 10) || 0;
+            } else {
+                container.innerHTML = '<span class="text-slate-500 font-medium">โหมดตัดลดรอบ: ไม่มีการเบิกจ่ายพัสดุออกจากคลัง</span>';
+                return;
+            }
+
+            let reqS = 0, reqM = 0, reqL = 0, reqXL = 0, reqPad = 0, reqJelly = 0;
+
+            selectedList.forEach(p => {
+                const d = p.detail;
+                if (!d) return;
+
+                const hasD = Boolean(d.req_diaper);
+                const hasP = Boolean(d.req_underpad);
+                const sz = String(d.size || 'L').toUpperCase().trim();
+
+                let dQty = 0;
+                let pQty = 0;
+
+                if (hasD && hasP) {
+                    dQty = diaperDual;
+                    pQty = padDual;
+                } else if (hasD) {
+                    dQty = diaperSingle;
+                } else if (hasP) {
+                    pQty = padSingle;
+                }
+
+                if (dQty > 0) {
+                    reqJelly += (configJellyQty || 1);
+                    if (sz === 'S') reqS += dQty;
+                    else if (sz === 'M') reqM += dQty;
+                    else if (sz === 'XL') reqXL += dQty;
+                    else reqL += dQty;
+                }
+                if (pQty > 0) {
+                    reqPad += pQty;
+                }
+            });
+
+            const items = [
+                { id: 'item_s', label: 'ผ้าอ้อม S', req: reqS, stock: centralInventory.item_s || 0, unit: 'ชิ้น' },
+                { id: 'item_m', label: 'ผ้าอ้อม M', req: reqM, stock: centralInventory.item_m || 0, unit: 'ชิ้น' },
+                { id: 'item_l', label: 'ผ้าอ้อม L', req: reqL, stock: centralInventory.item_l || 0, unit: 'ชิ้น' },
+                { id: 'item_xl', label: 'ผ้าอ้อม XL', req: reqXL, stock: centralInventory.item_xl || 0, unit: 'ชิ้น' },
+                { id: 'item_pad', label: 'แผ่นรองซับ', req: reqPad, stock: centralInventory.item_pad || 0, unit: 'ชิ้น' },
+                { id: 'item_jelly', label: 'เจลลี่', req: reqJelly, stock: centralInventory.item_jelly || 0, unit: 'กระปุก' }
+            ].filter(item => item.req > 0);
+
+            if (items.length === 0) {
+                container.innerHTML = '<span class="text-slate-500 font-medium">ไม่มีรายการพัสดุที่ต้องใช้ในรอบนี้</span>';
+                return;
+            }
+
+            let allSufficient = true;
+            let shortages = [];
+
+            let rowsHtml = items.map(it => {
+                const diff = it.stock - it.req;
+                const ok = diff >= 0;
+                if (!ok) {
+                    allSufficient = false;
+                    shortages.push(`${it.label} ขาดอีก ${Math.abs(diff).toLocaleString()} ${it.unit}`);
+                }
+                const statusBadge = ok
+                    ? `<span class="bg-emerald-100 text-emerald-800 font-bold px-2 py-0.5 rounded-full text-[10px]">✓ พอ (เหลือคลัง ${diff.toLocaleString()} ${it.unit})</span>`
+                    : `<span class="bg-rose-100 text-rose-700 font-bold px-2 py-0.5 rounded-full text-[10px] animate-pulse">⚠️ ขาดอีก ${Math.abs(diff).toLocaleString()} ${it.unit}</span>`;
+
+                return `
+                    <div class="flex items-center justify-between py-1.5 border-b border-slate-100 last:border-b-0 text-[11px]">
+                        <span class="font-bold text-slate-700">${it.label}: <span class="font-normal text-slate-500">ต้องใช้ <strong>${it.req.toLocaleString()}</strong> (คลังมี <strong>${it.stock.toLocaleString()}</strong> ${it.unit})</span></span>
+                        ${statusBadge}
+                    </div>
+                `;
+            }).join('');
+
+            let summaryBanner = '';
+            if (allSufficient) {
+                summaryBanner = `
+                    <div class="p-2.5 bg-emerald-50 border border-emerald-200 rounded-xl text-emerald-800 text-[11px] font-bold flex items-center gap-1.5 mt-2">
+                        <span class="material-symbols-outlined text-[16px] text-emerald-600">check_circle</span>
+                        พัสดุในคลังเพียงพอสำหรับการส่งมอบรอบนี้ทั้งหมด (สามารถส่งมอบได้ทันที)
+                    </div>
+                `;
+            } else {
+                summaryBanner = `
+                    <div class="p-2.5 bg-amber-50 border border-amber-300 rounded-xl text-amber-900 text-[11px] space-y-1 mt-2">
+                        <div class="font-bold flex items-center gap-1 text-amber-800">
+                            <span class="material-symbols-outlined text-[16px] text-amber-600">warning</span>
+                            ตรวจพบพัสดุในคลังไม่เพียงพอสำหรับการเบิกจ่ายรอบนี้:
+                        </div>
+                        <p class="text-[10.5px] text-rose-700 font-bold pl-5">• ${shortages.join('<br>• ')}</p>
+                        <p class="text-[10px] text-slate-600 pl-5">💡 ท่านยังสามารถบันทึกรอบส่งมอบ/มตินี้ได้ตามปกติ แล้วไปทำเรื่องจัดซื้อหรือรับเข้าที่ <a href="admin_inventory.html" target="_blank" class="text-blue-700 underline font-bold">คลังพัสดุ กปท.</a></p>
+                    </div>
+                `;
+            }
+
+            container.innerHTML = `
+                <div class="bg-white p-2.5 rounded-xl border border-slate-200 divide-y divide-slate-100">
+                    ${rowsHtml}
+                </div>
+                ${summaryBanner}
+            `;
         }
 
         function onDeductRoundChange() {

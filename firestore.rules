@@ -10,9 +10,12 @@ rules_version = '2';
 //   - Supports Direct Account lookup (/VHVs/{request.auth.uid}) and
 //     Two-Tier Session Binding (/Auth_Sessions/{request.auth.uid} -> liff_uid -> /VHVs/{liff_uid}).
 //   - /VHVs/{liffUid} stores user profile, role ('ADMIN', 'SUB_ADMIN',
-//     'VHV', 'None' — case/whitespace tolerant; legacy accounts with missing/empty/'อสม.'
-//     role default to 'VHV'), and approval status ('Active', 'Pending', 'Rejected' —
-//     case/variant tolerant).
+//     'VHV', 'None' — case/whitespace tolerant, matching synonyms like
+//     'central_admin', 'super_admin', 'แอดมิน' for ADMIN; 'sub-admin', 'subadmin',
+//     'รพ.สต.', 'เจ้าหน้าที่' for SUB_ADMIN; 'อสม.', 'อาสาสมัครสาธารณสุข', 'user',
+//     'member' or empty/missing for VHV), and approval status ('Active', 'Approved',
+//     'Pending', 'Rejected', 'อนุมัติ', 'อนุมัติแล้ว', 'ปกติ', 'กำลังปฏิบัติงาน',
+//     'ปฏิบัติงาน' — case/variant tolerant).
 //
 // Collection: Auth_Sessions
 // Document ID: {authUid} (must equal request.auth.uid)
@@ -191,9 +194,10 @@ service cloud.firestore {
             (vhv.status in [
               'Active', 'active', 'ACTIVE',
               'Approved', 'approved', 'APPROVED',
-              'อนุมัติ', 'อนุมัติแล้ว', 'ปกติ'
+              'อนุมัติ', 'อนุมัติแล้ว', 'ปกติ',
+              'กำลังปฏิบัติงาน', 'ปฏิบัติงาน'
             ]) ||
-            vhv.status.matches('(?i)^\\s*(active|approved|อนุมัติ|อนุมัติแล้ว|ปกติ)\\s*$')
+            vhv.status.matches('(?i)^\\s*(active|approved|อนุมัติ|อนุมัติแล้ว|ปกติ|กำลังปฏิบัติงาน|ปฏิบัติงาน)\\s*$')
           )
         )
       );
@@ -207,19 +211,17 @@ service cloud.firestore {
           (vhv.role in allowedRoles) ||
           (
             ('ADMIN' in allowedRoles || 'admin' in allowedRoles || 'Admin' in allowedRoles) &&
-            vhv.role.matches('(?i)^\\s*admin\\s*$')
+            vhv.role.matches('(?i)^\\s*(admin|central_admin|super_admin|แอดมิน)\\s*$')
           ) ||
           (
             ('SUB_ADMIN' in allowedRoles || 'sub_admin' in allowedRoles || 'Sub_Admin' in allowedRoles) &&
-            vhv.role.matches('(?i)^\\s*sub_admin\\s*$')
+            vhv.role.matches('(?i)^\\s*(sub_admin|sub-admin|subadmin|รพ\\.?สต\\.?|เจ้าหน้าที่)\\s*$')
           ) ||
           (
             ('VHV' in allowedRoles || 'vhv' in allowedRoles || 'Vhv' in allowedRoles) &&
             (
               vhv.role == '' ||
-              vhv.role == 'อสม.' ||
-              vhv.role == 'อสม' ||
-              vhv.role.matches('(?i)^\\s*(vhv|อสม\\.?|)\\s*$')
+              vhv.role.matches('(?i)^\\s*(vhv|อสม\\.?|อาสาสมัครสาธารณสุข|user|member|)\\s*$')
             )
           )
         )
@@ -287,16 +289,19 @@ service cloud.firestore {
             'VHV', 'vhv', 'Vhv', 'อสม.', 'อสม',
             'None', 'none', 'NONE'
           ]) ||
-          data.role.matches('(?i)^\\s*(admin|sub_admin|vhv|อสม\\.?|none)\\s*$')
+          data.role.matches('(?i)^\\s*(admin|central_admin|super_admin|แอดมิน|sub_admin|sub-admin|subadmin|รพ\\.?สต\\.?|เจ้าหน้าที่|vhv|อสม\\.?|อาสาสมัครสาธารณสุข|user|member|none|)\\s*$')
         ) &&
         ('status' in data) && (data.status is string) &&
         (
           (data.status in [
             'Active', 'active', 'ACTIVE',
+            'Approved', 'approved', 'APPROVED',
             'Pending', 'pending', 'PENDING',
-            'Rejected', 'rejected', 'REJECTED'
+            'Rejected', 'rejected', 'REJECTED',
+            'อนุมัติ', 'อนุมัติแล้ว', 'ปกติ',
+            'กำลังปฏิบัติงาน', 'ปฏิบัติงาน'
           ]) ||
-          data.status.matches('(?i)^\\s*(active|pending|rejected)\\s*$')
+          data.status.matches('(?i)^\\s*(active|approved|pending|rejected|อนุมัติ|อนุมัติแล้ว|ปกติ|กำลังปฏิบัติงาน|ปฏิบัติงาน)\\s*$')
         ) &&
         isOptionalString(data, 'uid', 128) &&
         isOptionalString(data, 'nickname', 100) &&
@@ -426,18 +431,18 @@ service cloud.firestore {
         (
           // VHV self-registration (must start as Pending)
           (
-            (request.resource.data.role in ['VHV', 'vhv', 'Vhv'] || request.resource.data.role.matches('(?i)^\\s*vhv\\s*$')) &&
+            (request.resource.data.role in ['VHV', 'vhv', 'Vhv'] || request.resource.data.role.matches('(?i)^\\s*(vhv|อสม\\.?|อาสาสมัครสาธารณสุข|user|member|)\\s*$')) &&
             (request.resource.data.status in ['Pending', 'pending', 'PENDING'] || request.resource.data.status.matches('(?i)^\\s*pending\\s*$'))
           ) ||
           // Central Admin registration with secret code verification
           (
-            (request.resource.data.role in ['ADMIN', 'admin', 'Admin'] || request.resource.data.role.matches('(?i)^\\s*admin\\s*$')) &&
+            (request.resource.data.role in ['ADMIN', 'admin', 'Admin'] || request.resource.data.role.matches('(?i)^\\s*(admin|central_admin|super_admin|แอดมิน)\\s*$')) &&
             (request.resource.data.status in ['Active', 'active', 'ACTIVE'] || request.resource.data.status.matches('(?i)^\\s*active\\s*$')) &&
             isValidAdminSecretVerify(request.resource.data)
           ) ||
           // Sub-Admin registration with secret code verification
           (
-            (request.resource.data.role in ['SUB_ADMIN', 'sub_admin', 'Sub_Admin'] || request.resource.data.role.matches('(?i)^\\s*sub_admin\\s*$')) &&
+            (request.resource.data.role in ['SUB_ADMIN', 'sub_admin', 'Sub_Admin'] || request.resource.data.role.matches('(?i)^\\s*(sub_admin|sub-admin|subadmin|รพ\\.?สต\\.?|เจ้าหน้าที่)\\s*$')) &&
             (request.resource.data.status in ['Active', 'active', 'ACTIVE'] || request.resource.data.status.matches('(?i)^\\s*active\\s*$')) &&
             isValidSubAdminSecretVerify(request.resource.data)
           )
@@ -457,7 +462,7 @@ service cloud.firestore {
             (
               resource.data.role is string &&
               !(resource.data.role in ['ADMIN', 'admin', 'Admin', 'SUB_ADMIN', 'sub_admin', 'Sub_Admin']) &&
-              !resource.data.role.matches('(?i)^\\s*(admin|sub_admin)\\s*$')
+              !resource.data.role.matches('(?i)^\\s*(admin|central_admin|super_admin|แอดมิน|sub_admin|sub-admin|subadmin|รพ\\.?สต\\.?|เจ้าหน้าที่)\\s*$')
             )
           ) &&
           (
@@ -467,7 +472,7 @@ service cloud.firestore {
               request.resource.data.role is string &&
               (
                 request.resource.data.role in ['VHV', 'vhv', 'Vhv', 'อสม.', 'อสม', '', 'None', 'none', 'NONE'] ||
-                request.resource.data.role.matches('(?i)^\\s*(vhv|อสม\\.?|none)\\s*$')
+                request.resource.data.role.matches('(?i)^\\s*(vhv|อสม\\.?|อาสาสมัครสาธารณสุข|user|member|none|)\\s*$')
               )
             )
           )

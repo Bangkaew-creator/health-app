@@ -12,8 +12,8 @@
     <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore-compat.js"></script>
-    <script src="config.js?v=20261111_v4"></script>
-    <script src="core.js?v=20261111_v4"></script>
+    <script src="config.js?v=20261111_v5"></script>
+    <script src="core.js?v=20261111_v5"></script>
 
     <style>
         body { font-family: 'Sarabun', sans-serif; background-color: #f0f9ff; -webkit-tap-highlight-color: transparent; }
@@ -267,18 +267,15 @@
             };
 
             try {
-                const batch = db.batch();
                 const newVitalsRef = db.collection('Vitals').doc();
-                batch.set(newVitalsRef, vitalsData);
+                await newVitalsRef.set(vitalsData);
 
                 // แยกบันทึกเฉพาะ last_vital_date โดยไม่เขียนทับ last_assess ของ ADL/2Q9Q (ข้อ 2.3 ก.)
                 const patientRef = db.collection('Patients').doc(String(patientId));
-                batch.update(patientRef, {
+                await patientRef.update({
                     last_vital_date: formattedDate,
                     updated_at: firebase.firestore.FieldValue.serverTimestamp()
                 });
-
-                await batch.commit();
 
                 // ตรวจส่งแจ้งเตือน LINE ด่วนกรณีพบความดัน/น้ำตาลวิกฤต (ข้อ 5.4)
                 const critCheck = OrsomoCore.Alerts.evaluateCriticalVitals({

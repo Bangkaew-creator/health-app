@@ -12,8 +12,8 @@
     <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore-compat.js"></script>
-    <script src="config.js?v=20261111_v4"></script>
-    <script src="core.js?v=20261111_v4"></script>
+    <script src="config.js?v=20261111_v5"></script>
+    <script src="core.js?v=20261111_v5"></script>
 
     <style>
         body { font-family: 'Sarabun', sans-serif; background-color: #f8fafc; padding-bottom: 100px; -webkit-tap-highlight-color: transparent; }
@@ -366,9 +366,8 @@
             btn.innerHTML = '<div class="loader-small" style="border-bottom-color:#fff;"></div> กำลังบันทึก...';
 
             try {
-                const batch = db.batch();
                 const visitRef = db.collection('Home_Visits').doc();
-                batch.set(visitRef, {
+                await visitRef.set({
                     patient_id: String(patientId),
                     date: formattedThaiDate,
                     visit_date: visitDateIso || OrsomoCore.DateUtils.toInputDateISO(new Date()),
@@ -387,12 +386,10 @@
                 });
 
                 const patientRef = db.collection('Patients').doc(String(patientId));
-                batch.update(patientRef, {
+                await patientRef.update({
                     last_visit_date: formattedThaiDate,
                     updated_at: firebase.firestore.FieldValue.serverTimestamp()
                 });
-
-                await batch.commit();
                 showToast('บันทึกสมุดเยี่ยมบ้านเรียบร้อยแล้ว', 'success', `patient_profile.html?id=${encodeURIComponent(patientId)}`);
             } catch (err) {
                 console.error('saveVisit error:', err);

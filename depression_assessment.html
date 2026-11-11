@@ -12,8 +12,8 @@
     <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore-compat.js"></script>
-    <script src="config.js?v=20261111_v4"></script>
-    <script src="core.js?v=20261111_v4"></script>
+    <script src="config.js?v=20261111_v5"></script>
+    <script src="core.js?v=20261111_v5"></script>
 
     <style>
         body { font-family: 'Sarabun', sans-serif; background-color: #f8fafc; -webkit-tap-highlight-color: transparent; }
@@ -430,19 +430,16 @@
             };
 
             try {
-                const batch = db.batch();
                 const newAssessRef = db.collection('Assessments').doc();
-                batch.set(newAssessRef, assessmentData);
+                await newAssessRef.set(assessmentData);
 
                 const patientRef = db.collection('Patients').doc(String(patientId));
-                batch.update(patientRef, {
+                await patientRef.update({
                     dep_status: finalResult,
                     last_dep_date: formattedDate,
                     last_assess: formattedDate,
                     updated_at: firebase.firestore.FieldValue.serverTimestamp()
                 });
-
-                await batch.commit();
 
                 // ตรวจส่งแจ้งเตือน LINE ด่วนกรณีซึมเศร้ารุนแรง (9Q >= 19) หรือมีความเสี่ยงทำร้ายตนเองข้อ 9 (ข้อ 5.4)
                 const critCheck = OrsomoCore.Alerts.evaluateCriticalDepression({

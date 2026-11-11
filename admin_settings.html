@@ -16,8 +16,8 @@
     <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore-compat.js"></script>
-    <script src="config.js?v=20261111_v4"></script>
-    <script src="core.js?v=20261111_v4"></script>
+    <script src="config.js?v=20261111_v5"></script>
+    <script src="core.js?v=20261111_v5"></script>
     
     <style>
         body { font-family: 'Sarabun', sans-serif; background-color: #f8fafc; }
@@ -598,16 +598,28 @@
 
                 snap.forEach(doc => {
                     const u = doc.data() || {};
-                    const role = String(u.role || '').toUpperCase();
+                    const roleRaw = String(u.role || '').trim();
+                    let role = 'VHV';
+                    if (['ADMIN', 'CENTRAL_ADMIN', 'SUPER_ADMIN', 'แอดมิน'].includes(roleRaw.toUpperCase())) {
+                        role = 'ADMIN';
+                    } else if (['SUB_ADMIN', 'SUB-ADMIN', 'SUBADMIN', 'รพ.สต.', 'เจ้าหน้าที่'].includes(roleRaw.toUpperCase()) || roleRaw === 'รพ.สต.' || roleRaw === 'เจ้าหน้าที่') {
+                        role = 'SUB_ADMIN';
+                    } else if (!roleRaw || ['VHV', 'อสม.', 'อสม', 'USER', 'MEMBER'].includes(roleRaw.toUpperCase()) || roleRaw === 'อสม.' || roleRaw === 'อสม') {
+                        role = 'VHV';
+                    } else {
+                        role = roleRaw;
+                    }
+
                     const status = String(u.status || '').toLowerCase();
+                    const isActive = u.status === true || ['active', 'approved', 'อนุมัติ', 'อนุมัติแล้ว', 'ปกติ', 'กำลังปฏิบัติงาน', 'ปฏิบัติงาน'].includes(status);
 
                     if (role === 'ADMIN') adminCount++;
                     else if (role === 'SUB_ADMIN') subAdminCount++;
                     else if (role === 'VHV') vhvCount++;
                     else abnormalAccounts.push(`${u.name || doc.id} (บทบาทไม่ถูกต้อง: ${u.role})`);
 
-                    if (status === 'active') activeCount++;
-                    else if (status === 'pending') pendingCount++;
+                    if (isActive) activeCount++;
+                    else if (status === 'pending' || status === 'รอตรวจสอบ' || status === 'รออนุมัติ') pendingCount++;
                     else rejectedCount++;
                 });
 
