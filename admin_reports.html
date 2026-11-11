@@ -13,8 +13,8 @@
     <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore-compat.js"></script>
-    <script src="config.js?v=20261111_v2"></script>
-    <script src="core.js?v=20261111_v2"></script>
+    <script src="config.js?v=20261111_v3"></script>
+    <script src="core.js?v=20261111_v3"></script>
     
     <style>
         body { font-family: 'Sarabun', sans-serif; background-color: #f4f7fa; }
@@ -168,6 +168,8 @@
                     <select id="kpt-alloc-filter" onchange="renderKPTTable()" class="w-full px-4 py-2.5 bg-white border border-slate-200 rounded-xl text-sm font-bold text-slate-600 focus:ring-2 focus:ring-amber-500 shadow-sm outline-none">
                         <option value="all">แสดงผู้ป่วยทั้งหมด</option>
                         <option value="selected_only">เฉพาะรายชื่อที่ติ๊กเลือกไว้แล้ว (✓)</option>
+                        <option value="assessed">เฉพาะรายที่ประเมินสิทธิ์แล้ว</option>
+                        <option value="not_assessed">เฉพาะรายที่ยังไม่ได้ประเมินสิทธิ์</option>
                         <option value="never">ยังไม่เคยได้รับการจัดสรรผ้าอ้อม</option>
                         <option value="ever">ผู้ที่เคยได้รับการจัดสรรผ้าอ้อมแล้ว</option>
                         <optgroup label="ดูเฉพาะรอบ" id="kpt-alloc-options"></optgroup>
@@ -526,9 +528,12 @@
         function toggleSidebar() { document.getElementById('sidebar').classList.toggle('-translate-x-full'); }
 
         function cleanJSON(rawStr) {
-            if (!rawStr || String(rawStr).trim() === '') return null;
+            if (!rawStr) return null;
+            if (typeof OrsomoCore !== 'undefined' && OrsomoCore.DiaperAdapter) {
+                return OrsomoCore.DiaperAdapter.parse(rawStr);
+            }
+            if (typeof rawStr === 'object') return rawStr;
             let cleanStr = String(rawStr).trim();
-            // Removed dangerous replace
             if (cleanStr.startsWith('"') && cleanStr.endsWith('"')) cleanStr = cleanStr.substring(1, cleanStr.length - 1);
             try { return JSON.parse(cleanStr); } catch(e) { return null; }
         }
@@ -794,11 +799,34 @@
 
                 const d = cleanJSON(p.diaper);
                 
+                // ตรวจสอบว่าได้รับการประเมินสิทธิ์ผ้าอ้อมแล้วหรือไม่ (มีข้อมูลประเมิน / ขอรับ / มีสถานะสิทธิ์)
+                const isAssessed = Boolean(
+                    d && (
+                        d.req_diaper ||
+                        d.req_underpad ||
+                        d.assess_date ||
+                        d.assessor_name ||
+                        d.assessor_uid ||
+                        (d.approve_status && d.approve_status !== 'ยังไม่ขอรับสิทธิ์' && d.approve_status !== '-') ||
+                        (d.status && d.status !== 'unregistered' && d.status !== '-') ||
+                        (d.result && String(d.result).trim() !== '' && d.result !== '-') ||
+                        (Array.isArray(d.allocations) && d.allocations.length > 0) ||
+                        d.has_medical_cert ||
+                        d.medical_cert ||
+                        (d.approved_diaper && Number(d.approved_diaper) > 0) ||
+                        (d.approved_underpad && Number(d.approved_underpad) > 0) ||
+                        (d.baseline_diaper_daily && Number(d.baseline_diaper_daily) > 0) ||
+                        (d.baseline_underpad_daily && Number(d.baseline_underpad_daily) > 0)
+                    )
+                );
+
                 const hasAllocations = (d && Array.isArray(d.allocations) && d.allocations.length > 0);
                 if (allocFilter === 'selected_only' && !isSelected) return;
+                if (allocFilter === 'assessed' && !isAssessed) return;
+                if (allocFilter === 'not_assessed' && isAssessed) return;
                 if (allocFilter === 'never' && hasAllocations) return;
                 if (allocFilter === 'ever' && !hasAllocations) return;
-                if (allocFilter !== 'all' && allocFilter !== 'selected_only' && allocFilter !== 'never' && allocFilter !== 'ever') {
+                if (allocFilter !== 'all' && allocFilter !== 'selected_only' && allocFilter !== 'assessed' && allocFilter !== 'not_assessed' && allocFilter !== 'never' && allocFilter !== 'ever') {
                     if (!hasAllocations || !d.allocations.includes(allocFilter)) return;
                 }
 
@@ -806,15 +834,22 @@
                 let adlBadge = `<span class="bg-red-50 text-red-600 font-bold px-2 py-1 rounded text-xs border border-red-100 flex items-center justify-center gap-1"><span class="material-symbols-outlined text-[14px]">warning</span> ยังไม่ประเมิน</span>`;
                 if (adlScore !== null) adlBadge = `<span class="bg-blue-50 text-blue-700 font-bold px-3 py-1 rounded-full text-sm">${adlScore}</span>`;
 
-                let diaperFormBadge = `<span class="bg-red-50 text-red-600 font-bold px-2 py-1 rounded text-xs border border-red-100">ไม่มีข้อมูล</span>`;
+                // มีเพียง 2 สถานะตามข้อกำหนด: "ประเมินแล้ว" หรือ "ยังไม่ได้ประเมิน" (ไม่มีคำว่า "ไม่มีข้อมูล")
+                let diaperFormBadge = `<span class="bg-slate-100 text-slate-500 font-bold px-2.5 py-1 rounded-lg text-xs border border-slate-200 flex items-center justify-center gap-1 shadow-2xs"><span class="material-symbols-outlined text-[14px] text-slate-400">pending</span> ยังไม่ได้ประเมิน</span>`;
                 let needText = '-';
 
-                if (d && (d.req_diaper || d.req_underpad)) {
-                    diaperFormBadge = `<span class="bg-emerald-50 text-emerald-600 font-bold px-2 py-1 rounded text-xs border border-emerald-100 flex items-center justify-center gap-1"><span class="material-symbols-outlined text-[14px]">check_circle</span> ประเมินแล้ว</span>`;
+                if (isAssessed) {
+                    diaperFormBadge = `<span class="bg-emerald-50 text-emerald-700 font-bold px-2.5 py-1 rounded-lg text-xs border border-emerald-200 flex items-center justify-center gap-1 shadow-2xs"><span class="material-symbols-outlined text-[14px] text-emerald-600">check_circle</span> ประเมินแล้ว</span>`;
                     let needs = [];
-                    if (d.req_diaper) needs.push(`ผ้าอ้อม ${d.size} (${d.approved_diaper||0} ชิ้น/ด.)`);
-                    if (d.req_underpad) needs.push(`แผ่นรองซับ (${d.approved_underpad||0} ชิ้น/ด.)`);
-                    needText = needs.length > 0 ? needs.join('<br>') : 'ไม่ต้องการ';
+                    if (d && d.req_diaper) {
+                        const dQty = d.approved_diaper || d.baseline_diaper_monthly || (d.baseline_diaper_daily ? d.baseline_diaper_daily * 30 : 0) || 0;
+                        needs.push(`ผ้าอ้อม ${d.size || '-'} (${dQty} ชิ้น/ด.)`);
+                    }
+                    if (d && d.req_underpad) {
+                        const uQty = d.approved_underpad || d.baseline_underpad_monthly || (d.baseline_underpad_daily ? d.baseline_underpad_daily * 30 : 0) || 0;
+                        needs.push(`แผ่นรองซับ (${uQty} ชิ้น/ด.)`);
+                    }
+                    needText = needs.length > 0 ? needs.join('<br>') : (d.approve_status || 'ไม่ขอรับผ้าอ้อม/แผ่นรอง');
                 }
 
                 let historyBadge = `<span class="text-slate-400 text-[11px] font-medium">รอเข้าคณะกรรมการ</span>`;

@@ -18,8 +18,8 @@
     <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-messaging-compat.js"></script>
-    <script src="config.js?v=20261111_v2"></script>
-    <script src="core.js?v=20261111_v2"></script>
+    <script src="config.js?v=20261111_v3"></script>
+    <script src="core.js?v=20261111_v3"></script>
     
     <style>
         body { font-family: 'Sarabun', sans-serif; background-color: #f8fafc; }
@@ -79,8 +79,14 @@
                 </div>
             </div>
             
-            <div class="flex items-center gap-4">
+            <div class="flex items-center gap-3 sm:gap-4">
                 
+                <!-- 🌟 ปุ่มเพิ่มผู้ป่วยใหม่ (Admin & Sub-Admin) 🌟 -->
+                <button type="button" onclick="addNewPatient()" title="เพิ่มผู้ป่วยใหม่" class="flex items-center gap-1.5 px-3 py-2 bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white rounded-xl text-xs font-bold transition-all shadow-sm focus:outline-none cursor-pointer">
+                    <span class="material-symbols-outlined text-[18px]">person_add</span>
+                    <span class="hidden sm:inline">เพิ่มผู้ป่วยใหม่</span>
+                </button>
+
                 <!-- 🌟 Notification Bell 🌟 -->
                 <div class="relative">
                     <button onclick="toggleNotification()" class="relative p-2 text-slate-400 hover:text-amber-500 hover:bg-amber-50 rounded-full transition-colors focus:outline-none">
@@ -249,8 +255,74 @@
         let dashboardPatients = []; 
         let allVHVsList = []; 
         let currentUserUid = ""; 
+        let currentUserName = "ผู้ดูแลระบบ"; 
 
         function toggleSidebar() { document.getElementById('sidebar').classList.toggle('-translate-x-full'); }
+
+        async function addNewPatient() {
+            let idCard = prompt("กรุณาระบุเลขบัตรประชาชน 13 หลัก\n(หากไม่มี ให้เว้นว่างไว้เพื่อสร้างรหัสชั่วคราวก่อนได้ครับ):");
+            if (idCard === null) return; 
+            
+            idCard = idCard.replace(/[^0-9]/g, ''); 
+
+            if (idCard.length > 0 && idCard.length !== 13) {
+                alert(`⚠️ เลขบัตรประชาชนต้องมี 13 หลัก (ท่านระบุมา ${idCard.length} หลัก)\nกรุณาตรวจสอบใหม่อีกครั้ง`);
+                return;
+            }
+
+            if (idCard.length === 13) {
+                if (!OrsomoCore.PatientValidator.validateThaiID(idCard)) {
+                    if (!confirm(`⚠️ รหัสบัตรประชาชน ${idCard} รูปแบบผลรวมตรวจสอบ (Checksum) ไม่ถูกต้อง\n\nคุณแน่ใจหรือไม่ว่าต้องการดำเนินการต่อด้วยเลขนี้?`)) {
+                        return;
+                    }
+                }
+
+                const dupCheck = await OrsomoCore.PatientValidator.checkDuplicateIDCard(db, idCard);
+                if (dupCheck.isDuplicate) {
+                    const p = dupCheck.existingPatient || dupCheck.patient || {};
+                    const targetDocId = (p && p.docId) || dupCheck.existingDocId || idCard;
+                    alert(`⚠️ เลขบัตรประชาชน ${idCard} มีบันทึกอยู่ในระบบแล้ว!\n\nผู้ป่วย: ${p.prefix || ''}${p.name || 'ไม่ระบุชื่อ'} (หมู่ที่ ${p.village_no || '-'} บ้านเลขที่ ${p.house_no || '-' })\n\nระบบจะพาไปยังแฟ้มประวัติของผู้ป่วยรายนี้ทันที`);
+                    window.location.href = `patient_profile.html?id=${encodeURIComponent(targetDocId)}`;
+                    return;
+                }
+            }
+
+            let docId = idCard;
+            if (docId.length !== 13) {
+                const now = new Date();
+                const randomNum = Math.floor(Math.random() * 1000).toString().padStart(3, '0');
+                docId = `TEMP-${now.getFullYear()}${String(now.getMonth()+1).padStart(2,'0')}${String(now.getDate()).padStart(2,'0')}-${randomNum}`;
+            }
+
+            try {
+                const docRef = db.collection('Patients').doc(docId);
+                const docSnap = await docRef.get();
+                
+                if (docSnap.exists) {
+                    alert(`เลขบัตร ${idCard} มีอยู่ในระบบแล้ว! กำลังพาวาร์ป...`);
+                    window.location.href = `patient_profile.html?id=${encodeURIComponent(docId)}`;
+                    return;
+                }
+
+                await docRef.set({
+                    id: docId, 
+                    id_card: idCard.length === 13 ? idCard : '', 
+                    status: 'Active', 
+                    group: 'ยังไม่ประเมิน', 
+                    adl: '-', 
+                    dep_status: '-',
+                    created_at: OrsomoCore.DateUtils.toThaiDate(new Date()),
+                    creator_uid: currentUserUid || '',
+                    created_by: currentUserName || 'เจ้าหน้าที่',
+                    timestamp: firebase.firestore.FieldValue.serverTimestamp()
+                });
+                
+                window.location.href = `patient_edit.html?id=${encodeURIComponent(docId)}`;
+            } catch (error) { 
+                console.error("Create patient error:", error);
+                alert('ไม่สามารถสร้างข้อมูลได้: ' + (error && error.message ? error.message : error)); 
+            }
+        }
 
         document.addEventListener("DOMContentLoaded", async () => {
             // ปลุก Service Worker (ถ้ามีไฟล์)
@@ -267,6 +339,7 @@
                 currentUserUid = authCtx.uid;
                 currentUserRole = authCtx.role;
                 assignedVillages = (authCtx.user && authCtx.user.assigned_villages) || [];
+                currentUserName = (authCtx.user && authCtx.user.name) || 'ผู้ดูแลระบบ';
 
                 let hospital = (authCtx.user && authCtx.user.hospital_name) || DEFAULT_CONFIGS.HOSPITAL_NAME;
                 document.getElementById('sidebar-hospital-name').innerText = hospital;
