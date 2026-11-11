@@ -1076,20 +1076,33 @@
 
         canAccessPatient: function (ctx, patient, vhvScope) {
             if (!ctx || !patient) return false;
-            const pVillage = String(patient.village_no || '').trim();
+            const rawVillage = String(patient.village_no || '').trim();
+            const pVillage = rawVillage.replace(/\D/g, '');
             const pAssigned = String(patient.assigned_vhv_id || '').trim();
+            const creatorUid = String(patient.creator_uid || '').trim();
 
             if (ctx.role === 'ADMIN') return true;
             if (ctx.role === 'SUB_ADMIN') {
-                return Array.isArray(ctx.assignedVillages) && ctx.assignedVillages.includes(pVillage);
+                // หากยังไม่ได้ระบุหมู่บ้าน (เช่น เคสสร้างใหม่) หรือตนเองเป็นผู้สร้างเคส -> อนุญาตให้เข้าถึงเสมอ
+                if (!pVillage || (creatorUid && creatorUid === String(ctx.uid || '').trim())) {
+                    return true;
+                }
+                const assigned = Array.isArray(ctx.assignedVillages)
+                    ? ctx.assignedVillages.map(function (v) { return String(v).replace(/\D/g, ''); }).filter(Boolean)
+                    : [];
+                // หาก Sub-Admin ยังไม่ถูกผูกหมู่บ้านเฉพาะ -> อนุญาตให้เข้าถึงได้ทั้งหมด
+                if (assigned.length === 0) return true;
+                return assigned.includes(pVillage);
             }
             if (ctx.role === 'VHV') {
-                const inSameVillage = ctx.villageNo !== '' && pVillage === String(ctx.villageNo).trim();
+                const vhvVillage = String(ctx.villageNo || '').replace(/\D/g, '');
+                const inSameVillage = vhvVillage !== '' && pVillage === vhvVillage;
                 if (vhvScope === 'village') {
                     return inSameVillage;
                 }
-                // ค่าเริ่มต้น: เฉพาะเคสที่ได้รับมอบหมายดูแล
-                return pAssigned !== '' && pAssigned === String(ctx.uid).trim();
+                // ค่าเริ่มต้น: เฉพาะเคสที่ได้รับมอบหมายดูแล หรืออยู่ในหมู่เดียวกันหากยังไม่ได้มอบหมาย
+                return (pAssigned !== '' && pAssigned === String(ctx.uid).trim()) ||
+                       (!pAssigned && inSameVillage);
             }
             return false;
         },
@@ -1596,16 +1609,19 @@
             const directSnap = await db.collection('Patients').doc(clean).get();
             if (directSnap.exists && directSnap.id !== exclude) {
                 const d = directSnap.data() || {};
+                const ep = {
+                    docId: directSnap.id,
+                    prefix: d.prefix || '',
+                    name: d.name || '',
+                    village_no: d.village_no || '-',
+                    house_no: d.house_no || '-',
+                    status: PatientValidator.normalizeStatus(d.status)
+                };
                 return {
                     isDuplicate: true,
-                    existingPatient: {
-                        docId: directSnap.id,
-                        prefix: d.prefix || '',
-                        name: d.name || '',
-                        village_no: d.village_no || '-',
-                        house_no: d.house_no || '-',
-                        status: PatientValidator.normalizeStatus(d.status)
-                    }
+                    existingPatient: ep,
+                    patient: ep,
+                    existingDocId: ep.docId
                 };
             }
 
@@ -1615,21 +1631,24 @@
                 const doc = querySnap.docs[i];
                 if (doc.id !== exclude) {
                     const d = doc.data() || {};
+                    const ep = {
+                        docId: doc.id,
+                        prefix: d.prefix || '',
+                        name: d.name || '',
+                        village_no: d.village_no || '-',
+                        house_no: d.house_no || '-',
+                        status: PatientValidator.normalizeStatus(d.status)
+                    };
                     return {
                         isDuplicate: true,
-                        existingPatient: {
-                            docId: doc.id,
-                            prefix: d.prefix || '',
-                            name: d.name || '',
-                            village_no: d.village_no || '-',
-                            house_no: d.house_no || '-',
-                            status: PatientValidator.normalizeStatus(d.status)
-                        }
+                        existingPatient: ep,
+                        patient: ep,
+                        existingDocId: ep.docId
                     };
                 }
             }
 
-            return { isDuplicate: false, existingPatient: null };
+            return { isDuplicate: false, existingPatient: null, patient: null, existingDocId: null };
         },
 
         canPermanentDelete: function (role, patientData) {

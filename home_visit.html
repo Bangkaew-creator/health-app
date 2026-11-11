@@ -12,8 +12,8 @@
     <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore-compat.js"></script>
-    <script src="config.js?v=20261111_v1"></script>
-    <script src="core.js?v=20261111_v1"></script>
+    <script src="config.js?v=20261111_v2"></script>
+    <script src="core.js?v=20261111_v2"></script>
 
     <style>
         body { font-family: 'Sarabun', sans-serif; background-color: #f8fafc; padding-bottom: 100px; -webkit-tap-highlight-color: transparent; }
@@ -192,14 +192,15 @@
 
         async function loadPatientAndVisits() {
             try {
+                const fallback = (authCtx && (authCtx.role === 'ADMIN' || authCtx.role === 'SUB_ADMIN')) ? 'admin_datacenter.html' : 'dashboard.html';
                 const pSnap = await db.collection('Patients').doc(String(patientId)).get();
                 if (!pSnap.exists) {
-                    showToast('ไม่พบข้อมูลผู้ป่วยในระบบ', 'error', 'dashboard.html');
+                    showToast('ไม่พบข้อมูลผู้ป่วยในระบบ', 'error', fallback);
                     return;
                 }
                 currentPatientData = pSnap.data() || {};
                 if (!OrsomoCore.Auth.canAccessPatient(authCtx, currentPatientData, 'village')) {
-                    showToast('คุณไม่มีสิทธิ์เข้าถึงแฟ้มผู้ป่วยนอกเขตรับผิดชอบ', 'error', 'dashboard.html');
+                    showToast('คุณไม่มีสิทธิ์เข้าถึงแฟ้มผู้ป่วยนอกเขตรับผิดชอบ', 'error', fallback);
                     return;
                 }
 

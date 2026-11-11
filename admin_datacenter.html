@@ -15,8 +15,8 @@
     <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore-compat.js"></script>
-    <script src="config.js?v=20261111_v1"></script>
-    <script src="core.js?v=20261111_v1"></script>
+    <script src="config.js?v=20261111_v2"></script>
+    <script src="core.js?v=20261111_v2"></script>
     
     <style>
         body { font-family: 'Sarabun', sans-serif; background-color: #f4f7fa; }
@@ -545,9 +545,10 @@
 
                 const dupCheck = await OrsomoCore.PatientValidator.checkDuplicateIDCard(db, idCard);
                 if (dupCheck.isDuplicate) {
-                    const p = dupCheck.patient;
+                    const p = dupCheck.existingPatient || dupCheck.patient || {};
+                    const targetDocId = (p && p.docId) || dupCheck.existingDocId || idCard;
                     alert(`⚠️ เลขบัตรประชาชน ${idCard} มีบันทึกอยู่ในระบบแล้ว!\n\nผู้ป่วย: ${p.prefix || ''}${p.name || 'ไม่ระบุชื่อ'} (หมู่ที่ ${p.village_no || '-'} บ้านเลขที่ ${p.house_no || '-' })\n\nระบบจะพาไปยังแฟ้มประวัติของผู้ป่วยรายนี้ทันที`);
-                    window.location.href = `patient_profile.html?id=${dupCheck.existingDocId}`;
+                    window.location.href = `patient_profile.html?id=${encodeURIComponent(targetDocId)}`;
                     return;
                 }
             }
@@ -630,7 +631,14 @@
                 snapshot.forEach(doc => {
                     const data = doc.data();
                     let hasPermissionToView = true;
-                    if (currentUserRole === 'SUB_ADMIN') hasPermissionToView = assignedVillages.includes(String(data.village_no).trim());
+                    if (currentUserRole === 'SUB_ADMIN') {
+                        const cleanV = String(data.village_no || '').replace(/\D/g, '');
+                        const cleanAssigned = (assignedVillages || []).map(v => String(v).replace(/\D/g, '')).filter(Boolean);
+                        hasPermissionToView = cleanAssigned.length === 0 ||
+                                              !cleanV ||
+                                              cleanAssigned.includes(cleanV) ||
+                                              String(data.creator_uid || '') === String(currentUserUid || '');
+                    }
                     if (hasPermissionToView) {
                         data.docId = doc.id; 
                         tempPatients.push(data);
