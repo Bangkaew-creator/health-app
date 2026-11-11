@@ -21,7 +21,7 @@ const firebaseConfig = {
 // ==========================================
 // 🛡️ ระบบล้างแคชรุ่นก่อน Auth & ปิด Offline Persistence ที่ค้างบนมือถืออัตโนมัติ
 // ==========================================
-const ORSOMO_BUILD_VERSION = "20261111_v5";
+const ORSOMO_BUILD_VERSION = "20261111_v6";
 window.ORSOMO_BUILD_VERSION = ORSOMO_BUILD_VERSION;
 
 // ฟังก์ชันต่อท้ายเลขเวอร์ชันให้ลิงก์ภายในทั้งหมด เพื่อบังคับให้มือถือโหลดไฟล์ HTML ใหม่เสมอ

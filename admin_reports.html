@@ -13,8 +13,8 @@
     <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore-compat.js"></script>
-    <script src="config.js?v=20261111_v5"></script>
-    <script src="core.js?v=20261111_v5"></script>
+    <script src="config.js?v=20261111_v6"></script>
+    <script src="core.js?v=20261111_v6"></script>
     
     <style>
         body { font-family: 'Sarabun', sans-serif; background-color: #f4f7fa; }
@@ -828,7 +828,7 @@
                     sortedVillages.forEach(v => {
                         villageFilterEl.insertAdjacentHTML('beforeend', `<option value="${v}">หมู่ที่ ${v}</option>`);
                     });
-                    if ( Array.from(villageFilterEl.options).some(o => o.value === prevVal) ) {
+                    if (villageFilterEl.options && Array.from(villageFilterEl.options).some(o => o.value === prevVal)) {
                         villageFilterEl.value = prevVal;
                     }
                 }
@@ -846,7 +846,12 @@
                 document.getElementById('loading-state').classList.add('hidden');
                 document.getElementById('content-kpt').classList.remove('hidden');
                  
-            } catch (error) { showToast("ดึงข้อมูลล้มเหลว กรุณารีเฟรชหน้าเว็บ", "error"); }
+            } catch (error) {
+                console.error("loadReportData error:", error);
+                document.getElementById('loading-state').classList.add('hidden');
+                document.getElementById('content-kpt').classList.remove('hidden');
+                showToast("ดึงข้อมูลล้มเหลว: " + (error.message || error), "error");
+            }
         }
 
         
@@ -1152,6 +1157,13 @@
             document.getElementById('sum-xl').innerText = totalXL.toLocaleString();
             document.getElementById('sum-pad').innerText = totalPad.toLocaleString();
 
+            // Requirement 1.2 ก, 3.2 ข, 5.2: คำนวณปิโตรเลียมเจลลี่ และป้ายโครงการ กปท.
+            const totalJelly = diaperPatientsCount * (configJellyQty || 1);
+            const jellyCost = totalJelly * (configJellyPrice || 30.00);
+            const bannerCost = count > 0 ? (configBannerPrice || 500.00) : 0;
+            const diaperPadCost = ((totalS + totalM + totalL + totalXL) * configDiaperPrice) + (totalPad * configUnderpadPrice);
+            const grandTotalCost = diaperPadCost + jellyCost + bannerCost;
+
             // อัปเดตยอดคงเหลือคลังพัสดุและป้ายสถานะความเพียงพอแบบเรียลไทม์ (กปท.)
             updateInventoryStatusBadge('badge-s', 'inv-s', totalS, centralInventory.item_s, 'ชิ้น');
             updateInventoryStatusBadge('badge-m', 'inv-m', totalM, centralInventory.item_m, 'ชิ้น');
@@ -1159,13 +1171,6 @@
             updateInventoryStatusBadge('badge-xl', 'inv-xl', totalXL, centralInventory.item_xl, 'ชิ้น');
             updateInventoryStatusBadge('badge-pad', 'inv-pad', totalPad, centralInventory.item_pad, 'ชิ้น');
             updateInventoryStatusBadge('badge-jelly', 'inv-jelly', totalJelly, centralInventory.item_jelly, 'กระปุก');
-
-            // Requirement 1.2 ก, 3.2 ข, 5.2: คำนวณปิโตรเลียมเจลลี่ และป้ายโครงการ กปท.
-            const totalJelly = diaperPatientsCount * (configJellyQty || 1);
-            const jellyCost = totalJelly * (configJellyPrice || 30.00);
-            const bannerCost = count > 0 ? (configBannerPrice || 500.00) : 0;
-            const diaperPadCost = ((totalS + totalM + totalL + totalXL) * configDiaperPrice) + (totalPad * configUnderpadPrice);
-            const grandTotalCost = diaperPadCost + jellyCost + bannerCost;
 
             const sumJellyEl = document.getElementById('sum-jelly');
             if (sumJellyEl) sumJellyEl.innerText = totalJelly.toLocaleString();
