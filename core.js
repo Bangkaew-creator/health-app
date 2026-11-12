@@ -227,14 +227,17 @@
         if (!r || r === 'อสม.' || r === 'อสม' || r === 'อาสาสมัครสาธารณสุข' || r === 'USER' || r === 'MEMBER') {
             return 'VHV';
         }
-        if (r === 'ADMIN' || r === 'CENTRAL_ADMIN' || r === 'SUPER_ADMIN' || r === 'แอดมิน' || r.includes('ADMIN') || raw.includes('ผู้ดูแลระบบ') || raw.includes('แอดมิน')) {
-            return 'ADMIN';
-        }
+        // 1. ตรวจสอบ SUB_ADMIN (เจ้าหน้าที่ รพ.สต./ศูนย์สาธารณสุข) ก่อนเสมอ ป้องกันคำว่า ADMIN ใน SUB_ADMIN ตีความเป็น ADMIN
         if (r === 'SUB_ADMIN' || r === 'SUB-ADMIN' || r === 'SUBADMIN' || r === 'SUB ADMIN' ||
-            r === 'รพ.สต.' || r === 'รพสต.' || r === 'รพสต' || raw.includes('เจ้าหน้าที่') ||
-            raw.includes('รพ.สต') || raw.includes('รพสต') || raw.includes('สาธารณสุข') ||
+            r === 'รพ.สต.' || r === 'รพสต.' || r === 'รพสต' || raw.includes('รพ.สต') ||
+            raw.includes('รพสต') || raw.includes('สาธารณสุข') || raw.includes('เจ้าหน้าที่') ||
             raw.includes('พยาบาล') || raw.includes('หมออนามัย')) {
             return 'SUB_ADMIN';
+        }
+        // 2. ตรวจสอบ ADMIN (ผู้ดูแลระบบส่วนกลาง)
+        if (r === 'ADMIN' || r === 'CENTRAL_ADMIN' || r === 'SUPER_ADMIN' || r === 'แอดมิน' ||
+            raw.includes('ผู้ดูแลระบบ') || raw === 'ผู้ดูแล') {
+            return 'ADMIN';
         }
         return r;
     }
