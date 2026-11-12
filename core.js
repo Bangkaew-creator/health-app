@@ -1124,8 +1124,23 @@
             const pAssigned = String(patient.assigned_vhv_id || '').trim();
             const creatorUid = String(patient.creator_uid || '').trim();
 
-            // ผู้ดูแลส่วนกลาง (ADMIN) และ เจ้าหน้าที่ รพ.สต./สาธารณสุข (SUB_ADMIN) สามารถเข้าถึงผู้ป่วยได้ทุกหมู่บ้านในตำบล
-            if (ctx.role === 'ADMIN' || ctx.role === 'SUB_ADMIN') return true;
+            // ผู้ดูแลส่วนกลาง (ADMIN) มีสิทธิ์เข้าถึงผู้ป่วยได้ทุกหมู่บ้านในตำบล
+            if (ctx.role === 'ADMIN') return true;
+
+            // เจ้าหน้าที่ รพ.สต./ศูนย์สาธารณสุข (SUB_ADMIN)
+            if (ctx.role === 'SUB_ADMIN') {
+                // หากยังไม่ได้ระบุหมู่บ้าน (เช่น เคสสร้างใหม่) หรือตนเองเป็นผู้สร้างเคส -> อนุญาตให้เข้าถึงเสมอ
+                if (!pVillage || (creatorUid && creatorUid === String(ctx.uid || '').trim())) {
+                    return true;
+                }
+                const assigned = (Array.isArray(ctx.assignedVillages) ? ctx.assignedVillages : (ctx.assigned_villages || []))
+                    .map(function (v) { return String(v).replace(/\D/g, ''); })
+                    .filter(Boolean);
+                // หาก Sub-Admin ไม่ได้ระบุหมู่บ้านเฉพาะ -> เข้าถึงได้ทั้งหมด
+                if (assigned.length === 0) return true;
+                // หากมีหมู่บ้านเฉพาะ (เช่น ศูนย์บริการสาธารณสุข 1 ดูแลเฉพาะหมู่ 8 และ 13) -> เข้าถึงได้เฉพาะหมู่บ้านที่ระบุ
+                return assigned.includes(pVillage);
+            }
 
             if (ctx.role === 'VHV') {
                 const vhvVillage = String(ctx.villageNo || '').replace(/\D/g, '');
