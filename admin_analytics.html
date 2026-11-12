@@ -18,8 +18,8 @@
     <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-messaging-compat.js"></script>
-    <script src="config.js?v=20261111_v6"></script>
-    <script src="core.js?v=20261111_v6"></script>
+    <script src="config.js?v=20261112_v1"></script>
+    <script src="core.js?v=20261112_v1"></script>
     
     <style>
         body { font-family: 'Sarabun', sans-serif; background-color: #f8fafc; }
@@ -730,17 +730,22 @@
         return String(d);
     }
 
-    async function loadReportData() {
+    async function loadReportData(forceRefresh = false) {
         try {
-            const pSnap = await db.collection('Patients').get();
+            const patientsList = await OrsomoCore.DataCache.getPatients(db, { forceRefresh: forceRefresh });
             allPatients = [];
             allInactive = [];
-            pSnap.forEach(doc => {
-                const data = doc.data();
+            const cleanAssigned = (Array.isArray(assignedVillages) ? assignedVillages : [])
+                .map(v => String(v).replace(/\D/g, ''))
+                .filter(Boolean);
+
+            patientsList.forEach(data => {
                 let hasPermission = true;
-                if (currentUserRole === 'SUB_ADMIN') hasPermission = assignedVillages.includes(String(data.village_no).trim());
+                if (currentUserRole === 'SUB_ADMIN' && cleanAssigned.length > 0) {
+                    const cleanV = String(data.village_no || '').replace(/\D/g, '');
+                    hasPermission = cleanAssigned.includes(cleanV);
+                }
                 if (hasPermission) {
-                    data.docId = doc.id; 
                     allPatients.push(data);
                     if (['เสียชีวิต', 'ย้ายที่อยู่'].includes(data.status)) allInactive.push(data);
                 }

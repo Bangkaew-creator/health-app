@@ -13,8 +13,8 @@
     <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore-compat.js"></script>
-    <script src="config.js?v=20261111_v6"></script>
-    <script src="core.js?v=20261111_v6"></script>
+    <script src="config.js?v=20261112_v1"></script>
+    <script src="core.js?v=20261112_v1"></script>
 
     <style>
         body { font-family: 'Sarabun', sans-serif; background-color: #f8fafc; min-height: 100dvh; -webkit-tap-highlight-color: transparent; }
@@ -1554,6 +1554,7 @@
                     task_desc: '',
                     tasks_required: []
                 });
+                try { OrsomoCore.DataCache.invalidatePatients(); } catch (e) {}
                 showToast('บันทึกปิดภารกิจเรียบร้อยแล้ว', 'success', 'assessments.html');
             } catch (e) {
                 console.error(e);
@@ -2383,6 +2384,7 @@
                 try {
                     await db.collection('Patients').doc(String(patientId)).delete();
                     await db.collection('Patient_Images').doc(String(patientId)).delete().catch(function () {});
+                    try { OrsomoCore.DataCache.invalidatePatients(); } catch (e) {}
                     showToast('ลบข้อมูลที่ซ้ำซ้อนออกจากระบบเรียบร้อยแล้ว', 'success');
                     setTimeout(goBackToList, 700);
                 } catch (err) {
@@ -2413,6 +2415,7 @@
                 }
 
                 await db.collection('Patients').doc(String(patientId)).update(updatePayload);
+                try { OrsomoCore.DataCache.invalidatePatients(); } catch (e) {}
 
                 if (isInactive) {
                     await OrsomoCore.Alerts.checkAndNotifyEquipmentReturn(db, patientId, currentPatientData, chosenVal);

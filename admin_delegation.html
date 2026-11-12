@@ -12,8 +12,8 @@
     <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore-compat.js"></script>
-    <script src="config.js?v=20261111_v6"></script>
-    <script src="core.js?v=20261111_v6"></script>
+    <script src="config.js?v=20261112_v1"></script>
+    <script src="core.js?v=20261112_v1"></script>
     
     <style>
         body { font-family: 'Sarabun', sans-serif; background-color: #f4f7fa; }
@@ -273,17 +273,23 @@
             toast.timer = setTimeout(() => { toast.remove(); }, 3000);
         }
 
-        async function loadDataChannels() {
+        async function loadDataChannels(forceRefresh = false) {
             try {
-                const patientSnap = await db.collection('Patients').get();
+                const patientsList = await OrsomoCore.DataCache.getPatients(db, { forceRefresh: forceRefresh });
                 allPatients = [];
-                patientSnap.forEach(doc => {
-                    const data = doc.data();
+                const cleanAssigned = (Array.isArray(assignedVillages) ? assignedVillages : [])
+                    .map(v => String(v).replace(/\D/g, ''))
+                    .filter(Boolean);
+
+                patientsList.forEach(data => {
                     let hasPermissionToView = true;
-                    if (currentUserRole === 'SUB_ADMIN') hasPermissionToView = assignedVillages.includes(String(data.village_no).trim());
+                    if (currentUserRole === 'SUB_ADMIN' && cleanAssigned.length > 0) {
+                        const cleanV = String(data.village_no || '').replace(/\D/g, '');
+                        hasPermissionToView = cleanAssigned.includes(cleanV);
+                    }
                     if (hasPermissionToView) {
-                        data.docId = doc.id;
-                        if (!data.id) data.id = doc.id;
+                        data.docId = data.docId || data.id;
+                        if (!data.id) data.id = data.docId;
                         allPatients.push(data);
                     }
                 });

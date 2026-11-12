@@ -15,8 +15,8 @@
     <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore-compat.js"></script>
-    <script src="config.js?v=20261111_v6"></script>
-    <script src="core.js?v=20261111_v6"></script>
+    <script src="config.js?v=20261112_v1"></script>
+    <script src="core.js?v=20261112_v1"></script>
 
     <style>
         body { font-family: 'Sarabun', sans-serif; background-color: #f8fafc; -webkit-tap-highlight-color: transparent; }
@@ -189,22 +189,27 @@
             }
         });
 
-        async function fetchPermittedPatients() {
+        async function fetchPermittedPatients(forceRefresh = false) {
             try {
-                const snapshot = await db.collection('Patients').get();
-                const allRaw = [];
-                snapshot.forEach(function (doc) {
-                    const d = doc.data() || {};
-                    allRaw.push(Object.assign({}, d, { docId: doc.id }));
+                const allRaw = await OrsomoCore.DataCache.getPatients(db, {
+                    role: authCtx.role,
+                    villageNo: authCtx.villageNo,
+                    forceRefresh: forceRefresh
                 });
+
+                const cleanAssigned = (Array.isArray(authCtx.assignedVillages) ? authCtx.assignedVillages : [])
+                    .map(v => String(v).replace(/\D/g, ''))
+                    .filter(Boolean);
 
                 // กรองเฉพาะผู้ป่วยสถานะ Active และอยู่ในขอบเขตสิทธิ์ของผู้ใช้งานเท่านั้น
                 permittedActivePatients = allRaw.filter(function (p) {
                     if (!OrsomoCore.PatientValidator.isActiveStatus(p.status)) return false;
                     if (authCtx.role === 'ADMIN') return true;
-                    if (authCtx.role === 'SUB_ADMIN') {
-                        return authCtx.assignedVillages.includes(String(p.village_no || '').trim());
+                    if (authCtx.role === 'SUB_ADMIN' && cleanAssigned.length > 0) {
+                        const cleanV = String(p.village_no || '').replace(/\D/g, '');
+                        return cleanAssigned.includes(cleanV);
                     }
+                    if (authCtx.role === 'SUB_ADMIN') return true;
                     // สำหรับ VHV: เห็นได้เฉพาะในหมู่บ้านตนเอง หรือเคสที่ได้รับมอบหมายตรง (ไม่เห็นหมู่บ้านอื่นเด็ดขาด)
                     const inMyVillage = authCtx.villageNo !== '' && String(p.village_no || '').trim() === authCtx.villageNo;
                     const isAssignedToMe = String(p.assigned_vhv_id || '').trim() === authCtx.uid;

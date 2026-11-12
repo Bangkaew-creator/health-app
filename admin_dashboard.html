@@ -18,8 +18,8 @@
     <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-messaging-compat.js"></script>
-    <script src="config.js?v=20261111_v6"></script>
-    <script src="core.js?v=20261111_v6"></script>
+    <script src="config.js?v=20261112_v1"></script>
+    <script src="core.js?v=20261112_v1"></script>
     
     <style>
         body { font-family: 'Sarabun', sans-serif; background-color: #f8fafc; }
@@ -79,8 +79,13 @@
                 </div>
             </div>
             
-            <div class="flex items-center gap-3 sm:gap-4">
+            <div class="flex items-center gap-2 sm:gap-3">
                 
+                <!-- 🌟 ปุ่มรีเฟรชข้อมูลสด (Bypass Cache) 🌟 -->
+                <button type="button" onclick="loadDashboardData(true)" title="ดึงข้อมูลสดจากฐานข้อมูล" class="p-2 text-slate-400 hover:text-emerald-600 hover:bg-emerald-50 rounded-xl transition-colors focus:outline-none flex items-center justify-center cursor-pointer">
+                    <span class="material-symbols-outlined text-[20px]">sync</span>
+                </button>
+
                 <!-- 🌟 ปุ่มเพิ่มผู้ป่วยใหม่ (Admin & Sub-Admin) 🌟 -->
                 <button type="button" onclick="addNewPatient()" title="เพิ่มผู้ป่วยใหม่" class="flex items-center gap-1.5 px-3 py-2 bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white rounded-xl text-xs font-bold transition-all shadow-sm focus:outline-none cursor-pointer">
                     <span class="material-symbols-outlined text-[18px]">person_add</span>
@@ -427,22 +432,34 @@
             notifications = [];
         }
 
-        async function loadDashboardData() {
+        let cachedRawPatientsList = [];
+
+        async function loadDashboardData(forceRefresh = false) {
             try {
-                const snapshot = await db.collection('Patients').get();
+                const patients = await OrsomoCore.DataCache.getPatients(db, {
+                    forceRefresh: forceRefresh
+                });
+                cachedRawPatientsList = patients;
                 dashboardPatients = [];
                 
                 let cSocial = 0, cHome = 0, cBed = 0, cAll = 0;
                 let cPending = 0;
                 let cOverdue = 0;
 
-                snapshot.forEach(doc => {
-                    const p = doc.data();
-                    p.docId = doc.id;
-                    if (!p.id) p.id = doc.id;
+                const cleanAssigned = (Array.isArray(assignedVillages) ? assignedVillages : [])
+                    .map(v => String(v).replace(/\D/g, ''))
+                    .filter(Boolean);
+
+                patients.forEach(p => {
+                    const pDocId = p.docId || p.id;
+                    p.docId = pDocId;
+                    if (!p.id) p.id = pDocId;
 
                     let hasPermissionToView = true;
-                    if (currentUserRole === 'SUB_ADMIN') hasPermissionToView = assignedVillages.includes(String(p.village_no).trim());
+                    if (currentUserRole === 'SUB_ADMIN' && cleanAssigned.length > 0) {
+                        const pV = String(p.village_no || '').replace(/\D/g, '');
+                        hasPermissionToView = cleanAssigned.includes(pV);
+                    }
 
                     if (hasPermissionToView && String(p.status || 'Active').toLowerCase() === 'active') {
                         dashboardPatients.push(p);
@@ -493,10 +510,13 @@
                 const dismissedNotifs = JSON.parse(localStorage.getItem(`dismissed_notifs_${currentUserUid}`) || '[]');
 
                 const patientStatusMap = {};
-                const pSnap = await db.collection('Patients').get();
-                pSnap.forEach(d => {
-                    const data = d.data();
-                    patientStatusMap[d.id] = data.status || 'Active';
+                // นำข้อมูลผู้ป่วยที่แคชไว้แล้วมาใช้ ไม่ดึงซ้ำซ้อนจาก Firestore อีกรอบ
+                const pList = cachedRawPatientsList.length > 0
+                    ? cachedRawPatientsList
+                    : await OrsomoCore.DataCache.getPatients(db);
+                pList.forEach(data => {
+                    const docId = data.docId || data.id;
+                    patientStatusMap[docId] = data.status || 'Active';
                     if (data.id) patientStatusMap[data.id] = data.status || 'Active';
                 });
 

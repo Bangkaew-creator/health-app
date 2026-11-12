@@ -12,8 +12,8 @@
     <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore-compat.js"></script>
-    <script src="config.js?v=20261111_v6"></script>
-    <script src="core.js?v=20261111_v6"></script>
+    <script src="config.js?v=20261112_v1"></script>
+    <script src="core.js?v=20261112_v1"></script>
     
     <style>
         body { font-family: 'Sarabun', sans-serif; background-color: #f9f9ff; padding-bottom: 110px; -webkit-tap-highlight-color: transparent; }
@@ -253,9 +253,9 @@
 
             try {
                 const compressed = await OrsomoCore.ImageStore.compressImage(file, {
-                    maxWidth: 850,
-                    maxHeight: 850,
-                    quality: 0.70,
+                    maxWidth: 800,
+                    maxHeight: 800,
+                    quality: 0.65,
                     mimeType: 'image/jpeg'
                 });
                 setPreviewUI(type, compressed);
@@ -318,6 +318,7 @@
                     updated_at: firebase.firestore.FieldValue.serverTimestamp()
                 });
 
+                try { OrsomoCore.DataCache.invalidatePatients(); } catch (e) {}
                 showToast('บันทึกรูปภาพเรียบร้อยแล้ว', 'success', `patient_profile.html?id=${encodeURIComponent(patientId)}`);
             } catch (e) {
                 console.error(e);

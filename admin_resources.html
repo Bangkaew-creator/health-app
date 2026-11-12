@@ -13,8 +13,8 @@
     <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore-compat.js"></script>
-    <script src="config.js?v=20261111_v6"></script>
-    <script src="core.js?v=20261111_v6"></script>
+    <script src="config.js?v=20261112_v1"></script>
+    <script src="core.js?v=20261112_v1"></script>
     
     <style>
         body { font-family: 'Sarabun', sans-serif; background-color: #f4f7fa; }
@@ -510,27 +510,29 @@
             };
         }
 
-        async function loadResourceData() {
+        async function loadResourceData(forceRefresh = false) {
             try {
                 document.getElementById('loading-state').classList.remove('hidden');
-                const snapshot = await db.collection('Patients').get();
+                const patientsList = await OrsomoCore.DataCache.getPatients(db, { forceRefresh: forceRefresh });
                 allResourcePatients = [];
                 selectedPatientDocIds.clear();
 
                 const villageSet = new Set();
+                const cleanAssigned = (Array.isArray(assignedVillages) ? assignedVillages : [])
+                    .map(v => String(v).replace(/\D/g, ''))
+                    .filter(Boolean);
 
-                snapshot.forEach(doc => {
-                    const p = doc.data();
-                    p.docId = doc.id;
+                patientsList.forEach(p => {
                     const isActive = String(p.status || 'Active').trim().toLowerCase() === 'active';
                     if (!isActive) return;
 
                     const vNo = String(p.village_no !== undefined && p.village_no !== null ? p.village_no : '').trim();
                     if (vNo) villageSet.add(vNo);
 
-                    // กรองสิทธิ์ตามหมู่บ้านสำหรับ SUB_ADMIN
-                    if (currentUserRole === 'SUB_ADMIN' && !assignedVillages.includes(vNo)) {
-                        return;
+                    // กรองสิทธิ์ตามหมู่บ้านสำหรับ SUB_ADMIN (หากมีการระบุเฉพาะ)
+                    if (currentUserRole === 'SUB_ADMIN' && cleanAssigned.length > 0) {
+                        const cleanV = vNo.replace(/\D/g, '');
+                        if (!cleanAssigned.includes(cleanV)) return;
                     }
 
                     const d = OrsomoCore.DiaperAdapter.parse(p.diaper);

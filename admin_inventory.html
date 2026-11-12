@@ -12,8 +12,8 @@
     <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore-compat.js"></script>
-    <script src="config.js?v=20261111_v6"></script>
-    <script src="core.js?v=20261111_v6"></script>
+    <script src="config.js?v=20261112_v1"></script>
+    <script src="core.js?v=20261112_v1"></script>
     
     <style>
         body { font-family: 'Sarabun', sans-serif; background-color: #f4f7fa; }
@@ -506,10 +506,10 @@
         // Tab 3: จ่ายตามมติ กปท. (พระเอกของเรา)
         // ==========================================
         async function fetchAvailableRounds() {
-            const snap = await db.collection('Patients').get();
+            const patients = await OrsomoCore.DataCache.getPatients(db);
             let rounds = new Set();
-            snap.forEach(doc => {
-                const d = cleanJSON(doc.data().diaper);
+            patients.forEach(p => {
+                const d = cleanJSON(p.diaper);
                 if(d && Array.isArray(d.allocations)) d.allocations.forEach(r => rounds.add(r));
             });
             const sel = document.getElementById('out-round-select');
@@ -522,11 +522,10 @@
             if(!round) return showToast('กรุณาเลือกรอบมติก่อน', 'error');
 
             showToast('กำลังดึงข้อมูล...','info');
-            const snap = await db.collection('Patients').get();
+            const patients = await OrsomoCore.DataCache.getPatients(db);
             let targetPatients = [];
 
-            snap.forEach(doc => {
-                const p = doc.data();
+            patients.forEach(p => {
                 if(String(p.status).toLowerCase() !== 'active') return;
                 const d = cleanJSON(p.diaper);
                 if(d && Array.isArray(d.allocations) && d.allocations.includes(round)) {
@@ -548,7 +547,7 @@
                     else if (rawSize.includes('M')) baseSize = 'M';
                     else if (rawSize.includes('L')) baseSize = 'L';
                     
-                    targetPatients.push({ id: doc.id, name: p.name, size: baseSize, diaperQty: dQty, padQty: pQty });
+                    targetPatients.push({ id: p.docId || p.id, name: p.name, size: baseSize, diaperQty: dQty, padQty: pQty });
                 }
             });
 

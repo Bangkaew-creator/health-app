@@ -1,11 +1,24 @@
-# ยกเว้นไฟล์ HTML ทั้งหมด ไม่ให้อัปโหลดไป GAS
+# ยกเว้นไฟล์ทั้งหมดของฝั่งเว็บ แอปพลิเคชัน กฎฐานข้อมูล และเอกสาร ไม่ให้อัปโหลดไปทับ Google Apps Script
 *.html
-
-# ยกเว้นไฟล์ CSS และ Javascript (ถ้ามี)
 *.css
-
-# ยกเว้นโฟลเดอร์ระบบของ GitHub
-.github/
-
-# ยกเว้นไฟล์เอกสารต่างๆ 
 *.md
+*.png
+*.jpg
+*.jpeg
+*.webp
+*.svg
+*.ico
+*.rules
+
+# ยกเว้นโฟลเดอร์ระบบของ GitHub และไฟล์ตั้งค่าฝั่งเว็บ
+.github/
+.github/**
+manifest.json
+firestore.rules
+config.js
+core.js
+firebase-messaging-sw.js
+fix_json.js
+inject_modal.js
+temp_check.js
+test_diaper.js
