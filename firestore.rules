@@ -315,6 +315,9 @@ service cloud.firestore {
         isOptionalString(data, 'pic_url', 900000) &&
         isOptionalString(data, 'secret_verify', 256) &&
         isOptionalString(data, 'fcm_token', 1024) &&
+        (!('requested_role' in data) || data.requested_role == null || (data.requested_role is string && data.requested_role in ['VHV', 'SUB_ADMIN', 'ADMIN'])) &&
+        isOptionalString(data, 'approved_by', 128) &&
+        isOptionalTimestampOrString(data, 'approved_at', 100) &&
         isOptionalTimestampOrString(data, 'timestamp', 100) &&
         isOptionalTimestampOrString(data, 'created_at', 100) &&
         isOptionalTimestampOrString(data, 'updated_at', 100);
@@ -428,34 +431,26 @@ service cloud.firestore {
         isSessionOwner(liffUid) &&
         isValidVhv(request.resource.data) &&
         (!('uid' in request.resource.data) || request.resource.data.uid == liffUid) &&
-        (
-          // VHV self-registration (must start as Pending)
-          (
-            (request.resource.data.role in ['VHV', 'vhv', 'Vhv'] || request.resource.data.role.matches('(?i)^\\s*(vhv|อสม\\.?|อาสาสมัครสาธารณสุข|user|member|)\\s*$')) &&
-            (request.resource.data.status in ['Pending', 'pending', 'PENDING'] || request.resource.data.status.matches('(?i)^\\s*pending\\s*$'))
-          ) ||
-          // Central Admin registration with secret code verification
-          (
-            (request.resource.data.role in ['ADMIN', 'admin', 'Admin'] || request.resource.data.role.matches('(?i)^\\s*(admin|central_admin|super_admin|แอดมิน)\\s*$')) &&
-            (request.resource.data.status in ['Active', 'active', 'ACTIVE'] || request.resource.data.status.matches('(?i)^\\s*active\\s*$')) &&
-            isValidAdminSecretVerify(request.resource.data)
-          ) ||
-          // Sub-Admin registration with secret code verification
-          (
-            (request.resource.data.role in ['SUB_ADMIN', 'sub_admin', 'Sub_Admin'] || request.resource.data.role.matches('(?i)^\\s*(sub_admin|sub-admin|subadmin|รพ\\.?สต\\.?|เจ้าหน้าที่)\\s*$')) &&
-            (request.resource.data.status in ['Active', 'active', 'ACTIVE'] || request.resource.data.status.matches('(?i)^\\s*active\\s*$')) &&
-            isValidSubAdminSecretVerify(request.resource.data)
-          )
-        )
+        // Any non-admin self-registration must start as Pending VHV (optional requested_role allowed)
+        (request.resource.data.role in ['VHV', 'vhv', 'Vhv'] || request.resource.data.role.matches('(?i)^\\s*(vhv|อสม\\.?|อาสาสมัครสาธารณสุข|user|member|)\\s*$')) &&
+        (request.resource.data.status in ['Pending', 'pending', 'PENDING'] || request.resource.data.status.matches('(?i)^\\s*pending\\s*$'))
       );
 
       allow update: if isAuthenticated() && (
         // Central Admin: full user management
         isAdmin() ||
-        // Sub-Admin: approve/reject/manage VHV accounts only (cannot modify or promote to ADMIN/SUB_ADMIN)
+        // Sub-Admin: approve/reject/manage VHV accounts only within assigned_villages
         (
           isSubAdmin() &&
           uidNotModified() &&
+          ('village_no' in resource.data) &&
+          resource.data.village_no != null &&
+          ('assigned_villages' in get(/databases/$(database)/documents/VHVs/$(request.auth.uid)).data) &&
+          (get(/databases/$(database)/documents/VHVs/$(request.auth.uid)).data.assigned_villages is list) &&
+          (string(resource.data.village_no) in get(/databases/$(database)/documents/VHVs/$(request.auth.uid)).data.assigned_villages) &&
+          request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+            'status', 'village_no', 'assigned_villages', 'approved_by', 'approved_at', 'updated_at', 'timestamp'
+          ]) &&
           (
             !('role' in resource.data) ||
             resource.data.role == null ||
@@ -498,7 +493,7 @@ service cloud.firestore {
     // 2. System Configuration
     match /SystemConfig/{configId} {
       allow get: if (
-          configId in ['HOSPITAL_NAME', 'SYSTEM_NAME', 'VILLAGE_COUNT', 'SUB_CENTERS', 'ADMIN_SECRET_CODE'] &&
+          configId in ['HOSPITAL_NAME', 'SYSTEM_NAME', 'VILLAGE_COUNT', 'SUB_CENTERS'] &&
           isAuthenticated()
         ) || isApprovedUser();
       allow list: if isApprovedUser();

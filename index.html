@@ -38,10 +38,10 @@
     <div id="pending-screen" class="hidden w-full max-w-md bg-white rounded-3xl p-8 shadow-xl text-center border border-amber-100">
         <span class="material-symbols-outlined text-[64px] text-amber-500 mb-4 bg-amber-50 w-24 h-24 rounded-full flex items-center justify-center mx-auto animate-pulse">schedule</span>
         <h2 class="text-2xl font-bold text-slate-800">รอการตรวจสอบสิทธิ์</h2>
-        <p class="text-sm text-slate-500 mt-2 mb-4 leading-relaxed">ข้อมูลลงทะเบียนของคุณถูกส่งเข้าระบบเรียบร้อยแล้ว</p>
+        <p class="text-sm font-semibold text-amber-600 mt-2 mb-2 leading-relaxed">ลงทะเบียนสำเร็จ กรุณารอผู้ดูแลระบบอนุมัติสิทธิ์</p>
         <div class="text-xs text-slate-500 leading-relaxed bg-slate-50 p-4 rounded-2xl border border-slate-100">
             เพื่อคุ้มครองข้อมูลส่วนบุคคลของผู้ป่วย บัญชีที่ยังไม่อนุมัติจะไม่สามารถเปิดดูข้อมูลในระบบได้<br><br>
-            เมื่อเจ้าหน้าที่ รพ.สต. หรือแอดมินอนุมัติแล้ว ระบบจะพาเข้าหน้าหลักโดยอัตโนมัติครับ
+            เมื่อผู้ดูแลระบบตรวจสอบและอนุมัติแล้ว ระบบจะเปิดสิทธิ์ให้เข้าใช้งานโดยอัตโนมัติครับ
         </div>
         <button onclick="window.location.reload()" class="mt-5 w-full py-3 bg-amber-50 hover:bg-amber-100 text-amber-700 font-bold text-sm rounded-xl transition-colors flex items-center justify-center gap-1.5">
             <span class="material-symbols-outlined text-[18px]">refresh</span> ตรวจสอบสถานะอีกครั้ง
@@ -105,7 +105,7 @@
                 <span class="material-symbols-outlined text-4xl">admin_panel_settings</span>
             </div>
             <h1 class="text-xl font-bold text-slate-800">ลงทะเบียนเจ้าหน้าที่ รพ.สต. / ส่วนกลาง</h1>
-            <p class="text-xs text-slate-500 mt-1">ใช้รหัสลับ (Secret Code) เพื่อยืนยันสิทธิ์หน่วยงาน</p>
+            <p class="text-xs text-slate-500 mt-1">ส่งคำขอรับสิทธิ์เจ้าหน้าที่ (ต้องรอผู้ดูแลระบบอนุมัติ)</p>
         </div>
 
         <div class="space-y-4">
@@ -122,11 +122,18 @@
                 <input type="tel" id="admin-reg-phone" placeholder="08X-XXX-XXXX" class="w-full px-4 py-3 rounded-xl border border-slate-200 focus:border-amber-500 focus:ring-2 focus:ring-amber-500/20 outline-none text-sm">
             </div>
             <div>
-                <label class="block text-sm font-bold text-slate-700 mb-1">รหัสลับ (Secret Code) <span class="text-red-500">*</span></label>
-                <input type="password" id="admin-reg-secret" placeholder="กรอกรหัส รพ.สต. หรือ รหัสแอดมิน" class="w-full px-4 py-3 rounded-xl border border-slate-200 focus:border-amber-500 focus:ring-2 focus:ring-amber-500/20 outline-none text-sm">
+                <label class="block text-sm font-bold text-slate-700 mb-1">ตำแหน่งที่ขอรับสิทธิ์ <span class="text-red-500">*</span></label>
+                <select id="admin-reg-role" class="w-full px-4 py-3 rounded-xl border border-slate-200 focus:border-amber-500 focus:ring-2 focus:ring-amber-500/20 outline-none text-sm bg-white font-medium">
+                    <option value="SUB_ADMIN">เจ้าหน้าที่ รพ.สต. / สาธารณสุข (Sub-Admin)</option>
+                    <option value="ADMIN">ผู้ดูแลระบบส่วนกลาง (Central Admin)</option>
+                </select>
+            </div>
+            <div>
+                <label class="block text-sm font-bold text-slate-700 mb-1">รหัสยืนยันหน่วยงาน (ถ้ามี)</label>
+                <input type="password" id="admin-reg-secret" placeholder="กรอกรหัสหน่วยงาน (ถ้ามี)" class="w-full px-4 py-3 rounded-xl border border-slate-200 focus:border-amber-500 focus:ring-2 focus:ring-amber-500/20 outline-none text-sm">
             </div>
             <button onclick="registerStaff()" id="btn-register-admin" class="w-full bg-amber-500 hover:bg-amber-600 text-white font-bold py-3.5 rounded-xl shadow-lg mt-4 transition-all active:scale-95">
-                ตรวจสอบรหัสและยืนยัน
+                ยืนยันการส่งคำขอลงทะเบียน
             </button>
             <button onclick="hideAdminRegistration()" class="w-full text-slate-400 font-bold py-2 mt-1 hover:text-slate-600 text-sm">
                 กลับไปหน้าลงทะเบียน อสม.
@@ -342,58 +349,25 @@
             const name = document.getElementById('admin-reg-name').value.trim();
             const nickname = document.getElementById('admin-reg-nickname').value.trim();
             const phone = document.getElementById('admin-reg-phone').value.trim();
-            const secretCode = document.getElementById('admin-reg-secret').value.trim();
+            const roleSelect = document.getElementById('admin-reg-role');
+            const requestedRole = (roleSelect ? roleSelect.value : 'SUB_ADMIN') || 'SUB_ADMIN';
+            const secretInput = document.getElementById('admin-reg-secret');
+            const secretCode = secretInput ? secretInput.value.trim() : '';
 
-            if (!name || !phone || !secretCode) {
-                return showToast("กรุณากรอกข้อมูลและรหัสลับให้ครบถ้วน", "error");
+            if (!name || !phone) {
+                return showToast("กรุณากรอกชื่อและเบอร์โทรศัพท์ให้ครบถ้วน", "error");
             }
 
             const btn = document.getElementById('btn-register-admin');
             btn.disabled = true;
-            btn.innerText = "กำลังตรวจสอบรหัส...";
+            btn.innerText = "กำลังส่งคำขอลงทะเบียน...";
 
             try {
                 const identity = await ensureCurrentIdentity();
                 if (!identity.uid) {
                     showToast("ไม่พบข้อมูลยืนยันตัวตน LINE กรุณาเข้าผ่านแอป LINE", "error");
                     btn.disabled = false;
-                    btn.innerText = "ตรวจสอบรหัสและยืนยัน";
-                    return;
-                }
-
-                const adminCodeSnap = await db.collection('SystemConfig').doc('ADMIN_SECRET_CODE').get();
-                const adminSecret = adminCodeSnap.exists ? String(adminCodeSnap.data().value || '').trim() : null;
-
-                const subCentersSnap = await db.collection('SystemConfig').doc('SUB_CENTERS').get();
-                let subCenters = [];
-                if (subCentersSnap.exists) {
-                    const val = subCentersSnap.data().value;
-                    if (val && typeof val === 'string') {
-                        try { subCenters = JSON.parse(val); } catch (e) {}
-                    } else if (Array.isArray(val)) {
-                        subCenters = val;
-                    }
-                }
-
-                let assignedRole = null;
-                let assignedVillages = [];
-                let specificHospitalName = null;
-
-                if (adminSecret && secretCode === adminSecret) {
-                    assignedRole = 'ADMIN';
-                } else {
-                    const matchedSub = subCenters.find(sc => String(sc.secret_code || '').trim() === secretCode);
-                    if (matchedSub) {
-                        assignedRole = 'SUB_ADMIN';
-                        assignedVillages = Array.isArray(matchedSub.villages) ? matchedSub.villages.map(String) : [];
-                        specificHospitalName = matchedSub.name;
-                    }
-                }
-
-                if (!assignedRole) {
-                    showToast("รหัสลับไม่ถูกต้อง ไม่อนุญาตให้ลงทะเบียนสิทธิ์เจ้าหน้าที่", "error");
-                    btn.disabled = false;
-                    btn.innerText = "ตรวจสอบรหัสและยืนยัน";
+                    btn.innerText = "ยืนยันการส่งคำขอลงทะเบียน";
                     return;
                 }
 
@@ -403,32 +377,39 @@
                     return;
                 }
 
-                let finalHospitalName = specificHospitalName;
-                if (!finalHospitalName) {
-                    const hSnap = await db.collection('SystemConfig').doc('HOSPITAL_NAME').get();
-                    finalHospitalName = hSnap.exists ? (hSnap.data().value || DEFAULT_CONFIGS.HOSPITAL_NAME) : DEFAULT_CONFIGS.HOSPITAL_NAME;
-                }
-
-                await db.collection('VHVs').doc(String(identity.uid)).set({
+                // ทุกการลงทะเบียนเริ่มต้นด้วย role: 'VHV', requested_role, และ status: 'Pending'
+                // ปฏิบัติตามกฎความปลอดภัยฐานข้อมูลและข้อกำหนด All New Registrations Require Approval
+                const newUser = {
                     uid: identity.uid,
                     name: name,
                     nickname: nickname,
                     phone: phone,
-                    role: assignedRole,
-                    status: 'Active',
-                    hospital_name: finalHospitalName,
-                    assigned_villages: assignedVillages,
+                    role: 'VHV',
+                    requested_role: requestedRole,
+                    status: 'Pending',
+                    hospital_name: DEFAULT_CONFIGS.HOSPITAL_NAME,
                     profile_pic: identity.picUrl || '',
-                    secret_verify: secretCode,
+                    secret_verify: secretCode || '',
                     timestamp: firebase.firestore.FieldValue.serverTimestamp()
-                });
+                };
 
-                showToast("ลงทะเบียนสิทธิ์เจ้าหน้าที่สำเร็จ!", "success", "admin_dashboard.html");
+                await db.collection('VHVs').doc(String(identity.uid)).set(newUser);
+
+                // ยิงแจ้งเตือน LINE ไปยัง Active ADMINs ส่วนกลางเท่านั้นสำหรับคำขอสิทธิ์ SUB_ADMIN / ADMIN
+                try {
+                    await OrsomoCore.Alerts.notifyNewRegistration(db, newUser);
+                } catch (alertErr) {
+                    console.warn("notifyNewRegistration warning:", alertErr);
+                }
+
+                hideAllScreens();
+                document.getElementById('pending-screen').classList.remove('hidden');
+                showToast("ลงทะเบียนสำเร็จ กรุณารอผู้ดูแลระบบอนุมัติสิทธิ์", "success");
             } catch (error) {
                 console.error(error);
                 showToast("การเชื่อมต่อล้มเหลว กรุณาลองใหม่", "error");
                 btn.disabled = false;
-                btn.innerText = "ตรวจสอบรหัสและยืนยัน";
+                btn.innerText = "ยืนยันการส่งคำขอลงทะเบียน";
             }
         }
 
@@ -461,21 +442,31 @@
                     return;
                 }
 
-                await db.collection('VHVs').doc(String(identity.uid)).set({
+                const newUser = {
                     uid: identity.uid,
                     name: name,
                     nickname: nickname,
                     phone: phone,
                     role: 'VHV',
+                    requested_role: 'VHV',
                     status: 'Pending',
                     village_no: String(village),
                     profile_pic: identity.picUrl || '',
                     timestamp: firebase.firestore.FieldValue.serverTimestamp()
-                });
+                };
+
+                await db.collection('VHVs').doc(String(identity.uid)).set(newUser);
+
+                // ยิงแจ้งเตือน LINE: Active ADMINs + Active SUB_ADMINs ที่ดูแลหมู่นี้เท่านั้น
+                try {
+                    await OrsomoCore.Alerts.notifyNewRegistration(db, newUser);
+                } catch (alertErr) {
+                    console.warn("notifyNewRegistration warning:", alertErr);
+                }
 
                 hideAllScreens();
                 document.getElementById('pending-screen').classList.remove('hidden');
-                showToast("ส่งคำขอลงทะเบียนเรียบร้อยแล้ว รอเจ้าหน้าที่อนุมัติครับ", "success");
+                showToast("ลงทะเบียนสำเร็จ กรุณารอผู้ดูแลระบบอนุมัติสิทธิ์", "success");
             } catch (error) {
                 console.error(error);
                 showToast("การเชื่อมต่อล้มเหลว กรุณาลองใหม่", "error");

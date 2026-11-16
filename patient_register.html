@@ -392,6 +392,22 @@
             };
 
             await db.collection('Patients').doc(targetDocId).set(patientData);
+
+            // แจ้งเตือน LINE หากมีการขอรับผ้าอ้อมหรือแผ่นรองซับตั้งแต่ตอนลงทะเบียนใหม่
+            const parsedDiaper = OrsomoCore.DiaperAdapter.parse(patientData.diaper);
+            if (parsedDiaper && (parsedDiaper.req_diaper || parsedDiaper.req_underpad)) {
+                try {
+                    await OrsomoCore.Alerts.notifyNewDiaperRequest(db, {
+                        patient: patientData,
+                        village_no: patientData.village_no,
+                        diaper: parsedDiaper,
+                        requesterName: patientData.created_by || 'เจ้าหน้าที่/อสม.'
+                    });
+                } catch (diaperAlertErr) {
+                    console.warn('notifyNewDiaperRequest warning:', diaperAlertErr);
+                }
+            }
+
             showToast('ลงทะเบียนผู้ป่วยใหม่เรียบร้อยแล้ว', 'success', `patient_profile.html?id=${encodeURIComponent(targetDocId)}`);
         } catch (error) {
             console.error('patient_register error:', error);

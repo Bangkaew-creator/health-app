@@ -300,12 +300,31 @@
                     const v = doc.data();
                     v.uid = doc.id;
                     const vRole = String(v.role || '').toUpperCase();
-                    let hasPermissionToView = true;
-                    if (currentUserRole === 'SUB_ADMIN') hasPermissionToView = assignedVillages.includes(String(v.village_no).trim());
+                    const reqRole = String(v.requested_role || (vRole === 'ADMIN' || vRole === 'SUB_ADMIN' ? vRole : 'VHV')).toUpperCase();
+                    const isPending = String(v.status || '').trim().toLowerCase() === 'pending';
 
-                    if(vRole !== 'ADMIN' && vRole !== 'SUB_ADMIN' && hasPermissionToView) {
-                        if (String(v.status) === 'Pending') pendingVHVs.push(v);
-                        else allVHVs.push(v);
+                    if (isPending) {
+                        // SUB_ADMIN สามารถเห็นและอนุมัติได้เฉพาะ อสม. ในเขตรับผิดชอบ (assigned_villages) เท่านั้น
+                        // และไม่มีสิทธิ์เห็นหรืออนุมัติคำขอสิทธิ์ ADMIN หรือ SUB_ADMIN
+                        if (currentUserRole === 'SUB_ADMIN') {
+                            const isVHV = (reqRole === 'VHV');
+                            const isInAssigned = assignedVillages.includes(String(v.village_no || '').trim());
+                            if (isVHV && isInAssigned) {
+                                pendingVHVs.push(v);
+                            }
+                        } else {
+                            // Central ADMIN สามารถเห็นและอนุมัติคำขอได้ทุกบทบาทและทุกหมู่บ้าน
+                            pendingVHVs.push(v);
+                        }
+                    } else {
+                        let hasPermissionToView = true;
+                        if (currentUserRole === 'SUB_ADMIN') {
+                            hasPermissionToView = assignedVillages.includes(String(v.village_no || '').trim());
+                        }
+
+                        if (vRole !== 'ADMIN' && vRole !== 'SUB_ADMIN' && hasPermissionToView) {
+                            allVHVs.push(v);
+                        }
                     }
                 });
                 
@@ -373,11 +392,21 @@
 
             pendingVHVs.forEach(v => {
                 const displayName = OrsomoCore.UI.formatVHVName(v);
+                const reqRole = String(v.requested_role || v.role || 'VHV').toUpperCase();
+                let roleBadge = '';
+                if (reqRole === 'ADMIN') {
+                    roleBadge = `<p class="text-[11px] text-purple-700 bg-purple-50 font-bold px-2 py-0.5 rounded inline-block mt-1">ขอรับสิทธิ์: ผู้ดูแลระบบส่วนกลาง (ADMIN)</p>`;
+                } else if (reqRole === 'SUB_ADMIN') {
+                    roleBadge = `<p class="text-[11px] text-blue-700 bg-blue-50 font-bold px-2 py-0.5 rounded inline-block mt-1">ขอรับสิทธิ์: เจ้าหน้าที่ รพ.สต. (SUB_ADMIN)</p>`;
+                } else {
+                    roleBadge = `<p class="text-[11px] text-amber-700 bg-amber-50 font-bold px-2 py-0.5 rounded inline-block mt-1">ขอรับสิทธิ์: อสม. หมู่ที่ ${v.village_no || '-'}</p>`;
+                }
+
                 container.insertAdjacentHTML('beforeend', `
                     <div class="bg-white rounded-[20px] p-5 shadow-lg border border-amber-300 relative overflow-hidden">
                         <div class="absolute top-0 right-0 bg-amber-500 text-white text-[10px] font-bold px-3 py-1 rounded-bl-xl rounded-tr-[20px]">รอตรวจสอบ</div>
                         <h3 class="font-bold text-slate-800 text-sm mt-2">${displayName}</h3>
-                        <p class="text-[11px] text-amber-700 bg-amber-50 font-bold px-2 py-0.5 rounded inline-block mt-1">ขอรับสิทธิ์ หมู่ที่ ${v.village_no || '-'}</p>
+                        ${roleBadge}
                         <p class="text-[11px] text-slate-500 mt-2 flex items-center gap-1"><span class="material-symbols-outlined text-[14px]">call</span> ${v.phone || '-'}</p>
                         
                         <div class="flex gap-2 mt-4 pt-3 border-t border-slate-100">
@@ -390,17 +419,53 @@
         }
 
         async function manageVHVStatus(uid, actionType) {
-            if(!confirm(actionType === 'Active' ? 'ยืนยันการอนุมัติสิทธิ์ให้บุคคลนี้ใช่หรือไม่?' : 'ยืนยันการปฏิเสธสิทธิ์ใช่หรือไม่?')) return;
+            const isApproved = (actionType === 'Active');
+            if(!confirm(isApproved ? 'ยืนยันการอนุมัติสิทธิ์ให้บุคคลนี้ใช่หรือไม่?' : 'ยืนยันการปฏิเสธสิทธิ์ใช่หรือไม่?')) return;
             try {
                 const targetVhv = pendingVHVs.find(v => String(v.uid) === String(uid));
-                const targetRole = (targetVhv && targetVhv.role && targetVhv.role !== 'None') ? targetVhv.role : 'VHV';
-                await db.collection('VHVs').doc(String(uid)).update({
+                if (!targetVhv) {
+                    showToast('ไม่พบข้อมูลคำขอผู้ใช้งาน', 'error');
+                    return;
+                }
+
+                const targetReqRole = String(targetVhv.requested_role || targetVhv.role || 'VHV').toUpperCase();
+
+                // ป้องกัน SUB_ADMIN อนุมัติสิทธิ์นอกขอบเขต หรืออนุมัติ ADMIN/SUB_ADMIN
+                if (currentUserRole === 'SUB_ADMIN') {
+                    if (targetReqRole !== 'VHV' || !assignedVillages.includes(String(targetVhv.village_no || '').trim())) {
+                        showToast('คุณไม่มีสิทธิ์ดำเนินการคำขอนี้ (อนุญาตเฉพาะ อสม. ในเขตรับผิดชอบเท่านั้น)', 'error');
+                        return;
+                    }
+                }
+
+                const finalRole = isApproved ? targetReqRole : 'None';
+                const updatePayload = {
                     status: actionType,
-                    role: actionType === 'Active' ? targetRole : 'None'
-                });
-                showToast('ดำเนินการเรียบร้อยแล้ว');
+                    approved_by: currentUserName || currentUserUid || 'ผู้ดูแลระบบ',
+                    approved_at: new Date().toISOString(),
+                    updated_at: new Date().toISOString()
+                };
+                if (currentUserRole === 'ADMIN') {
+                    updatePayload.role = finalRole;
+                }
+                await db.collection('VHVs').doc(String(uid)).update(updatePayload);
+
+                // แจ้งเตือนผลการอนุมัติไปยังผู้สมัครผ่าน LINE ทันที
+                try {
+                    await OrsomoCore.Alerts.notifyApprovalResult(db, targetVhv, isApproved, {
+                        approvedRole: targetReqRole,
+                        approverName: currentUserName || (currentUserRole === 'ADMIN' ? 'ผู้ดูแลระบบส่วนกลาง' : 'เจ้าหน้าที่ รพ.สต.')
+                    });
+                } catch (alertErr) {
+                    console.warn('notifyApprovalResult warning:', alertErr);
+                }
+
+                showToast(isApproved ? 'อนุมัติสิทธิ์เรียบร้อยแล้ว' : 'ปฏิเสธคำขอเรียบร้อยแล้ว', 'success');
                 loadDataChannels(); 
-            } catch(e) { showToast("เชื่อมต่อล้มเหลว", "error"); }
+            } catch(e) { 
+                console.error("manageVHVStatus error:", e);
+                showToast("ดำเนินการล้มเหลว: " + (e.message || e), "error"); 
+            }
         }
 
         function distributePatients() {
@@ -628,11 +693,10 @@
                 
                 let lineToken = "";
                 try {
-                    const sysSnap = await db.collection('SystemConfig').doc('LINE_CHANNEL_ACCESS_TOKEN').get();
-                    if(sysSnap.exists) lineToken = sysSnap.data().value || "";
+                    lineToken = await OrsomoCore.Alerts.getLineToken(db);
                 } catch(err) {}
 
-                if (lineToken) {
+                if (typeof API_URL !== 'undefined' && API_URL) {
                     const p = allPatients.find(x => String(x.docId || x.id) === String(patientId)); 
                     const pName = p ? p.name : 'ไม่ระบุชื่อ';
                     const pHouse = p ? p.house_no : '-';

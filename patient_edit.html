@@ -763,6 +763,10 @@
                 const certBase64 = document.getElementById('b64_diaper_cert').value.trim();
 
                 const baseDp = initialDiaperParsed || OrsomoCore.DiaperAdapter.parse(currentPatientData ? currentPatientData.diaper : null);
+                const prevReqDiaper = Boolean(baseDp.req_diaper || baseDp.req_underpad);
+                const newReqDiaper = Boolean(reqDiaper || reqUnderpad);
+                const isNewlyEnabledDiaper = !prevReqDiaper && newReqDiaper;
+
                 const diaperChanged =
                     diaperResult !== (baseDp.result || '') ||
                     JSON.stringify(indications) !== JSON.stringify(baseDp.indications || []) ||
@@ -838,6 +842,21 @@
 
                 await db.collection('Patients').doc(String(patientId)).update(updateData);
                 try { OrsomoCore.DataCache.invalidatePatients(); } catch (e) {}
+
+                // แจ้งเตือน LINE หากมีการเปิดขอรับผ้าอ้อม/แผ่นรองซับใหม่ (!prevReqDiaper && newReqDiaper)
+                if (isNewlyEnabledDiaper) {
+                    try {
+                        await OrsomoCore.Alerts.notifyNewDiaperRequest(db, {
+                            patient: Object.assign({}, currentPatientData, updateData),
+                            village_no: String(village),
+                            diaper: mergedDiaper,
+                            requesterName: OrsomoCore.UI.formatVHVName(authCtx.user)
+                        });
+                    } catch (diaperAlertErr) {
+                        console.warn('notifyNewDiaperRequest warning:', diaperAlertErr);
+                    }
+                }
+
                 showToast('บันทึกข้อมูลผู้ป่วยเรียบร้อยแล้ว', 'success', `patient_profile.html?id=${encodeURIComponent(patientId)}`);
             } catch (err) {
                 console.error('savePatient error:', err);

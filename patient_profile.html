@@ -1549,12 +1549,25 @@
         async function markTaskComplete(id) {
             if (!confirm('ยืนยันว่าได้ปฏิบัติภารกิจครบถ้วนแล้วใช่หรือไม่?')) return;
             try {
+                const prevTaskDesc = (currentPatientData && currentPatientData.task_desc) || '';
+                const prevTasksRequired = (currentPatientData && currentPatientData.tasks_required) || [];
+
                 await db.collection('Patients').doc(String(id)).update({
                     needs_assessment: false,
                     task_desc: '',
                     tasks_required: []
                 });
                 try { OrsomoCore.DataCache.invalidatePatients(); } catch (e) {}
+
+                // แจ้งเตือน LINE: Active ADMINs + Active SUB_ADMINs ที่รับผิดชอบหมู่บ้านนี้เท่านั้น
+                try {
+                    await OrsomoCore.Alerts.notifyTaskCompleted(db, currentPatientData, authCtx.user, {
+                        tasksDesc: prevTaskDesc || (Array.isArray(prevTasksRequired) && prevTasksRequired.length > 0 ? prevTasksRequired.join(', ') : 'เยี่ยมบ้านและดูแลสุขภาพ')
+                    });
+                } catch (taskAlertErr) {
+                    console.warn('notifyTaskCompleted warning:', taskAlertErr);
+                }
+
                 showToast('บันทึกปิดภารกิจเรียบร้อยแล้ว', 'success', 'assessments.html');
             } catch (e) {
                 console.error(e);
@@ -2251,8 +2264,8 @@
                     updated_at: new Date().toISOString()
                 });
 
-                const lineToken = await OrsomoCore.Alerts.getLineToken(db);
-                if (lineToken && typeof API_URL !== 'undefined' && API_URL) {
+                const lineToken = (await OrsomoCore.Alerts.getLineToken(db)) || '';
+                if (typeof API_URL !== 'undefined' && API_URL) {
                     await fetch(API_URL, {
                         method: 'POST',
                         headers: { 'Content-Type': 'text/plain;charset=utf-8' },

@@ -639,10 +639,9 @@
                     if (currentUserRole === 'SUB_ADMIN') {
                         const cleanV = String(data.village_no || '').replace(/\D/g, '');
                         const cleanAssigned = (assignedVillages || []).map(v => String(v).replace(/\D/g, '')).filter(Boolean);
-                        hasPermissionToView = cleanAssigned.length === 0 ||
-                                              !cleanV ||
-                                              cleanAssigned.includes(cleanV) ||
-                                              String(data.creator_uid || '') === String(currentUserUid || '');
+                        hasPermissionToView = cleanAssigned.length > 0 &&
+                                              Boolean(cleanV) &&
+                                              cleanAssigned.includes(cleanV);
                     }
                     if (hasPermissionToView) {
                         tempPatients.push(data);

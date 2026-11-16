@@ -2042,7 +2042,8 @@
                     uids.push(uid);
                 } else if (role === 'SUB_ADMIN') {
                     const assigned = Array.isArray(d.assigned_villages) ? d.assigned_villages.map(String) : [];
-                    if (!vStr || assigned.includes(vStr)) {
+                    // SUB_ADMIN ได้รับแจ้งเตือนเฉพาะหมู่บ้านที่อยู่ใน assigned_villages เท่านั้น
+                    if (vStr && assigned.includes(vStr)) {
                         uids.push(uid);
                     }
                 }
@@ -2051,6 +2052,8 @@
         },
 
         getLineToken: async function (db) {
+            // โทเคนหลักถูกเก็บอย่างปลอดภัยใน Script Properties ของ Apps Script แล้ว
+            // ฟังก์ชันนี้อ่านค่าจาก SystemConfig เพื่อความเข้ากันได้ย้อนหลัง (Fallback)
             if (!db) return '';
             try {
                 const snap = await db.collection('SystemConfig').doc('LINE_CHANNEL_ACCESS_TOKEN').get();
@@ -2060,12 +2063,40 @@
             }
         },
 
+        syncLineTokenToGAS: async function (db) {
+            if (!db || typeof API_URL === 'undefined' || !API_URL) return { success: false, message: 'API_URL or db not available' };
+            try {
+                const token = await Alerts.getLineToken(db);
+                if (!token) return { success: false, message: 'No token found in Firestore SystemConfig' };
+                const res = await fetch(API_URL, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+                    body: JSON.stringify({ action: 'syncToken', lineToken: token })
+                });
+                return await res.json();
+            } catch (e) {
+                return { success: false, message: e.message || String(e) };
+            }
+        },
+
+        pingGAS: async function () {
+            if (typeof API_URL === 'undefined' || !API_URL) return { success: false, message: 'API_URL not defined' };
+            try {
+                const res = await fetch(API_URL, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+                    body: JSON.stringify({ action: 'pingTest' })
+                });
+                return await res.json();
+            } catch (e) {
+                return { success: false, message: e.message || String(e) };
+            }
+        },
+
         sendCriticalHealthAlert: async function (db, info) {
             if (!db || !info || typeof API_URL === 'undefined' || !API_URL) return false;
             try {
-                const lineToken = await Alerts.getLineToken(db);
-                if (!lineToken) return false;
-
+                const lineToken = (await Alerts.getLineToken(db)) || '';
                 const patient = info.patient || {};
                 const recipientUids = await Alerts.getResponsibleStaffUids(db, patient.village_no);
                 if (recipientUids.length === 0) return false;
@@ -2110,9 +2141,9 @@
                 });
 
                 if (activeLoans.length > 0 && !PatientValidator.isActiveStatus(newStatus) && typeof API_URL !== 'undefined' && API_URL) {
-                    const lineToken = await Alerts.getLineToken(db);
+                    const lineToken = (await Alerts.getLineToken(db)) || '';
                     const recipientUids = await Alerts.getResponsibleStaffUids(db, patientData ? patientData.village_no : '');
-                    if (lineToken && recipientUids.length > 0) {
+                    if (recipientUids.length > 0) {
                         const summary = activeLoans.map(function (l) {
                             return (l.equipment_name || 'อุปกรณ์') + (l.asset_code ? ' [' + l.asset_code + ']' : '') + ' (' + (l.qty || 1) + ')';
                         }).join(', ');
@@ -2137,6 +2168,174 @@
             } catch (err) {
                 console.warn('checkAndNotifyEquipmentReturn warning:', err);
                 return [];
+            }
+        },
+
+        notifyNewRegistration: async function (db, newUserInfo) {
+            if (!db || !newUserInfo || typeof API_URL === 'undefined' || !API_URL) return false;
+            try {
+                const reqRole = String(newUserInfo.requested_role || newUserInfo.role || 'VHV').toUpperCase();
+                const vStr = String(newUserInfo.village_no || '').trim();
+
+                // กรองผู้รับตามสิทธิ์:
+                // - กรณีขอสิทธิ์ SUB_ADMIN หรือ ADMIN: แจ้งเตือนไปยัง Active ADMINs เท่านั้น
+                // - กรณีสมัครเป็น อสม. ใน village_no: แจ้งเตือนไปยัง Active ADMINs + Active SUB_ADMINs ที่ดูแลหมู่นั้นเท่านั้น
+                const snap = await db.collection('VHVs').where('status', '==', 'Active').get();
+                const recipientUids = [];
+                snap.forEach(function (doc) {
+                    const d = doc.data() || {};
+                    const role = String(d.role || '').toUpperCase();
+                    const uid = String(d.uid || doc.id).trim();
+                    if (!uid) return;
+
+                    if (reqRole === 'ADMIN' || reqRole === 'SUB_ADMIN') {
+                        if (role === 'ADMIN') recipientUids.push(uid);
+                    } else {
+                        if (role === 'ADMIN') {
+                            recipientUids.push(uid);
+                        } else if (role === 'SUB_ADMIN') {
+                            const assigned = Array.isArray(d.assigned_villages) ? d.assigned_villages.map(String) : [];
+                            if (vStr && assigned.includes(vStr)) {
+                                recipientUids.push(uid);
+                            }
+                        }
+                    }
+                });
+
+                const uniqueRecipients = Array.from(new Set(recipientUids));
+                if (uniqueRecipients.length === 0) return false;
+
+                const lineToken = (await Alerts.getLineToken(db)) || '';
+                const applicantName = (newUserInfo.prefix || '') + (newUserInfo.name || 'ไม่ระบุชื่อ') + (newUserInfo.nickname ? (' (' + newUserInfo.nickname + ')') : '');
+
+                await fetch(API_URL, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+                    body: JSON.stringify({
+                        action: 'notifyNewRegistration',
+                        lineToken: lineToken,
+                        recipientUids: uniqueRecipients,
+                        applicantName: applicantName,
+                        applicantPhone: newUserInfo.phone || '-',
+                        requestedRole: reqRole,
+                        villageNo: vStr || '-',
+                        registeredAt: DateUtils.toThaiDateTime(new Date())
+                    })
+                });
+                return true;
+            } catch (err) {
+                console.warn('notifyNewRegistration warning:', err);
+                return false;
+            }
+        },
+
+        notifyApprovalResult: async function (db, targetUser, approved, extra) {
+            if (!db || !targetUser || typeof API_URL === 'undefined' || !API_URL) return false;
+            try {
+                const targetUid = String(targetUser.uid || targetUser.id || '').trim();
+                if (!targetUid) return false;
+
+                const lineToken = (await Alerts.getLineToken(db)) || '';
+                const ext = extra || {};
+                const reqRole = String(ext.approvedRole || targetUser.requested_role || targetUser.role || 'VHV').toUpperCase();
+                const targetName = (targetUser.prefix || '') + (targetUser.name || 'ผู้ใช้งาน') + (targetUser.nickname ? (' (' + targetUser.nickname + ')') : '');
+
+                await fetch(API_URL, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+                    body: JSON.stringify({
+                        action: 'notifyApprovalResult',
+                        lineToken: lineToken,
+                        targetUid: targetUid,
+                        targetName: targetName,
+                        approved: Boolean(approved),
+                        approvedRole: reqRole,
+                        approverName: ext.approverName || 'ผู้ดูแลระบบ',
+                        reason: ext.reason || ''
+                    })
+                });
+                return true;
+            } catch (err) {
+                console.warn('notifyApprovalResult warning:', err);
+                return false;
+            }
+        },
+
+        notifyNewDiaperRequest: async function (db, patientInfo) {
+            if (!db || !patientInfo || typeof API_URL === 'undefined' || !API_URL) return false;
+            try {
+                const p = patientInfo.patient || patientInfo;
+                const villageNo = patientInfo.village_no || p.village_no;
+                const recipientUids = await Alerts.getResponsibleStaffUids(db, villageNo);
+                if (recipientUids.length === 0) return false;
+
+                const lineToken = (await Alerts.getLineToken(db)) || '';
+                const pName = (p.prefix || '') + (p.name || 'ไม่ระบุชื่อ');
+                const dp = patientInfo.diaper || (p.diaper ? DiaperAdapter.parse(p.diaper) : {});
+                const hasDiaper = Boolean(dp.req_diaper);
+                const hasUnderpad = Boolean(dp.req_underpad);
+                const diaperType = (hasDiaper && hasUnderpad) ? 'ผ้าอ้อมผู้ใหญ่ และแผ่นรองซับ' :
+                                   (hasDiaper ? 'ผ้าอ้อมผู้ใหญ่' : (hasUnderpad ? 'แผ่นรองซับการขับถ่าย' : 'ผ้าอ้อม/แผ่นรองซับ'));
+                const diaperSize = (hasDiaper && dp.size && dp.size !== '-') ? dp.size : '';
+
+                await fetch(API_URL, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+                    body: JSON.stringify({
+                        action: 'notifyNewDiaperRequest',
+                        lineToken: lineToken,
+                        recipientUids: recipientUids,
+                        pName: pName,
+                        pHouse: p.house_no || '-',
+                        pVillage: p.village_no || '-',
+                        diaperType: diaperType,
+                        diaperSize: diaperSize,
+                        requesterName: patientInfo.requesterName || patientInfo.assessorName || 'เจ้าหน้าที่/อสม.',
+                        recordedAt: DateUtils.toThaiDateTime(new Date())
+                    })
+                });
+                return true;
+            } catch (err) {
+                console.warn('notifyNewDiaperRequest warning:', err);
+                return false;
+            }
+        },
+
+        notifyTaskCompleted: async function (db, patientInfo, vhvUser, extra) {
+            if (!db || !patientInfo || typeof API_URL === 'undefined' || !API_URL) return false;
+            try {
+                const p = patientInfo.patient || patientInfo;
+                const villageNo = p.village_no;
+                const recipientUids = await Alerts.getResponsibleStaffUids(db, villageNo);
+                if (recipientUids.length === 0) return false;
+
+                const lineToken = (await Alerts.getLineToken(db)) || '';
+                const pName = (p.prefix || '') + (p.name || 'ไม่ระบุชื่อ');
+                const vhvName = (vhvUser && typeof vhvUser === 'object')
+                    ? UI.formatVHVName(vhvUser)
+                    : String(vhvUser || 'อสม.ประจำหมู่บ้าน');
+
+                const completedTasks = (extra && extra.tasksDesc) || p.task_desc || (Array.isArray(p.tasks_required) && p.tasks_required.length > 0 ? p.tasks_required.join(', ') : 'เยี่ยมบ้านและดูแลสุขภาพ');
+
+                await fetch(API_URL, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+                    body: JSON.stringify({
+                        action: 'notifyTaskCompleted',
+                        lineToken: lineToken,
+                        recipientUids: recipientUids,
+                        pName: pName,
+                        pHouse: p.house_no || '-',
+                        pVillage: p.village_no || '-',
+                        vhvName: vhvName,
+                        completedTasks: completedTasks,
+                        completedAt: DateUtils.toThaiDateTime(new Date())
+                    })
+                });
+                return true;
+            } catch (err) {
+                console.warn('notifyTaskCompleted warning:', err);
+                return false;
             }
         }
     };
