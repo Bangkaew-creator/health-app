@@ -297,9 +297,9 @@
         function toggleSidebar() { document.getElementById('sidebar').classList.toggle('-translate-x-full'); }
 
         function cleanJSON(rawStr) {
-            if (!rawStr || String(rawStr).trim() === '') return null;
+            if (!rawStr) return null;
+            if (typeof rawStr === 'object') return rawStr;
             let cleanStr = String(rawStr).trim();
-            // Removed dangerous replace
             if (cleanStr.startsWith('"') && cleanStr.endsWith('"')) cleanStr = cleanStr.substring(1, cleanStr.length - 1);
             try { return JSON.parse(cleanStr); } catch(e) { return null; }
         }
@@ -327,8 +327,9 @@
                 await initializeInventory();
             } catch (error) { 
                 console.error("Auth guard error:", error);
-                if (error && (error.message === 'ROLE_FORBIDDEN' || error.message === 'UNAUTHENTICATED' || error.message === 'USER_NOT_ACTIVE')) {
-                    window.location.href = 'index.html'; 
+                if (error && (error.message === 'ROLE_FORBIDDEN' || error.message === 'UNAUTHENTICATED' || error.message === 'USER_NOT_ACTIVE' || error.message === 'USER_NOT_REGISTERED')) {
+                    if (document.body) document.body.style.display = 'none';
+                    return;
                 }
             }
         }
@@ -510,11 +511,28 @@
             let rounds = new Set();
             patients.forEach(p => {
                 const d = cleanJSON(p.diaper);
-                if(d && Array.isArray(d.allocations)) d.allocations.forEach(r => rounds.add(r));
+                if (d && Array.isArray(d.allocations)) {
+                    d.allocations.forEach(r => {
+                        const cleanR = String(r || '').trim();
+                        if (cleanR) rounds.add(cleanR);
+                    });
+                }
+                if (d && d.round) {
+                    const cleanR = String(d.round || '').trim();
+                    if (cleanR) rounds.add(cleanR);
+                }
+                if (d && d.alloc_history && typeof d.alloc_history === 'object') {
+                    Object.keys(d.alloc_history).forEach(r => {
+                        const cleanR = String(r || '').trim();
+                        if (cleanR) rounds.add(cleanR);
+                    });
+                }
             });
             const sel = document.getElementById('out-round-select');
             sel.innerHTML = '<option value="">-- เลือกรอบมติ --</option>';
-            Array.from(rounds).sort().reverse().forEach(r => { sel.insertAdjacentHTML('beforeend', `<option value="${r}">รอบ ${r}</option>`); });
+            Array.from(rounds).sort((a,b) => b.localeCompare(a, undefined, { numeric: true })).forEach(r => {
+                sel.insertAdjacentHTML('beforeend', `<option value="${r}">รอบ ${r}</option>`);
+            });
         }
 
         async function fetchPatientsForRound() {
@@ -524,20 +542,46 @@
             showToast('กำลังดึงข้อมูล...','info');
             const patients = await OrsomoCore.DataCache.getPatients(db);
             let targetPatients = [];
+            const cleanRound = String(round).trim();
 
             patients.forEach(p => {
-                if(String(p.status).toLowerCase() !== 'active') return;
+                const pStatus = String(p.status || 'Active').trim();
+                const isInactive = (pStatus === 'Inactive' || pStatus === 'inactive' || pStatus === 'ย้ายที่อยู่' || pStatus === 'เลิกติดตาม');
+                if (isInactive) return;
+
                 const d = cleanJSON(p.diaper);
-                if(d && Array.isArray(d.allocations) && d.allocations.includes(round)) {
+                if (!d) return;
+
+                const hasAlloc = (Array.isArray(d.allocations) && d.allocations.some(r => String(r).trim() === cleanRound)) ||
+                                 (d.round && String(d.round).trim() === cleanRound) ||
+                                 (d.alloc_history && typeof d.alloc_history === 'object' && (d.alloc_history[cleanRound] || d.alloc_history[round]));
+
+                if (hasAlloc) {
                     // ดึงยอดจริงที่บันทึกไว้ใน alloc_history[round] ก่อน (ถ้ามี) เพื่อให้ตรงกับหน้าศูนย์รายงานและบันทึกมติ
-                    const hist = (d.alloc_history && d.alloc_history[round]) ? d.alloc_history[round] : null;
+                    const hist = (d.alloc_history && typeof d.alloc_history === 'object')
+                        ? (d.alloc_history[cleanRound] || d.alloc_history[round] || null)
+                        : null;
                     const allocDays = parseInt(d.alloc_days) || (parseInt(d.alloc_months)*30) || 90;
-                    const dQty = (hist && hist.diaper_qty !== undefined)
-                        ? (parseInt(hist.diaper_qty) || 0)
-                        : (d.req_diaper ? Math.ceil((parseInt(d.approved_diaper||0)/30)*allocDays) : 0);
-                    const pQty = (hist && hist.underpad_qty !== undefined)
-                        ? (parseInt(hist.underpad_qty) || 0)
-                        : (d.req_underpad ? Math.ceil((parseInt(d.approved_underpad||0)/30)*allocDays) : 0);
+
+                    let dQty = 0;
+                    if (hist && hist.diaper_qty !== undefined) {
+                        dQty = parseInt(hist.diaper_qty) || 0;
+                    } else if (d.diaper_qty !== undefined && parseInt(d.diaper_qty) > 0) {
+                        dQty = parseInt(d.diaper_qty);
+                    } else if (d.req_diaper) {
+                        const daily = parseInt(d.approved_diaper) || (d.req_underpad ? 1 : 3);
+                        dQty = Math.ceil((daily / 30) * allocDays);
+                    }
+
+                    let pQty = 0;
+                    if (hist && hist.underpad_qty !== undefined) {
+                        pQty = parseInt(hist.underpad_qty) || 0;
+                    } else if (d.underpad_qty !== undefined && parseInt(d.underpad_qty) > 0) {
+                        pQty = parseInt(d.underpad_qty);
+                    } else if (d.req_underpad) {
+                        const daily = parseInt(d.approved_underpad) || (d.req_diaper ? 3 : 6);
+                        pQty = Math.ceil((daily / 30) * allocDays);
+                    }
 
                     let rawSize = (hist && hist.size && hist.size !== '-') ? String(hist.size).toUpperCase() : String(d.size||'L').toUpperCase();
                     let baseSize = 'L';
@@ -546,8 +590,19 @@
                     else if (rawSize.includes('S')) baseSize = 'S';
                     else if (rawSize.includes('M')) baseSize = 'M';
                     else if (rawSize.includes('L')) baseSize = 'L';
-                    
-                    targetPatients.push({ id: p.docId || p.id, name: p.name, size: baseSize, diaperQty: dQty, padQty: pQty });
+
+                    const pName = p.name || ((p.prefix || '') + (p.first_name || '') + ' ' + (p.last_name || '')).trim() || 'ไม่ระบุชื่อ';
+                    const isDeceased = (pStatus === 'เสียชีวิต');
+
+                    targetPatients.push({
+                        id: p.docId || p.id,
+                        name: pName,
+                        size: baseSize,
+                        diaperQty: dQty,
+                        padQty: pQty,
+                        isDeceased: isDeceased,
+                        status: pStatus
+                    });
                 }
             });
 
@@ -559,11 +614,14 @@
                 let detailTxt = [];
                 if(p.diaperQty > 0) detailTxt.push(`ผ้าอ้อมไซส์ ${p.size} (${p.diaperQty} ชิ้น)`);
                 if(p.padQty > 0) detailTxt.push(`แผ่นรอง (${p.padQty} ชิ้น)`);
+                if(detailTxt.length === 0) detailTxt.push('ไม่ระบุจำนวน');
+
+                const statusTag = p.isDeceased ? ` <span class="text-[10px] bg-red-100 text-red-700 px-1.5 py-0.5 rounded font-bold">เสียชีวิต</span>` : '';
                 
                 const tr = document.createElement('tr');
                 tr.innerHTML = `
-                    <td class="p-3 text-center"><input type="checkbox" class="check-row out-row-cb" onchange="calculateOutSummary()" checked></td>
-                    <td class="p-3 font-bold text-slate-700">${p.name}</td>
+                    <td class="p-3 text-center"><input type="checkbox" class="check-row out-row-cb" onchange="calculateOutSummary()" ${p.isDeceased ? '' : 'checked'}></td>
+                    <td class="p-3 font-bold text-slate-700">${p.name}${statusTag}</td>
                     <td class="p-3 text-[11px] text-blue-600 font-medium">${detailTxt.join(' + ')}</td>
                 `;
                 tr.dataset.info = JSON.stringify(p);

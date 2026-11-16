@@ -538,15 +538,16 @@
                     const d = OrsomoCore.DiaperAdapter.parse(p.diaper);
                     if (d && (d.req_diaper || d.req_underpad)) {
                         const quota = computeBaselineDailyQuota(d);
+                        const pId = p.docId || p.id;
                         allResourcePatients.push({
-                            docId: doc.id,
+                            docId: pId,
                             patient: p,
                             diaper: d,
                             quota: quota,
                             village_no: vNo,
                             size: OrsomoCore.DiaperAdapter.normalizeSize(d.size || p.size || 'L')
                         });
-                        selectedPatientDocIds.add(doc.id); // ค่าเริ่มต้น: ติ๊กเลือกทั้งหมด
+                        selectedPatientDocIds.add(pId); // ค่าเริ่มต้น: ติ๊กเลือกทั้งหมด
                     }
                 });
 

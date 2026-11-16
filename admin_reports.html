@@ -760,8 +760,9 @@
                 loadReportData();
             } catch (error) { 
                 console.error("Auth guard error:", error); 
-                if (error && (error.message === 'ROLE_FORBIDDEN' || error.message === 'UNAUTHENTICATED' || error.message === 'USER_NOT_ACTIVE')) {
-                    window.location.href = 'index.html'; 
+                if (error && (error.message === 'ROLE_FORBIDDEN' || error.message === 'UNAUTHENTICATED' || error.message === 'USER_NOT_ACTIVE' || error.message === 'USER_NOT_REGISTERED')) {
+                    if (document.body) document.body.style.display = 'none';
+                    return;
                 }
             }
         }

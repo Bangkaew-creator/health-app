@@ -1066,20 +1066,23 @@
 
             // บล็อกบัญชี Pending / Rejected / อื่นๆ ที่ไม่ใช่ Active 100%
             if (!isActiveAccount) {
+                try { if (document.body) document.body.style.display = 'none'; } catch (e) {}
                 window.location.replace(toVerUrl(opts.loginUrl));
                 throw new Error('USER_NOT_ACTIVE');
             }
 
             if (Array.isArray(opts.allowedRoles) && opts.allowedRoles.length > 0 && !opts.allowedRoles.includes(roleUpper)) {
+                try {
+                    if (document.body) document.body.style.display = 'none';
+                    document.title = 'กำลังเปลี่ยนเส้นทาง...';
+                } catch (e) {}
                 const fallbackUrl = toVerUrl((roleUpper === 'ADMIN' || roleUpper === 'SUB_ADMIN')
                     ? 'admin_dashboard.html'
                     : (roleUpper === 'VHV' ? 'dashboard.html' : opts.loginUrl));
-                if (typeof window.showToast === 'function') {
-                    window.showToast('บัญชีของคุณไม่มีสิทธิ์เข้าถึงหน้านี้', 'error', fallbackUrl);
-                } else {
+                try {
                     alert('บัญชีของคุณไม่มีสิทธิ์เข้าถึงหน้านี้');
-                    window.location.replace(fallbackUrl);
-                }
+                } catch (e) {}
+                window.location.replace(fallbackUrl);
                 throw new Error('ROLE_FORBIDDEN');
             }
 

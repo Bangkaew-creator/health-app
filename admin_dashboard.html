@@ -371,6 +371,10 @@
 
             } catch (err) {
                 console.error("Dashboard init error:", err);
+                if (err && (err.message === 'ROLE_FORBIDDEN' || err.message === 'UNAUTHENTICATED' || err.message === 'USER_NOT_ACTIVE' || err.message === 'USER_NOT_REGISTERED')) {
+                    if (document.body) document.body.style.display = 'none';
+                    return;
+                }
                 const loader = document.getElementById('loading-state');
                 if (loader) loader.classList.add('hidden');
                 const content = document.getElementById('dashboard-content');
